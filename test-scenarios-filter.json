@@ -1,0 +1,5585 @@
+[
+  {
+    "name": "001 | Ambulance/Hearses | DIESEL | Delhi | CALENDAR YEAR | Y=Fuel / X=Total Consolidated",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "BURARI AUTO UNIT - DL53"
+      ],
+      "categoryGroups": [
+        "Ambulance/Hearses"
+      ],
+      "fuels": [
+        "DIESEL",
+        "ELECTRIC(BOV)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT",
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE I",
+        "BHARAT STAGE VI"
+      ],
+      "makers": [
+        "TATA MOTORS LTD",
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Ambulance"
+      ],
+      "evTypes": [
+        "ELECTRIC(BOV)"
+      ],
+      "statuses": [
+        "ACTIVE",
+        "CONFISCATED AUCTION VEHICLE"
+      ],
+      "ownerTypes": [
+        "AUTONOMOUS BODY",
+        "CENTRAL GOVERNMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Fuel",
+      "xAxis": "Total Consolidated",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "002 | Bus | CNG ONLY | Delhi | FINANCIAL YEAR | Y=Fuel / X=Vehicle Category",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "BURARI TAXI UNIT - DL52"
+      ],
+      "categoryGroups": [
+        "Bus"
+      ],
+      "fuels": [
+        "CNG ONLY"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2024-2025",
+        "2023-2024"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III A"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "HEAVY PASSENGER VEHICLE"
+      ],
+      "classes": [
+        "Omni Bus"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC CANCEL"
+      ],
+      "ownerTypes": [
+        "DRAMA/TAMASHA GROUPS"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Vehicle Category",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "003 | Construction Equipment Vehicle | NOT APPLICABLE | Delhi | Last 1 Year | Y=Fuel / X=Vehicle Class",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "DWARKA - DL9"
+      ],
+      "categoryGroups": [
+        "Construction Equipment Vehicle"
+      ],
+      "fuels": [
+        "NOT APPLICABLE"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 2"
+      ],
+      "makers": [
+        "TATA HITACHI CONSTRUCTION MACHINERY COMP. PVT LTD"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Crane Mounted Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT COMPANY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Fuel",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "004 | Goods Vehicle | DIESEL | Delhi | 1 Month Flexible | Y=Fuel / X=Vehicle Type",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "I P ESTATE - DL2"
+      ],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DIESEL"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "January",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6D"
+      ],
+      "makers": [
+        "TATA MOTORS LTD"
+      ],
+      "subCategories": [
+        "LIGHT GOODS VEHICLE"
+      ],
+      "classes": [
+        "Goods Carrier"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE TO BE SCRAPPED"
+      ],
+      "ownerTypes": [
+        "GOVT UNDERTAKING"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Vehicle Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "005 | Tractor | FLEX-FUEL(BIO-DIESEL) | Delhi | CALENDAR YEAR | Y=Fuel / X=Owner Type",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "JANAKPURI - DL4"
+      ],
+      "categoryGroups": [
+        "Tractor"
+      ],
+      "fuels": [
+        "FLEX-FUEL(BIO-DIESEL)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE III"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED (TRACTOR)"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Puller Tractor",
+        "Power Tiller"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "CONFISCATED AUCTION VEHICLE"
+      ],
+      "ownerTypes": [
+        "OTHERS"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Fuel",
+      "xAxis": "Owner Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "006 | Public Service Vehicle | ELECTRIC(BOV) | Delhi | FINANCIAL YEAR | Y=Fuel / X=Norms",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "JHULJHULI FITNESS CENTER - DL207"
+      ],
+      "categoryGroups": [
+        "Public Service Vehicle"
+      ],
+      "fuels": [
+        "ELECTRIC(BOV)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2025-2026"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Stage III CEV"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "MEDIUM PASSENGER VEHICLE",
+        "HEAVY PASSENGER VEHICLE"
+      ],
+      "classes": [
+        "Private Service Vehicle"
+      ],
+      "evTypes": [
+        "ELECTRIC(BOV)"
+      ],
+      "statuses": [
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "STATE TRANSPORT CORP/DEPT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Norms",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "007 | Special Category Vehicles | FUEL CELL HYDROGEN | Delhi | Last 1 Year | Y=Fuel / X=Vehicle Category Group",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "KAIR CLUSTER BUS FITNESS CENTER - DL205"
+      ],
+      "categoryGroups": [
+        "Special Category Vehicles"
+      ],
+      "fuels": [
+        "FUEL CELL HYDROGEN"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 4"
+      ],
+      "makers": [
+        "TATA MOTORS LTD"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Vintage Motor Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE DE-REGISTERED"
+      ],
+      "ownerTypes": [
+        "DIVYANGJAN (Availing GST Concession)"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Fuel",
+      "xAxis": "Vehicle Category Group",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "008 | Trailer | NOT APPLICABLE | Delhi | 1 Month Flexible | Y=Fuel / X=State Wise",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "KUSHAKNALA CLUSTER BUS FITNESS CENTER - DL206"
+      ],
+      "categoryGroups": [
+        "Trailer",
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "NOT APPLICABLE"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "February",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Not Available"
+      ],
+      "makers": [
+        "TATA MOTORS LTD"
+      ],
+      "subCategories": [],
+      "classes": [],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE_SCRAPPED RC CANCEL"
+      ],
+      "ownerTypes": [
+        "FIRM"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "State Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "009 | Four Wheeler | PETROL(E20) | Delhi | CALENDAR YEAR | Y=Fuel / X=RTO Wise",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "LADO SARAI FITNESS CENTER - DL201"
+      ],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE IV",
+        "Bharat Stage III CEV"
+      ],
+      "makers": [
+        "MARUTI SUZUKI INDIA LTD"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Adapted Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT ENTITY"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Fuel",
+      "xAxis": "RTO Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "010 | Three Wheeler | BIO-CNG/BIO-GAS | Delhi | FINANCIAL YEAR | Y=Fuel / X=Manufacturing Year",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "LONI ROAD - DL5"
+      ],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "BIO-CNG/BIO-GAS",
+        "CNG ONLY"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2023-2024"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "CEV STAGE V"
+      ],
+      "makers": [
+        "BAJAJ AUTO LTD"
+      ],
+      "subCategories": [
+        "THREE WHEELER(T)"
+      ],
+      "classes": [
+        "e-Rickshaw(P)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SUSPENDED"
+      ],
+      "ownerTypes": [
+        "LOCAL AUTHORITY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Manufacturing Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "011 | Two Wheeler | PETROL | Delhi | Last 1 Year | Y=Fuel / X=Financial Year",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "MALL ROAD - DL1"
+      ],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PETROL"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE",
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6A"
+      ],
+      "makers": [
+        "HERO MOTOCORP LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "M-Cycle/Scooter"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE SUBMITTED FOR SCRAPPING"
+      ],
+      "ownerTypes": [
+        "SOCIAL WELFARE"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Fuel",
+      "xAxis": "Financial Year",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "012 | Three Wheeler | BIO-CNG/BIO-GAS | Delhi | 1 Month Flexible | Y=Fuel / X=Last 5 Financial Year",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "MAYUR VIHAR - DL7"
+      ],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "BIO-CNG/BIO-GAS"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "March",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "TREM STAGE V"
+      ],
+      "makers": [
+        "TVS MOTOR COMPANY LTD"
+      ],
+      "subCategories": [
+        "THREE WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Three Wheeler (Goods)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "CENTRAL GOVERNMENT"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Last 5 Financial Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "013 | Three Wheeler | CNG ONLY | Delhi | CALENDAR YEAR | Y=Fuel / X=Calendar Year",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "RAJA GARDEN FITNESS CENTER - DL204"
+      ],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "CNG ONLY"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "THREE WHEELER(T)"
+      ],
+      "classes": [
+        "Three Wheeler (Personal)",
+        "e-Rickshaw(P)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC CANCEL"
+      ],
+      "ownerTypes": [
+        "DRIVING TRAINING SCHOOL"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Fuel",
+      "xAxis": "Calendar Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "014 | Goods Vehicle | DI-METHYL ETHER | Delhi | FINANCIAL YEAR | Y=Fuel / X=Month Wise",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "RAJOURI GARDEN - DL10"
+      ],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DI-METHYL ETHER"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2024-2025"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 1"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "MEDIUM GOODS VEHICLE"
+      ],
+      "classes": [
+        "Articulated Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT CORPORATION",
+        "GOVERNMENT DEPARTMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Month Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "015 | Goods Vehicle | DIESEL | Delhi | Last 1 Year | Y=Fuel / X=Month Wise",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "RAJPUR ROAD/VIU BURARI - DL51"
+      ],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DIESEL"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6C"
+      ],
+      "makers": [
+        "EICHER MOTORS LTD"
+      ],
+      "subCategories": [
+        "HEAVY GOODS VEHICLE"
+      ],
+      "classes": [
+        "Dumper"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE TO BE SCRAPPED",
+        "VEHICLE_SCRAPPED RC CANCEL"
+      ],
+      "ownerTypes": [
+        "INDIVIDUAL"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Fuel",
+      "xAxis": "Month Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "016 | Four Wheeler | DIESEL/HYBRID | Delhi | 1 Month Flexible | Y=Vehicle Category Group / X=Fuel",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "ROHINI - DL11"
+      ],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "DIESEL/HYBRID"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "April",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE II"
+      ],
+      "makers": [
+        "HYUNDAI MOTOR INDIA LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)",
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Quadricycle (Commercial)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "CONFISCATED AUCTION VEHICLE"
+      ],
+      "ownerTypes": [
+        "POLICE DEPARTMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Category Group",
+      "xAxis": "Fuel",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "017 | Goods Vehicle | DUAL DIESEL/BIO CNG | Delhi | CALENDAR YEAR | Y=Vehicle Class / X=Fuel",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "SARAI KALE KHAN - DL6"
+      ],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DUAL DIESEL/BIO CNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III B",
+        "EURO 1"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "MEDIUM GOODS VEHICLE"
+      ],
+      "classes": [
+        "Articulated Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "STATE UNIVERSITIES"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Class",
+      "xAxis": "Fuel",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "018 | Goods Vehicle | DUAL DIESEL/CNG | Delhi | FINANCIAL YEAR | Y=Vehicle Type / X=State Wise",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "SHAKUR BASTI FITNESS CENTER - DL202"
+      ],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DUAL DIESEL/CNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2025-2026"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 3"
+      ],
+      "makers": [
+        "TATA MOTORS LTD",
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "HEAVY GOODS VEHICLE"
+      ],
+      "classes": [
+        "Dumper"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE DE-REGISTERED"
+      ],
+      "ownerTypes": [
+        "DIVYANGJAN (Without Availing GST Concession)"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Type",
+      "xAxis": "State Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "019 | Goods Vehicle | DUAL DIESEL/LNG | Delhi | Last 1 Year | Y=Norms / X=Financial Year",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "SOUTH DELHI - DL3"
+      ],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DUAL DIESEL/LNG",
+        "FLEX-FUEL(BIO-DIESEL)"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Not Applicable"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "LIGHT GOODS VEHICLE"
+      ],
+      "classes": [
+        "Goods Carrier"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE_SCRAPPED RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT BOARD"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Norms",
+      "xAxis": "Financial Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "020 | Two Wheeler | ELECTRIC(BOV) | Delhi | 1 Month Flexible | Y=Fuel / X=Month Wise",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "SURAJMAL VIHAR - DL13"
+      ],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "ELECTRIC(BOV)"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "May",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE III/IV"
+      ],
+      "makers": [
+        "HONDA MOTORCYCLE AND SCOOTER INDIA (P) LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "M-Cycle/Scooter-With Side Car"
+      ],
+      "evTypes": [
+        "ELECTRIC(BOV)"
+      ],
+      "statuses": [
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT TRUST"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Month Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "021 | Two Wheeler | ETHANOL(E100) | Delhi | CALENDAR YEAR | Y=Maker / X=Owner Type",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "VASANT VIHAR - DL12"
+      ],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "ETHANOL(E100)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT",
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "CEV STAGE IV"
+      ],
+      "makers": [
+        "BAJAJ AUTO LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "M-Cycle/Scooter",
+        "Moped"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SUSPENDED"
+      ],
+      "ownerTypes": [
+        "MULTIPLE OWNER"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Maker",
+      "xAxis": "Owner Type",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "022 | Goods Vehicle | FLEX-FUEL(BIO-DIESEL) | Delhi | FINANCIAL YEAR | Y=State Wise / X=Manufacturing Year",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "VISHWAS NAGAR FITNESS CENTER - DL203"
+      ],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "FLEX-FUEL(BIO-DIESEL)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2023-2024",
+        "2024-2025"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6"
+      ],
+      "makers": [
+        "EICHER MOTORS LTD"
+      ],
+      "subCategories": [
+        "LIGHT GOODS VEHICLE"
+      ],
+      "classes": [
+        "Goods Carrier"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE SUBMITTED FOR SCRAPPING"
+      ],
+      "ownerTypes": [
+        "STATE GOVERNMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "State Wise",
+      "xAxis": "Manufacturing Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "023 | Two Wheeler | FLEX-FUEL(ETHANOL) | Delhi | Last 1 Year | Y=RTO Wise / X=Calendar Year",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "WAZIRPUR - DL8"
+      ],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "FLEX-FUEL(ETHANOL)"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "TREM STAGE IV"
+      ],
+      "makers": [
+        "TVS MOTOR COMPANY LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "Motor Cycle/Scooter-With Trailer"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "CHARITABLE TRUST"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "RTO Wise",
+      "xAxis": "Calendar Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "024 | Four Wheeler | FUEL CELL HYDROGEN | All states | 1 Month Flexible | Y=Manufacturing Year / X=Owner Type",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "FUEL CELL HYDROGEN"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "June",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE VI"
+      ],
+      "makers": [
+        "TATA MOTORS PASSENGER VEHICLES LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Luxury Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC CANCEL"
+      ],
+      "ownerTypes": [
+        "EDUCATIONAL INSTITUTE"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Manufacturing Year",
+      "xAxis": "Owner Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "025 | Three Wheeler | HCNG | All states | CALENDAR YEAR | Y=Financial Year / X=Vehicle Category",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "HCNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6AD",
+        "EURO 6"
+      ],
+      "makers": [
+        "BAJAJ AUTO LTD"
+      ],
+      "subCategories": [
+        "THREE WHEELER(T)"
+      ],
+      "classes": [
+        "e-Rickshaw with Cart (G)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT DEPARTMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Financial Year",
+      "xAxis": "Vehicle Category",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "026 | Four Wheeler | HYDROGEN(ICE) | All states | FINANCIAL YEAR | Y=Last 5 FINANCIAL YEAR / X=Norms",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "HYDROGEN(ICE)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2024-2025"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6B"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)",
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Motor Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE TO BE SCRAPPED"
+      ],
+      "ownerTypes": [
+        "JOINT STOCK COMPANY"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Last 5 FINANCIAL YEAR",
+      "xAxis": "Norms",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "027 | Goods Vehicle | LNG | All states | Last 1 Year | Y=Calendar Year / X=Vehicle Category Group | Multi-subcategory",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle",
+        "Bus"
+      ],
+      "fuels": [
+        "LNG"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE I"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "HEAVY MOTOR VEHICLE",
+        "MEDIUM MOTOR VEHICLE"
+      ],
+      "classes": [],
+      "evTypes": [],
+      "statuses": [
+        "CONFISCATED AUCTION VEHICLE"
+      ],
+      "ownerTypes": [
+        "SCHOOL",
+        "SOCIAL WELFARE"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Calendar Year",
+      "xAxis": "Vehicle Category Group",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "028 | Three Wheeler | LPG ONLY | All states | 1 Month Flexible | Y=Month Wise / X=Vehicle Class",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "LPG ONLY",
+        "PETROL"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "July",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III A"
+      ],
+      "makers": [
+        "TVS MOTOR COMPANY LTD"
+      ],
+      "subCategories": [
+        "THREE WHEELER(T)"
+      ],
+      "classes": [
+        "Three Wheeler (Personal)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "AUTONOMOUS BODY"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Month Wise",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "029 | Four Wheeler | METHANOL | All states | CALENDAR YEAR | Y=Vehicle Category / X=Financial Year",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "METHANOL"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 2"
+      ],
+      "makers": [
+        "TOYOTA KIRLOSKAR MOTOR PVT LTD"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Adapted Vehicle",
+        "Luxury Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE DE-REGISTERED",
+        "VEHICLE SUBMITTED FOR SCRAPPING"
+      ],
+      "ownerTypes": [
+        "DRAMA/TAMASHA GROUPS"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Category",
+      "xAxis": "Financial Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "030 | Trailer | NOT APPLICABLE | All states | FINANCIAL YEAR | Y=Vehicle Category Group / X=Month Wise",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Trailer"
+      ],
+      "fuels": [
+        "NOT APPLICABLE"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2025-2026"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6D"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Auxiliary Trailer"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE_SCRAPPED RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT COMPANY"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Category Group",
+      "xAxis": "Month Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "031 | Two Wheeler | PETROL | All states | Last 1 Year | Y=Vehicle Class / X=Manufacturing Year",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PETROL"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE",
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE III"
+      ],
+      "makers": [
+        "ATHER ENERGY LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER(NT)"
+      ],
+      "classes": [
+        "M-Cycle/Scooter"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "GOVT UNDERTAKING"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Class",
+      "xAxis": "Manufacturing Year",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "032 | Two Wheeler | PETROL(E20) | All states | 1 Month Flexible | Y=Vehicle Type / X=Calendar Year",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "August",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Stage III CEV"
+      ],
+      "makers": [
+        "OLA ELECTRIC TECHNOLOGIES PVT LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "Moped"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SUSPENDED"
+      ],
+      "ownerTypes": [
+        "OTHERS"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Type",
+      "xAxis": "Calendar Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "033 | Two Wheeler | PETROL(E20)/CNG | All states | CALENDAR YEAR | Y=Norms / X=Total Consolidated",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)/CNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 4",
+        "EURO 6D"
+      ],
+      "makers": [
+        "HERO MOTOCORP LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Motor Cycle/Scooter-With Trailer"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE SUBMITTED FOR SCRAPPING"
+      ],
+      "ownerTypes": [
+        "STATE TRANSPORT CORP/DEPT"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Norms",
+      "xAxis": "Total Consolidated",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "034 | Four Wheeler | PETROL(E20)/HYBRID | All states | FINANCIAL YEAR | Y=Fuel / X=Vehicle Type",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)/HYBRID"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2023-2024"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Not Available"
+      ],
+      "makers": [
+        "MARUTI SUZUKI INDIA LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Quadricycle (Commercial)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "DIVYANGJAN (Availing GST Concession)"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Vehicle Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "035 | Four Wheeler | PETROL(E20)/HYBRID/CNG | All states | Last 1 Year | Y=Maker / X=Vehicle Category Group",
+    "filters": {
+      "states": [],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)/HYBRID/CNG"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE IV"
+      ],
+      "makers": [
+        "HYUNDAI MOTOR INDIA LTD",
+        "TATA MOTORS PASSENGER VEHICLES LTD"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Adapted Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC CANCEL"
+      ],
+      "ownerTypes": [
+        "FIRM"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Maker",
+      "xAxis": "Vehicle Category Group",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "036 | Four Wheeler | PETROL(E20)/LPG | Delhi, Haryana, Uttar Pradesh | 1 Month Flexible | Y=State Wise / X=Financial Year",
+    "filters": {
+      "states": [
+        "Delhi",
+        "Haryana",
+        "Uttar Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)/LPG"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "September",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "YES",
+      "emissions": [
+        "CEV STAGE V"
+      ],
+      "makers": [
+        "TATA MOTORS PASSENGER VEHICLES LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)",
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Luxury Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT ENTITY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "State Wise",
+      "xAxis": "Financial Year",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "037 | Four Wheeler | PETROL/CNG | Delhi | CALENDAR YEAR | Y=RTO Wise / X=Month Wise",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "SARAI KALE KHAN - DL6"
+      ],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL/CNG",
+        "PETROL/HYBRID"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6A"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Motor Car",
+        "Motor Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE TO BE SCRAPPED"
+      ],
+      "ownerTypes": [
+        "LOCAL AUTHORITY"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "RTO Wise",
+      "xAxis": "Month Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "038 | Four Wheeler | PETROL/HYBRID | Delhi, Haryana, Uttar Pradesh | FINANCIAL YEAR | Y=Manufacturing Year / X=Vehicle Category",
+    "filters": {
+      "states": [
+        "Delhi",
+        "Haryana",
+        "Uttar Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL/HYBRID"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2024-2025"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "YES",
+      "emissions": [
+        "TREM STAGE V"
+      ],
+      "makers": [
+        "TOYOTA KIRLOSKAR MOTOR PVT LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Motor Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "CONFISCATED AUCTION VEHICLE"
+      ],
+      "ownerTypes": [
+        "SOCIAL WELFARE"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Manufacturing Year",
+      "xAxis": "Vehicle Category",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "039 | Four Wheeler | PETROL/HYBRID/CNG | Delhi | Last 1 Year | Y=Financial Year / X=Norms",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL/HYBRID/CNG"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "YES",
+      "emissions": [
+        "Bharat Trem Stage III"
+      ],
+      "makers": [
+        "MARUTI SUZUKI INDIA LTD"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Quadricycle (Private)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "CENTRAL GOVERNMENT"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Financial Year",
+      "xAxis": "Norms",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "040 | Three Wheeler | PETROL/LPG | Delhi, Haryana, Uttar Pradesh | 1 Month Flexible | Y=Last 5 FINANCIAL YEAR / X=Vehicle Category Group",
+    "filters": {
+      "states": [
+        "Delhi",
+        "Haryana",
+        "Uttar Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "PETROL/LPG"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "October",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "YES",
+      "emissions": [
+        "EURO 1"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "THREE WHEELER(T)"
+      ],
+      "classes": [
+        "e-Rickshaw with Cart (G)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE DE-REGISTERED"
+      ],
+      "ownerTypes": [
+        "DRIVING TRAINING SCHOOL",
+        "EDUCATIONAL INSTITUTE"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Last 5 FINANCIAL YEAR",
+      "xAxis": "Vehicle Category Group",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "041 | Four Wheeler | PETROL/METHANOL | Delhi | CALENDAR YEAR | Y=Calendar Year / X=Vehicle Class",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL/METHANOL"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT",
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "YES",
+      "emissions": [
+        "EURO 6C",
+        "TREM STAGE V"
+      ],
+      "makers": [
+        "HYUNDAI MOTOR INDIA LTD"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Adapted Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE_SCRAPPED RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT CORPORATION"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Calendar Year",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "042 | Four Wheeler | PLUG-IN HYBRID EV | Delhi, Haryana, Uttar Pradesh | FINANCIAL YEAR | Y=Month Wise / X=Fuel",
+    "filters": {
+      "states": [
+        "Delhi",
+        "Haryana",
+        "Uttar Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PLUG-IN HYBRID EV"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2025-2026",
+        "2023-2024"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "YES",
+      "emissions": [
+        "BHARAT STAGE II"
+      ],
+      "makers": [
+        "TATA MOTORS PASSENGER VEHICLES LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Luxury Cab"
+      ],
+      "evTypes": [
+        "PLUG-IN HYBRID EV"
+      ],
+      "statuses": [
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "INDIVIDUAL"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Month Wise",
+      "xAxis": "Fuel",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "043 | Two Wheeler | PURE EV | Delhi | Last 1 Year | Y=Vehicle Category / X=Vehicle Class",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PURE EV"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "YES",
+      "emissions": [
+        "Bharat Trem Stage III B"
+      ],
+      "makers": [
+        "HONDA MOTORCYCLE AND SCOOTER INDIA (P) LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER(NT)"
+      ],
+      "classes": [
+        "Motor Cycle/Scooter-With Trailer"
+      ],
+      "evTypes": [
+        "PURE EV"
+      ],
+      "statuses": [
+        "RC SUSPENDED",
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "POLICE DEPARTMENT"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Category",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "044 | Construction Equipment Vehicle | SOLAR | Delhi, Haryana, Uttar Pradesh | 1 Month Flexible | Y=Vehicle Category Group / X=Vehicle Type",
+    "filters": {
+      "states": [
+        "Delhi",
+        "Haryana",
+        "Uttar Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Construction Equipment Vehicle"
+      ],
+      "fuels": [
+        "SOLAR"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "November",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "YES",
+      "emissions": [
+        "EURO 3"
+      ],
+      "makers": [
+        "TATA MOTORS LTD"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Construction Equipment Vehicle (Commercial)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE SUBMITTED FOR SCRAPPING"
+      ],
+      "ownerTypes": [
+        "STATE UNIVERSITIES"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Category Group",
+      "xAxis": "Vehicle Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "045 | Four Wheeler | STRONG HYBRID EV | Delhi | CALENDAR YEAR | Y=Vehicle Class / X=Financial Year",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "STRONG HYBRID EV"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "YES",
+      "emissions": [
+        "Not Applicable"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Quadricycle (Private)",
+        "Quadricycle (Commercial)"
+      ],
+      "evTypes": [
+        "STRONG HYBRID EV"
+      ],
+      "statuses": [
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "DIVYANGJAN (Without Availing GST Concession)"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Class",
+      "xAxis": "Financial Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "046 | Goods Vehicle | BIO-CNG/BIO-GAS | Delhi, Haryana, Uttar Pradesh | FINANCIAL YEAR | Y=Vehicle Type / X=Month Wise",
+    "filters": {
+      "states": [
+        "Delhi",
+        "Haryana",
+        "Uttar Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle",
+        "Bus"
+      ],
+      "fuels": [
+        "BIO-CNG/BIO-GAS",
+        "CNG ONLY"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2023-2024"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "YES",
+      "emissions": [
+        "BHARAT STAGE III/IV"
+      ],
+      "makers": [
+        "TATA MOTORS LTD"
+      ],
+      "subCategories": [],
+      "classes": [],
+      "evTypes": [],
+      "statuses": [
+        "RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT BOARD"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Type",
+      "xAxis": "Month Wise",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "047 | Four Wheeler | CNG ONLY | Andaman & Nicobar Island | Last 1 Year | Y=Norms / X=Vehicle Category Group",
+    "filters": {
+      "states": [
+        "Andaman & Nicobar Island"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "CNG ONLY"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "CEV STAGE IV"
+      ],
+      "makers": [
+        "TOYOTA KIRLOSKAR MOTOR PVT LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Luxury Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT TRUST"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Norms",
+      "xAxis": "Vehicle Category Group",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "048 | Goods Vehicle | DI-METHYL ETHER | Andhra Pradesh | 1 Month Flexible | Y=Fuel / X=Manufacturing Year",
+    "filters": {
+      "states": [
+        "Andhra Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DI-METHYL ETHER"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "December",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "LIGHT GOODS VEHICLE"
+      ],
+      "classes": [
+        "Goods Carrier"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE TO BE SCRAPPED"
+      ],
+      "ownerTypes": [
+        "MULTIPLE OWNER"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Manufacturing Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "049 | Bus | DIESEL | Arunachal Pradesh | CALENDAR YEAR | Y=Maker / X=Manufacturing Year",
+    "filters": {
+      "states": [
+        "Arunachal Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Bus"
+      ],
+      "fuels": [
+        "DIESEL"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "TREM STAGE IV",
+        "BHARAT STAGE III/IV"
+      ],
+      "makers": [
+        "TATA MOTORS LTD"
+      ],
+      "subCategories": [
+        "MEDIUM PASSENGER VEHICLE"
+      ],
+      "classes": [
+        "School Bus"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "CONFISCATED AUCTION VEHICLE"
+      ],
+      "ownerTypes": [
+        "STATE GOVERNMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Maker",
+      "xAxis": "Manufacturing Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "050 | Goods Vehicle | DIESEL/HYBRID | Assam | FINANCIAL YEAR | Y=State Wise / X=Last 5 Financial Year",
+    "filters": {
+      "states": [
+        "Assam"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DIESEL/HYBRID"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2024-2025"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE VI"
+      ],
+      "makers": [
+        "EICHER MOTORS LTD"
+      ],
+      "subCategories": [
+        "HEAVY GOODS VEHICLE"
+      ],
+      "classes": [
+        "Dumper"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "CHARITABLE TRUST"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "State Wise",
+      "xAxis": "Last 5 Financial Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "051 | Goods Vehicle | DUAL DIESEL/BIO CNG | Delhi | Last 1 Year | Y=RTO Wise / X=Vehicle Type",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "RAJA GARDEN FITNESS CENTER - DL204"
+      ],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DUAL DIESEL/BIO CNG"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE",
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6AD"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "LIGHT GOODS VEHICLE"
+      ],
+      "classes": [
+        "Goods Carrier"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE DE-REGISTERED"
+      ],
+      "ownerTypes": [
+        "EDUCATIONAL INSTITUTE"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "RTO Wise",
+      "xAxis": "Vehicle Type",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "052 | Goods Vehicle | DUAL DIESEL/CNG | Maharashtra, Karnataka, Madhya Pradesh, Mizoram, UT of DNH and DD | 1 Month Flexible | Y=Manufacturing Year / X=Norms",
+    "filters": {
+      "states": [
+        "Maharashtra",
+        "Karnataka",
+        "Madhya Pradesh",
+        "Mizoram",
+        "UT of DNH and DD"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DUAL DIESEL/CNG"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "January",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6B"
+      ],
+      "makers": [
+        "TATA MOTORS LTD",
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "MEDIUM GOODS VEHICLE"
+      ],
+      "classes": [
+        "Articulated Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE_SCRAPPED RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT DEPARTMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Manufacturing Year",
+      "xAxis": "Norms",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "053 | Goods Vehicle | DUAL DIESEL/LNG | Chhattisgarh | CALENDAR YEAR | Y=Financial Year / X=Vehicle Category Group",
+    "filters": {
+      "states": [
+        "Chhattisgarh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DUAL DIESEL/LNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE I"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "HEAVY GOODS VEHICLE"
+      ],
+      "classes": [
+        "Dumper",
+        "Goods Carrier"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "JOINT STOCK COMPANY",
+        "LOCAL AUTHORITY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Financial Year",
+      "xAxis": "Vehicle Category Group",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "054 | Three Wheeler | ELECTRIC(BOV) | Delhi | FINANCIAL YEAR | Y=Last 5 FINANCIAL YEAR / X=Vehicle Class",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "KUSHAKNALA CLUSTER BUS FITNESS CENTER - DL206"
+      ],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "ELECTRIC(BOV)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2025-2026"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III A"
+      ],
+      "makers": [
+        "BAJAJ AUTO LTD"
+      ],
+      "subCategories": [
+        "THREE WHEELER(T)"
+      ],
+      "classes": [
+        "e-Rickshaw with Cart (G)"
+      ],
+      "evTypes": [
+        "ELECTRIC(BOV)"
+      ],
+      "statuses": [
+        "RC SUSPENDED"
+      ],
+      "ownerTypes": [
+        "SCHOOL"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Last 5 FINANCIAL YEAR",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "055 | Four Wheeler | ETHANOL(E100) | Goa | Last 1 Year | Y=Calendar Year / X=Fuel",
+    "filters": {
+      "states": [
+        "Goa"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "ETHANOL(E100)",
+        "FLEX-FUEL(ETHANOL)"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 2"
+      ],
+      "makers": [
+        "MARUTI SUZUKI INDIA LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Motor Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE SUBMITTED FOR SCRAPPING"
+      ],
+      "ownerTypes": [
+        "AUTONOMOUS BODY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Calendar Year",
+      "xAxis": "Fuel",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "056 | Tractor | FLEX-FUEL(BIO-DIESEL) | Gujarat | 1 Month Flexible | Y=Month Wise / X=Total Consolidated",
+    "filters": {
+      "states": [
+        "Gujarat"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Tractor"
+      ],
+      "fuels": [
+        "FLEX-FUEL(BIO-DIESEL)"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "February",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6D"
+      ],
+      "makers": [
+        "EICHER MOTORS LTD"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Tractor (Commercial)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "DRAMA/TAMASHA GROUPS"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Month Wise",
+      "xAxis": "Total Consolidated",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "057 | Four Wheeler | FLEX-FUEL(ETHANOL) | Haryana | CALENDAR YEAR | Y=Vehicle Category / X=Fuel",
+    "filters": {
+      "states": [
+        "Haryana"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "FLEX-FUEL(ETHANOL)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE III",
+        "Bharat Trem Stage III A"
+      ],
+      "makers": [
+        "HYUNDAI MOTOR INDIA LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Quadricycle (Commercial)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC CANCEL",
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT COMPANY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Category",
+      "xAxis": "Fuel",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "058 | Bus | FUEL CELL HYDROGEN | Himachal Pradesh | FINANCIAL YEAR | Y=Vehicle Category Group / X=RTO Wise",
+    "filters": {
+      "states": [
+        "Himachal Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Bus"
+      ],
+      "fuels": [
+        "FUEL CELL HYDROGEN"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2023-2024"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Stage III CEV"
+      ],
+      "makers": [
+        "EICHER MOTORS LTD"
+      ],
+      "subCategories": [
+        "MEDIUM PASSENGER VEHICLE"
+      ],
+      "classes": [
+        "Omni Bus"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "GOVT UNDERTAKING"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Category Group",
+      "xAxis": "RTO Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "059 | Four Wheeler | HCNG | Jammu & Kashmir | Last 1 Year | Y=Vehicle Class / X=Month Wise",
+    "filters": {
+      "states": [
+        "Jammu & Kashmir"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "HCNG"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 4"
+      ],
+      "makers": [
+        "TATA MOTORS PASSENGER VEHICLES LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Luxury Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE TO BE SCRAPPED"
+      ],
+      "ownerTypes": [
+        "OTHERS"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Class",
+      "xAxis": "Month Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "060 | Bus | HYDROGEN(ICE) | Jharkhand | 1 Month Flexible | Y=Vehicle Type / X=Vehicle Category",
+    "filters": {
+      "states": [
+        "Jharkhand"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Bus"
+      ],
+      "fuels": [
+        "HYDROGEN(ICE)"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "March",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Not Available"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "LIGHT PASSENGER VEHICLE"
+      ],
+      "classes": [
+        "Bus"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "CONFISCATED AUCTION VEHICLE"
+      ],
+      "ownerTypes": [
+        "STATE TRANSPORT CORP/DEPT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Type",
+      "xAxis": "Vehicle Category",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "061 | Quét Class 36-42/76 | Tất cả 11 nhóm xe | Fuel=LNG | CALENDAR YEAR | Y=Norms / X=Fuel",
+    "filters": {
+      "states": [
+        "Karnataka"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Ambulance/Hearses",
+        "Bus",
+        "Construction Equipment Vehicle",
+        "Goods Vehicle",
+        "Tractor",
+        "Public Service Vehicle",
+        "Special Category Vehicles",
+        "Trailer",
+        "Four Wheeler",
+        "Three Wheeler",
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "LNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT",
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE IV"
+      ],
+      "makers": [
+        "TATA MOTORS LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)",
+        "HEAVY GOODS VEHICLE",
+        "HEAVY MOTOR VEHICLE",
+        "HEAVY PASSENGER VEHICLE",
+        "LIGHT GOODS VEHICLE",
+        "LIGHT MOTOR VEHICLE",
+        "LIGHT PASSENGER VEHICLE",
+        "MEDIUM GOODS VEHICLE",
+        "MEDIUM MOTOR VEHICLE",
+        "MEDIUM PASSENGER VEHICLE",
+        "OTHER THAN MENTIONED ABOVE",
+        "THREE WHEELER (Invalid Carriage)",
+        "THREE WHEELER(NT)",
+        "THREE WHEELER(T)",
+        "TWO WHEELER (Invalid Carriage)",
+        "TWO WHEELER(NT)",
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "Agricultural Tractor",
+        "Animal Ambulance",
+        "Breakdown Van",
+        "Bulldozer",
+        "Camper Van / Trailer",
+        "Camper Van / Trailer (Private Use)",
+        "Cash Van"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "DIVYANGJAN (Availing GST Concession)"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Norms",
+      "xAxis": "Fuel",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "062 | Four Wheeler | LPG ONLY | Kerala | FINANCIAL YEAR | Y=Fuel / X=State Wise",
+    "filters": {
+      "states": [
+        "Kerala"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "LPG ONLY"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2024-2025",
+        "2023-2024"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "CEV STAGE V"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Quadricycle (Private)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE DE-REGISTERED"
+      ],
+      "ownerTypes": [
+        "FIRM"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "State Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "063 | Two Wheeler | METHANOL | Ladakh | Last 1 Year | Y=Maker / X=Vehicle Type",
+    "filters": {
+      "states": [
+        "Ladakh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "METHANOL"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6A"
+      ],
+      "makers": [
+        "BAJAJ AUTO LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER(NT)"
+      ],
+      "classes": [
+        "Motor Cycle/Scooter-Used For Hire"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE_SCRAPPED RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT ENTITY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Maker",
+      "xAxis": "Vehicle Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "064 | Construction Equipment Vehicle | NOT APPLICABLE | Lakshadweep | 1 Month Flexible | Y=State Wise / X=Calendar Year",
+    "filters": {
+      "states": [
+        "Lakshadweep"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Construction Equipment Vehicle"
+      ],
+      "fuels": [
+        "NOT APPLICABLE",
+        "SOLAR"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "April",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "TREM STAGE V"
+      ],
+      "makers": [
+        "TATA HITACHI CONSTRUCTION MACHINERY COMP. PVT LTD"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Construction Equipment Vehicle (Commercial)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "LOCAL AUTHORITY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "State Wise",
+      "xAxis": "Calendar Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "065 | Four Wheeler | PETROL | Delhi | CALENDAR YEAR | Y=RTO Wise / X=Total Consolidated",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "LADO SARAI FITNESS CENTER - DL201"
+      ],
+      "categoryGroups": [
+        "Four Wheeler",
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "PETROL"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III",
+        "CEV STAGE V"
+      ],
+      "makers": [
+        "TOYOTA KIRLOSKAR MOTOR PVT LTD"
+      ],
+      "subCategories": [],
+      "classes": [],
+      "evTypes": [],
+      "statuses": [
+        "RC SUSPENDED"
+      ],
+      "ownerTypes": [
+        "SOCIAL WELFARE"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "RTO Wise",
+      "xAxis": "Total Consolidated",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "066 | Four Wheeler | PETROL(E20) | Maharashtra | FINANCIAL YEAR | Y=Manufacturing Year / X=Vehicle Category Group",
+    "filters": {
+      "states": [
+        "Maharashtra"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2025-2026"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 1"
+      ],
+      "makers": [
+        "MARUTI SUZUKI INDIA LTD"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE",
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Motor Car"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE SUBMITTED FOR SCRAPPING"
+      ],
+      "ownerTypes": [
+        "CENTRAL GOVERNMENT",
+        "CHARITABLE TRUST"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Manufacturing Year",
+      "xAxis": "Vehicle Category Group",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "067 | Four Wheeler | PETROL(E20)/CNG | Manipur | Last 1 Year | Y=Financial Year / X=Vehicle Class",
+    "filters": {
+      "states": [
+        "Manipur"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)/CNG"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6C"
+      ],
+      "makers": [
+        "HYUNDAI MOTOR INDIA LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Motor Cab"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "DRIVING TRAINING SCHOOL"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Financial Year",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "068 | Two Wheeler | PETROL(E20)/HYBRID | Meghalaya | 1 Month Flexible | Y=Last 5 FINANCIAL YEAR / X=Fuel",
+    "filters": {
+      "states": [
+        "Meghalaya"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)/HYBRID"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "May",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE II"
+      ],
+      "makers": [
+        "TVS MOTOR COMPANY LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Motor Cycle/Scooter-Used For Hire"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT CORPORATION"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Last 5 FINANCIAL YEAR",
+      "xAxis": "Fuel",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "069 | Quét Class 43-49/76 | Tất cả 11 nhóm xe | Fuel=PETROL(E20)/HYBRID/CNG | CALENDAR YEAR | Y=Calendar Year / X=Total Consolidated",
+    "filters": {
+      "states": [
+        "Maharashtra",
+        "Karnataka"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Ambulance/Hearses",
+        "Bus",
+        "Construction Equipment Vehicle",
+        "Goods Vehicle",
+        "Tractor",
+        "Public Service Vehicle",
+        "Special Category Vehicles",
+        "Trailer",
+        "Four Wheeler",
+        "Three Wheeler",
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)/HYBRID/CNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III B"
+      ],
+      "makers": [
+        "TATA MOTORS PASSENGER VEHICLES LTD",
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)",
+        "HEAVY GOODS VEHICLE",
+        "HEAVY MOTOR VEHICLE",
+        "HEAVY PASSENGER VEHICLE",
+        "LIGHT GOODS VEHICLE",
+        "LIGHT MOTOR VEHICLE",
+        "LIGHT PASSENGER VEHICLE",
+        "MEDIUM GOODS VEHICLE",
+        "MEDIUM MOTOR VEHICLE",
+        "MEDIUM PASSENGER VEHICLE",
+        "OTHER THAN MENTIONED ABOVE",
+        "THREE WHEELER (Invalid Carriage)",
+        "THREE WHEELER(NT)",
+        "THREE WHEELER(T)",
+        "TWO WHEELER (Invalid Carriage)",
+        "TWO WHEELER(NT)",
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "Construction Equipment Vehicle",
+        "Earth Moving Equipment",
+        "Excavator (Commercial)",
+        "Excavator (NT)",
+        "Fire Fighting Vehicle",
+        "Fork Lift",
+        "Harvester"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "INDIVIDUAL"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Calendar Year",
+      "xAxis": "Total Consolidated",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "070 | Three Wheeler | PETROL(E20)/LPG | Nagaland | FINANCIAL YEAR | Y=Month Wise / X=Vehicle Type",
+    "filters": {
+      "states": [
+        "Nagaland"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)/LPG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2023-2024"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 3"
+      ],
+      "makers": [
+        "TVS MOTOR COMPANY LTD"
+      ],
+      "subCategories": [
+        "THREE WHEELER(NT)"
+      ],
+      "classes": [
+        "Three Wheeler (Passenger)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE TO BE SCRAPPED"
+      ],
+      "ownerTypes": [
+        "POLICE DEPARTMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Month Wise",
+      "xAxis": "Vehicle Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "071 | Three Wheeler | PETROL/CNG | Odisha | Last 1 Year | Y=Vehicle Category / X=Owner Type",
+    "filters": {
+      "states": [
+        "Odisha"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "PETROL/CNG"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE",
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Not Applicable"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "THREE WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Three Wheeler (Goods)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "CONFISCATED AUCTION VEHICLE",
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "STATE UNIVERSITIES"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Category",
+      "xAxis": "Owner Type",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "072 | Two Wheeler | PETROL/HYBRID | Puducherry | 1 Month Flexible | Y=Vehicle Category Group / X=Manufacturing Year",
+    "filters": {
+      "states": [
+        "Puducherry"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PETROL/HYBRID"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "June",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE III/IV"
+      ],
+      "makers": [
+        "ATHER ENERGY LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER(NT)"
+      ],
+      "classes": [
+        "Motor Cycle/Scooter-With Trailer"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "DIVYANGJAN (Without Availing GST Concession)"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Category Group",
+      "xAxis": "Manufacturing Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "073 | Quét Class 50-56/76 | Tất cả 11 nhóm xe | Fuel=PETROL/HYBRID/CNG, PETROL/LPG | CALENDAR YEAR | Y=Vehicle Class / X=Last 5 Financial Year",
+    "filters": {
+      "states": [
+        "Punjab"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Ambulance/Hearses",
+        "Bus",
+        "Construction Equipment Vehicle",
+        "Goods Vehicle",
+        "Tractor",
+        "Public Service Vehicle",
+        "Special Category Vehicles",
+        "Trailer",
+        "Four Wheeler",
+        "Three Wheeler",
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PETROL/HYBRID/CNG",
+        "PETROL/LPG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "CEV STAGE IV",
+        "EURO 3"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)",
+        "HEAVY GOODS VEHICLE",
+        "HEAVY MOTOR VEHICLE",
+        "HEAVY PASSENGER VEHICLE",
+        "LIGHT GOODS VEHICLE",
+        "LIGHT MOTOR VEHICLE",
+        "LIGHT PASSENGER VEHICLE",
+        "MEDIUM GOODS VEHICLE",
+        "MEDIUM MOTOR VEHICLE",
+        "MEDIUM PASSENGER VEHICLE",
+        "OTHER THAN MENTIONED ABOVE",
+        "THREE WHEELER (Invalid Carriage)",
+        "THREE WHEELER(NT)",
+        "THREE WHEELER(T)",
+        "TWO WHEELER (Invalid Carriage)",
+        "TWO WHEELER(NT)",
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "Hearses",
+        "Library Van",
+        "Maxi Cab",
+        "Mobile Canteen",
+        "Mobile Workshop",
+        "Modular Hydraulic Trailer",
+        "Motor Caravan"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE DE-REGISTERED"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT BOARD"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Class",
+      "xAxis": "Last 5 Financial Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "074 | Four Wheeler | PETROL/LPG | Rajasthan | FINANCIAL YEAR | Y=Vehicle Type / X=Owner Type",
+    "filters": {
+      "states": [
+        "Rajasthan"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL/LPG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2024-2025"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6"
+      ],
+      "makers": [
+        "TOYOTA KIRLOSKAR MOTOR PVT LTD"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Quadricycle (Private)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE_SCRAPPED RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT TRUST"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Type",
+      "xAxis": "Owner Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "075 | Four Wheeler | PETROL/METHANOL | Sikkim | Last 1 Year | Y=Norms / X=Vehicle Class",
+    "filters": {
+      "states": [
+        "Sikkim"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PETROL/METHANOL"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "TREM STAGE IV"
+      ],
+      "makers": [
+        "MARUTI SUZUKI INDIA LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Quadricycle (Commercial)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "MULTIPLE OWNER"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Norms",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "076 | Four Wheeler | PLUG-IN HYBRID EV | Tamil Nadu | 1 Month Flexible | Y=Fuel / X=Norms",
+    "filters": {
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "PLUG-IN HYBRID EV"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "July",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE VI"
+      ],
+      "makers": [
+        "HYUNDAI MOTOR INDIA LTD"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE",
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Adapted Vehicle"
+      ],
+      "evTypes": [
+        "PLUG-IN HYBRID EV"
+      ],
+      "statuses": [
+        "RC SUSPENDED"
+      ],
+      "ownerTypes": [
+        "STATE GOVERNMENT"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Norms",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "077 | Quét Class 57-63/76 | Tất cả 11 nhóm xe | Fuel=PURE EV | CALENDAR YEAR | Y=Maker / X=Financial Year",
+    "filters": {
+      "states": [
+        "Telangana"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Ambulance/Hearses",
+        "Bus",
+        "Construction Equipment Vehicle",
+        "Goods Vehicle",
+        "Tractor",
+        "Public Service Vehicle",
+        "Special Category Vehicles",
+        "Trailer",
+        "Four Wheeler",
+        "Three Wheeler",
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PURE EV"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6AD"
+      ],
+      "makers": [
+        "BAJAJ AUTO LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)",
+        "HEAVY GOODS VEHICLE",
+        "HEAVY MOTOR VEHICLE",
+        "HEAVY PASSENGER VEHICLE",
+        "LIGHT GOODS VEHICLE",
+        "LIGHT MOTOR VEHICLE",
+        "LIGHT PASSENGER VEHICLE",
+        "MEDIUM GOODS VEHICLE",
+        "MEDIUM MOTOR VEHICLE",
+        "MEDIUM PASSENGER VEHICLE",
+        "OTHER THAN MENTIONED ABOVE",
+        "THREE WHEELER (Invalid Carriage)",
+        "THREE WHEELER(NT)",
+        "THREE WHEELER(T)",
+        "TWO WHEELER (Invalid Carriage)",
+        "TWO WHEELER(NT)",
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "Motor Cycle/Scooter-SideCar(T)",
+        "Motorised Cycle (CC 25cc)",
+        "Omni Bus (Private Use)",
+        "Power Tiller (Commercial)",
+        "Private Service Vehicle (Individual Use)",
+        "Recovery Vehicle",
+        "Road Roller"
+      ],
+      "evTypes": [
+        "PURE EV"
+      ],
+      "statuses": [
+        "VEHICLE SUBMITTED FOR SCRAPPING"
+      ],
+      "ownerTypes": [
+        "CHARITABLE TRUST"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Maker",
+      "xAxis": "Financial Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "078 | Tractor | SOLAR | Tripura | FINANCIAL YEAR | Y=State Wise / X=Month Wise",
+    "filters": {
+      "states": [
+        "Tripura"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Tractor"
+      ],
+      "fuels": [
+        "SOLAR"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2025-2026"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6B"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LTD FARM MACHINERY DIVISION"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Puller Tractor"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "EDUCATIONAL INSTITUTE"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "State Wise",
+      "xAxis": "Month Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "079 | Two Wheeler | STRONG HYBRID EV | Delhi | Last 1 Year | Y=RTO Wise / X=Vehicle Category",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "JANAKPURI - DL4"
+      ],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "STRONG HYBRID EV"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE I"
+      ],
+      "makers": [
+        "OLA ELECTRIC TECHNOLOGIES PVT LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "M-Cycle/Scooter-With Side Car"
+      ],
+      "evTypes": [
+        "STRONG HYBRID EV"
+      ],
+      "statuses": [
+        "RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT DEPARTMENT",
+        "GOVERNMENT ENTITY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "RTO Wise",
+      "xAxis": "Vehicle Category",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "080 | Three Wheeler | BIO-CNG/BIO-GAS | Uttar Pradesh | 1 Month Flexible | Y=Manufacturing Year / X=Vehicle Class",
+    "filters": {
+      "states": [
+        "Uttar Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "BIO-CNG/BIO-GAS"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "August",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III A"
+      ],
+      "makers": [
+        "TVS MOTOR COMPANY LTD"
+      ],
+      "subCategories": [
+        "THREE WHEELER(T)"
+      ],
+      "classes": [
+        "Three Wheeler (Goods)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "JOINT STOCK COMPANY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Manufacturing Year",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "081 | Quét Class 64-70/76 | Tất cả 11 nhóm xe | Fuel=CNG ONLY | CALENDAR YEAR | Y=Financial Year / X=Fuel",
+    "filters": {
+      "states": [
+        "Uttarakhand"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Ambulance/Hearses",
+        "Bus",
+        "Construction Equipment Vehicle",
+        "Goods Vehicle",
+        "Tractor",
+        "Public Service Vehicle",
+        "Special Category Vehicles",
+        "Trailer",
+        "Four Wheeler",
+        "Three Wheeler",
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "CNG ONLY"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT",
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 2",
+        "EURO 6B"
+      ],
+      "makers": [
+        "EICHER MOTORS LTD"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)",
+        "HEAVY GOODS VEHICLE",
+        "HEAVY MOTOR VEHICLE",
+        "HEAVY PASSENGER VEHICLE",
+        "LIGHT GOODS VEHICLE",
+        "LIGHT MOTOR VEHICLE",
+        "LIGHT PASSENGER VEHICLE",
+        "MEDIUM GOODS VEHICLE",
+        "MEDIUM MOTOR VEHICLE",
+        "MEDIUM PASSENGER VEHICLE",
+        "OTHER THAN MENTIONED ABOVE",
+        "THREE WHEELER (Invalid Carriage)",
+        "THREE WHEELER(NT)",
+        "THREE WHEELER(T)",
+        "TWO WHEELER (Invalid Carriage)",
+        "TWO WHEELER(NT)",
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "Semi-Trailer (Commercial)",
+        "Snorked Ladders",
+        "Tow Truck",
+        "Tower Wagon",
+        "Tractor-Trolley(Commercial)",
+        "Trailer (Agricultural)",
+        "Trailer (Commercial)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE TO BE SCRAPPED"
+      ],
+      "ownerTypes": [
+        "SCHOOL"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Financial Year",
+      "xAxis": "Fuel",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "082 | Goods Vehicle | DI-METHYL ETHER | West Bengal | FINANCIAL YEAR | Y=Last 5 FINANCIAL YEAR / X=Total Consolidated",
+    "filters": {
+      "states": [
+        "West Bengal"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DI-METHYL ETHER",
+        "DIESEL"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2023-2024",
+        "2024-2025"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6D"
+      ],
+      "makers": [
+        "EICHER MOTORS LTD"
+      ],
+      "subCategories": [
+        "HEAVY GOODS VEHICLE"
+      ],
+      "classes": [
+        "Dumper"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "CONFISCATED AUCTION VEHICLE"
+      ],
+      "ownerTypes": [
+        "AUTONOMOUS BODY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Last 5 FINANCIAL YEAR",
+      "xAxis": "Total Consolidated",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "083 | Tractor | DIESEL | Andaman & Nicobar Island | Last 1 Year | Y=Calendar Year / X=Vehicle Type",
+    "filters": {
+      "states": [
+        "Andaman & Nicobar Island"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Tractor"
+      ],
+      "fuels": [
+        "DIESEL"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE III"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED (TRACTOR)"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Power Tiller"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "DRAMA/TAMASHA GROUPS"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Calendar Year",
+      "xAxis": "Vehicle Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "084 | Four Wheeler | DIESEL/HYBRID | Andhra Pradesh | 1 Month Flexible | Y=Month Wise / X=Owner Type",
+    "filters": {
+      "states": [
+        "Andhra Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler",
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "DIESEL/HYBRID"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "September",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Stage III CEV"
+      ],
+      "makers": [
+        "TATA MOTORS PASSENGER VEHICLES LTD"
+      ],
+      "subCategories": [],
+      "classes": [],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE DE-REGISTERED"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT COMPANY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Month Wise",
+      "xAxis": "Owner Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "085 | Quét Class 71-76/76 | Tất cả 11 nhóm xe | Fuel=DUAL DIESEL/BIO CNG | CALENDAR YEAR | Y=Vehicle Category / X=State Wise",
+    "filters": {
+      "states": [
+        "Arunachal Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Ambulance/Hearses",
+        "Bus",
+        "Construction Equipment Vehicle",
+        "Goods Vehicle",
+        "Tractor",
+        "Public Service Vehicle",
+        "Special Category Vehicles",
+        "Trailer",
+        "Four Wheeler",
+        "Three Wheeler",
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "DUAL DIESEL/BIO CNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 4"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)",
+        "HEAVY GOODS VEHICLE",
+        "HEAVY MOTOR VEHICLE",
+        "HEAVY PASSENGER VEHICLE",
+        "LIGHT GOODS VEHICLE",
+        "LIGHT MOTOR VEHICLE",
+        "LIGHT PASSENGER VEHICLE",
+        "MEDIUM GOODS VEHICLE",
+        "MEDIUM MOTOR VEHICLE",
+        "MEDIUM PASSENGER VEHICLE",
+        "OTHER THAN MENTIONED ABOVE",
+        "THREE WHEELER (Invalid Carriage)",
+        "THREE WHEELER(NT)",
+        "THREE WHEELER(T)",
+        "TWO WHEELER (Invalid Carriage)",
+        "TWO WHEELER(NT)",
+        "TWO WHEELER(T)"
+      ],
+      "classes": [
+        "Trailer For Personal Use",
+        "Tree Trimming Vehicle",
+        "Vehicle Fitted With Compressor",
+        "Vehicle Fitted With Generator",
+        "Vehicle Fitted With Rig",
+        "X-Ray Van"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE_SCRAPPED RC CANCEL",
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "GOVT UNDERTAKING"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Category",
+      "xAxis": "State Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "086 | Goods Vehicle | DUAL DIESEL/CNG | Maharashtra, Karnataka | FINANCIAL YEAR | Y=Vehicle Category Group / X=Vehicle Class",
+    "filters": {
+      "states": [
+        "Maharashtra",
+        "Karnataka"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DUAL DIESEL/CNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2024-2025"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Not Available"
+      ],
+      "makers": [
+        "TATA MOTORS LTD",
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "LIGHT GOODS VEHICLE",
+        "MEDIUM GOODS VEHICLE"
+      ],
+      "classes": [
+        "Goods Carrier"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "OTHERS"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Category Group",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "087 | Goods Vehicle | DUAL DIESEL/LNG | Bihar | Last 1 Year | Y=Vehicle Class / X=Manufacturing Year",
+    "filters": {
+      "states": [
+        "Bihar"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "DUAL DIESEL/LNG"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE IV"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "MEDIUM GOODS VEHICLE"
+      ],
+      "classes": [
+        "Articulated Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SUSPENDED"
+      ],
+      "ownerTypes": [
+        "STATE TRANSPORT CORP/DEPT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Class",
+      "xAxis": "Manufacturing Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "088 | Four Wheeler | ELECTRIC(BOV) | Chandigarh | 1 Month Flexible | Y=Vehicle Type / X=Calendar Year",
+    "filters": {
+      "states": [
+        "Chandigarh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "ELECTRIC(BOV)"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "October",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "CEV STAGE V"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "FOUR WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Luxury Cab"
+      ],
+      "evTypes": [
+        "ELECTRIC(BOV)"
+      ],
+      "statuses": [
+        "VEHICLE SUBMITTED FOR SCRAPPING"
+      ],
+      "ownerTypes": [
+        "DIVYANGJAN (Availing GST Concession)"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Type",
+      "xAxis": "Calendar Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "089 | Two Wheeler | ETHANOL(E100) | Chhattisgarh | CALENDAR YEAR | Y=Norms / X=Total Consolidated",
+    "filters": {
+      "states": [
+        "Chhattisgarh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "ETHANOL(E100)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6A",
+        "Not Available"
+      ],
+      "makers": [
+        "HERO MOTOCORP LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER(NT)"
+      ],
+      "classes": [
+        "M-Cycle/Scooter"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "FIRM"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Norms",
+      "xAxis": "Total Consolidated",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "090 | Goods Vehicle | FLEX-FUEL(BIO-DIESEL) | Delhi | FINANCIAL YEAR | Y=Fuel / X=Vehicle Type",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "VASANT VIHAR - DL12"
+      ],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "FLEX-FUEL(BIO-DIESEL)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2025-2026"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "TREM STAGE V"
+      ],
+      "makers": [
+        "EICHER MOTORS LTD"
+      ],
+      "subCategories": [
+        "MEDIUM GOODS VEHICLE"
+      ],
+      "classes": [
+        "Articulated Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC CANCEL"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT ENTITY"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Fuel",
+      "xAxis": "Vehicle Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "091 | Two Wheeler | FLEX-FUEL(ETHANOL) | Goa | Last 1 Year | Y=Maker / X=Norms",
+    "filters": {
+      "states": [
+        "Goa"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "FLEX-FUEL(ETHANOL)",
+        "METHANOL"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE",
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III"
+      ],
+      "makers": [
+        "HONDA MOTORCYCLE AND SCOOTER INDIA (P) LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Motor Cycle/Scooter-With Trailer"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "SCRAP VEHICLE"
+      ],
+      "ownerTypes": [
+        "LOCAL AUTHORITY"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Maker",
+      "xAxis": "Norms",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "092 | Special Category Vehicles | FUEL CELL HYDROGEN | Gujarat | 1 Month Flexible | Y=State Wise / X=Owner Type",
+    "filters": {
+      "states": [
+        "Gujarat"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Special Category Vehicles"
+      ],
+      "fuels": [
+        "FUEL CELL HYDROGEN"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "November",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 1"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Mobile Clinic"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE TO BE SCRAPPED"
+      ],
+      "ownerTypes": [
+        "SOCIAL WELFARE",
+        "STATE GOVERNMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "State Wise",
+      "xAxis": "Owner Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "093 | Bus | HCNG | Delhi | CALENDAR YEAR | Y=RTO Wise / X=Vehicle Class",
+    "filters": {
+      "states": [
+        "Delhi"
+      ],
+      "rtos": [
+        "BURARI AUTO UNIT - DL53"
+      ],
+      "categoryGroups": [
+        "Bus"
+      ],
+      "fuels": [
+        "HCNG"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2025",
+      "toYear": "2025",
+      "fromDate": "1 Jan 2025",
+      "toDate": "31 Dec 2025",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6C"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "MEDIUM PASSENGER VEHICLE"
+      ],
+      "classes": [
+        "Omni Bus",
+        "Educational Institution Bus"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "CONFISCATED AUCTION VEHICLE"
+      ],
+      "ownerTypes": [
+        "CENTRAL GOVERNMENT"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "RTO Wise",
+      "xAxis": "Vehicle Class",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "094 | Special Category Vehicles | HYDROGEN(ICE) | Himachal Pradesh | FINANCIAL YEAR | Y=Manufacturing Year / X=Fuel",
+    "filters": {
+      "states": [
+        "Himachal Pradesh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Special Category Vehicles"
+      ],
+      "fuels": [
+        "HYDROGEN(ICE)"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2023-2024"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE II"
+      ],
+      "makers": [
+        "ASHOK LEYLAND LTD"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Armoured/Specialised Vehicle"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SURRENDER"
+      ],
+      "ownerTypes": [
+        "DRIVING TRAINING SCHOOL"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Manufacturing Year",
+      "xAxis": "Fuel",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "095 | Goods Vehicle | LNG | Jammu & Kashmir | Last 1 Year | Y=Financial Year / X=Total Consolidated",
+    "filters": {
+      "states": [
+        "Jammu & Kashmir"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Goods Vehicle"
+      ],
+      "fuels": [
+        "LNG"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Bharat Trem Stage III B"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "LIGHT GOODS VEHICLE"
+      ],
+      "classes": [
+        "Goods Carrier"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE DE-REGISTERED"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT CORPORATION"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Financial Year",
+      "xAxis": "Total Consolidated",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "096 | Three Wheeler | LPG ONLY | Jharkhand | 1 Month Flexible | Y=Last 5 FINANCIAL YEAR / X=Vehicle Type",
+    "filters": {
+      "states": [
+        "Jharkhand"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "LPG ONLY"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "December",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 3"
+      ],
+      "makers": [
+        "MAHINDRA & MAHINDRA LIMITED"
+      ],
+      "subCategories": [
+        "THREE WHEELER(NT)",
+        "THREE WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Three Wheeler (Personal)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE_SCRAPPED RC CANCEL"
+      ],
+      "ownerTypes": [
+        "INDIVIDUAL"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "YES",
+      "yAxis": "Last 5 FINANCIAL YEAR",
+      "xAxis": "Vehicle Type",
+      "autoApply": true,
+      "autoExport": false
+    }
+  },
+  {
+    "name": "097 | Four Wheeler | METHANOL | Karnataka | CALENDAR YEAR | Y=Calendar Year / X=Owner Type",
+    "filters": {
+      "states": [
+        "Karnataka"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Four Wheeler"
+      ],
+      "fuels": [
+        "METHANOL"
+      ],
+      "archivedFlags": [
+        "ACTIVE_COMPLIANT"
+      ],
+      "period": "CALENDAR YEAR",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "2024",
+      "toYear": "2024",
+      "fromDate": "1 Jan 2024",
+      "toDate": "31 Dec 2024",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "Not Applicable",
+        "BHARAT STAGE II"
+      ],
+      "makers": [
+        "TOYOTA KIRLOSKAR MOTOR PVT LTD"
+      ],
+      "subCategories": [
+        "LIGHT MOTOR VEHICLE"
+      ],
+      "classes": [
+        "Quadricycle (Private)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "NOC ISSUED"
+      ],
+      "ownerTypes": [
+        "POLICE DEPARTMENT"
+      ],
+      "vehicleType": "Non-Transport",
+      "fitness": "NO",
+      "yAxis": "Calendar Year",
+      "xAxis": "Owner Type",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "098 | Special Category Vehicles | NOT APPLICABLE | Kerala | FINANCIAL YEAR | Y=Month Wise / X=Vehicle Category",
+    "filters": {
+      "states": [
+        "Kerala"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Special Category Vehicles"
+      ],
+      "fuels": [
+        "NOT APPLICABLE"
+      ],
+      "archivedFlags": [
+        "ACTIVE_NON_COMPLIANT"
+      ],
+      "period": "FINANCIAL YEAR",
+      "financialYears": [
+        "2024-2025"
+      ],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "BHARAT STAGE III/IV"
+      ],
+      "makers": [
+        "TATA MOTORS LTD"
+      ],
+      "subCategories": [
+        "OTHER THAN MENTIONED ABOVE"
+      ],
+      "classes": [
+        "Fire Tenders"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "RC SUSPENDED"
+      ],
+      "ownerTypes": [
+        "STATE UNIVERSITIES"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Month Wise",
+      "xAxis": "Vehicle Category",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "099 | Three Wheeler | PETROL | Ladakh | Last 1 Year | Y=Vehicle Category / X=RTO Wise",
+    "filters": {
+      "states": [
+        "Ladakh"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Three Wheeler"
+      ],
+      "fuels": [
+        "PETROL"
+      ],
+      "archivedFlags": [
+        "PERMANENT_ARCHIVE"
+      ],
+      "period": "Last 1 Year",
+      "financialYears": [],
+      "reportYear": "",
+      "reportMonth": "",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "CEV STAGE IV"
+      ],
+      "makers": [
+        "BAJAJ AUTO LTD"
+      ],
+      "subCategories": [
+        "THREE WHEELER(NT)"
+      ],
+      "classes": [
+        "Three Wheeler (Passenger)"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "VEHICLE SUBMITTED FOR SCRAPPING",
+        "VEHICLE TO BE SCRAPPED"
+      ],
+      "ownerTypes": [
+        "DIVYANGJAN (Without Availing GST Concession)"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "NO",
+      "yAxis": "Vehicle Category",
+      "xAxis": "RTO Wise",
+      "autoApply": true,
+      "autoExport": true
+    }
+  },
+  {
+    "name": "100 | Two Wheeler | PETROL(E20) | Lakshadweep | 1 Month Flexible | Y=Vehicle Category Group / X=Last 5 Financial Year",
+    "filters": {
+      "states": [
+        "Lakshadweep"
+      ],
+      "rtos": [],
+      "categoryGroups": [
+        "Two Wheeler"
+      ],
+      "fuels": [
+        "PETROL(E20)",
+        "PETROL(E20)/CNG"
+      ],
+      "archivedFlags": [
+        "TEMPORARY_ARCHIVE"
+      ],
+      "period": "1 Month Flexible",
+      "financialYears": [],
+      "reportYear": "2025",
+      "reportMonth": "January",
+      "fromYear": "",
+      "toYear": "",
+      "fromDate": "",
+      "toDate": "",
+      "delhiNcr": "ALL STATES",
+      "emissions": [
+        "EURO 6"
+      ],
+      "makers": [
+        "BAJAJ AUTO LTD"
+      ],
+      "subCategories": [
+        "TWO WHEELER (Invalid Carriage)"
+      ],
+      "classes": [
+        "Moped"
+      ],
+      "evTypes": [],
+      "statuses": [
+        "ACTIVE"
+      ],
+      "ownerTypes": [
+        "GOVERNMENT BOARD"
+      ],
+      "vehicleType": "Transport",
+      "fitness": "YES",
+      "yAxis": "Vehicle Category Group",
+      "xAxis": "Last 5 Financial Year",
+      "autoApply": true,
+      "autoExport": true
+    }
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "name": "vahan-browser-extension",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/background.js --bundle --format=iife --platform=browser --target=chrome116 --outfile=background.js",
+    "check": "node --check background.js && node --check content.js && node --check interceptor-main.js && node --check popup.js && node --check ui-drift/guard.js && node --check ui-drift/health-check-content.js && node --check ui-drift/health-check.mjs && node scripts/test-job-config.mjs && node scripts/test-auth-guard.mjs && node scripts/test-state-options.mjs && node scripts/test-maker-result.mjs && npm run test:ui-drift",
+    "test:ui-drift": "node scripts/test-ui-health-check.mjs",
+    "test:reports": "node scripts/test-report-upload.mjs && node scripts/test-maker-result.mjs && node scripts/test-excel-bridge.mjs && node scripts/test-filter-reuse.mjs",
+    "smoke:runner": "node scripts/smoke-runner.mjs"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

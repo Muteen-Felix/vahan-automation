@@ -1,0 +1,39 @@
+[project]
+name = "vahan-rpa-api"
+version = "0.1.0"
+description = "MVP control plane for the VAHAN RPA web UI and browser extension"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "python-socketio[asyncio-client]>=5.12,<6",
+  "pydantic>=2.10,<3",
+  "uvicorn[standard]>=0.34,<1",
+  "python-multipart>=0.0.18,<1",
+  "aiofiles>=24,<25",
+  "openpyxl>=3.1,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28,<1",
+  "pytest>=8,<10",
+  "pytest-asyncio>=0.25,<2",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["runtime*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
