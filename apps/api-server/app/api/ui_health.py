@@ -1,8 +1,9 @@
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, HTTPException, Query, Request, status
+from app.access import require_admin
+from fastapi.responses import Response
 
 from app.models.ui_health import (
     UiHealthCheckNowRequest,
@@ -47,7 +48,8 @@ async def get_ui_health_schedule() -> UiHealthSchedule:
     response_model=UiHealthSchedule,
     response_model_by_alias=True,
 )
-async def update_ui_health_schedule(command: UiHealthScheduleUpdate) -> UiHealthSchedule:
+async def update_ui_health_schedule(command: UiHealthScheduleUpdate, request: Request) -> UiHealthSchedule:
+    require_admin(request)
     schedule = await services.ui_health.update(command.interval_days)
     await sio.emit(
         "ui-health:schedule-updated",
@@ -84,13 +86,13 @@ async def request_ui_health_check_now(
     runner = _select_runner(await services.runners.list(), requested_runner_id)
     if runner is None:
         if requested_runner_id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Requested extension runner was not found.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Requested browser runner was not found.")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="No extension runner is connected to run the check.",
+            detail="No browser runner is connected to run the check.",
         )
     if runner.status == RunnerStatus.RECONNECTING:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The extension runner is reconnecting.")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The browser runner is reconnecting.")
 
     request_id = str(uuid4())
     requested_at = datetime.now(timezone.utc)
@@ -124,6 +126,8 @@ async def receive_ui_health_log(command: UiHealthLogRequest) -> UiHealthLogRespo
         page_url=command.page_url,
     )
     response = UiHealthLogResponse.model_validate(result)
+    if command.health_check.get('trigger') == 'scheduled':
+        await services.ui_health.record_check()
     await sio.emit(
         "ui-health:log-received",
         {
@@ -154,12 +158,8 @@ async def list_ui_health_reports(
 
 
 @router.get("/reports/{file_name}/download")
-async def download_ui_health_report(file_name: str) -> FileResponse:
+async def download_ui_health_report(file_name: str) -> Response:
     report_path = await services.ui_health_logs.resolve_report(file_name)
     if report_path is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report file not found.")
-    return FileResponse(
-        report_path,
-        media_type="text/csv",
-        filename=report_path.name,
-    )
+    return Response(report_path, media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{file_name}"'})

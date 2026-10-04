@@ -187,7 +187,7 @@ export function HealthCheckReports({
         }
       } catch (reason) {
         // A transient polling failure must not replace the existing report with
-        // an error while the extension is still finishing its check.
+        // an error while the browser worker is still finishing its check.
         if (!cancelled && showLoading) {
           setError(reason instanceof Error ? reason.message : "Could not load UI health reports.");
         }
@@ -238,12 +238,12 @@ export function HealthCheckReports({
       {error && <p className="health-schedule-status error-message" role="alert">{error}</p>}
       {pendingManualCheck && (
         <p className="health-reports-pending" role="status">
-          Waiting for the extension to return the immediate check result. Statistics and history will update when the log is recorded.
+          Waiting for the browser worker to return the immediate check result. Statistics and history will update when the log is recorded.
         </p>
       )}
 
       {data && data.availableDates.length === 0 && !loading && (
-        <p className="health-reports-empty">No check logs have been received from the extension.</p>
+        <p className="health-reports-empty">No check logs have been received from the browser worker.</p>
       )}
 
       {data && data.availableDates.length > 0 && (

@@ -1,324 +1,221 @@
-import asyncio
-import re
-import zipfile
+from uuid import UUID
 from pathlib import Path
-from uuid import UUID, uuid4
-from weakref import WeakValueDictionary
-
-import aiofiles
-from fastapi import APIRouter, Header, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
-
+import json
+import re
+from fastapi import APIRouter, HTTPException, UploadFile, Header, Request, Form
+from fastapi.responses import Response
+from pydantic import BaseModel, Field, AwareDatetime
+from sqlalchemy import select, update
+from app.db import engine, schema as db
+from app.repositories.postgres import now, TERMINAL
+from app.access import owner_filter, require_owner
 from app.config import settings
-from app.excel_storage import report_session_dir, session_folder_name, stored_excel_path, stored_no_data_path
-from app.models.job import Job, JobStatus, ReportSource
+from app.models.job import JobStatus
 from app.services import services
 
-router = APIRouter(prefix="/jobs", tags=["excel"])
+router = APIRouter(prefix='/jobs', tags=['reports'])
 
-_report_dir = Path(settings.excel_report_dir)
-_upload_locks: WeakValueDictionary[UUID, asyncio.Lock] = WeakValueDictionary()
+def attachment(file):
+    from urllib.parse import quote
+    return Response(file['content'], media_type=file['mime_type'], headers={
+        'Content-Disposition': f"attachment; filename*=UTF-8''{quote(file['name'])}",
+        'X-Content-SHA256': file['sha256'], 'Cache-Control': 'private, no-store'})
 
+async def read_upload(file):
+    content = bytearray()
+    while chunk := await file.read(256 * 1024):
+        content.extend(chunk)
+        if len(content) > settings.max_excel_upload_bytes:
+            raise HTTPException(413, 'File exceeds the 50 MB upload limit.')
+    if not content:
+        raise HTTPException(400, 'File is empty.')
+    return bytes(content)
 
-def _validate_workbook(path: Path) -> None:
-    try:
-        if not zipfile.is_zipfile(path):
-            raise HTTPException(status_code=400, detail="The uploaded file is not a valid Excel workbook.")
-        with zipfile.ZipFile(path) as workbook:
-            if "xl/workbook.xml" not in workbook.namelist() or workbook.testzip() is not None:
-                raise HTTPException(status_code=400, detail="The uploaded Excel workbook is damaged.")
-    except (zipfile.BadZipFile, RuntimeError, NotImplementedError) as exc:
-        raise HTTPException(status_code=400, detail="The uploaded Excel workbook is damaged or unsupported.") from exc
+def _sanitize_filename(name):
+    return re.sub(r'[\\/*?:"<>|\r\n\t]', '_', name).strip() or 'report'
 
-
-def _sanitize_filename(name: str) -> str:
-    cleaned = re.sub(r'[\\/*?:"<>|\r\n\t]', "_", name).strip()
-    return cleaned or "report"
-
-
-def _generate_excel_filename(job: Job, uploaded_filename: str | None = None) -> str:
-    if job.scenario_name and job.scenario_name.startswith("Maker Month Wise Data  of ") and job.filters.states and job.filters.rtos:
-        return f"{_sanitize_filename(job.scenario_name)}.xlsx"
-    dt = job.created_at.astimezone() if job.created_at.tzinfo else job.created_at
-    timestamp = dt.strftime("%Y%m%d_%H%M%S")
-
-    if job.scenario_name:
-        base_name = _sanitize_filename(job.scenario_name)
-    elif uploaded_filename and uploaded_filename != "report.xlsx":
-        clean_stem = _sanitize_filename(Path(uploaded_filename).stem)
-        base_name = clean_stem
-    else:
-        base_name = f"report_{str(job.id)[:8]}"
-
-    return f"{base_name}_{timestamp}_{str(job.id)[:8]}.xlsx"
-
+def _generate_excel_filename(job, uploaded_filename=None):
+    if job.scenario_name and job.scenario_name.startswith('Maker Month Wise Data  of '):
+        return f'{_sanitize_filename(job.scenario_name)}.xlsx'
+    stem = job.scenario_name or Path(uploaded_filename or 'report.xlsx').stem
+    return f'{_sanitize_filename(stem)}_{str(job.id)[:8]}.xlsx'
 
 class VerifyReportsRequest(BaseModel):
-    file_names: list[str] = Field(alias="fileNames", max_length=500)
-    session_ids: dict[str, UUID] = Field(default_factory=dict, alias="sessionIds")
+    file_names: list[str] = Field(alias='fileNames', max_length=500)
+    session_ids: dict[str, UUID] = Field(default_factory=dict, alias='sessionIds')
 
-
-def _excel_path(job: Job) -> Path:
-    if job.excel_file_name:
-        path = stored_excel_path(job.excel_file_name, job.session_id)
-        if path:
-            return path
-    # Backward compatibility fallback
-    return _report_dir / f"{job.id}.xlsx"
-
-
-@router.get("/reports", status_code=status.HTTP_200_OK)
-async def list_exported_reports() -> list[dict]:
-    jobs = await services.jobs.list_all()
+@router.get('/reports')
+async def list_exported_reports(request: Request):
+    jobs = {str(j.id): j for j in await services.jobs.list_all(owner_filter(request))}
     reports = []
-    for job in jobs:
-        if job.status == JobStatus.COMPLETED and stored_excel_path(job.excel_file_name, job.session_id):
-            reports.append({
-                "jobId": str(job.id),
-                "scenarioName": job.scenario_name or job.excel_file_name,
-                "fileName": job.excel_file_name,
-                "fileSize": job.excel_file_size or 0,
-                "createdAt": job.created_at.isoformat(),
-                "sessionFolder": str(path.parent.relative_to(_report_dir)) if (path := stored_excel_path(job.excel_file_name, job.session_id)) else session_folder_name(job.session_id),
-                "downloadUrl": f"/api/jobs/{job.id}/excel",
-                "source": job.source.value,
-            })
-    reports.sort(key=lambda r: r["createdAt"], reverse=True)
+    for file in await services.files.list(owner_filter(request), kind='excel'):
+        job = jobs.get(file['job_id'])
+        if not job or job.status != JobStatus.COMPLETED:
+            continue
+        reports.append(dict(jobId=str(job.id), scenarioName=job.scenario_name or file['name'],
+            fileName=file['name'], fileSize=file['size'], createdAt=job.created_at.isoformat(),
+            sessionFolder=str(job.session_id), downloadUrl=f'/api/jobs/{job.id}/excel', source=job.source.value))
     return reports
 
-
-@router.get("/reports/sessions", status_code=status.HTTP_200_OK)
-async def list_exported_report_sessions() -> list[dict]:
-    """Return report jobs grouped by their run session, including no-data and failed cases."""
-    jobs = await services.jobs.list_all()
-    sessions: dict[str, dict] = {}
-    folder_names: dict[str, str | None] = {}
-    terminal_statuses = {JobStatus.COMPLETED, JobStatus.NO_DATA, JobStatus.FAILED, JobStatus.CANCELLED}
-
-    for job in jobs:
+@router.get('/reports/sessions')
+async def list_exported_report_sessions(request: Request, deleted: bool = False):
+    query = select(db.report_sessions).where(
+        db.report_sessions.c.deleted_at.is_not(None) if deleted else db.report_sessions.c.deleted_at.is_(None))
+    owner = owner_filter(request)
+    if owner is not None:
+        query = query.where(db.report_sessions.c.owner_username == owner)
+    async with engine.connect() as connection:
+        session_records = {row['id']: row for row in (await connection.execute(query)).mappings()}
+    files = {(f['job_id'], f['kind']): f for f in await services.files.list(owner_filter(request))}
+    sessions = {}
+    attempts = sorted((job for job in await services.jobs.list_all(owner_filter(request))
+        if str(job.session_id) in session_records), key=lambda j: (j.created_at, str(j.id)))
+    attempts_by_id = {job.id: job for job in attempts}
+    legacy_roots = {}
+    legacy_case_ids = {}
+    for job in attempts:
+        if job.case_id is None and job.retry_of_job_id is None:
+            # Older matrix runs did not save retry links. Each office/filter set
+            # occurs once per session; repeated identical attempts are retries.
+            key = (job.session_id, job.source, job.scenario_name,
+                json.dumps(job.filters.model_dump(mode='json'), sort_keys=True))
+            legacy_case_ids[job.id] = legacy_roots.setdefault(key, job.id)
+    latest_cases = {}
+    for job in attempts:
         session_id = str(job.session_id)
-        if session_id not in folder_names:
-            folder_names[session_id] = session_folder_name(job.session_id)
-        folder_name = folder_names[session_id]
-        session = sessions.setdefault(session_id, {
-            "sessionId": session_id,
-            "sessionFolder": folder_name,
-            "startedAt": job.created_at.isoformat(),
-            "updatedAt": job.updated_at.isoformat(),
-            "jobs": [],
-        })
-        session["startedAt"] = min(session["startedAt"], job.created_at.isoformat())
-        session["updatedAt"] = max(session["updatedAt"], job.updated_at.isoformat())
-
-        artifact_path: Path | None = None
-        file_name: str | None = None
-        file_type: str | None = None
-        download_url: str | None = None
-        if job.status == JobStatus.COMPLETED and job.excel_file_name:
-            artifact_path = stored_excel_path(job.excel_file_name, job.session_id)
-            if artifact_path:
-                file_name = job.excel_file_name
-                file_type = "excel"
-                download_url = f"/api/jobs/{job.id}/excel"
-        elif job.status == JobStatus.NO_DATA and job.no_data_file_name:
-            artifact_path = stored_no_data_path(job)
-            if artifact_path:
-                file_name = job.no_data_file_name
-                file_type = "text"
-                download_url = f"/api/jobs/{job.id}/no-data"
-
-        file_size = 0
-        relative_file_path: str | None = None
-        if artifact_path:
-            try:
-                file_size = artifact_path.stat().st_size
-                relative_file_path = artifact_path.relative_to(_report_dir).as_posix()
-            except (OSError, ValueError):
-                artifact_path = None
-                file_name = None
-                file_type = None
-                download_url = None
-                file_size = 0
-
-        filters = job.filters.model_dump(by_alias=True, exclude_none=True)
-        session["jobs"].append({
-            "jobId": str(job.id),
-            "scenarioName": job.scenario_name or file_name or "VAHAN report",
-            "state": job.filters.states[0] if job.filters.states else "",
-            "rto": job.filters.rtos[0] if job.filters.rtos else "",
-            "source": job.source.value,
-            "status": job.status.value,
-            "error": job.error,
-            "filters": filters,
-            "fileName": file_name,
-            "fileType": file_type,
-            "fileSize": file_size,
-            "filePath": relative_file_path,
-            "createdAt": job.created_at.isoformat(),
-            "updatedAt": job.updated_at.isoformat(),
-            "downloadUrl": download_url,
-        })
-
-    result = []
+        session = sessions.setdefault(session_id, dict(sessionId=session_id, sessionFolder=session_id,
+            startedAt=job.created_at.isoformat(), updatedAt=job.updated_at.isoformat(),
+            deletedAt=session_records[session_id]['deleted_at'].isoformat() if deleted else None, jobs=[]))
+        session['startedAt'] = min(session['startedAt'], job.created_at.isoformat())
+        session['updatedAt'] = max(session['updatedAt'], job.updated_at.isoformat())
+        # Keep all attempts in storage, but count each logical case only once.
+        case_id = job.case_id or job.id
+        case_id = legacy_case_ids.get(case_id, case_id)
+        latest_cases[(session_id, case_id)] = job
+    for (session_id, case_id), job in latest_cases.items():
+        session = sessions[session_id]
+        original = attempts_by_id.get(case_id, job)
+        kind = 'excel' if job.status == JobStatus.COMPLETED else 'no-data' if job.status == JobStatus.NO_DATA else None
+        file = files.get((str(job.id), kind))
+        session['jobs'].append(dict(jobId=str(job.id), scenarioName=job.scenario_name or 'VAHAN report',
+            state=job.filters.states[0] if job.filters.states else '', rto=job.filters.rtos[0] if job.filters.rtos else '',
+            source=job.source.value, status=job.status.value, error=job.error,
+            filters=job.filters.model_dump(mode='json', by_alias=True), fileName=file['name'] if file else None,
+            fileType=('excel' if kind == 'excel' else 'text') if file else None,
+            fileSize=file['size'] if file else 0, filePath=f"postgresql:{file['id']}" if file else None,
+            createdAt=original.created_at.isoformat(), updatedAt=job.updated_at.isoformat(),
+            downloadUrl=f'/api/jobs/{job.id}/{kind}' if file else None))
     for session in sessions.values():
-        session_jobs = session["jobs"]
-        session["jobs"].sort(key=lambda item: (item["createdAt"], item["state"], item["rto"]))
-        status_counts = {status.value: 0 for status in JobStatus}
-        for item in session_jobs:
-            status_counts[item["status"]] += 1
-        session.update({
-            "jobCount": len(session_jobs),
-            "completedCount": status_counts[JobStatus.COMPLETED.value],
-            "noDataCount": status_counts[JobStatus.NO_DATA.value],
-            "failedCount": status_counts[JobStatus.FAILED.value],
-            "cancelledCount": status_counts[JobStatus.CANCELLED.value],
-            "activeCount": sum(count for name, count in status_counts.items()
-                                if JobStatus(name) not in terminal_statuses),
-            "fileCount": sum(1 for item in session_jobs if item["downloadUrl"]),
-            "totalFileSize": sum(item["fileSize"] for item in session_jobs),
-            "sources": sorted({item["source"] for item in session_jobs}),
-        })
-        result.append(session)
-
-    result.sort(key=lambda item: item["startedAt"], reverse=True)
-    return result
+        jobs = session['jobs']
+        session.update(jobCount=len(jobs), completedCount=sum(j['status'] == 'COMPLETED' for j in jobs),
+            noDataCount=sum(j['status'] == 'NO_DATA' for j in jobs), failedCount=sum(j['status'] == 'FAILED' for j in jobs),
+            cancelledCount=sum(j['status'] == 'CANCELLED' for j in jobs),
+            activeCount=sum(j['status'] not in {'COMPLETED', 'NO_DATA', 'FAILED', 'CANCELLED'} for j in jobs),
+            fileCount=sum(bool(j['downloadUrl']) for j in jobs), totalFileSize=sum(j['fileSize'] for j in jobs),
+            sources=sorted({j['source'] for j in jobs}))
+        jobs.sort(key=lambda j: j['createdAt'])
+    return sorted(sessions.values(), key=lambda s: s['startedAt'], reverse=True)
 
 
-@router.post("/reports/verify")
-async def verify_exported_reports(request: VerifyReportsRequest) -> dict:
-    return {"files": {
-        name: (path.stat().st_size if (path := stored_excel_path(name, request.session_ids.get(name))) else 0)
-        for name in request.file_names
-    }}
+@router.delete('/reports/sessions/{session_id}')
+async def delete_report_session(session_id: UUID, request: Request):
+    async with engine.begin() as connection:
+        session = (await connection.execute(select(db.report_sessions).where(
+            db.report_sessions.c.id == str(session_id)).with_for_update())).mappings().first()
+        if not session:
+            raise HTTPException(404, 'Report session not found.')
+        require_owner(request, session['owner_username'])
+        if session['deleted_at'] is not None:
+            return {'ok': True, 'sessionId': str(session_id)}
+        active_job = await connection.scalar(select(db.jobs.c.id).where(
+            db.jobs.c.session_id == str(session_id), db.jobs.c.status.not_in([status.value for status in TERMINAL])).limit(1))
+        active_batch = await connection.scalar(select(db.user_state.c.username).where(
+            db.user_state.c.username == session['owner_username'],
+            db.user_state.c.key == 'vahanStateRtoBatchRecoveryV1',
+            db.user_state.c.value['sessionId'].as_string() == str(session_id),
+            db.user_state.c.value['status'].as_string() == 'running').limit(1))
+        if active_job or active_batch:
+            raise HTTPException(409, 'Stop this session before deleting it.')
+        await connection.execute(update(db.report_sessions).where(db.report_sessions.c.id == str(session_id)).values(deleted_at=now()))
+    return {'ok': True, 'sessionId': str(session_id)}
 
 
-@router.get("/reports/file/{file_name}")
-async def download_stored_report(file_name: str) -> FileResponse:
-    path = stored_excel_path(file_name)
-    if not path:
-        raise HTTPException(status_code=404, detail="Excel file not found.")
-    return FileResponse(
-        path=path,
-        filename=file_name,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+@router.post('/reports/sessions/{session_id}/restore')
+async def restore_report_session(session_id: UUID, request: Request):
+    async with engine.begin() as connection:
+        session = (await connection.execute(select(db.report_sessions).where(
+            db.report_sessions.c.id == str(session_id)).with_for_update())).mappings().first()
+        if not session:
+            raise HTTPException(404, 'Report session not found.')
+        require_owner(request, session['owner_username'])
+        await connection.execute(update(db.report_sessions).where(db.report_sessions.c.id == str(session_id)).values(deleted_at=None))
+    return {'ok': True, 'sessionId': str(session_id)}
 
+@router.post('/reports/verify')
+async def verify_exported_reports(command: VerifyReportsRequest, request: Request):
+    jobs = {str(j.id): j for j in await services.jobs.list_all(owner_filter(request))}
+    files = await services.files.list(owner_filter(request), 'excel')
+    result = {}
+    for name in command.file_names:
+        matches = [f for f in files if f['name'] == name and f['job_id'] in jobs
+            and (name not in command.session_ids or jobs[f['job_id']].session_id == command.session_ids[name])]
+        result[name] = max((f['size'] for f in matches), default=0)
+    return {'files': result}
 
-@router.post(
-    "/{job_id}/upload-excel",
-    status_code=status.HTTP_200_OK,
-)
-async def upload_excel(
-    job_id: UUID,
-    file: UploadFile,
-    runner_id: str | None = Header(default=None, alias="X-VAHAN-RUNNER-ID"),
-) -> dict:
-    # A lost HTTP response can make the runner upload the same captured bytes
-    # again. Serialize per job and return its first saved report on retries.
-    lock = _upload_locks.setdefault(job_id, asyncio.Lock())
-    async with lock:
-        try:
-            return await _save_excel(job_id, file, runner_id)
-        except OSError as exc:
-            raise HTTPException(status_code=500, detail="Could not save the Excel report to disk. Check storage and permissions.") from exc
+@router.get('/reports/file/{file_name}')
+async def download_stored_report(file_name: str, request: Request):
+    matches = [f for f in await services.files.list(owner_filter(request), 'excel') if f['name'] == file_name]
+    if not matches:
+        raise HTTPException(404, 'Report not found.')
+    if len(matches) > 1:
+        raise HTTPException(409, 'Multiple reports share this name. Download using the job or file ID.')
+    return attachment(await services.files.get(matches[0]['id']))
 
-
-async def _save_excel(job_id: UUID, file: UploadFile, runner_id: str | None) -> dict:
+@router.post('/{job_id}/upload-excel', deprecated=True)
+@router.post('/{job_id}/main-report')
+async def upload_excel(job_id: UUID, file: UploadFile, request: Request,
+    runner_id: str | None = Header(default=None, alias='X-VAHAN-RUNNER-ID'),
+    observed_at: AwareDatetime | None = Form(None, alias='observedAt'),
+    page_url: str = Form('', alias='pageUrl')):
     job = await services.jobs.get(job_id)
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found.")
-    if job.source != ReportSource.NEW:
-        raise HTTPException(status_code=410, detail="The legacy VAHAN report source is no longer supported.")
+        raise HTTPException(404, 'Job not found.')
     if not runner_id or runner_id != job.runner_id:
-        raise HTTPException(status_code=403, detail="This runner is not assigned to the job.")
-    if job.status in {JobStatus.WAITING_RESULT, JobStatus.COMPLETED} and job.excel_file_name:
-        saved_path = stored_excel_path(job.excel_file_name, job.session_id)
-        if saved_path:
-            return {"ok": True, "fileName": job.excel_file_name, "sizeBytes": saved_path.stat().st_size}
-    if job.status != JobStatus.WAITING_RESULT:
-        raise HTTPException(status_code=409, detail="Job is not waiting for an Excel report.")
-
-    if file.content_type and file.content_type not in {
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/octet-stream",
-    }:
-        raise HTTPException(status_code=400, detail="Only .xlsx files are accepted.")
-
-    session_dir = report_session_dir(job.session_id, create=True)
-    if session_dir is None:
-        raise HTTPException(status_code=500, detail="Could not create a folder for this run's Excel reports.")
-    is_matrix_report = bool(job.scenario_name and job.scenario_name.startswith("Maker Month Wise Data  of "))
-    state = job.filters.states[0] if is_matrix_report and job.filters.states and job.filters.rtos else None
-    state_folder = _sanitize_filename(state).strip(". ") if state else ""
-    destination_dir = session_dir / (state_folder or "Unknown State") if state else session_dir
-    destination_dir.mkdir(parents=True, exist_ok=True)
-    file_name = _generate_excel_filename(job, file.filename)
-    dest = destination_dir / file_name
-    if dest.exists():
-        stem = Path(file_name).stem
-        suffix = 2
-        while dest.exists():
-            file_name = f"{stem} ({suffix}).xlsx"
-            dest = destination_dir / file_name
-            suffix += 1
-    temporary = destination_dir / f".{job.id}.{uuid4().hex}.tmp"
-
-    size = 0
+        raise HTTPException(403, 'This runner is not assigned to the job.')
+    if not getattr(request.state, 'authenticated_runner', False):
+        require_owner(request, job.owner_username)
+    content = await read_upload(file)
     try:
-        async with aiofiles.open(temporary, "wb") as out:
-            while chunk := await file.read(256 * 1024):
-                size += len(chunk)
-                if size > settings.max_excel_upload_bytes:
-                    raise HTTPException(
-                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                        detail=f"File exceeds {settings.max_excel_upload_bytes // (1024 * 1024)} MB limit.",
-                    )
-                await out.write(chunk)
-        if not size:
-            raise HTTPException(status_code=400, detail="Excel file is empty.")
-        await asyncio.to_thread(_validate_workbook, temporary)
-        latest = await services.jobs.get(job_id)
-        if not latest or latest.status != JobStatus.WAITING_RESULT:
-            raise HTTPException(status_code=409, detail="Job was stopped before the Excel report was saved.")
-        temporary.replace(dest)
-        latest = await services.jobs.get(job_id)
-        if not latest or latest.status != JobStatus.WAITING_RESULT:
-            dest.unlink(missing_ok=True)
-            raise HTTPException(status_code=409, detail="Job was stopped before the Excel report was saved.")
-    finally:
-        temporary.unlink(missing_ok=True)
-    saved = await services.jobs.set_excel_file(job_id, file_name=file_name, file_size=size)
-    if saved is None:
-        dest.unlink(missing_ok=True)
-        raise HTTPException(status_code=409, detail="Job was stopped before the Excel report was saved.")
+        saved = await services.files.commit_excel(job_id, _generate_excel_filename(job, file.filename), content,
+            observed_at=observed_at, page_url=page_url, runner_id=runner_id)
+        from app.realtime.report_notifications import notify_report_saved
+        job = await services.jobs.get(job_id)
+        await notify_report_saved(job)
+        return saved
+    except PermissionError as error:
+        raise HTTPException(403, str(error)) from error
+    except ValueError as error:
+        raise HTTPException(409 if 'Job' in str(error) or 'already' in str(error) else 400, str(error)) from error
+    except Exception as error:
+        from zipfile import BadZipFile
+        if isinstance(error, (BadZipFile, KeyError)):
+            raise HTTPException(400, 'Invalid Excel workbook.') from error
+        raise
 
-    return {"ok": True, "fileName": file_name, "sizeBytes": size}
+@router.get('/{job_id}/excel')
+async def download_excel(job_id: UUID, request: Request):
+    return await download_job_file(job_id, 'excel', request)
 
+@router.get('/{job_id}/no-data')
+async def download_no_data_file(job_id: UUID, request: Request):
+    return await download_job_file(job_id, 'no-data', request)
 
-@router.get("/{job_id}/excel")
-async def download_excel(job_id: UUID) -> FileResponse:
+async def download_job_file(job_id, kind, request):
     job = await services.jobs.get(job_id)
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found.")
-
-    path = _excel_path(job)
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="Excel file not found for this job.")
-
-    return FileResponse(
-        path=path,
-        filename=job.excel_file_name or f"{job_id}.xlsx",
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-
-
-@router.get("/{job_id}/no-data")
-async def download_no_data_file(job_id: UUID) -> FileResponse:
-    job = await services.jobs.get(job_id)
-    if not job or job.status != JobStatus.NO_DATA:
-        raise HTTPException(status_code=404, detail="No-data report not found.")
-    path = stored_no_data_path(job)
-    if path is None:
-        raise HTTPException(status_code=404, detail="No-data text file not found.")
-    return FileResponse(path=path, filename=job.no_data_file_name, media_type="text/plain; charset=utf-8")
+        raise HTTPException(404, 'Job not found.')
+    require_owner(request, job.owner_username)
+    file = await services.files.for_job(job_id, kind)
+    if not file:
+        raise HTTPException(404, 'Report file not found.')
+    return attachment(file)

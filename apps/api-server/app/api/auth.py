@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.security import credentials_match, issue_access_token
+from app.security import issue_access_token
+from app.services import services
 
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -16,7 +17,7 @@ class LoginRequest(BaseModel):
 @router.get("/status")
 async def auth_status() -> dict[str, bool | int | None]:
     return {
-        "configured": settings.ui_auth_configured,
+        "configured": settings.ui_auth_configured and bool(await services.users.list()),
         "tokenTtlSeconds": None,
     }
 
@@ -28,7 +29,7 @@ async def login(command: LoginRequest, response: Response) -> dict[str, str | in
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication is not configured on the API server.",
         )
-    if not credentials_match(command.username, command.password):
+    if not await services.users.authenticate(command.username, command.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="The username or password is incorrect.",
@@ -37,7 +38,7 @@ async def login(command: LoginRequest, response: Response) -> dict[str, str | in
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
     return {
-        "accessToken": issue_access_token(command.username),
+        "accessToken": issue_access_token(command.username, await services.users.create_session(command.username)),
         "tokenType": "Bearer",
         "expiresIn": None,
         "username": command.username,
@@ -57,7 +58,7 @@ async def renew_session(request: Request, response: Response) -> dict[str, str |
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
     return {
-        "accessToken": issue_access_token(username),
+        "accessToken": issue_access_token(username, request.state.token_session),
         "tokenType": "Bearer",
         "expiresIn": None,
         "username": username,
@@ -69,4 +70,12 @@ async def current_user(request: Request) -> dict[str, str]:
     username = getattr(request.state, "authenticated_user", None)
     if not username:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
-    return {"username": username}
+    return {"username": username, "role": request.state.authenticated_role}
+
+
+@router.post("/logout")
+async def logout(request: Request):
+    from app.realtime.ui_events import invalidate_session
+    await services.users.revoke(request.state.token_session)
+    await invalidate_session(request.state.token_session)
+    return {"ok": True}

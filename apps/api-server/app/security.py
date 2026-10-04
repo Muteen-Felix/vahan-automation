@@ -17,7 +17,7 @@ def credentials_match(username: str, password: str) -> bool:
     return settings.ui_auth_configured and username_matches and password_matches
 
 
-def issue_access_token(username: str) -> str:
+def issue_access_token(username: str, session_id: str | None = None) -> str:
     now = int(time.time())
     payload = {
         "sub": username,
@@ -25,6 +25,8 @@ def issue_access_token(username: str) -> str:
         "aud": "vahan-rpa-ui",
         "typ": "access",
     }
+    if session_id:
+        payload["sid"] = session_id
     encoded_payload = base64.urlsafe_b64encode(
         json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     ).rstrip(b"=")
@@ -63,7 +65,6 @@ def _verified_payload(token: str) -> dict[str, Any] | None:
             payload.get("aud") != "vahan-rpa-ui"
             or payload.get("typ") != "access"
             or not isinstance(username, str)
-            or not secrets.compare_digest(username.encode(), settings.ui_auth_username.encode())
             or ("exp" in payload and (type(expires_at) is not int or expires_at <= int(time.time())))
         ):
             return None
@@ -85,6 +86,15 @@ def access_token_expiry(token: str) -> int | None:
 
 
 def runner_token_matches(candidate: str | None) -> bool:
-    if not candidate or not settings.runner_token:
+    if not candidate or len(settings.runner_token) < 24 or settings.runner_token == 'change-me':
         return False
     return secrets.compare_digest(candidate.encode(), settings.runner_token.encode())
+
+
+async def authenticate_access_token(token: str):
+    from app.services import services
+    payload = _verified_payload(token)
+    if not payload or not isinstance(payload.get("sid"), str):
+        return None
+    user = await services.users.session_user(payload["sub"], payload["sid"])
+    return {**user, "session_id": payload["sid"]} if user else None

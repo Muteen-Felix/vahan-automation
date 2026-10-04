@@ -13,14 +13,6 @@ DEFAULT_WEB_CORS_ORIGINS = (
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 )
-# manifest.json now pins a fixed "key", so the unpacked extension ID is the
-# same on every machine regardless of the clone path. Other installations can
-# still override it with VAHAN_API_EXTENSION_IDS without changing the web
-# origins (e.g. if someone loads a fork with a different key).
-DEFAULT_EXTENSION_IDS = (
-    "lnlmikbapplimecdenhhadbhmbenddpd",
-    "ooplajjjjphdcaolokpaenmkjlbcmlhk",
-)
 
 
 def _as_bool(value: str | None, default: bool = False) -> bool:
@@ -65,10 +57,7 @@ class Settings:
     host: str = "127.0.0.1"
     port: int = 8000
     debug: bool = False
-    cors_origins: tuple[str, ...] = (
-        *DEFAULT_WEB_CORS_ORIGINS,
-        *(f"chrome-extension://{extension_id}" for extension_id in DEFAULT_EXTENSION_IDS),
-    )
+    cors_origins: tuple[str, ...] = DEFAULT_WEB_CORS_ORIGINS
     socketio_cors_origins: str | tuple[str, ...] = "*"
     runner_token: str = "change-me"
     ui_auth_username: str = ""
@@ -80,13 +69,13 @@ class Settings:
     captcha_image_dir: str = str(DEFAULT_CAPTCHA_IMAGE_DIR)
     captcha_image_path_template: str = DEFAULT_CAPTCHA_IMAGE_PATH_TEMPLATE
     max_excel_upload_bytes: int = 50 * 1024 * 1024  # 50 MB
+    database_url: str = "postgresql+asyncpg://vahan@127.0.0.1:5432/vahan"
+    browser_state_key: str = ""
 
     @property
     def ui_auth_configured(self) -> bool:
         return (
-            bool(self.ui_auth_username.strip())
-            and len(self.ui_auth_password) >= 12
-            and len(self.ui_auth_token_secret) >= 32
+            len(self.ui_auth_token_secret) >= 32
         )
 
     @classmethod
@@ -105,17 +94,7 @@ class Settings:
             ).split(",")
             if origin.strip()
         )
-        extension_ids = tuple(
-            extension_id.strip()
-            for extension_id in os.getenv(
-                "VAHAN_API_EXTENSION_IDS",
-                ",".join(DEFAULT_EXTENSION_IDS),
-            ).split(",")
-            if extension_id.strip()
-        )
-        origins = tuple(dict.fromkeys(
-            (*web_origins, *(f"chrome-extension://{extension_id}" for extension_id in extension_ids))
-        ))
+        origins = web_origins
         socketio_origins_value = os.getenv("VAHAN_API_SOCKETIO_CORS_ORIGINS", "*").strip()
         socketio_origins: str | tuple[str, ...] = (
             "*"
@@ -127,6 +106,8 @@ class Settings:
             )
         )
         return cls(
+            database_url=os.getenv("DATABASE_URL", "postgresql+asyncpg://vahan@127.0.0.1:5432/vahan"),
+            browser_state_key=os.getenv("VAHAN_BROWSER_STATE_KEY", ""),
             host=os.getenv("VAHAN_API_HOST", "127.0.0.1"),
             port=int(os.getenv("VAHAN_API_PORT", "8000")),
             debug=_as_bool(os.getenv("VAHAN_API_DEBUG")),

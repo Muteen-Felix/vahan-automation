@@ -1,31 +1,23 @@
 from dataclasses import dataclass
 
-from app.config import settings
-from app.repositories import (
-    InMemoryJobRepository,
-    InMemoryRunnerRegistry,
-    UiHealthLogStore,
-    InMemoryUiHealthScheduleRepository,
-)
-from app.repositories.captcha_image_store import CaptchaImageStore
+from app.repositories.postgres import PostgresJobRepository, PostgresRunnerRegistry, PostgresScheduleRepository, PostgresUsers
+from app.repositories.file_store import PostgresFileStore, PostgresCaptchaStore
+from app.repositories.postgres_health import PostgresHealthLogStore
 
 
 @dataclass(slots=True)
 class Services:
-    jobs: InMemoryJobRepository
-    runners: InMemoryRunnerRegistry
-    ui_health: InMemoryUiHealthScheduleRepository
-    ui_health_logs: UiHealthLogStore
-    captcha_images: CaptchaImageStore
+    jobs: PostgresJobRepository
+    runners: PostgresRunnerRegistry
+    ui_health: PostgresScheduleRepository
+    ui_health_logs: PostgresHealthLogStore
+    captcha_images: PostgresCaptchaStore
+    files: PostgresFileStore
+    users: PostgresUsers
 
 
 services = Services(
-    jobs=InMemoryJobRepository(),
-    runners=InMemoryRunnerRegistry(),
-    ui_health=InMemoryUiHealthScheduleRepository(),
-    ui_health_logs=UiHealthLogStore(settings.ui_health_log_dir),
-    captcha_images=CaptchaImageStore(
-        settings.captcha_image_dir,
-        path_template=settings.captcha_image_path_template,
-    ),
+    jobs=PostgresJobRepository(), runners=PostgresRunnerRegistry(),
+    ui_health=PostgresScheduleRepository(), ui_health_logs=PostgresHealthLogStore(),
+    captcha_images=PostgresCaptchaStore(), files=PostgresFileStore(), users=PostgresUsers(),
 )

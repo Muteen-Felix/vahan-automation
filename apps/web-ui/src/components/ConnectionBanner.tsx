@@ -8,7 +8,7 @@ interface Props {
 export function ConnectionBanner({ backend, runners }: Props) {
   const text = {
     connecting: "Connecting to backend...",
-    connected: runners > 0 ? `${runners} extension runner${runners === 1 ? "" : "s"} online` : "Backend connected · No extension runner online",
+    connected: runners > 0 ? `${runners} browser runner${runners === 1 ? "" : "s"} online` : "Backend connected · No browser runner online",
     disconnected: "Backend disconnected",
     error: "Could not connect to backend",
   }[backend];

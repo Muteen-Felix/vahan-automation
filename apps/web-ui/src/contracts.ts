@@ -118,6 +118,8 @@ export interface Job {
   id: string;
   runnerId: string;
   sessionId: string;
+  retryOfJobId?: string | null;
+  caseId?: string | null;
   status: JobStatus;
   filters: VahanFilters & Record<string, unknown>;
   scenarioName?: string | null;
@@ -127,6 +129,12 @@ export interface Job {
   excelFileName?: string | null;
   noDataFileName?: string | null;
   excelFileSize?: number | null;
+  mainReportSavedAt?: string | null;
+  mainReportSummary?: {parsedRows: number; newRows: number; newCells: number; duplicates: number; conflicts: number} | null;
+  resultMessage?: string | null;
+  resultObservedAt?: string | null;
+  reportTableCount?: number | null;
+  reportRowCount?: number | null;
   successfulApplyCount?: number;
   createdAt: string;
   updatedAt: string;
@@ -163,6 +171,7 @@ export interface ExportedReportJob {
 
 export interface ExportedReportSession {
   sessionId: string;
+  deletedAt?: string | null;
   sessionFolder?: string | null;
   startedAt: string;
   updatedAt: string;

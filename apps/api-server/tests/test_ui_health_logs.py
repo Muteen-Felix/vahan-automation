@@ -42,7 +42,7 @@ def health_check(checked_at: str, status: str = "PASS") -> dict:
     return result
 
 
-async def test_backend_csv_keeps_extension_schema_and_rolls_over_by_day(tmp_path) -> None:
+async def test_backend_csv_keeps_health_report_schema_and_rolls_over_by_day(tmp_path) -> None:
     store = UiHealthLogStore(tmp_path / "logs")
     page_url = "https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en"
 

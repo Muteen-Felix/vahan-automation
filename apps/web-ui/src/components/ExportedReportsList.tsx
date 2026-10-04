@@ -219,6 +219,8 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
   const [selectedSession, setSelectedSession] = useState<ExportedReportSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [changingSessionId, setChangingSessionId] = useState<string | null>(null);
   const [dateInput, setDateInput] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const today = new Date();
@@ -227,6 +229,7 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
   const [calendarOpen, setCalendarOpen] = useState(false);
   const calendarInitialized = useRef(false);
   const calendarPickerRef = useRef<HTMLDivElement>(null);
+  const loadSequenceRef = useRef(0);
 
   const selectedDate = parseDateDraft(dateInput);
   const dateInputHasValue = dateInput.length > 0;
@@ -280,23 +283,53 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
     setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1, 12));
   }
 
-  async function loadReports() {
-    setLoading(true);
-    setError("");
+  async function loadReports(background = false) {
+    const sequence = ++loadSequenceRef.current;
+    if (!background) {
+      setLoading(true);
+      setError("");
+    }
     try {
-      const data = await api.exportedReportSessions();
+      const data = await api.exportedReportSessions(showDeleted);
+      if (sequence !== loadSequenceRef.current) return;
       setSessions(data);
+      setError("");
       setSelectedSession((current) => current ? data.find((session) => session.sessionId === current.sessionId) ?? null : null);
     } catch (e) {
+      if (sequence !== loadSequenceRef.current) return;
       setError(e instanceof Error ? e.message : "Could not load report sessions.");
     } finally {
-      setLoading(false);
+      if (sequence === loadSequenceRef.current) setLoading(false);
+    }
+  }
+
+  async function changeSession(session: ExportedReportSession, restore = false) {
+    if (changingSessionId) return;
+    if (!restore && !window.confirm(`Delete session ${session.sessionId} from Run history?\n\nIts files and monthly data stay saved. You can restore this session from Deleted sessions.`)) return;
+    setChangingSessionId(session.sessionId);
+    setError("");
+    try {
+      if (restore) await api.restoreReportSession(session.sessionId);
+      else await api.deleteReportSession(session.sessionId);
+      loadSequenceRef.current += 1;
+      setSessions((current) => current.filter((item) => item.sessionId !== session.sessionId));
+      setSelectedSession((current) => current?.sessionId === session.sessionId ? null : current);
+      await loadReports(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not update this report session.");
+    } finally {
+      setChangingSessionId(null);
     }
   }
 
   useEffect(() => {
     void loadReports();
-  }, [refreshTrigger]);
+    const timer = window.setInterval(() => void loadReports(true), 5_000);
+    return () => {
+      window.clearInterval(timer);
+      loadSequenceRef.current += 1;
+    };
+  }, [refreshTrigger, showDeleted]);
 
   return (
     <section className="panel exported-reports-panel">
@@ -304,10 +337,16 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
         <div style={{ display: "flex", alignItems: "center", gap: "13px" }}>
           <span className="step-number" style={{ background: "#ecfdf3", color: "#137a37", borderColor: "#16a34a" }}>✓</span>
           <div>
-            <h2>Exported report sessions ({sessions.length})</h2>
-            <p>One summary per run; open a session to inspect every case and download its files.</p>
+            <h2>{showDeleted ? "Deleted sessions" : "Exported report sessions"} ({sessions.length})</h2>
+            <p>{showDeleted ? "Restore a session to return it to Run history. Files and monthly data stay saved." : "One summary per run; open a session to inspect every case and download its files."}</p>
           </div>
         </div>
+        <div className="report-session-actions">
+        <button className="secondary-button report-session-details-button" type="button"
+          disabled={Boolean(changingSessionId)}
+          onClick={() => { setSessions([]); setSelectedSession(null); setShowDeleted((current) => !current); }}>
+          {showDeleted ? "Back to Run history" : "Deleted sessions"}
+        </button>
         <button
           className="secondary-button"
           type="button"
@@ -317,6 +356,7 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
         >
           {loading ? "Loading..." : "🔄 Refresh"}
         </button>
+        </div>
       </div>
 
       {error && <p className="error-message" style={{ marginTop: "14px" }}>{error}</p>}
@@ -402,7 +442,7 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
       )}
 
       {sessions.length === 0 && !loading && (
-        <p className="health-reports-empty" style={{ margin: "18px 0 0" }}>No report sessions have been recorded yet.</p>
+        <p className="health-reports-empty" style={{ margin: "18px 0 0" }}>{showDeleted ? "No deleted sessions." : "No report sessions have been recorded yet."}</p>
       )}
       {sessions.length === 0 && loading && <p className="health-reports-loading">Loading report sessions...</p>}
       {selectedDate && sessions.length > 0 && filteredSessions.length === 0 && (
@@ -430,9 +470,17 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
               </div>
               <div className="report-session-card-footer">
                 <span>{session.fileCount} files · {formatSize(session.totalFileSize)}</span>
+                <div className="report-session-actions">
+                <button className={`secondary-button report-session-details-button ${showDeleted ? "" : "report-session-delete-button"}`}
+                  type="button" disabled={Boolean(changingSessionId) || (!showDeleted && session.activeCount > 0)}
+                  title={!showDeleted && session.activeCount > 0 ? "Stop this session before deleting it" : undefined}
+                  onClick={() => void changeSession(session, showDeleted)}>
+                  {changingSessionId === session.sessionId ? "Saving…" : showDeleted ? "Restore session" : "Delete session"}
+                </button>
                 <button className="secondary-button report-session-details-button" type="button" onClick={() => setSelectedSession(session)}>
                   View details ({session.jobCount})
                 </button>
+                </div>
               </div>
             </article>
           ))}

@@ -18,7 +18,7 @@ python3 test_ui_diagnostics.py
 python3 test_ui_contract.py
 ```
 
-Health check của extension gửi kết quả về `POST /api/ui-health/logs`; backend
-lưu CSV runtime ở `apps/api-server/runtime/ui-health-logs`. Hai bộ kiểm tra dùng
-cùng vocabulary diagnostic nhưng không phụ thuộc vào nhau, giúp giảm conflict
-khi Dev sửa controller MVP.
+Health check do Playwright worker chạy gửi kết quả về `POST /api/ui-health/logs`;
+API lưu dữ liệu trong PostgreSQL và tạo CSV khi người dùng tải báo cáo. Bộ kiểm
+tra Dev/CI ở đây dùng cùng vocabulary diagnostic để phát hiện thay đổi giao diện
+trước khi cập nhật worker.

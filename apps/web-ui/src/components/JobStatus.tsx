@@ -3,7 +3,7 @@ import { AuthenticatedDownload } from "./AuthenticatedDownload";
 
 const labels: Record<Status, string> = {
   QUEUED: "Queued",
-  ASSIGNED: "Assigned to extension",
+  ASSIGNED: "Assigned to browser worker",
   OPENING_VAHAN: "Opening VAHAN",
   CAPTURING_CAPTCHA: "Loading CAPTCHA",
   FILLING_FILTERS: "Filling filters",
@@ -66,7 +66,7 @@ function parseJobError(rawError: string): ParsedJobError {
   if (error.includes("Receiving end does not exist")) {
     return {
       title: "Connection to the VAHAN tab was lost",
-      detail: "The extension cannot communicate with the VAHAN tab. The tab may be closed or on a different page.",
+      detail: "The browser worker cannot communicate with the VAHAN tab. The tab may be closed or on a different page.",
       suggestion: "Make sure the VAHAN tab is on the Public Report page, then reload it.",
     };
   }
@@ -100,12 +100,18 @@ export function JobStatus({ job, onCancel }: { job: Job | null; onCancel: () => 
         <strong>{labels[job.status]}</strong>
       </div>
       {job.status === "NO_DATA" && <>
-        <p>No data for {job.filters.states[0]} · {job.filters.rtos[0]}. A text file was saved.</p>
+        <p>No record found for {job.filters.states.join(", ")} · {job.filters.rtos.join(", ")}. Saved to SQL.</p>
         {job.noDataFileName && <AuthenticatedDownload
           className="secondary-button" path={`/api/jobs/${job.id}/no-data`} fileName={job.noDataFileName}>
           Download TXT
         </AuthenticatedDownload>}
       </>}
+      {job.status === "COMPLETED" && job.reportTableCount != null && (
+        <p>Saved {job.reportTableCount} tables · {job.reportRowCount} data rows to SQL.</p>
+      )}
+      {job.resultObservedAt && <p>Collected: {new Date(job.resultObservedAt).toLocaleString("en-GB", {
+        timeZone: "Asia/Ho_Chi_Minh", hour12: false,
+      })} (UTC+7)</p>}
       {job.error && (() => {
         const parsed = parseJobError(job.error);
         return (

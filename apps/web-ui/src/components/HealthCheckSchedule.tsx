@@ -32,10 +32,12 @@ export function HealthCheckSchedule({
   const [checkingNow, setCheckingNow] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [admin, setAdmin] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    void api.currentUser().then(user => { if (!cancelled) setAdmin(user.role === 'admin'); }).catch(() => {});
     api.uiHealthSchedule()
       .then((value) => {
         if (cancelled) return;
@@ -98,7 +100,7 @@ export function HealthCheckSchedule({
         <span className="step-number">0</span>
         <div>
           <h2>UI health check schedule</h2>
-          <p>Check the official VAHAN tab and save a CSV log for review.</p>
+          <p>Check the official VAHAN page and save a log for review.</p>
         </div>
       </div>
 
@@ -114,7 +116,7 @@ export function HealthCheckSchedule({
               max="365"
               step="1"
               value={days}
-              disabled={loading || saving || checkingNow || Boolean(pendingManualCheck)}
+              disabled={!admin || loading || saving || checkingNow || Boolean(pendingManualCheck)}
               onChange={(event) => setDays(event.currentTarget.value)}
               placeholder="3"
             />
@@ -122,7 +124,7 @@ export function HealthCheckSchedule({
           </span>
         </label>
         <div className="health-schedule-actions">
-          <button className="primary-button" type="submit" disabled={loading || saving || checkingNow}>
+          <button className="primary-button" type="submit" disabled={!admin || loading || saving || checkingNow}>
             {saving ? "Saving..." : "Save schedule"}
           </button>
           <button
@@ -130,7 +132,7 @@ export function HealthCheckSchedule({
             type="button"
             onClick={runCheckNow}
             disabled={loading || saving || checkingNow || Boolean(pendingManualCheck)}
-            title="Ask the extension to check the open official VAHAN tab"
+            title="Ask the browser worker to check the open official VAHAN tab"
           >
             {checkingNow ? "Requesting..." : "Check now"}
           </button>
@@ -146,8 +148,8 @@ export function HealthCheckSchedule({
         </div>
       )}
       <p className="security-note health-schedule-note">
-        The extension will receive the updated schedule and reset its automatic check. Health checks
-        run only on the open official VAHAN tab; they do not open tabs or inspect other URLs. They only
+        The browser worker will receive the updated schedule and reset its automatic check. Health checks
+        open an isolated page at the official VAHAN URL. They only
         read the interface and never enter CAPTCHA or click Apply.
       </p>
     </section>

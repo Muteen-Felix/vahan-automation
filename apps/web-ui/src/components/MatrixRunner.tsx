@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { Scenario } from "../contracts";
 import { currentReportYear, type MatrixPlan } from "../matrix-plan";
 import { estimateBatchTiming, type FilterTiming } from "../batch-timing";
+import { CompletedTasks } from './CompletedTasks';
 
 interface BatchLogEntry {
   index: number;
@@ -15,6 +16,9 @@ interface BatchLogEntry {
   excelFileName?: string | null;
   noDataFileName?: string | null;
   durationMs?: number;
+  completedAt?: string;
+  savedAt?: string;
+  rowCount?: number;
 }
 
 interface Props {
@@ -26,6 +30,8 @@ interface Props {
   onRunFrom: (index: number) => void;
   onRunOne: (index: number) => void;
   onRetryFailed: () => void;
+  onContinueStopped: () => void;
+  onRestartAll: () => void;
   onStop: () => void;
   running: boolean;
   progress: { done: number; total: number; current: string };
@@ -34,8 +40,11 @@ interface Props {
   finishedAt: string | null;
   timings: FilterTiming[];
   currentFilterStartedAt: number | null;
+  activeElapsedMs: number;
+  activeSegmentStartedAt: number | null;
   log: BatchLogEntry[];
   failedAtIndex: number | null;
+  pendingRetries: number;
   disabled: boolean;
 }
 
@@ -62,8 +71,9 @@ function formatEstimatedFinish(value: string | Date): string {
 export function MatrixRunner(props: Props) {
   const {
     plan, scenarios, loading, loadingMessage, onRunAll, onRunFrom,
-    onRunOne, onRetryFailed, onStop, running, progress, batchStatus, log,
-    startedAt, failedAtIndex, disabled, timings, currentFilterStartedAt,
+    onRunOne, onRetryFailed, onContinueStopped, onRestartAll, onStop,
+    running, progress, batchStatus, log, startedAt, failedAtIndex, disabled,
+    timings, currentFilterStartedAt, activeElapsedMs, activeSegmentStartedAt, pendingRetries,
   } = props;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [clockNow, setClockNow] = useState(Date.now());
@@ -80,7 +90,9 @@ export function MatrixRunner(props: Props) {
   })) || [];
   const failed = log.filter((entry) => entry.status === "error").length;
   const progressPercent = progress.total ? Math.min(100, progress.done / progress.total * 100) : 0;
-  const estimate = estimateBatchTiming(timings, progress.total, progress.done, currentFilterStartedAt, clockNow);
+  const estimate = estimateBatchTiming(
+    timings, progress.total, progress.done, currentFilterStartedAt, clockNow, activeElapsedMs, activeSegmentStartedAt,
+  );
   const statusLabels = {
     idle: "Ready",
     running: "Running",
@@ -102,7 +114,8 @@ export function MatrixRunner(props: Props) {
     <div className="scenario-run-info">
       <strong>Fixed filters · {plan?.year || currentReportYear()}</strong>
       <span>All four Active/Archive types · Calendar Year · Two Wheeler · all three Two Wheeler subcategories · ELECTRIC(BOV), PURE EV · Y: Maker · X: Month Wise</span>
-      <span>State and RTO refresh automatically at the start of each session. VAHAN runs in an inactive tab; keep Chrome open and the computer awake. Enter each CAPTCHA here.</span>
+      <span>State and RTO refresh at the start of a new session. Keep this page open while the browser worker runs; enter any requested CAPTCHA here.</span>
+      <span>After each group of 10 reports, failed cases in that group retry once before the next group starts. The final smaller group is also checked. Retry results update the original session; no-data results count as successful.</span>
     </div>
     {loading && <div className="matrix-loading-banner" role="status" aria-live="polite">
       <span className="matrix-loading-spinner" aria-hidden="true" />
@@ -118,11 +131,21 @@ export function MatrixRunner(props: Props) {
       <div className="scenario-actions">
         {running
           ? <div className="scenario-main-actions"><button className="secondary-button scenario-stop-button" type="button" onClick={onStop}>Stop now</button></div>
-          : <div className="scenario-main-actions">
+          : batchStatus === "stopped"
+            ? <div className="scenario-recovery-actions">
+                <div className="scenario-main-actions">
+                  <button className="primary-button" type="button" disabled={disabled || loading}
+                    onClick={onContinueStopped}>Continue saved session</button>
+                  <button className="secondary-button" type="button" disabled={disabled || loading}
+                    onClick={onRestartAll}>Restart all offices from start</button>
+                </div>
+                <p className="scenario-recovery-note">Saved: {progress.done.toLocaleString()} / {progress.total.toLocaleString()} reports; {Math.max(0, progress.total - progress.done).toLocaleString()} remain{pendingRetries ? `, plus ${pendingRetries} queued retries` : ""}. Continue processes pending retries first, then resumes at the first unfinished report. Restart refreshes the full State/RTO list and replaces this saved session.</p>
+              </div>
+            : <div className="scenario-main-actions">
               <button className="secondary-button scenario-all-button" type="button" disabled={disabled || loading}
                 onClick={onRunAll}>Run all {scenarios.length}</button>
             </div>}
-        {!running && <div className="scenario-start-row">
+        {!running && batchStatus !== "stopped" && <div className="scenario-start-row">
           <label>Select office
             <select value={Math.min(selectedIndex, Math.max(0, scenarios.length - 1))} disabled={disabled || loading}
               onChange={(event) => setSelectedIndex(Number(event.target.value))}>
@@ -138,7 +161,7 @@ export function MatrixRunner(props: Props) {
               onClick={() => onRunOne(selectedIndex)}>Run one</button>
           </div>
         </div>}
-        {!running && failedAtIndex !== null && <button className="retry-button" type="button"
+        {!running && batchStatus !== "stopped" && failedAtIndex !== null && <button className="retry-button" type="button"
           disabled={disabled || loading} onClick={onRetryFailed}>Retry {failed} failed reports</button>}
       </div>
     </>}
@@ -174,9 +197,10 @@ export function MatrixRunner(props: Props) {
             : formatEstimatedFinish(new Date(clockNow + estimate.remainingMs))}</strong>
           <small>{estimate.remainingMs === null
             ? "Available after the first report completes."
-            : `${formatDuration(estimate.remainingMs)} remaining · Vietnam time`}</small>
+            : `${formatDuration(estimate.remainingMs)} remaining · ${Math.max(1, Math.round(estimate.reportsPerHour || 0)).toLocaleString("en-GB")} reports/hour ${estimate.pace === "recent" ? "recent pace" : "session pace"} · Vietnam time`}</small>
         </div>
       </div>}
     </div>}
+    <CompletedTasks log={log} scenarios={scenarios} />
   </section>;
 }

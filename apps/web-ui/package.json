@@ -10,7 +10,8 @@
     "check": "tsc -b --pretty false",
     "smoke": "node scripts/smoke-ui.mjs",
     "test:timing": "node scripts/test-batch-timing.mjs",
-    "test:batch": "node scripts/test-batch-timing.mjs && node scripts/test-batch-flow.mjs"
+    "test:batch": "node scripts/test-batch-timing.mjs && node scripts/test-batch-flow.mjs",
+    "test:run-errors": "node scripts/test-run-error-log.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

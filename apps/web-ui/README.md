@@ -1,40 +1,20 @@
-# VAHAN RPA Web UI — MVP Phase 3
+# VAHAN Dashboard
 
-React control center for creating VAHAN filter jobs, viewing extension runners,
-tracking job status and entering CAPTCHA challenges forwarded by the backend.
+React/TypeScript/Vite. Docker build static assets, Nginx proxy API + Socket.IO cùng origin. `VITE_API_URL` để trống khi dùng Docker; local dev có thể đặt `http://127.0.0.1:8000`.
 
-The **Lịch kiểm tra giao diện** section lets an operator set the UI health-check
-interval from 1 to 365 days. The value is saved through the backend and sent to
-connected extensions, which reset their alarm and send health results back to the
-backend. The connected extension checks the currently visible official VAHAN Public
-Report tab at `https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en`;
-the manual **Kiểm tra ngay** request never falls back to a background tab, opens a
-tab, or probes a different URL. If the visible tab is missing or redirects to
-another URL, the check is recorded as `CHECK_ERROR`. Scheduled alarm checks may
-use an already-open official tab because they run without a user click.
-**Báo cáo kiểm tra theo ngày** reads the backend CSV log, shows detailed
-diagnostics for the selected day and provides a download link for each matching
-CSV file. The small **Kiểm tra ngay** button sends an immediate read-only check
-request to a connected extension runner; the runner uses the visible official tab and
-pushes the result back to the report panel automatically. If no official tab is
-open, the request is recorded as a check error so it can be fixed explicitly.
+AuthGate nạp user state PostgreSQL trước khi mount dashboard. Ma trận, batch và active job lưu theo tài khoản. Settings quản lý tài khoản; Reports có thư viện file. CAPTCHA cần người dùng nhập.
 
-## Run
-
-Start the backend first, then:
-
-```powershell
-cd apps/web-ui
-npm.cmd install
-npm.cmd run dev
+```bash
+npm ci
+npm run build
 ```
 
-Open `http://127.0.0.1:5173`. The backend URL defaults to
-`http://127.0.0.1:8000` and can be changed with `VITE_API_URL`.
+Xem [README gốc](../../README.md) để chạy toàn bộ stack.
 
-The main screen shows the admin login configured in the API. Set
-`VAHAN_UI_AUTH_USERNAME`, `VAHAN_UI_AUTH_PASSWORD` (at least 12 characters), and
-`VAHAN_UI_AUTH_TOKEN_SECRET` (at least 32 characters) in the API process before
-starting it. Access tokens do not expire automatically and remain in browser local
-storage across tab and browser restarts. Signing out or changing the server signing
-secret returns the browser to the login screen.
+Nút **Copy errors** nằm ngay dưới **Activity** trên giao diện chính, thay cho bảng lỗi. Lỗi có cùng thông báo gốc được gộp thành một mục trong nội dung sao chép, kể cả khi xuất hiện ở nhiều báo cáo hoặc khi chạy lại; bỏ tiền tố/suffix retry do giao diện thêm và chuẩn hoá khoảng trắng khi so sánh. Các thông báo khác nhau vẫn là lỗi riêng. Nội dung sao chép có thông báo, số lần gặp, số lần đã khôi phục, thời gian GMT+7, báo cáo liên quan, mô tả và gợi ý xử lý. Nút báo **Copied** khi sao chép thành công và bị vô hiệu hoá khi chưa có lỗi. Lịch sử vẫn lưu theo tài khoản bằng user state PostgreSQL, giữ 500 lần lỗi gần nhất. NO_DATA và thao tác Stop không được tính là lỗi job. Kiểm tra bằng `npm run test:run-errors` và `npm run test:batch`.
+
+Batch chạy theo nhóm 10 case. Khi nhóm hoàn thành, chạy lại một lần các case lỗi trong đúng nhóm đó, theo thứ tự ban đầu, rồi mới chạy nhóm tiếp theo. Nhóm cuối dưới 10 case cũng được kiểm tra. Case vẫn lỗi sau lần thử lại giữ Failed để có thể chạy lại thủ công.
+
+Lần thử lại giữ nguyên session và toàn bộ filter, gửi `retryOfJobId` của lần chạy lỗi trước. Báo cáo đếm mỗi case một lần với trạng thái mới nhất, tự cập nhật Failed / With data / No data và file tải về. Nút Retry failed cũng cập nhật session gốc. Lịch sử các lần chạy vẫn lưu trong PostgreSQL.
+
+Run history có nút **Delete session** trên mỗi thẻ, với xác nhận trước khi xóa. Phiên vào **Deleted sessions**, có thể **Restore session**. File và dữ liệu tháng được giữ nguyên. Backend chặn xóa phiên có job/batch đang chạy và chặn tiếp tục/retry phiên đã xóa cho đến khi khôi phục. Người dùng chỉ xóa/khôi phục phiên của mình; admin có thể quản lý toàn bộ.

@@ -1,3 +1,4 @@
+import { persistentState } from './services/persistent-state';
 import type { Scenario, VahanFilters } from "./contracts";
 
 export const MATRIX_STORAGE_KEY = "vahanStateRtoMatrixV1";
@@ -64,7 +65,7 @@ export function updateMatrixYear(plan: MatrixPlan, year: number): MatrixPlan {
 
 export function readMatrixPlan(): MatrixPlan | null {
   try {
-    const raw = localStorage.getItem(MATRIX_STORAGE_KEY);
+    const raw = persistentState.getItem(MATRIX_STORAGE_KEY);
     if (!raw) return null;
     const plan = JSON.parse(raw) as MatrixPlan;
     if (!Number.isInteger(plan.year) || !Array.isArray(plan.states) || !Array.isArray(plan.scenarios)) return null;

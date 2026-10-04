@@ -41,7 +41,7 @@ function optionErrorMessage(reason: unknown): string {
     return "VAHAN is experiencing an internal error. Wait a few minutes and try again.";
   }
   if (/operation has timed out|timed out|timeout/i.test(message)) {
-    return "VAHAN is responding slowly. The system will retry loading options when the extension is ready.";
+    return "VAHAN is responding slowly. The system will retry loading options when the browser worker is ready.";
   }
   if (/Receiving end does not exist/i.test(message)) {
     return "Could not find the VAHAN page content. Make sure the tab is on the Public Report page.";
@@ -121,7 +121,7 @@ export function FilterForm({ runners, busy, onSubmit }: Props) {
     ? runnerId : available[0]?.id || "";
 
   async function runnerRequest(request: Record<string, unknown>) {
-    if (!selectedRunner) throw new Error("No extension runner is available.");
+    if (!selectedRunner) throw new Error("No browser runner is available.");
     const response = await uiSocket.timeout(22_000).emitWithAck("ui:runner-options", {
       runnerId: selectedRunner, request,
     }) as Acknowledgement & { options?: OptionMap | string[] };
@@ -237,8 +237,8 @@ export function FilterForm({ runners, busy, onSubmit }: Props) {
       <h2>Report configuration</h2><p>Options are loaded directly from the VAHAN tab.</p>
     </div></div>
 
-    <label>Extension runner<select value={selectedRunner} onChange={(event) => setRunnerId(event.target.value)} disabled={busy}>
-      {!available.length && <option value="">No extension available</option>}
+    <label>Browser runner<select value={selectedRunner} onChange={(event) => setRunnerId(event.target.value)} disabled={busy}>
+      {!available.length && <option value="">No browser worker available</option>}
       {available.map((runner) => <option key={runner.id} value={runner.id}>{runner.name} · {runner.id}</option>)}
     </select></label>
     {loadingOptions && <p className="option-note">Loading options from VAHAN...</p>}

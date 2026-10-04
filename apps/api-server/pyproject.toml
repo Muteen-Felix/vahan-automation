@@ -1,7 +1,7 @@
 [project]
 name = "vahan-rpa-api"
 version = "0.1.0"
-description = "MVP control plane for the VAHAN RPA web UI and browser extension"
+description = "PostgreSQL control plane for the VAHAN Playwright worker and dashboard"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115,<1",
@@ -11,6 +11,10 @@ dependencies = [
   "python-multipart>=0.0.18,<1",
   "aiofiles>=24,<25",
   "openpyxl>=3.1,<4",
+  "sqlalchemy[asyncio]>=2.0.40,<3",
+  "asyncpg>=0.30,<1",
+  "alembic>=1.15,<2",
+  "cryptography>=44,<47",
 ]
 
 [project.optional-dependencies]

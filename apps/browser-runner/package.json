@@ -1,0 +1,5 @@
+{
+  "name": "vahan-playwright-runner", "version": "0.2.0", "private": true, "type": "module",
+  "scripts": { "start": "node runner.mjs", "check": "node --check runner.mjs && node --check page-driver.js", "test:results": "node test-results.mjs", "test:lifecycle": "node test-job-lifecycle.mjs", "test:filters": "node test-filter-fill.mjs" },
+  "dependencies": { "playwright": "1.63.0", "socket.io-client": "4.8.1" }
+}

@@ -9,7 +9,7 @@ import type {
   VahanFilters,
 } from "../contracts";
 
-export const API_URL = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+export const API_URL = (import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
 export const ACCESS_TOKEN_STORAGE_KEY = "vahanUiAccessToken";
 export const AUTH_REQUIRED_EVENT = "vahan:auth-required";
 export const AUTH_LOGOUT_EVENT = "vahan:logout";
@@ -62,7 +62,8 @@ export function clearAccessToken() {
   }
 }
 
-function logout() {
+async function logout() {
+  await request('/api/auth/logout', {method: 'POST'});
   clearAccessToken();
   window.dispatchEvent(new Event(AUTH_LOGOUT_EVENT));
 }
@@ -73,7 +74,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getAccessToken();
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -91,7 +92,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-async function downloadFile(path: string, fileName: string): Promise<void> {
+async function downloadFile(path: string, fileName?: string): Promise<void> {
   const token = getAccessToken();
   const response = await fetch(`${API_URL}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -104,7 +105,11 @@ async function downloadFile(path: string, fileName: string): Promise<void> {
   const objectUrl = URL.createObjectURL(await response.blob());
   const anchor = document.createElement("a");
   anchor.href = objectUrl;
-  anchor.download = fileName;
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  let serverName = 'report.xlsx';
+  if (encodedName) {try {serverName = decodeURIComponent(encodedName);} catch { /* Fall back to a safe name. */ }}
+  anchor.download = fileName || serverName;
   anchor.click();
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
 }
@@ -121,7 +126,11 @@ export const api = {
     method: "POST",
     body: JSON.stringify({}),
   }),
-  currentUser: () => request<{ username: string }>("/api/auth/me"),
+  currentUser: () => request<{ username: string; role: string }>("/api/auth/me"),
+  userState: () => request<Record<string, unknown>>('/api/user-state'),
+  putUserState: (key: string, value: unknown, token?: string | null) => request(`/api/user-state/${encodeURIComponent(key)}`, {
+    method: 'PUT', body: JSON.stringify({value}), ...(token ? {headers: {Authorization: `Bearer ${token}`}} : {}),
+  }),
   logout,
   downloadFile,
   runners: () => request<Runner[]>("/api/runners"),
@@ -139,15 +148,17 @@ export const api = {
   uiHealthReports: (date?: string) => request<UiHealthReportsResponse>(
     `/api/ui-health/reports${date ? `?date=${encodeURIComponent(date)}` : ""}`,
   ),
-  createJob: (runnerId: string, filters: VahanFilters, scenarioName?: string, sessionId?: string) =>
+  createJob: (runnerId: string, filters: VahanFilters, scenarioName?: string, sessionId?: string, retryOfJobId?: string) =>
     request<Job>("/api/jobs", {
       method: "POST",
-      body: JSON.stringify({ runnerId, filters, scenarioName, ...(sessionId ? { sessionId } : {}) }),
+      body: JSON.stringify({ runnerId, filters, scenarioName, sessionId, retryOfJobId }),
     }),
   getJob: (jobId: string) => request<Job>(`/api/jobs/${jobId}`),
   cancelJob: (jobId: string) => request<Job>(`/api/jobs/${jobId}/cancel`, { method: "POST" }),
   exportedReports: () => request<ExportedReportItem[]>("/api/jobs/reports"),
-  exportedReportSessions: () => request<ExportedReportSession[]>("/api/jobs/reports/sessions"),
+  exportedReportSessions: (deleted = false) => request<ExportedReportSession[]>(`/api/jobs/reports/sessions${deleted ? "?deleted=true" : ""}`),
+  deleteReportSession: (sessionId: string) => request<{ ok: boolean }>(`/api/jobs/reports/sessions/${sessionId}`, { method: "DELETE" }),
+  restoreReportSession: (sessionId: string) => request<{ ok: boolean }>(`/api/jobs/reports/sessions/${sessionId}/restore`, { method: "POST" }),
   verifyReports: (fileNames: string[], sessionIds?: Record<string, string>) => request<{ files: Record<string, number> }>("/api/jobs/reports/verify", {
     method: "POST",
     body: JSON.stringify({ fileNames, ...(sessionIds ? { sessionIds } : {}) }),

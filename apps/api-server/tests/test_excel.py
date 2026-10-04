@@ -301,12 +301,12 @@ async def test_storage_failure_returns_useful_error_with_cors(monkeypatch) -> No
     async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
         response = await client.post(
             f"/api/jobs/{job.id}/upload-excel",
-            headers={**RUNNER_HEADERS, "Origin": "chrome-extension://lnlmikbapplimecdenhhadbhmbenddpd"},
+            headers={**RUNNER_HEADERS, "Origin": "http://127.0.0.1:5173"},
             files={"file": ("report.xlsx", b"test", "application/octet-stream")},
         )
     assert response.status_code == 500
     assert "storage and permissions" in response.json()["detail"]
-    assert response.headers["access-control-allow-origin"].startswith("chrome-extension://")
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5173"
     assert (await services.jobs.get(job.id)).excel_file_name is None
 
 

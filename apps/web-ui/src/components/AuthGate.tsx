@@ -8,6 +8,7 @@ import {
   clearAccessToken,
   getAccessToken,
 } from "../services/api-client";
+import { hydratePersistentState, resetPersistentState } from '../services/persistent-state';
 
 type GateState = "checking" | "setup" | "login" | "unavailable" | "authenticated";
 
@@ -21,12 +22,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     const expireSession = () => {
+      resetPersistentState();
       clearAccessToken();
       setPassword("");
       setGate("login");
       setError("Your session is no longer valid. Please sign in again.");
     };
     const signOut = () => {
+      resetPersistentState();
       setPassword("");
       setError("You have signed out.");
       setGate("login");
@@ -58,6 +61,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
               return;
             }
           }
+          await hydratePersistentState();
           if (active) setGate("authenticated");
         } catch {
           clearAccessToken();
@@ -86,6 +90,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       const result = await api.login(username.trim(), password);
       window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, result.accessToken);
       setPassword("");
+      await hydratePersistentState();
       setGate("authenticated");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Sign-in failed.");
@@ -129,7 +134,7 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
           </>
         ) : (
           <>
-            <p className="eyebrow dark">ADMIN SIGN-IN</p>
+            <p className="eyebrow dark">ACCOUNT SIGN-IN</p>
             <h1>Welcome back</h1>
             <p className="auth-description">Sign in to open the VAHAN RPA dashboard.</p>
             <form className="auth-form" onSubmit={handleLogin}>
@@ -160,7 +165,7 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
                 {submitting ? "Signing in…" : "Sign in"}
               </button>
             </form>
-            <p className="auth-footnote">Your sign-in stays active until you log out or the server signing secret changes.</p>
+            <p className="auth-footnote">Your sign-in stays active until you log out, your account is disabled or the server signing secret changes.</p>
           </>
         )}
       </section>
