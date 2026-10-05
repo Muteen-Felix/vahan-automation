@@ -18,6 +18,7 @@ from app.db import schema as db
 from app.models.job import Job, JobStatus, can_transition
 from app.models.runner import Runner, RunnerStatus
 from app.models.ui_health import UiHealthSchedule
+from app.state_codec import encode_user_state, decode_user_state
 
 TERMINAL = {JobStatus.COMPLETED, JobStatus.NO_DATA, JobStatus.FAILED, JobStatus.CANCELLED}
 
@@ -378,9 +379,10 @@ class PostgresUsers:
     async def state(self, username):
         async with engine.connect() as connection:
             rows = (await connection.execute(select(db.user_state).where(db.user_state.c.username == username))).mappings()
-            return {row["key"]: row["value"] for row in rows}
+            return {row["key"]: decode_user_state(row["value"]) for row in rows}
 
     async def put_state(self, username, key, value):
+        value = encode_user_state(value)
         async with engine.begin() as connection:
             await connection.execute(pg_insert(db.user_state).values(username=username, key=key, value=value,
                 updated_at=now()).on_conflict_do_update(index_elements=[db.user_state.c.username, db.user_state.c.key],

@@ -28,7 +28,7 @@ function fixture(backendState = 'WAITING_CAPTCHA', rejectSubmitting = false, rej
       },
       locator: selector => ({
         fill: async () => calls.push('fill'),
-        click: async () => { assert.equal(storedState, 'SUBMITTING'); calls.push('click'); },
+        click: async options => { assert.equal(options.noWaitAfter, true); assert.equal(storedState, 'SUBMITTING'); calls.push('click'); },
       }),
     },
     assertCurrent: candidate => assert.equal(candidate, job),
@@ -84,9 +84,10 @@ function resultFixture(initialUrl, evaluate, load) {
   let evaluations = 0;
   const context = {
     URL, target: new URL(official), RESULT_TIMEOUT: 90_000, active: job, authRequired: false,
+    setTimeout: callback => queueMicrotask(callback),
     assertCurrent: () => {},
     page: {url: () => url, evaluate: async () => {evaluations++; return evaluate();},
-      waitForLoadState: async () => {url = load || url;}},
+      waitForLoadState: async () => {if (evaluations) url = load || url;}},
   };
   const wait = runInNewContext(`${source.slice(resultStart, resultEnd)}\nwaitForResult`, context);
   return {wait: () => wait(job), evaluations: () => evaluations};
@@ -100,3 +101,43 @@ assert.equal(redirected.evaluations(), 1, 'navigation after Apply is classified 
 const stalled = resultFixture(official, () => ({type: 'TIMEOUT'}));
 await assert.rejects(stalled.wait(), /VAHAN_RESULT_TIMEOUT/);
 console.log('Report navigation away is distinct from a genuine result timeout.');
+
+const openingStart = source.indexOf('async function ensurePage(');
+const openingEnd = source.indexOf('async function saveState(', openingStart);
+function openingFixture({initial = 'about:blank', gotoError, responseStatus = 200, redirect, controlError} = {}) {
+  let current = initial;
+  const calls = [];
+  const context = {
+    globalThis: {URL}, URL: official, target: new URL(official), authRequired: false,
+    launch: async () => {}, newPage: async () => {},
+    page: {isClosed: () => false, url: () => current,
+      goto: async (url, options) => {
+        calls.push('navigate'); assert.equal(url, official); assert.equal(options.waitUntil, 'commit');
+        current = redirect || official;
+        if (gotoError) throw new Error(gotoError);
+        return {status: () => responseStatus};
+      },
+      locator: selector => ({first: () => ({waitFor: async options => {
+        calls.push('controls'); assert.equal(selector, '#stateName option');
+        assert.equal(options.state, 'attached'); assert.equal(options.timeout, 60_000);
+        if (controlError) throw new Error(controlError);
+      }})}),
+    },
+  };
+  const ensure = runInNewContext(`${source.slice(openingStart, openingEnd)}\nensurePage`, context);
+  return {ensure, calls};
+}
+const loading = openingFixture(); await loading.ensure();
+assert.deepEqual(loading.calls, ['navigate', 'controls']);
+const timedOutWithControls = openingFixture({gotoError: 'page.goto: Timeout 45000ms exceeded'});
+await timedOutWithControls.ensure();
+assert.deepEqual(timedOutWithControls.calls, ['navigate', 'controls'], 'ready controls recover a navigation timeout without reloading');
+const missingControls = openingFixture({initial: official, controlError: 'Timeout waiting for State'});
+await assert.rejects(missingControls.ensure(), /VAHAN_PAGE_NOT_READY/);
+const forbidden = openingFixture({responseStatus: 401});
+await assert.rejects(forbidden.ensure(), /VAHAN_AUTH_REQUIRED/);
+assert.deepEqual(forbidden.calls, ['navigate']);
+const landing = openingFixture({redirect: homepage});
+await assert.rejects(landing.ensure(), /VAHAN_REPORT_NAVIGATED_AWAY/);
+assert.deepEqual(landing.calls, ['navigate']);
+console.log('5 page-readiness checks passed: navigation commit, usable timeout recovery, missing controls, authentication and redirect.');

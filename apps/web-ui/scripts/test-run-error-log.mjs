@@ -9,6 +9,8 @@ const exports = {};
 runInNewContext(compiled, {exports});
 const {recordRunOutcome, jobRunOutcome, readRunErrors, describeRunError, groupRunErrors, formatRunErrors, MAX_RUN_ERRORS} = exports;
 const filters = {states: ['Assam'], rtos: ['Office AS25']};
+assert.equal(describeRunError('page.evaluate: Execution context was destroyed, most likely because of a navigation').title, 'Report interrupted by navigation');
+assert.equal(describeRunError('Worker is busy.').title, 'Browser worker busy');
 const failure = {id: 'job:original', jobId: 'original', sessionId: 'session-1', name: 'Report AS25', filters,
   status: 'failed', detail: 'RTO_OPTIONS_TIMEOUT: options did not load', occurredAt: '2026-10-02T10:00:00Z'};
 let entries = recordRunOutcome([], failure);
@@ -41,9 +43,16 @@ assert.equal(jobRunOutcome({...job, status: 'WAITING_RESULT'}), null);
 assert.equal(jobRunOutcome({...job, status: 'NO_DATA'}).status, 'no_data');
 assert.equal(jobRunOutcome({...job, status: 'FAILED', error: 'NO_RECORD_FOUND: empty'}), null);
 assert.equal(jobRunOutcome({...job, status: 'FAILED'}).detail, failure.detail);
-for (const code of ['RTO_OPTIONS_TIMEOUT', 'VAHAN_RESULT_TIMEOUT', 'CAPTCHA_INVALID_LIMIT']) {
+for (const code of ['RTO_OPTIONS_TIMEOUT', 'VAHAN_RESULT_TIMEOUT', 'CAPTCHA_INVALID_LIMIT',
+  'API 400: MAIN_REPORT_PARSE_FAILED: source contains "OTHERS" without a manufacturer name.',
+  'API 400: MAIN_REPORT_PARSE_FAILED: invalid month count', 'VAHAN_REPORT_NAVIGATED_AWAY',
+  'FILTER_VERIFICATION_FAILED: fitness', '#rtoCode: dynamic options did not load within 15000 ms.',
+  '#xAxis: dynamic options did not load within 15000 ms.', 'VAHAN_PAGE_NOT_READY',
+  'Runner is reconnecting.', 'Job ended with status CANCELLED.']) {
   assert.notEqual(describeRunError(code).title, 'Report error', `${code} has a specific explanation`);
 }
+assert.equal(describeRunError('MAIN_REPORT_PARSE_FAILED: Maker Report:12: source contains "OTHERS" without a manufacturer name.').title,
+  'Source manufacturer names missing');
 let many = [];
 for (let i = 0; i < MAX_RUN_ERRORS + 10; i++) many = recordRunOutcome(many, {...failure, id: String(i), jobId: String(i)});
 assert.equal(many.length, MAX_RUN_ERRORS);

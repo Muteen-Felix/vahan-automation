@@ -13,6 +13,7 @@ from app.repositories.postgres import audit
 
 CAPTCHA_FORWARD_TIMEOUT_SECONDS = 45
 CAPTCHA_REFRESH_TIMEOUT_SECONDS = 20
+RUNNER_OPTIONS_TIMEOUT_SECONDS = 115
 _ui_token_expiry_tasks: dict[str, asyncio.Task] = {}
 _ui_sessions: dict[str, str] = {}
 
@@ -144,7 +145,7 @@ async def runner_options(_sid: str, payload: dict) -> dict:
             request,
             to=runner.socket_id,
             namespace="/runner",
-            timeout=20,
+            timeout=RUNNER_OPTIONS_TIMEOUT_SECONDS,
         )
         await audit(user['username'], 'runner.options', {'runnerId': runner_id, 'request': request, 'response': result})
         return result

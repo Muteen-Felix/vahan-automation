@@ -26,6 +26,7 @@ import type {
 } from "./contracts";
 import { AUTH_REQUIRED_EVENT, ApiError, api } from "./services/api-client";
 import { uiSocket } from "./services/socket-client";
+import { requestRunnerOptions } from './services/runner-options';
 import type { FilterTiming } from "./batch-timing";
 import { loadReportCoverage, uncoveredScenarios, type CoverageContext } from './report-coverage';
 
@@ -313,31 +314,20 @@ export default function App() {
     try {
       const runnerId = await pickAvailableRunnerWithRetry();
       if (!runnerId) throw new Error("No online browser runner is available.");
-      const requestPayload = async (request: Record<string, unknown>): Promise<unknown> => {
-        let lastError = "VAHAN did not return options.";
-        for (let attempt = 0; attempt < 3; attempt += 1) {
-          try {
-            const response = await uiSocket.timeout(30_000).emitWithAck("ui:runner-options", {
-              runnerId, request,
-            }) as Acknowledgement & { options?: unknown };
-            if (response.ok && response.options) return response.options;
-            lastError = response.error || lastError;
-          } catch (reason) {
-            lastError = reason instanceof Error ? reason.message : String(reason);
-          }
-          if (attempt < 2) await sleep(1000 * (attempt + 1));
-        }
-        throw new Error(lastError);
-      };
-      const requestOptions = async (request: Record<string, unknown>): Promise<string[]> => {
-        const options = await requestPayload(request);
+      const requestPayload = (request: Record<string, unknown>, message: string) =>
+        requestRunnerOptions(uiSocket, runnerId, request, message, setMatrixProgress);
+      const requestOptions = async (request: Record<string, unknown>, message: string): Promise<string[]> => {
+        const options = await requestPayload(request, message);
         if (!Array.isArray(options) || !options.every((item) => typeof item === "string")) {
           throw new Error("VAHAN returned an invalid options list.");
         }
         return options;
       };
-      setMatrixProgress("Checking fixed filter options…");
-      const available = await requestPayload({ type: "GET_ALL_OPTIONS" }) as Record<string, string[]>;
+      const available = await requestPayload({ type: "GET_ALL_OPTIONS" }, "Checking fixed filter options…") as Record<string, string[]>;
+      if (!available || typeof available !== 'object' || Array.isArray(available)
+          || !Object.values(available).every(options => Array.isArray(options) && options.every(option => typeof option === 'string'))) {
+        throw new Error('VAHAN returned invalid fixed filter options. Please retry.');
+      }
       const expected: Record<string, string[]> = {
         archivedFlags: ["ACTIVE_COMPLIANT", "ACTIVE_NON_COMPLIANT", "PERMANENT_ARCHIVE", "TEMPORARY_ARCHIVE"],
         period: ["CALENDAR YEAR"],
@@ -351,18 +341,16 @@ export default function App() {
         const missing = values.filter((value) => !options.some((option) => option.trim().toLowerCase() === value.toLowerCase()));
         if (missing.length) throw new Error(`VAHAN is missing ${field}: ${missing.join(", ")}.`);
       }
-      const xAxis = await requestOptions({ type: "GET_X_AXIS_OPTIONS", yAxis: "Maker" });
+      const xAxis = await requestOptions({ type: "GET_X_AXIS_OPTIONS", yAxis: "Maker" }, "Checking Maker / Month Wise options…");
       if (!xAxis.some((option) => option.trim().toLowerCase() === "month wise")) {
         throw new Error("VAHAN is missing X-Axis Month Wise for Y-Axis Maker.");
       }
-      setMatrixProgress("Loading State list from VAHAN…");
-      const states = [...new Set((await requestOptions({ type: "GET_STATE_OPTIONS", delhiNcr: "ALL STATES" }))
+      const states = [...new Set((await requestOptions({ type: "GET_STATE_OPTIONS", delhiNcr: "ALL STATES" }, "Loading State list from VAHAN…"))
         .map((name) => name.trim()).filter((name) => name && !/^(-+\s*select|all states)/i.test(name)))];
       if (!states.length) throw new Error("VAHAN returned no State options.");
       const rtosByState: Record<string, string[]> = {};
       for (const [index, state] of states.entries()) {
-        setMatrixProgress(`Loading RTO ${index + 1}/${states.length}: ${state}`);
-        const rtos = (await requestOptions({ type: "GET_RTO_OPTIONS", stateLabels: state }))
+        const rtos = (await requestOptions({ type: "GET_RTO_OPTIONS", stateLabels: state }, `Loading RTO ${index + 1}/${states.length}: ${state}`))
           .map((name) => name.trim()).filter((name) => name && !/^(-+\s*select|all rto)/i.test(name));
         if (!rtos.length) throw new Error(`VAHAN returned no RTO offices for ${state}. Matrix was not saved.`);
         if (new Set(rtos).size !== rtos.length) {

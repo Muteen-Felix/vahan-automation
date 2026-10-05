@@ -442,6 +442,24 @@ async function setFilter(config, key, stableMs = 0) {
       if (typeof yAxis.loadOptions === 'function') yAxis.loadOptions();
       await waitForXAxisOptions(yAxisLabel, labels, 15_000);
     }
+  } else if (key === 'rtos') {
+    try {
+      await waitForOptions(selector, labels, 15_000, null, stableMs);
+    } catch (firstError) {
+      assertFillActive();
+      const state = document.querySelector('#stateName');
+      const expected = splitValues(config.states).map(normalize);
+      const actual = state ? [...state.selectedOptions].map(option => normalize(option.label || option.textContent)) : [];
+      if (!state || !expected.length || expected.length !== actual.length || expected.some(label => !actual.includes(label))) throw firstError;
+      // Reissue the official dependent load once, preserving the requested
+      // State. Final verification still waits for all outstanding responses.
+      state.dispatchEvent(new Event('change', {bubbles: true}));
+      try { await waitForOptions(selector, labels, 15_000, null, stableMs); }
+      catch (error) {
+        assertFillActive();
+        throw new Error(`RTO_OPTIONS_TIMEOUT: ${selector}: requested RTO options did not load after reloading the selected State. ${error.message}`);
+      }
+    }
   } else {
     await waitForOptions(selector, labels, 15_000, null, stableMs);
   }

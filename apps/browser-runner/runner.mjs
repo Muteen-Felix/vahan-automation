@@ -20,6 +20,8 @@ const DRIVER = fileURLToPath(new globalThis.URL('./page-driver.js', import.meta.
 // to finish the query. Five seconds caused real reports to be marked failed
 // while VAHAN was still rendering them.
 const RESULT_TIMEOUT = Number(process.env.VAHAN_RESULT_TIMEOUT_MS || 90_000);
+// The API waits 115 s and the UI 125 s. Finish (and release the page) first.
+const OPTIONS_TIMEOUT = 110_000;
 if (!TOKEN || TOKEN === 'change-me') throw new Error('Set a private VAHAN_API_RUNNER_TOKEN.');
 const target = new globalThis.URL(URL);
 if (!LOCAL_FIXTURE && (target.origin !== 'https://analytics.parivahan.gov.in' || target.pathname !== '/analytics/vahanpublicreport')) {
@@ -74,7 +76,9 @@ async function submitCaptchaInternal(job, captchaId, value) {
     await page.locator('#externalCaptcha').fill(value.trim());
     await page.evaluate(({timeout, rto}) => globalThis.vahanDriver.prepareResult(timeout, rto),
       {timeout: RESULT_TIMEOUT, rto: job.filters.rtos?.[0] || ''});
-    await page.locator('#applyTrigger').click();
+    // The click only submits the form. Result/navigation waiting belongs to
+    // waitForResult, otherwise a completed click can time out before that stage.
+    await page.locator('#applyTrigger').click({noWaitAfter: true});
     await ack('job:apply-clicked', {jobId: job.jobId, clickId: randomUUID()});
     await status('WAITING_RESULT', undefined, job);
     waitForResult(job).catch(error => fail(error, job));
@@ -162,16 +166,42 @@ async function newPage() {
     if (page === monitored && response.status() === 401 && response.request().isNavigationRequest() && response.request().frame() === monitored.mainFrame()) authRequired = true;
   });
 }
-async function ensurePage() {
+async function ensurePage(isCancelled = () => false) {
   await launch();
+  if (isCancelled()) throw new Error('VAHAN_OPTIONS_TIMEOUT: options loading was cancelled.');
   if (page.isClosed()) await newPage();
-  if (!page.url().startsWith(target.origin + target.pathname)) {
-    authRequired = false;
-    const response = await page.goto(URL, {waitUntil: 'domcontentloaded', timeout: 30_000});
-    if (response?.status() === 401 || authRequired) throw new Error('VAHAN_AUTH_REQUIRED: operator authentication is required.');
-    if (!LOCAL_FIXTURE && !page.url().startsWith(target.origin + target.pathname)) throw new Error('VAHAN redirected away from the Public Report page.');
+  if (isCancelled()) {
+    await page.close().catch(() => {});
+    throw new Error('VAHAN_OPTIONS_TIMEOUT: options loading was cancelled.');
   }
-  await page.locator('#stateName').waitFor({state: 'attached', timeout: 15_000});
+  const isReportPage = () => {
+    const current = new globalThis.URL(page.url());
+    return current.origin === target.origin && current.pathname === target.pathname;
+  };
+  if (!isReportPage()) {
+    authRequired = false;
+    let response;
+    try {
+      response = await page.goto(URL, {waitUntil: 'commit', timeout: 45_000});
+    } catch (error) {
+      // A navigation timeout need not mean that the report failed to open.
+      // Check its actual controls before deciding; never submit the form twice.
+      if (!/timeout/i.test(error.message) || !isReportPage()) throw error;
+    }
+    if (response?.status() === 401 || authRequired) throw new Error('VAHAN_AUTH_REQUIRED: operator authentication is required.');
+    if (!isReportPage()) throw new Error('VAHAN_REPORT_NAVIGATED_AWAY: VAHAN redirected away while opening the Public Report page.');
+  }
+  try {
+    // VAHAN's multiselect plugin hides the native select and renders a proxy.
+    // The driver reads native options, so visibility is not page readiness.
+    await page.locator('#stateName option').first().waitFor({state: 'attached', timeout: 60_000});
+  } catch (error) {
+    if (authRequired) throw new Error('VAHAN_AUTH_REQUIRED: operator authentication is required.');
+    if (!isReportPage()) throw new Error('VAHAN_REPORT_NAVIGATED_AWAY: VAHAN redirected away while loading the report controls.');
+    throw new Error(`VAHAN_PAGE_NOT_READY: the State control did not become available. ${error.message}`);
+  }
+  if (authRequired) throw new Error('VAHAN_AUTH_REQUIRED: operator authentication is required.');
+  if (!isReportPage()) throw new Error('VAHAN_REPORT_NAVIGATED_AWAY: VAHAN redirected away before filters could be filled.');
 }
 async function saveState() {
   if (context && socket.connected) await http(`/api/runner-state/${ID}`, {method: 'PUT',
@@ -241,17 +271,37 @@ async function waitForResult(job) {
       throw new Error(`VAHAN_REPORT_NAVIGATED_AWAY: the Public Report page changed to ${current.pathname || '/'} before the result was confirmed.`);
     }
   };
+  const deadline = Date.now() + RESULT_TIMEOUT;
   let result;
-  try {
+  while (!result) {
+    assertCurrent(job);
+    if (authRequired) throw new Error('VAHAN_AUTH_REQUIRED');
     assertReportPage();
-    result = await jobPage.evaluate(({timeout, rto}) => globalThis.vahanDriver.result(timeout, rto),
-      {timeout: RESULT_TIMEOUT, rto: job.filters.rtos?.[0] || ''});
-  } catch (error) {
-    if (!/context was destroyed|navigation/i.test(error.message)) throw error;
-    await jobPage.waitForLoadState('domcontentloaded');
-    assertReportPage();
-    result = await jobPage.evaluate(({timeout, rto}) => globalThis.vahanDriver.result(timeout, rto),
-      {timeout: RESULT_TIMEOUT, rto: job.filters.rtos?.[0] || ''});
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new Error('VAHAN_RESULT_TIMEOUT: no confirmed report within the result timeout.');
+    try {
+      // An Apply POST replaces the document. DOMContentLoaded can refer to the
+      // old document when navigation has only just started, so even the next
+      // evaluation may lose its context. Reattach the reader as often as needed
+      // within ONE result deadline; never click Apply again here.
+      await jobPage.waitForLoadState('domcontentloaded', {timeout: remaining});
+      assertCurrent(job);
+      if (authRequired) throw new Error('VAHAN_AUTH_REQUIRED');
+      assertReportPage();
+      const readTimeout = deadline - Date.now();
+      if (readTimeout <= 0) throw new Error('VAHAN_RESULT_TIMEOUT: no confirmed report within the result timeout.');
+      result = await jobPage.evaluate(({timeout, rto}) => globalThis.vahanDriver.result(timeout, rto),
+        {timeout: readTimeout, rto: job.filters.rtos?.[0] || ''});
+    } catch (error) {
+      if (/Timeout.*exceeded/i.test(error.message)) {
+        throw new Error('VAHAN_RESULT_TIMEOUT: the report document did not finish loading within the result timeout.');
+      }
+      if (!/Execution context was destroyed|Cannot find context with specified id/i.test(error.message)) throw error;
+      assertCurrent(job);
+      // Only back off after a destroyed context, rather than spin against a
+      // document in the middle of another navigation.
+      await new Promise(resolve => setTimeout(resolve, Math.min(100, Math.max(0, deadline - Date.now()))));
+    }
   }
   assertReportPage();
   if (active !== job || job.cancelled) return;
@@ -338,20 +388,37 @@ socket.on('captcha:refresh', async (payload, respond) => {
 socket.on('job:cancelled', async ({jobId}) => {
   if (active?.jobId === jobId) { const cancelled = active; cancelled.cancelled = true; await page?.close().catch(() => {}); if (active === cancelled) active = null; }
 });
-socket.on('runner:options', async (request, respond) => {
-  if (active || optionsBusy) { respond({ok: false, error: 'Worker is busy.'}); return; }
+async function runnerOptions(request, respond) {
+  if (active?.finishing) await active.finishPromise;
+  if (active || optionsBusy) { respond({ok: false, error: 'Worker is busy.', code: 'RUNNER_BUSY', retryAfterMs: 1000}); return; }
   optionsBusy = true;
-  try {
-    await ensurePage();
+  let timer, expired = false;
+  const work = async () => {
+    await ensurePage(() => expired);
+    if (expired) throw new Error('VAHAN_OPTIONS_TIMEOUT: options loading was cancelled.');
     const operations = {GET_ALL_OPTIONS: ['readOptions', VAHAN_OPTION_SELECTORS], GET_STATE_OPTIONS: ['states', request.delhiNcr],
       GET_RTO_OPTIONS: ['rtos', request.stateLabels], GET_X_AXIS_OPTIONS: ['xAxis', request.yAxis], SEARCH_MAKERS: ['makers', request.search]};
     const operation = operations[request.type];
     if (!operation) throw new Error('Unsupported options request.');
-    const options = await page.evaluate(([method, value]) => globalThis.vahanDriver[method](value), operation);
+    return page.evaluate(([method, value]) => globalThis.vahanDriver[method](value), operation);
+  };
+  try {
+    const deadline = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        expired = true;
+        reject(new Error(`VAHAN_OPTIONS_TIMEOUT: ${request.type} did not finish within ${OPTIONS_TIMEOUT / 1000} seconds. Please retry.`));
+      }, OPTIONS_TIMEOUT);
+    });
+    const options = await Promise.race([work(), deadline]);
     respond({ok: true, options});
-  } catch (error) { respond({ok: false, error: error.message}); }
-  finally { optionsBusy = false; }
-});
+  } catch (error) {
+    // Closing the page also aborts page.evaluate/fetch; a Promise timeout alone
+    // would leave the old request running and every retry would see busy.
+    await page?.close().catch(() => {});
+    respond({ok: false, error: error.message});
+  } finally { clearTimeout(timer); optionsBusy = false; }
+}
+socket.on('runner:options', runnerOptions);
 let nextHealthCheck = Infinity;
 socket.on('ui-health:schedule-updated', schedule => { nextHealthCheck = Date.parse(schedule.nextCheckAt); });
 async function healthCheck(request = {}) {
@@ -388,7 +455,7 @@ const timer = setInterval(async () => {
 }, 15_000);
 createServer((request, response) => {
   response.writeHead(socket.connected && context && browser?.isConnected() ? 200 : 503, {'Content-Type': 'application/json'});
-  response.end(JSON.stringify({connected: socket.connected, browserReady: !!context && !!browser?.isConnected(), activeJobId: active?.jobId || null}));
+  response.end(JSON.stringify({connected: socket.connected, browserReady: !!context && !!browser?.isConnected(), activeJobId: active?.jobId || null, optionsBusy}));
 }).listen(3001, '0.0.0.0');
 async function stop() {
   if (stopping) return; stopping = true; clearInterval(timer);

@@ -18,17 +18,19 @@ const requested = {
 const delayed = {states: ['Test State'], rtos: ['Test RTO'], subCategories: ['TWO WHEELER(NT)'], classes: ['MOTOR CYCLE'],
   fuels: ['ELECTRIC(BOV)'], xAxis: ['Month Wise']};
 const esc = value => String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
-async function fixture({path = driver, lateReset = false, xhr = false, xAxisDelays = []} = {}) {
+async function fixture({path = driver, lateReset = false, xhr = false, xAxisDelays = [], rtoResponses = []} = {}) {
   const page = await browser.newPage();
   await page.addInitScript({path});
   let xAxisRequests = 0;
+  let rtoRequests = 0;
   await page.route('http://fill.test/**', async route => {
     const url = new URL(route.request().url());
     if (url.pathname !== '/') {
       const delayMs = url.pathname === '/xAxis' ? (xAxisDelays[xAxisRequests++] ?? 140) : 140;
       await new Promise(resolve => setTimeout(resolve, delayMs));
       return route.fulfill({contentType: 'application/json', body: JSON.stringify(
-        url.pathname.includes('vehicle-makers') ? [url.searchParams.get('search')] : delayed[url.pathname.slice(1)] || [])});
+        url.pathname.includes('vehicle-makers') ? [url.searchParams.get('search')] :
+        url.pathname === '/rtos' ? (rtoResponses[rtoRequests++] ?? delayed.rtos) : delayed[url.pathname.slice(1)] || [])});
     }
     const selects = Object.entries(VAHAN_OPTION_SELECTORS).map(([key, definition]) => {
       const labels = key in delayed || key === 'makers' ? [] :
@@ -152,6 +154,35 @@ try {
       assert.ok((await page.evaluate(() => window.fixtureAxisReloads)) >= 2,
         'Y-Axis must be signalled again after the first X-Axis wait expires');
       assert.equal(await page.locator('#xAxis_hidden').inputValue(), 'Month Wise');
+    } finally { await page.close(); }
+  });
+  await check('missing RTO options reload the selected State once and preserve all filters', async () => {
+    const page = await fixture({rtoResponses: [[], ['Test RTO']]});
+    try {
+      await page.evaluate(() => {
+        window.fixtureStateReloads = 0;
+        document.querySelector('#stateName').addEventListener('change', () => { window.fixtureStateReloads++; });
+        const originalTimeout = window.setTimeout;
+        window.setTimeout = function (callback, ms, ...args) {
+          return originalTimeout.call(window, callback, ms === 15_000 ? 900 : ms, ...args);
+        };
+      });
+      const proof = await page.evaluate(config => vahanDriver.fill(config), requested);
+      assert.ok(proof.checks.every(check => check.match));
+      assert.equal(await page.evaluate(() => fixtureStateReloads), 2);
+      assert.deepEqual(proof.checks.find(check => check.field === 'rtos').actual, ['Test RTO']);
+    } finally { await page.close(); }
+  });
+  await check('RTO reload exhaustion stops the filter with a specific error', async () => {
+    const page = await fixture({rtoResponses: [[], []]});
+    try {
+      await page.evaluate(() => {
+        const originalTimeout = window.setTimeout;
+        window.setTimeout = function (callback, ms, ...args) {
+          return originalTimeout.call(window, callback, ms === 15_000 ? 900 : ms, ...args);
+        };
+      });
+      await assert.rejects(page.evaluate(config => vahanDriver.fill(config), requested), /RTO_OPTIONS_TIMEOUT/);
     } finally { await page.close(); }
   });
   await check('before-Apply verification rejects silent changes, disabled controls and duplicates', async () => {
