@@ -11,12 +11,14 @@ import { JobStatus } from "./components/JobStatus";
 import { CopyRunErrors } from './components/CopyRunErrors';
 import { jobRunOutcome, readRunErrors, recordRunOutcome, RUN_ERROR_STORAGE_KEY, type RunOutcome } from './run-error-log';
 import { MatrixRunner } from "./components/MatrixRunner";
-import { buildMatrix, currentReportYear, MATRIX_STORAGE_KEY, readMatrixPlan, updateMatrixYear, type MatrixPlan } from "./matrix-plan";
+import { buildMatrix, currentReportYear, fixedFilters, MATRIX_STORAGE_KEY, readMatrixPlan, updateMatrixYear, type MatrixPlan } from "./matrix-plan";
 import type {
   Acknowledgement,
   CaptchaChallenge,
   ConnectionState,
   Job,
+  MakerUpdateRun,
+  MakerUpdateTask,
   PendingUiHealthCheck,
   Runner,
   ReportSource,
@@ -174,6 +176,9 @@ export default function App() {
   const scenarios = matrixPlan?.scenarios || EMPTY_SCENARIOS;
   const [matrixLoading, setMatrixLoading] = useState(false);
   const [matrixProgress, setMatrixProgress] = useState("");
+  const [makerUpdate, setMakerUpdate] = useState<MakerUpdateRun | null>(null);
+  const [makerUpdateRunning, setMakerUpdateRunning] = useState(false);
+  const [makerUpdateProgress, setMakerUpdateProgress] = useState("");
   const [initialBatchRecovery] = useState(readBatchRecovery);
   const [batchRunning, setBatchRunning] = useState(initialBatchRecovery?.status === "running");
   const [batchStatus, setBatchStatus] = useState<BatchStatus>(initialBatchRecovery?.status || "idle");
@@ -216,6 +221,9 @@ export default function App() {
   const batchLogRef = useRef<BatchLogEntry[]>(initialBatchRecovery?.log || []);
   const failedAtIndexRef = useRef<number | null>(initialBatchRecovery?.failedAtIndex ?? null);
   const matrixLoadInFlightRef = useRef(false);
+  const makerUpdateStopRef = useRef(false);
+  const makerUpdateRunningRef = useRef(false);
+  const makerUpdateJobRef = useRef<string | null>(null);
   const pendingManualCheckRef = useRef<PendingUiHealthCheck | null>(null);
   const runErrorsRef = useRef(runErrors);
 
@@ -282,6 +290,17 @@ export default function App() {
     onHashChange();
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
+
+  useEffect(() => {
+    if (!jobRestoreReady) return;
+    let current = true;
+    api.makerUpdates(currentReportYear()).then((runs) => {
+      if (current && runs.length) api.makerUpdate(runs[0].id).then((run) => {
+        if (current) setMakerUpdate(run);
+      }).catch(() => {});
+    }).catch(() => {});
+    return () => { current = false; };
+  }, [jobRestoreReady]);
 
   useEffect(() => {
     document.title = view === "settings"
@@ -516,13 +535,14 @@ export default function App() {
     };
   }, []);
 
-  async function createJob(runnerId: string, filters: VahanFilters, scenarioName?: string, sessionId?: string, retryOfJobId?: string) {
+  async function createJob(runnerId: string, filters: VahanFilters, scenarioName?: string, sessionId?: string,
+    retryOfJobId?: string, update?: {updateKind: "GLOBAL" | "DISCOVER" | "REFRESH"; updateRunId?: string; updateTaskId?: string}) {
     setCreating(true);
     setError("");
     setNotice("");
     setCaptcha(null);
     try {
-      const created = await api.createJob(runnerId, filters, scenarioName, sessionId, retryOfJobId);
+      const created = await api.createJob(runnerId, filters, scenarioName, sessionId, retryOfJobId, update);
       latestJobRef.current = created;
       setJob(created);
       setReportsTrigger((count) => count + 1);
@@ -712,6 +732,126 @@ export default function App() {
       if (latest?.id === jobId && isTerminal(latest)) finish(latest);
       else timer = setTimeout(() => void poll(), known?.id === jobId ? 3_000 : 0);
     });
+  }
+
+  async function runMakerUpdateTask(runId: string, task: MakerUpdateTask, year: number): Promise<void> {
+    if (makerUpdateStopRef.current) return;
+    if (task.status === "RUNNING" && task.jobId) {
+      makerUpdateJobRef.current = task.jobId;
+      const existing = await waitForExistingJob(task.jobId);
+      makerUpdateJobRef.current = null;
+      if (existing.status !== "COMPLETED" && existing.status !== "NO_DATA") {
+        throw new Error(existing.error || `${task.kind} failed for ${task.maker} / ${task.state}.`);
+      }
+      return;
+    }
+    const runnerId = await pickAvailableRunnerWithRetry();
+    if (!runnerId) throw new Error("No online browser runner is available for Maker update.");
+    if (makerUpdateStopRef.current) return;
+    const filters = fixedFilters(task.state, task.rto, year);
+    filters.makers = [task.maker];
+    if (task.kind === "DISCOVER") {
+      filters.rtos = [];
+      filters.yAxis = "RTO Wise";
+    }
+    setMakerUpdateProgress(`${task.kind === "DISCOVER" ? "Dò RTO" : "Cập nhật"}: ${task.maker} · ${task.state}${task.rto ? ` · ${task.rto}` : ""}`);
+    const created = await createJob(runnerId, filters, `${task.kind} ${task.maker} / ${task.state}${task.rto ? ` / ${task.rto}` : ""}`,
+      undefined, undefined, {updateKind: task.kind, updateRunId: runId, updateTaskId: task.id});
+    if (!created) throw new Error("Could not create Maker update job.");
+    makerUpdateJobRef.current = created.id;
+    const finished = await waitForExistingJob(created.id);
+    makerUpdateJobRef.current = null;
+    if (finished.status !== "COMPLETED" && finished.status !== "NO_DATA") {
+      throw new Error(finished.error || `${task.kind} failed for ${task.maker} / ${task.state}.`);
+    }
+  }
+
+  async function continueMakerUpdate(runId: string): Promise<void> {
+    let checkedRtoAxis = false;
+    for (;;) {
+      if (makerUpdateStopRef.current) return;
+      const run = await api.makerUpdate(runId);
+      setMakerUpdate(run);
+      if (run.status !== "RUNNING") {
+        setMakerUpdateProgress(run.status === "BASELINE" ? "Đã lưu mốc dữ liệu Maker đầu tiên."
+          : run.status === "UNCHANGED" ? "Không có Maker thay đổi."
+            : "Đã cập nhật các RTO thay đổi vào bảng chính.");
+        setReportsTrigger((value) => value + 1);
+        return;
+      }
+      const tasks = run.tasks || [];
+      const discovery = tasks.filter((task) => task.kind === "DISCOVER" && task.status !== "DONE");
+      const task = (discovery.length ? discovery : tasks.filter((item) => item.kind === "REFRESH" && item.status !== "DONE"))[0];
+      if (!task) throw new Error("Maker update has no remaining tasks but is still marked running.");
+      if (task.kind === "DISCOVER" && !checkedRtoAxis && task.status !== "RUNNING") {
+        const runnerId = await pickAvailableRunnerWithRetry();
+        if (!runnerId) throw new Error("No online browser runner is available for RTO discovery.");
+        const available = await requestRunnerOptions(uiSocket, runnerId, {type: "GET_ALL_OPTIONS"},
+          "Checking RTO report axis…", setMakerUpdateProgress) as Record<string, string[]>;
+        if (!available?.yAxis?.some((label) => label.trim().toLowerCase() === "rto wise")) {
+          throw new Error("VAHAN does not offer the RTO Y-Axis needed to locate changed offices.");
+        }
+        const xAxis = await requestRunnerOptions(uiSocket, runnerId,
+          {type: "GET_X_AXIS_OPTIONS", yAxis: "RTO Wise"}, "Checking RTO / Month Wise…", setMakerUpdateProgress) as string[];
+        if (!Array.isArray(xAxis) || !xAxis.some((label) => label.trim().toLowerCase() === "month wise")) {
+          throw new Error("VAHAN does not offer RTO / Month Wise; focused update cannot continue safely.");
+        }
+        if (makerUpdateStopRef.current) return;
+        checkedRtoAxis = true;
+      }
+      await runMakerUpdateTask(runId, task, run.year);
+    }
+  }
+
+  async function startMakerUpdate(): Promise<void> {
+    if (makerUpdateRunningRef.current || batchRunningRef.current || creating) return;
+    makerUpdateRunningRef.current = true;
+    makerUpdateStopRef.current = false;
+    setMakerUpdateRunning(true);
+    setError("");
+    try {
+      const year = currentReportYear();
+      const previous = await api.makerUpdates(year);
+      const active = previous.find((run) => run.status === "RUNNING");
+      if (active) {
+        await continueMakerUpdate(active.id);
+        return;
+      }
+      const runnerId = await pickAvailableRunnerWithRetry();
+      if (!runnerId) throw new Error("No online browser runner is available for the all-State scan.");
+      const states = [...new Set((await requestRunnerOptions(uiSocket, runnerId,
+        {type: "GET_STATE_OPTIONS", delhiNcr: "ALL STATES"}, "Loading all States…", setMakerUpdateProgress) as string[])
+        .map((name) => name.trim()).filter((name) => name && !/^(-+\s*select|all states)/i.test(name)))];
+      if (states.length < 30) throw new Error("VAHAN did not return the full State list.");
+      if (makerUpdateStopRef.current) return;
+      const filters = fixedFilters("", "", year);
+      filters.states = states;
+      filters.rtos = [];
+      setMakerUpdateProgress(`Tải báo cáo Maker của ${states.length} State…`);
+      const created = await createJob(runnerId, filters, `Maker Month Wise / All States (${year})`,
+        undefined, undefined, {updateKind: "GLOBAL"});
+      if (!created) throw new Error("Could not create the all-State Maker job.");
+      makerUpdateJobRef.current = created.id;
+      const finished = await waitForExistingJob(created.id);
+      makerUpdateJobRef.current = null;
+      if (finished.status !== "COMPLETED") {
+        throw new Error(finished.error || "The all-State Maker report did not complete.");
+      }
+      await continueMakerUpdate(created.id);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Maker update failed.");
+    } finally {
+      makerUpdateRunningRef.current = false;
+      makerUpdateJobRef.current = null;
+      setMakerUpdateRunning(false);
+    }
+  }
+
+  async function stopMakerUpdate(): Promise<void> {
+    makerUpdateStopRef.current = true;
+    const jobId = makerUpdateJobRef.current;
+    if (jobId) await api.cancelJob(jobId).catch(() => {});
+    setMakerUpdateProgress("Đã dừng. Bấm Update để tiếp tục các việc chưa hoàn tất.");
   }
 
   async function runScenarioQueue(
@@ -1440,7 +1580,7 @@ export default function App() {
     }
   }
 
-  const busy = creating || batchRunning || Boolean(job && !["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(job.status));
+  const busy = creating || batchRunning || makerUpdateRunning || Boolean(job && !["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(job.status));
 
   return (
     <div className="app-shell" data-view={view}>
@@ -1509,6 +1649,25 @@ export default function App() {
 
                 <div className="workspace">
                   <div className="left-column">
+                    <section className="maker-update-panel" aria-label="Incremental Maker update">
+                      <div className="maker-update-heading">
+                        <div><h3>Update Maker</h3><p>Quét Maker toàn State; chỉ dò và cập nhật RTO của Maker có số liệu thay đổi.</p></div>
+                        <div className="maker-update-actions">
+                          <button type="button" onClick={() => void startMakerUpdate()} disabled={busy}>Update</button>
+                          {makerUpdateRunning && <button type="button" onClick={() => void stopMakerUpdate()}>Dừng</button>}
+                        </div>
+                      </div>
+                      {makerUpdateProgress && <p className="maker-update-progress" role="status">{makerUpdateProgress}</p>}
+                      {makerUpdate && <div className="maker-update-summary">
+                        <span>Trạng thái: {makerUpdate.status}</span>
+                        <span>Maker thay đổi: {makerUpdate.changedMakers.length}</span>
+                        <span>Việc hoàn tất: {makerUpdate.tasks?.filter((task) => task.status === "DONE").length || 0}/{makerUpdate.tasks?.length || 0}</span>
+                        {makerUpdate.changedMakers.map((maker) => {
+                          const location = makerUpdate.locations?.find((item) => item.maker === maker);
+                          return <span key={maker}>{maker}: {location?.states || 0} State, {location?.rtos || 0} RTO</span>;
+                        })}
+                      </div>}
+                    </section>
                     <MatrixRunner
                       plan={matrixPlan}
                       loading={matrixLoading}

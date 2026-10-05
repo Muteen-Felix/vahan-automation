@@ -69,7 +69,9 @@ class PostgresJobRepository:
             if not previous or previous.status not in {JobStatus.FAILED, JobStatus.CANCELLED}:
                 raise ValueError('Only an existing failed or stopped job can be retried.')
             if (previous.owner_username != job.owner_username or previous.session_id != job.session_id
-                    or previous.filters != job.filters or previous.source != job.source):
+                    or previous.filters != job.filters or previous.source != job.source
+                    or previous.update_kind != job.update_kind or previous.update_run_id != job.update_run_id
+                    or previous.update_task_id != job.update_task_id):
                 raise ValueError('Retry must preserve the original owner, session, filters and source.')
             child = await connection.scalar(select(db.jobs.c.id).where(
                 db.jobs.c.payload['retry_of_job_id'].as_string() == str(previous.id)).limit(1))
@@ -101,7 +103,13 @@ class PostgresJobRepository:
             runner = Runner.model_validate(row["payload"])
             if runner.status == RunnerStatus.RECONNECTING:
                 return None
+            from app.repositories.maker_updates import validate_update_job
+            task_id = await validate_update_job(connection, job)
             await self._insert(connection, job)
+            if task_id:
+                await connection.execute(update(db.maker_update_tasks).where(
+                    db.maker_update_tasks.c.id == task_id).values(
+                    status='RUNNING', job_id=str(job.id), error=None, updated_at=now()))
             runner.current_job_id = str(job.id)
             runner.status = RunnerStatus.BUSY
             await connection.execute(update(db.runners).where(db.runners.c.id == job.runner_id).values(
@@ -123,6 +131,11 @@ class PostgresJobRepository:
                 return None
             job.touch()
             await save_job(connection, job, event)
+            if job.update_task_id and job.status in {JobStatus.FAILED, JobStatus.CANCELLED}:
+                await connection.execute(update(db.maker_update_tasks).where(
+                    db.maker_update_tasks.c.id == job.update_task_id,
+                    db.maker_update_tasks.c.job_id == str(job.id)).values(
+                    status='FAILED', error=job.error or job.status.value, updated_at=now()))
             if job.status in TERMINAL:
                 await release_runner(connection, job.runner_id, job.id)
         return job

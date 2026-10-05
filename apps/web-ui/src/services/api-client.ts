@@ -2,6 +2,7 @@ import type {
   ExportedReportItem,
   ExportedReportSession,
   Job,
+  MakerUpdateRun,
   Runner,
   UiHealthCheckNowResponse,
   UiHealthReportsResponse,
@@ -148,11 +149,14 @@ export const api = {
   uiHealthReports: (date?: string) => request<UiHealthReportsResponse>(
     `/api/ui-health/reports${date ? `?date=${encodeURIComponent(date)}` : ""}`,
   ),
-  createJob: (runnerId: string, filters: VahanFilters, scenarioName?: string, sessionId?: string, retryOfJobId?: string) =>
+  createJob: (runnerId: string, filters: VahanFilters, scenarioName?: string, sessionId?: string, retryOfJobId?: string,
+    update?: {updateKind: "GLOBAL" | "DISCOVER" | "REFRESH"; updateRunId?: string; updateTaskId?: string}) =>
     request<Job>("/api/jobs", {
       method: "POST",
-      body: JSON.stringify({ runnerId, filters, scenarioName, sessionId, retryOfJobId }),
+      body: JSON.stringify({ runnerId, filters, scenarioName, sessionId, retryOfJobId, ...update }),
     }),
+  makerUpdates: (year: number) => request<MakerUpdateRun[]>(`/api/maker-updates?year=${year}`),
+  makerUpdate: (id: string) => request<MakerUpdateRun>(`/api/maker-updates/${id}`),
   getJob: (jobId: string) => request<Job>(`/api/jobs/${jobId}`),
   cancelJob: (jobId: string) => request<Job>(`/api/jobs/${jobId}/cancel`, { method: "POST" }),
   exportedReports: () => request<ExportedReportItem[]>("/api/jobs/reports"),

@@ -33,6 +33,13 @@ class ReportSource(StrEnum):
     OLD = "old"
 
 
+class UpdateKind(StrEnum):
+    NORMAL = "NORMAL"
+    GLOBAL = "GLOBAL"
+    DISCOVER = "DISCOVER"
+    REFRESH = "REFRESH"
+
+
 ALLOWED_JOB_TRANSITIONS: dict[JobStatus, set[JobStatus]] = {
     JobStatus.QUEUED: {JobStatus.ASSIGNED, JobStatus.FAILED, JobStatus.CANCELLED},
     JobStatus.ASSIGNED: {JobStatus.OPENING_VAHAN, JobStatus.FAILED, JobStatus.CANCELLED},
@@ -73,6 +80,9 @@ class CreateJobRequest(BaseModel):
     session_id: UUID | None = Field(default=None, alias="sessionId")
     retry_of_job_id: UUID | None = Field(default=None, alias="retryOfJobId")
     source: ReportSource = ReportSource.NEW
+    update_kind: UpdateKind = Field(default=UpdateKind.NORMAL, alias="updateKind")
+    update_run_id: UUID | None = Field(default=None, alias="updateRunId")
+    update_task_id: str | None = Field(default=None, alias="updateTaskId", max_length=64)
 
 
 class Job(BaseModel):
@@ -88,6 +98,9 @@ class Job(BaseModel):
     filters: VahanFilters
     scenario_name: str | None = Field(default=None, alias="scenarioName")
     source: ReportSource = ReportSource.NEW
+    update_kind: UpdateKind = Field(default=UpdateKind.NORMAL, alias="updateKind")
+    update_run_id: UUID | None = Field(default=None, alias="updateRunId")
+    update_task_id: str | None = Field(default=None, alias="updateTaskId")
     captcha_id: str | None = Field(default=None, alias="captchaId")
     captcha_image_data_url: str | None = Field(default=None, alias="captchaImageDataUrl", exclude=True)
     error: str | None = None

@@ -124,6 +124,9 @@ export interface Job {
   filters: VahanFilters & Record<string, unknown>;
   scenarioName?: string | null;
   source?: ReportSource;
+  updateKind?: "NORMAL" | "GLOBAL" | "DISCOVER" | "REFRESH";
+  updateRunId?: string | null;
+  updateTaskId?: string | null;
   captchaId?: string | null;
   error?: string | null;
   excelFileName?: string | null;
@@ -138,6 +141,29 @@ export interface Job {
   successfulApplyCount?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MakerUpdateTask {
+  id: string;
+  kind: "DISCOVER" | "REFRESH";
+  maker: string;
+  state: string;
+  rto: string;
+  status: "PENDING" | "RUNNING" | "DONE" | "FAILED";
+  jobId: string | null;
+  error: string | null;
+}
+
+export interface MakerUpdateRun {
+  id: string;
+  year: number;
+  status: "BASELINE" | "RUNNING" | "UNCHANGED" | "COMPLETED";
+  changedMakers: string[];
+  states: string[];
+  createdAt: string;
+  updatedAt: string;
+  tasks?: MakerUpdateTask[];
+  locations?: Array<{maker: string; states: number; rtos: number}>;
 }
 
 export interface ExportedReportItem {

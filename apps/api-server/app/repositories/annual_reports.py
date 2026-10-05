@@ -157,7 +157,8 @@ def parse_rows(rows, filters):
 
 
 async def import_rows(connection, *, source_key, name, rows, filters, owner, observed_at,
-                      job_id=None, no_data=False, warning=None, strict=False, checksum=None):
+                      job_id=None, no_data=False, warning=None, strict=False, checksum=None,
+                      replace_existing=False):
     """Write full filter data and its update history in the caller's transaction."""
     scope = dataset(owner, filters)
     timestamp = datetime.now(timezone.utc)
@@ -165,6 +166,16 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
         'warnings': [warning] if warning else [], 'issueCount': int(bool(warning))})
     if strict and not no_data and (details['issueCount'] or not entries):
         raise ValueError('MAIN_REPORT_PARSE_FAILED: ' + '; '.join(details['warnings'] or ['No manufacturer data found.']))
+    if replace_existing:
+        selected = filters.get('makers', [])
+        if len(selected) != 1 or len(filters.get('states', [])) != 1 or len(filters.get('rtos', [])) != 1:
+            raise ValueError('A replacement requires one Maker, State and RTO.')
+        expected_rto, expected_code = split_rto(filters['rtos'][0])
+        for entry in entries:
+            if (entry['maker'].casefold() != clean(selected[0]).casefold()
+                    or entry['state'].casefold() != clean(filters['states'][0]).casefold()
+                    or (entry['rto_code'] or entry['rto']).casefold() != (expected_code or expected_rto).casefold()):
+                raise ValueError('Focused workbook contains another Maker, State or RTO.')
     claimed = await connection.scalar(pg_insert(db.report_update_history).values(
         source_key=source_key, owner_key=scope['owner_key'], scope_key=scope['id'],
         scope_label=scope['label'], filters=scope['filters'], job_id=job_id, name=name,
@@ -187,7 +198,7 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
     for start in range(0, len(ids), 500):
         existing.update({r['id']: dict(r) for r in (await connection.execute(select(db.main_reports)
             .where(db.main_reports.c.id.in_(ids[start:start + 500])))).mappings()})
-    additions, conflicts, duplicates, new_cells = [], [], 0, 0
+    additions, index_rows, conflicts, duplicates, new_cells, replaced_cells = [], [], [], 0, 0, 0
     for record_id in ids:
         entry = records[record_id]
         previous = existing.get(record_id)
@@ -206,6 +217,12 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
                 new_cells += 1
             elif stored == incoming:
                 duplicates += 1
+            elif replace_existing:
+                changes[column] = incoming
+                previous_source = provenance.get(str(month))
+                provenance[str(month)] = {'sourceKey': source_key, 'observedAt': observed_at.isoformat(),
+                    'replaced': {'value': stored, 'source': previous_source}}
+                replaced_cells += 1
             else:
                 conflicts.append({k: entry[k] for k in ('maker', 'state', 'rto', 'year')} | {
                     'month': month, 'stored': stored, 'incoming': incoming})
@@ -215,13 +232,26 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
                     .values(**changes, month_sources=provenance, updated_at=timestamp))
         else:
             additions.append(value | changes | {'month_sources': provenance})
+        index_rows.append((value | changes) | {'id': record_id})
     for start in range(0, len(additions), 500):
         await connection.execute(pg_insert(db.main_reports).values(additions[start:start + 500]))
-    details.update(newRows=len(additions), newCells=new_cells, duplicates=duplicates,
+    offices = []
+    for row in index_rows:
+        office = {key: row[key] for key in ('id', 'scope_key', 'year', 'state', 'rto', 'rto_code', 'maker')}
+        office.update({month: row[month] for month in db.MONTH_COLUMNS})
+        office.update(total=sum(row[month] or 0 for month in db.MONTH_COLUMNS),
+            source_job_id=job_id, observed_at=observed_at, updated_at=timestamp)
+        offices.append(office)
+    for start in range(0, len(offices), 300):
+        statement = pg_insert(db.maker_office_index).values(offices[start:start + 300])
+        await connection.execute(statement.on_conflict_do_update(
+            index_elements=[db.maker_office_index.c.id],
+            set_={key: statement.excluded[key] for key in offices[0] if key != 'id'}))
+    details.update(newRows=len(additions), newCells=new_cells, replacedCells=replaced_cells, duplicates=duplicates,
                    conflicts=len(conflicts), conflictExamples=conflicts[:20], parsedRows=len(records))
     if checksum:
         details['checksum'] = checksum
-    status = 'no-data' if no_data else 'review' if details['issueCount'] or conflicts else 'added' if new_cells else 'unchanged'
+    status = 'no-data' if no_data else 'review' if details['issueCount'] or conflicts else 'updated' if replaced_cells else 'added' if new_cells else 'unchanged'
     await connection.execute(update(db.report_update_history).where(db.report_update_history.c.source_key == source_key).values(
         status=status, years=sorted({r['year'] for r in entries}) or ([context_year(filters)] if context_year(filters) else []),
         states=sorted({r['state'] for r in entries}) or filters.get('states', []),
