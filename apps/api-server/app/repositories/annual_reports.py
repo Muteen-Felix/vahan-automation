@@ -96,7 +96,7 @@ def split_rto(value, code=''):
 
 
 def parse_rows(rows, filters):
-    """Read all sheets, preserve real maker names, and keep missing cells distinct from zero."""
+    """Read all sheets, retain OTHERS as a maker group, and keep blanks distinct from zero."""
     headers, entries, issues = {}, {}, []
     stats = {'unresolvedMakers': 0, 'invalidCells': 0, 'missingContext': 0, 'sourceConflicts': 0}
     year = context_year(filters)
@@ -119,7 +119,11 @@ def parse_rows(rows, filters):
         maker = clean(get(maker_col))
         if not maker or maker.lower() in ('total', 'grand total', 'page total', 'no record found'):
             continue
-        if maker.lower() in ('others', 'other', 'unknown'):
+        if maker.casefold() == 'others':
+            # VAHAN uses OTHERS as an aggregate manufacturer group. Store its
+            # monthly totals under that exact label instead of dropping the row.
+            maker = 'OTHERS'
+        elif maker.casefold() in ('other', 'unknown'):
             stats['unresolvedMakers'] += 1
             issues.append(f'{sheet}:{row["row_number"]}: source contains "{maker}" without a manufacturer name.')
             continue

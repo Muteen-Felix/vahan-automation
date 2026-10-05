@@ -266,6 +266,21 @@ class ReportResultsTest(unittest.IsolatedAsyncioTestCase):
         workbook.save(output); workbook.close()
         return output.getvalue()
 
+    async def test_others_is_saved_to_sql_as_a_manufacturer_group(self):
+        from app.repositories.file_store import PostgresFileStore
+        response = await PostgresFileStore().commit_excel(
+            self.job.id, 'fixture.xlsx', self.workbook_bytes(maker='Others', count=7),
+            observed_at=self.command.observed_at)
+        self.assertEqual(response['status'], 'COMPLETED')
+        self.assertEqual((await self.jobs.get(self.job.id)).status, JobStatus.COMPLETED)
+        self.assertIsNone((await self.runners.get(self.runner_id)).current_job_id)
+        async with engine.connect() as connection:
+            record = (await connection.execute(select(db.main_reports))).mappings().one()
+            self.assertEqual(record['maker'], 'OTHERS')
+            self.assertEqual([record[m] for m in db.MONTH_COLUMNS], [7,2]+[None]*10)
+            history = (await connection.execute(select(db.report_update_history))).mappings().one()
+            self.assertEqual(history['details']['unresolvedMakers'], 0)
+
     async def test_full_data_transaction_rollback_cannot_complete_or_release_worker(self):
         from app.repositories.file_store import PostgresFileStore
         with patch('app.repositories.file_store.save_job', new=AsyncMock(side_effect=RuntimeError('forced failure'))):
@@ -279,7 +294,8 @@ class ReportResultsTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_invalid_manufacturer_or_count_rejects_whole_filter(self):
         from app.repositories.file_store import PostgresFileStore
-        for content in (self.workbook_bytes(maker='Others'), self.workbook_bytes(count='invalid')):
+        for content in (self.workbook_bytes(maker='Other'), self.workbook_bytes(maker='Unknown'),
+                        self.workbook_bytes(count='invalid')):
             with self.assertRaisesRegex(ValueError,'MAIN_REPORT_PARSE_FAILED'):
                 await PostgresFileStore().commit_excel(self.job.id, 'fixture.xlsx', content)
         self.assertEqual((await self.jobs.get(self.job.id)).status, JobStatus.WAITING_RESULT)

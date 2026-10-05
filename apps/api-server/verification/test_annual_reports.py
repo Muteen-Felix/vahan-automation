@@ -99,13 +99,18 @@ class AnnualReportsTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(history['rows'][0]['details']['duplicates'], 2)
 
     async def test_other_names_invalid_counts_and_ambiguous_context_are_reported(self):
-        data = rows(['Maker','2026-Jan','2026-Feb'], [['Others',1,2], ['SUZUKI MOTORCYCLE INDIA PVT LTD','invalid',0]])
+        data = rows(['Maker','2026-Jan','2026-Feb'], [
+            ['Others',1,2], ['Other',3,4], ['Unknown',5,6],
+            ['SUZUKI MOTORCYCLE INDIA PVT LTD','invalid',0]])
         await self.ingest('unresolved', data)
         result = await self.read()
-        self.assertEqual(len(result['rows']), 1)
-        self.assertEqual(result['rows'][0]['months'][:2], [None,0])
+        self.assertEqual(len(result['rows']), 2)
+        others = next(row for row in result['rows'] if row['maker'] == 'OTHERS')
+        suzuki = next(row for row in result['rows'] if row['maker'] == 'SUZUKI MOTORCYCLE INDIA PVT LTD')
+        self.assertEqual(others['months'][:2], [1,2])
+        self.assertEqual(suzuki['months'][:2], [None,0])
         history = await annual_history(request(), year=2026, dataset=result['datasetId'], state='', rto='', offset=0, limit=20)
-        self.assertEqual(history['rows'][0]['details']['unresolvedMakers'], 1)
+        self.assertEqual(history['rows'][0]['details']['unresolvedMakers'], 2)
         self.assertEqual(history['rows'][0]['details']['invalidCells'], 1)
         entries, details = parse_rows(data, {**FILTERS, 'states': ['ASSAM', 'DELHI']})
         self.assertFalse(entries)

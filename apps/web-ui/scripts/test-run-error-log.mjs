@@ -53,6 +53,8 @@ for (const code of ['RTO_OPTIONS_TIMEOUT', 'VAHAN_RESULT_TIMEOUT', 'CAPTCHA_INVA
 }
 assert.equal(describeRunError('MAIN_REPORT_PARSE_FAILED: Maker Report:12: source contains "OTHERS" without a manufacturer name.').title,
   'Source manufacturer names missing');
+assert.equal(describeRunError('MAIN_REPORT_PARSE_FAILED: Maker Report:12: invalid 2026-01 count for OTHERS.').title,
+  'Invalid main report data');
 let many = [];
 for (let i = 0; i < MAX_RUN_ERRORS + 10; i++) many = recordRunOutcome(many, {...failure, id: String(i), jobId: String(i)});
 assert.equal(many.length, MAX_RUN_ERRORS);
