@@ -362,7 +362,9 @@ function fill(selector, value) {
   if (value === undefined || value === null) return;
   const input = document.querySelector(selector);
   if (!input) throw new Error(`Could not find ${selector}.`);
-  input.value = value;
+  const nextValue = String(value);
+  if (input.value === nextValue) return;
+  input.value = nextValue;
   input.dispatchEvent(new Event("input", { bubbles: true }));
   input.dispatchEvent(new Event("change", { bubbles: true }));
 }
@@ -559,16 +561,6 @@ async function fillVahan(config) {
   const started = performance.now();
   const timings = new Map();
   const has = key => hasFilter(config, key);
-  async function parallel(tasks) {
-    let firstError;
-    const results = await Promise.allSettled(tasks.map(task => Promise.resolve().then(task).catch(error => {
-      firstError ||= error;
-      context.controller.abort(firstError);
-      throw error;
-    })));
-    if (firstError) throw firstError;
-    return results.map(result => result.value);
-  }
   async function timed(name, task) {
     const metric = timings.get(name) || {name, durationMs: 0, attempts: 0, startedMs: Math.round(performance.now() - started)};
     timings.set(name, metric);
@@ -577,15 +569,24 @@ async function fillVahan(config) {
     try { assertFillActive(); return await task(); }
     finally { metric.durationMs += Math.round(performance.now() - stageStart); }
   }
+  async function fillInputs() {
+    for (const [key, selector] of Object.entries(INPUT_SELECTORS)) {
+      if (!has(key) && !['fromDate', 'toDate'].includes(key)) continue;
+      const value = config[key] ?? '';
+      if (String(value).trim()) {
+        await waitForDomCondition(() => Boolean(document.querySelector(selector)), 15_000, 0,
+          `FILTER_CONTROL_MISSING: ${selector}`);
+      }
+      if (document.querySelector(selector)) fill(selector, value);
+    }
+  }
   const plan = [
     {name: 'period', keys: ['period', 'financialYears', 'reportYear', 'reportMonth', ...Object.keys(INPUT_SELECTORS)], run: async () => {
       if (has('period')) await setFilter(config, 'period');
-      await parallel(['financialYears', 'reportYear', 'reportMonth'].filter(has).map(key => () => setFilter(config, key)));
-      for (const [key, selector] of Object.entries(INPUT_SELECTORS)) {
-        if (!has(key) && !['fromDate', 'toDate'].includes(key)) continue;
-        if (String(config[key] ?? '').trim()) await waitForDomCondition(() => Boolean(document.querySelector(selector)), 15_000, 0, `FILTER_CONTROL_MISSING: ${selector}`);
-        if (document.querySelector(selector)) fill(selector, config[key] ?? '');
+      for (const key of ['financialYears', 'reportYear', 'reportMonth']) {
+        if (has(key)) await setFilter(config, key);
       }
+      await fillInputs();
     }},
     {name: 'geography', keys: ['delhiNcr', 'states', 'rtos'], run: async () => {
       if (has('delhiNcr')) await setParentFilter(config, 'delhiNcr', 'states');
@@ -593,17 +594,15 @@ async function fillVahan(config) {
       if (has('rtos')) await setFilter(config, 'rtos', 40);
     }},
     {name: 'vehicle', keys: ['categoryGroups', 'subCategories', 'classes', 'evTypes', 'fuels', 'vehicleType'], run: async () => {
-      await parallel([
-        () => timed('classification', async () => {
-          if (has('categoryGroups')) await setParentFilter(config, 'categoryGroups', 'subCategories');
-          if (has('subCategories')) await setParentFilter(config, 'subCategories', 'classes', 60);
-          if (has('classes')) await setFilter(config, 'classes', 60);
-        }),
-        () => timed('fuel', async () => {
-          if (has('evTypes')) await setParentFilter(config, 'evTypes', 'fuels');
-          if (has('fuels')) await setFilter(config, 'fuels', 60);
-        }),
-      ]);
+      await timed('classification', async () => {
+        if (has('categoryGroups')) await setParentFilter(config, 'categoryGroups', 'subCategories');
+        if (has('subCategories')) await setParentFilter(config, 'subCategories', 'classes', 60);
+        if (has('classes')) await setFilter(config, 'classes', 60);
+      });
+      await timed('fuel', async () => {
+        if (has('evTypes')) await setParentFilter(config, 'evTypes', 'fuels');
+        if (has('fuels')) await setFilter(config, 'fuels', 60);
+      });
       if (has('vehicleType')) await setFilter(config, 'vehicleType');
     }},
     {name: 'axis', keys: ['yAxis', 'xAxis', 'xAxis_hidden'], run: async () => {
@@ -611,30 +610,37 @@ async function fillVahan(config) {
       if (has('xAxis')) await setFilter(config, 'xAxis', 60);
     }},
     {name: 'independent', keys: ['archivedFlags', 'emissions', 'makers', 'statuses', 'ownerTypes', 'fitness'], run: async () => {
-      await parallel(['archivedFlags', 'emissions', 'makers', 'statuses', 'ownerTypes', 'fitness'].filter(has).map(key => async () => {
+      for (const key of ['archivedFlags', 'emissions', 'makers', 'statuses', 'ownerTypes', 'fitness']) {
+        if (!has(key)) continue;
         if (key === 'makers') await loadMakerOptions(config.makers);
         await setFilter(config, key);
-      }));
+      }
     }},
   ];
   let repairs = 0;
   try {
-    // Only omitted filters are reset. Requested fields are set by their owning
-    // chain, so clearing a sibling cannot race with its requested selection.
-    await parallel([...RESET_FIELDS].filter(key => !has(key)).map(key => () => resetFilter(key)));
-    await parallel(plan.map(stage => () => timed(stage.name, stage.run)));
+    // A browser page is a shared mutable form: sequence its controls while
+    // separate browser workers continue to process cases concurrently.
+    for (const key of RESET_FIELDS) if (!has(key)) await resetFilter(key);
+    for (const stage of plan) await timed(stage.name, stage.run);
     for (;;) {
       await waitForDomCondition(() => pendingPageRequests === 0, 15_000, 60, 'FILTER_NETWORK_TIMEOUT: option requests did not settle.');
+      // Dependent VAHAN requests may repopulate form controls after another
+      // filter changes. Restore year/date inputs only after those requests end.
+      await fillInputs();
+      await waitForDomCondition(() => pendingPageRequests === 0, 15_000, 60, 'FILTER_NETWORK_TIMEOUT: input updates did not settle.');
       const wrong = filterChecks(config).filter(check => !check.match);
       if (!wrong.length) break;
-      if (repairs++ >= 2) throw new Error(`FILTER_VERIFICATION_FAILED: ${wrong.map(check => check.field).join(', ')} did not retain the requested values.`);
+      if (repairs++ >= 2) throw new Error(`FILTER_VERIFICATION_FAILED: ${wrong.map(check =>
+        `${check.field} expected ${JSON.stringify(check.expected)}, got ${JSON.stringify(check.actual)}`).join('; ')}.`);
       const fields = new Set(wrong.map(check => check.field));
-      await parallel([...RESET_FIELDS].filter(key => !has(key) && fields.has(key)).map(key => () => resetFilter(key)));
+      for (const key of RESET_FIELDS) if (!has(key) && fields.has(key)) await resetFilter(key);
       const affected = plan.filter(stage => stage.keys.some(key => fields.has(key)));
-      await parallel(affected.map(stage => () => timed(stage.name, stage.run)));
+      for (const stage of affected) await timed(stage.name, stage.run);
     }
     const verified = await verifyFilters(config);
-    return {...verified, durationMs: Math.round(performance.now() - started), groups: [...timings.values()], repairPasses: repairs};
+    return {...verified, version: 'sequential-mutation-v2', durationMs: Math.round(performance.now() - started),
+      groups: [...timings.values()], repairPasses: repairs};
   } catch (error) {
     context.controller.abort(error);
     await drainCancelledRequests(context);

@@ -8,6 +8,24 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--api-port', default='8000')
 parser.add_argument('--web-port', default='5173')
 args = parser.parse_args()
+
+def read_env_file(env_path):
+    values = {}
+    try:
+        lines = env_path.read_text().splitlines()
+    except OSError:
+        return values
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith('#'):
+            continue
+        if line.startswith('export '):
+            line = line[7:].lstrip()
+        key, separator, value = line.partition('=')
+        if separator:
+            values[key.strip()] = value.strip().strip('"\'')
+    return values
+
 if path.exists():
     print(f'Using existing {path}')
 else:
@@ -31,3 +49,17 @@ else:
     path.write_text(''.join(f'{k}={v}\n' for k,v in values.items()))
     path.chmod(0o600)
     print(f'Created {path}; credentials remain in this ignored file.')
+
+runner_token = read_env_file(path).get('VAHAN_API_RUNNER_TOKEN', '')
+if len(runner_token) < 24 or runner_token == 'change-me':
+    raise SystemExit(f'{path} must contain a private VAHAN_API_RUNNER_TOKEN (at least 24 characters).')
+
+# Docker Desktop and plain `docker compose` look for `.env` automatically.
+# Point that default at the same protected file used by the launch script.
+compose_env = root / '.env'
+if compose_env.is_symlink():
+    if compose_env.resolve() != path.resolve():
+        raise SystemExit(f'{compose_env} is a symlink to another file; preserve it and use run-vahan-rpa.sh.')
+elif not compose_env.exists():
+    compose_env.symlink_to(path.name)
+    print(f'Linked {compose_env} to {path.name} for Docker Desktop Compose launches.')

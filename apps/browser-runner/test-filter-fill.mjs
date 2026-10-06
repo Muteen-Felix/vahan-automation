@@ -26,7 +26,8 @@ async function fixture({path = driver, lateReset = false, xhr = false, xAxisDela
   await page.route('http://fill.test/**', async route => {
     const url = new URL(route.request().url());
     if (url.pathname !== '/') {
-      const delayMs = url.pathname === '/xAxis' ? (xAxisDelays[xAxisRequests++] ?? 140) : 140;
+      const delayMs = url.pathname === '/xAxis' ? (xAxisDelays[xAxisRequests++] ?? 140)
+        : url.pathname === '/period' && lateReset ? 300 : 140;
       await new Promise(resolve => setTimeout(resolve, delayMs));
       return route.fulfill({contentType: 'application/json', body: JSON.stringify(
         url.pathname.includes('vehicle-makers') ? [url.searchParams.get('search')] :
@@ -67,9 +68,13 @@ async function fixture({path = driver, lateReset = false, xhr = false, xAxisDela
       });
     }
     if (lateReset) document.getElementById('reportType').addEventListener('change', async () => {
+      if (window.periodResetTriggered) return;
+      window.periodResetTriggered = true;
       await (await fetch('/period')).json();
+      window.periodResetAfterYearFill = document.getElementById('toYear').value === '2026';
       document.getElementById('stateName').selectedIndex = -1;
       document.getElementById('fromYear').value = '';
+      document.getElementById('toYear').value = '';
       document.getElementById('vehicleFuel').selectedIndex = -1;
     });
   }, {lateReset, xhr});
@@ -78,7 +83,7 @@ async function fixture({path = driver, lateReset = false, xhr = false, xAxisDela
 let passed = 0;
 async function check(name, test) { await test(); passed++; console.log(`PASS ${name}`); }
 try {
-  await check('concurrent groups respect delayed dependencies and verify every requested field', async () => {
+  await check('sequential filter mutations respect dependencies and verify every requested field', async () => {
     const page = await fixture();
     try {
       const proof = await page.evaluate(config => vahanDriver.fill(config), normalizeJobFilters(requested));
@@ -90,18 +95,23 @@ try {
       await page.evaluate(config => vahanDriver.fill(config), dates);
       assert.equal(await page.locator('#fromDate').inputValue(), dates.fromDate);
       assert.equal(await page.locator('#toDate').inputValue(), dates.toDate);
-      assert.ok(await page.evaluate(() => fixtureStats.peak) >= 3);
+      assert.equal(await page.evaluate(() => fixtureStats.peak), 1,
+        'one VAHAN form must not receive overlapping filter-change requests');
       const starts = proof.groups.filter(group => ['period', 'geography', 'vehicle', 'axis', 'independent'].includes(group.name)).map(group => group.startedMs);
-      assert.ok(Math.max(...starts) - Math.min(...starts) < 80, JSON.stringify(proof.groups));
+      assert.ok(starts.every((start, index) => index === 0 || start >= starts[index - 1]), JSON.stringify(proof.groups));
       console.log(`  fill=${proof.durationMs}ms, checked=${proof.fieldCount}, peak dependencies=${await page.evaluate(() => fixtureStats.peak)}`);
     } finally { await page.close(); }
   });
-  await check('late period reset is repaired without dropping requested fields', async () => {
+  await check('late period reset restores the requested year and other filters', async () => {
     const page = await fixture({lateReset: true, xhr: true});
     try {
       const proof = await page.evaluate(config => vahanDriver.fill(config), requested);
-      assert.ok(proof.repairPasses > 0 && proof.repairPasses <= 2);
+      assert.ok(proof.repairPasses <= 2);
       assert.ok(proof.checks.every(check => check.match));
+      assert.equal(await page.evaluate(() => window.periodResetAfterYearFill), true,
+        'the delayed VAHAN response must overwrite toYear after it was first filled');
+      assert.equal(proof.checks.find(check => check.field === 'toYear').actual[0], '2026');
+      assert.equal(proof.version, 'sequential-mutation-v2');
     } finally { await page.close(); }
   });
   await check('maker names containing commas remain one label and searches overlap', async () => {

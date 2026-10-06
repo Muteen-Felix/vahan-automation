@@ -8,7 +8,7 @@ x-extra-runner: &extra-runner
   security_opt: ["seccomp=./docker/seccomp_profile.json"]
   environment: &extra-runner-environment
     VAHAN_API_URL: http://api:8000
-    VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN}
+    VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token in .docker.env}
     VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
   volumes:
     - ./apps/api-server/runtime/images1:/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1
@@ -66,7 +66,7 @@ services:
     security_opt: ["seccomp=./docker/seccomp_profile.json"]
     environment:
       VAHAN_API_URL: http://api:8000
-      VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN}
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token in .docker.env}
       VAHAN_RUNNER_ID: playwright-1
       VAHAN_RUNNER_NAME: Chromium Playwright 1
       VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en

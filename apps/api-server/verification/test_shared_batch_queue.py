@@ -63,9 +63,15 @@ async def main():
     await finish(first[1]['jobId'], JobStatus.FAILED)
     failed = await queue.settle(session, 'queue-test', first[1]['task']['position'])
     assert failed['status'] == 'PENDING' and failed['failures'] == 1
-    retry = await queue.claim(session, 'queue-test', 'queue-runner-1')
+    same_worker_claim = await queue.claim(session, 'queue-test', 'queue-runner-1')
+    assert same_worker_claim['task']['position'] == 11, \
+        'A worker must not immediately consume its own retry while other workers are busy.'
+    await finish(next_task['jobId'], JobStatus.COMPLETED)
+    assert (await queue.settle(session, 'queue-test', next_task['task']['position']))['status'] == 'COMPLETED'
+    retry = await queue.claim(session, 'queue-test', 'queue-runner-0')
     assert retry['task']['position'] == first[1]['task']['position']
     assert retry['task']['attempts'] == 2
+    assert retry['task']['runnerId'] == 'queue-runner-0', 'The retry must be reassigned to a different worker.'
     async with engine.connect() as connection:
         retry_payload = await connection.scalar(select(db.jobs.c.payload).where(db.jobs.c.id == retry['jobId']))
     retry_job = Job.model_validate(retry_payload)
@@ -75,8 +81,9 @@ async def main():
     exhausted = await queue.settle(session, 'queue-test', retry['task']['position'])
     assert exhausted['status'] == 'FAILED' and exhausted['failures'] == 2
     assert (await queue.snapshot(session, 'queue-test'))['tasks'][retry['task']['position']]['status'] == 'FAILED'
-    manual_retry = Job(runnerId='queue-runner-1', sessionId=session, filters=tasks[1].filters,
-        scenarioName=tasks[1].name, status=JobStatus.COMPLETED, ownerUsername='queue-test',
+    retry_case = tasks[first[1]['task']['position']]
+    manual_retry = Job(runnerId='queue-runner-1', sessionId=session, filters=retry_case.filters,
+        scenarioName=retry_case.name, status=JobStatus.COMPLETED, ownerUsername='queue-test',
         retryOfJobId=retry['jobId'], caseId=first[1]['jobId'])
     async with engine.begin() as connection:
         await PostgresJobRepository()._insert(connection, manual_retry)
@@ -90,11 +97,11 @@ async def main():
     orphan_session = uuid4()
     await queue.start(orphan_session, 'queue-test', [QueueTaskInput(name='Orphan case',
         filters={'states': ['Other State'], 'rtos': ['RTO']})])
-    orphan = await queue.claim(orphan_session, 'queue-test', 'queue-runner-1')
+    orphan = await queue.claim(orphan_session, 'queue-test', 'queue-runner-0')
     await finish(orphan['jobId'], JobStatus.FAILED)
-    recovered = await queue.claim(orphan_session, 'queue-test', 'queue-runner-1')
+    recovered = await queue.claim(orphan_session, 'queue-test', 'queue-runner-10')
     assert recovered['type'] == 'assigned' and recovered['task']['attempts'] == 2, \
-        'Claim must recover a finished job after its coordinator disappears.'
+        'Another worker must recover a finished job after its coordinator disappears.'
     await queue.set_status(orphan_session, 'queue-test', 'PAUSED')
     assert (await queue.claim(orphan_session, 'queue-test', 'queue-runner-2'))['type'] == 'paused'
     large_session = uuid4()

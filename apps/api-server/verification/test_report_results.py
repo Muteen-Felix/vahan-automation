@@ -71,7 +71,7 @@ class ReportResultsTest(unittest.IsolatedAsyncioTestCase):
         self.jobs, self.runners = PostgresJobRepository(), PostgresRunnerRegistry()
         self.runner_id = 'test-' + str(uuid4())
         initial = JobStatus.FILLING_FILTERS if self._testMethodName in {
-            'test_parallel_filter_proofs_persist_both_phases_with_full_timestamp',
+            'test_filter_proofs_accept_sequential_fill_and_legacy_before_apply',
             'test_incomplete_or_different_case_proof_is_rejected_before_sql_write',
             'test_verification_rejects_wrong_phase_runner_and_cancelled_job',
         } else JobStatus.WAITING_RESULT
@@ -367,17 +367,21 @@ class ReportResultsTest(unittest.IsolatedAsyncioTestCase):
             validatedAt='2026-10-02T16:02:03+07:00', verificationMs=80,
             durationMs=420, groups=[dict(name='geography', startedMs=1, durationMs=280, attempts=1)], repairPasses=0)
 
-    async def test_parallel_filter_proofs_persist_both_phases_with_full_timestamp(self):
+    async def test_filter_proofs_accept_sequential_fill_and_legacy_before_apply(self):
         from app.realtime.runner_events import job_filters_verified
         await self.jobs.update_status(self.job.id, JobStatus.FILLING_FILTERS)
         proof = self.execution_proof()
+        proof['version'] = 'sequential-mutation-v2'
         payload = dict(jobId=str(self.job.id), phase='filled', execution=proof)
         self.assertTrue((await job_filters_verified(self.socket_id, payload))['ok'])
         await self.jobs.update_status(self.job.id, JobStatus.SUBMITTING)
         payload['phase'] = 'before-apply'
+        payload['execution'] = self.execution_proof()
         self.assertTrue((await job_filters_verified(self.socket_id, payload))['ok'])
         saved = await PostgresJobRepository().get(self.job.id)
         self.assertEqual(set(saved.filter_execution), {'filled', 'before-apply'})
+        self.assertEqual(saved.filter_execution['filled']['version'], 'sequential-mutation-v2')
+        self.assertEqual(saved.filter_execution['before-apply']['version'], 'parallel-fill-v1')
         self.assertEqual(saved.filter_execution['filled']['durationMs'], 420)
         self.assertEqual(saved.filter_execution['before-apply']['validatedAt'], '2026-10-02T16:02:03+07:00')
 
@@ -385,7 +389,7 @@ class ReportResultsTest(unittest.IsolatedAsyncioTestCase):
         from app.realtime.runner_events import job_filters_verified
         await self.jobs.update_status(self.job.id, JobStatus.FILLING_FILTERS)
         original = self.execution_proof()
-        for change in ['omitted', 'wrong-case', 'wrong-value', 'wrong-selector', 'duplicate', 'false-match']:
+        for change in ['omitted', 'wrong-case', 'wrong-value', 'wrong-selector', 'duplicate', 'false-match', 'unsupported-version']:
             proof = json.loads(json.dumps(original))
             if change == 'omitted':
                 proof['checks'].pop(); proof['fieldCount'] -= 1
@@ -393,6 +397,7 @@ class ReportResultsTest(unittest.IsolatedAsyncioTestCase):
             elif change == 'wrong-value': proof['checks'][0]['actual'] = ['Other state']
             elif change == 'wrong-selector': proof['checks'][0]['selector'] = '#not-the-control'
             elif change == 'duplicate': proof['checks'].append(proof['checks'][0]); proof['fieldCount'] += 1
+            elif change == 'unsupported-version': proof['version'] = 'unknown-fill-v3'
             else: proof['checks'][0]['match'] = False
             result = await job_filters_verified(self.socket_id, dict(jobId=str(self.job.id), phase='filled', execution=proof))
             self.assertFalse(result['ok'], change)

@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import func, insert, select, update
+from sqlalchemy import func, insert, or_, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.db import engine, schema as db
@@ -191,7 +191,10 @@ class BatchQueueRepository:
                     return {'type': 'waiting'}
             row = (await connection.execute(select(db.batch_queue_tasks).where(
                 db.batch_queue_tasks.c.session_id == str(session_id),
-                db.batch_queue_tasks.c.status == 'PENDING').order_by(
+                db.batch_queue_tasks.c.status == 'PENDING',
+                or_(db.batch_queue_tasks.c.failures == 0,
+                    db.batch_queue_tasks.c.runner_id.is_(None),
+                    db.batch_queue_tasks.c.runner_id != runner_id)).order_by(
                 db.batch_queue_tasks.c.position).limit(1).with_for_update(skip_locked=True))).mappings().first()
             if not row:
                 # A client may vanish after a job ends but before it calls
@@ -205,7 +208,10 @@ class BatchQueueRepository:
                     await self._settle(connection, active_task)
                 row = (await connection.execute(select(db.batch_queue_tasks).where(
                     db.batch_queue_tasks.c.session_id == str(session_id),
-                    db.batch_queue_tasks.c.status == 'PENDING').order_by(
+                    db.batch_queue_tasks.c.status == 'PENDING',
+                    or_(db.batch_queue_tasks.c.failures == 0,
+                        db.batch_queue_tasks.c.runner_id.is_(None),
+                        db.batch_queue_tasks.c.runner_id != runner_id)).order_by(
                     db.batch_queue_tasks.c.position).limit(1).with_for_update(skip_locked=True))).mappings().first()
             if not row:
                 unfinished = await connection.scalar(select(db.batch_queue_tasks.c.position).where(

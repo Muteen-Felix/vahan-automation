@@ -29,7 +29,7 @@ class FilterCheck(BaseModel):
 class FilterExecution(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    version: Literal['parallel-fill-v1']
+    version: Literal['parallel-fill-v1', 'sequential-mutation-v2']
     checks: list[FilterCheck] = Field(min_length=1, max_length=128)
     field_count: int = Field(alias='fieldCount', ge=1, le=128)
     validated_at: AwareDatetime = Field(alias='validatedAt')
