@@ -213,8 +213,10 @@ async function waitForXAxisOptions(yAxisLabel, labels, timeout = 15000) {
         .filter((option) => option.value)
         .map((option) => (option.label || option.textContent || "").replace(/\s+/g, " ").trim());
       const availableNormalized = available.map(normalize);
-      return !xAxis.disabled && pendingPageRequests === 0
-        && expected.every((label) => availableNormalized.includes(label));
+      // X-Axis readiness depends on this select's options. Other filter
+      // requests may still be in flight; the final fill barrier and filter
+      // verification below wait for them before Apply.
+      return !xAxis.disabled && expected.every((label) => availableNormalized.includes(label));
     }
     return false;
   };

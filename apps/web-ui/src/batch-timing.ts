@@ -5,10 +5,13 @@ export interface FilterTiming {
   activeElapsedMs?: number;
 }
 
-const RECENT_SAMPLE_COUNT = 8;
-const MIN_RECENT_WINDOW_MS = 30_000;
 const HOUR_MS = 60 * 60 * 1000;
+const RECENT_WINDOW_MS = 90_000;
+const STALLED_AFTER_MS = 120_000;
 
+/** Forecast from observed *system output per wall-clock second*, including
+ * worker handoff, database saves and retries. Individual filter times never
+ * enter the throughput calculation. */
 export function estimateBatchTiming(
   samples: FilterTiming[],
   total: number,
@@ -20,56 +23,49 @@ export function estimateBatchTiming(
 ) {
   const totalCount = Number.isFinite(total) ? Math.max(0, Math.floor(total)) : 0;
   const completedCount = Number.isFinite(done) ? Math.min(totalCount, Math.max(0, Math.floor(done))) : 0;
-  const remainingCount = Math.max(0, totalCount - completedCount);
+  const remainingCount = totalCount - completedCount;
   const currentElapsedMs = currentStartedAt === null ? 0 : Math.max(0, now - currentStartedAt);
   const activeElapsedMs = Math.max(0, accumulatedActiveMs)
     + (activeSegmentStartedAt === null ? 0 : Math.max(0, now - activeSegmentStartedAt));
-
   if (remainingCount === 0) {
-    return { remainingMs: 0, reportsPerHour: null, pace: null, activeElapsedMs, currentElapsedMs };
+    return {remainingMs: 0, reportsPerHour: null, pace: null, activeElapsedMs, currentElapsedMs};
+  }
+  if (completedCount === 0 || activeElapsedMs <= 0) {
+    return {remainingMs: null, reportsPerHour: null, pace: null, activeElapsedMs, currentElapsedMs};
   }
 
-  const checkpoints = samples
-    .filter((sample) => Number.isInteger(sample.completedCount)
-      && Number.isFinite(sample.activeElapsedMs)
-      && Number.isFinite(sample.durationMs)
-      && sample.durationMs >= 0)
-    .sort((left, right) => (left.completedCount! - right.completedCount!));
-  const recent = checkpoints.slice(-RECENT_SAMPLE_COUNT);
-  const first = recent[0];
-  const last = recent.at(-1);
-  const recentCompleted = first && last ? last.completedCount! - first.completedCount! : 0;
-  const recentElapsedMs = first && last ? last.activeElapsedMs! - first.activeElapsedMs! : 0;
-
-  let msPerReport: number | null = null;
-  let pace: "recent" | "session" | null = null;
-  if (recent.length >= 5 && recentCompleted > 0 && recentElapsedMs >= MIN_RECENT_WINDOW_MS) {
-    msPerReport = recentElapsedMs / recentCompleted;
-    pace = "recent";
-  } else if (completedCount > 0) {
-    // Use the actual active session clock. This includes dispatch and handoff
-    // time while excluding pauses, instead of averaging each filter duration.
-    const elapsedBeforeCurrent = Math.max(0, activeElapsedMs - currentElapsedMs);
-    if (elapsedBeforeCurrent > 0) {
-      msPerReport = elapsedBeforeCurrent / completedCount;
-      pace = "session";
-    }
+  const checkpoints = samples.filter((sample) => Number.isInteger(sample.completedCount)
+    && Number.isFinite(sample.activeElapsedMs) && sample.activeElapsedMs! >= 0
+    && sample.completedCount! > 0 && sample.completedCount! <= completedCount)
+    .sort((left, right) => left.activeElapsedMs! - right.activeElapsedMs!);
+  const latest = checkpoints.at(-1);
+  if (latest && activeElapsedMs - latest.activeElapsedMs! > STALLED_AFTER_MS) {
+    return {remainingMs: null, reportsPerHour: null, pace: null, activeElapsedMs, currentElapsedMs};
   }
 
-  if (msPerReport === null || !Number.isFinite(msPerReport) || msPerReport <= 0) {
-    return { remainingMs: null, reportsPerHour: null, pace: null, activeElapsedMs, currentElapsedMs };
+  const sessionRate = completedCount / activeElapsedMs;
+  const windowStart = Math.max(0, activeElapsedMs - RECENT_WINDOW_MS);
+  let baseCount = 0;
+  let baseTime = 0;
+  for (const checkpoint of checkpoints) {
+    if (checkpoint.activeElapsedMs! > windowStart) break;
+    baseCount = checkpoint.completedCount!;
+    baseTime = checkpoint.activeElapsedMs!;
   }
-
-  const currentRemainingMs = currentStartedAt === null
-    ? 0
-    : Math.max(0, msPerReport - currentElapsedMs);
-  const futureReports = Math.max(0, remainingCount - (currentStartedAt === null ? 0 : 1));
-  const remainingMs = currentRemainingMs + futureReports * msPerReport;
-
+  const recentCompleted = completedCount - baseCount;
+  const recentElapsedMs = activeElapsedMs - baseTime;
+  const useRecent = completedCount >= 12 && recentCompleted >= 6 && recentElapsedMs >= 15_000;
+  const recentRate = useRecent ? recentCompleted / recentElapsedMs : 0;
+  // The long window damps completion bursts; the rolling window follows
+  // congestion, CAPTCHA waits and changes in healthy worker count.
+  const rate = useRecent ? 0.75 * recentRate + 0.25 * sessionRate : sessionRate;
+  if (!Number.isFinite(rate) || rate <= 0) {
+    return {remainingMs: null, reportsPerHour: null, pace: null, activeElapsedMs, currentElapsedMs};
+  }
   return {
-    remainingMs,
-    reportsPerHour: HOUR_MS / msPerReport,
-    pace,
+    remainingMs: remainingCount / rate,
+    reportsPerHour: rate * HOUR_MS,
+    pace: useRecent ? 'recent' as const : 'session' as const,
     activeElapsedMs,
     currentElapsedMs,
   };

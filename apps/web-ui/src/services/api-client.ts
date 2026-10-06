@@ -27,6 +27,30 @@ export interface LoginResponse {
   username: string;
 }
 
+export interface BatchQueueTask {
+  position: number;
+  name: string;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "NO_DATA" | "FAILED";
+  attempts: number;
+  failures: number;
+  runnerId: string | null;
+  jobId: string | null;
+  error: string | null;
+}
+
+export interface BatchQueueSnapshot {
+  sessionId: string;
+  status: "RUNNING" | "PAUSED";
+  tasks: BatchQueueTask[];
+}
+
+export type BatchQueueClaim =
+  | {type: "assigned"; task: BatchQueueTask; jobId: string; recovered: boolean}
+  | {type: "waiting"}
+  | {type: "done"}
+  | {type: "paused"}
+  | {type: "runner_unavailable"};
+
 export function getAccessToken(): string | null {
   try {
     const persistentToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
@@ -135,6 +159,7 @@ export const api = {
   logout,
   downloadFile,
   runners: () => request<Runner[]>("/api/runners"),
+  jobs: () => request<Job[]>("/api/jobs"),
   uiHealthSchedule: () => request<UiHealthSchedule>("/api/ui-health/schedule"),
   updateUiHealthSchedule: (intervalDays: number) =>
     request<UiHealthSchedule>("/api/ui-health/schedule", {
@@ -155,6 +180,21 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ runnerId, filters, scenarioName, sessionId, retryOfJobId, ...update }),
     }),
+  startBatchQueue: (sessionId: string, tasks: {name: string; filters: VahanFilters}[]) =>
+    request<BatchQueueSnapshot>('/api/batch-queue/sessions', {
+      method: 'POST', body: JSON.stringify({sessionId, tasks}),
+    }),
+  batchQueue: (sessionId: string) => request<BatchQueueSnapshot>(`/api/batch-queue/sessions/${sessionId}`),
+  claimBatchTask: (sessionId: string, runnerId: string) =>
+    request<BatchQueueClaim>(`/api/batch-queue/sessions/${sessionId}/claim`, {
+      method: 'POST', body: JSON.stringify({runnerId}),
+    }),
+  settleBatchTask: (sessionId: string, position: number) =>
+    request<BatchQueueTask>(`/api/batch-queue/sessions/${sessionId}/tasks/${position}/settle`, {method: 'POST'}),
+  pauseBatchQueue: (sessionId: string) =>
+    request<{status: string}>(`/api/batch-queue/sessions/${sessionId}/pause`, {method: 'POST'}),
+  resumeBatchQueue: (sessionId: string) =>
+    request<{status: string}>(`/api/batch-queue/sessions/${sessionId}/resume`, {method: 'POST'}),
   makerUpdates: (year: number) => request<MakerUpdateRun[]>(`/api/maker-updates?year=${year}`),
   makerUpdate: (id: string) => request<MakerUpdateRun>(`/api/maker-updates/${id}`),
   getJob: (jobId: string) => request<Job>(`/api/jobs/${jobId}`),

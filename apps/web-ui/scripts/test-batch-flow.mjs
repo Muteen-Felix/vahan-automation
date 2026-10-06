@@ -27,6 +27,8 @@ assert.equal(runnersRef.current[0].id, 'ready',
 const create = loadFunction("createJob", "submitCaptcha", {
   api: { createJob: async () => created },
   setCreating: noop, setError: noop, setNotice: noop, setCaptcha: noop,
+  setJobSnapshots: noop, jobSnapshotsRef: {current: new Map()},
+  rememberJob: noop,
   setJob: noop, latestJobRef: { current: null },
   setReportsTrigger: noop,
   persistentState: { setItem: noop }, ACTIVE_JOB_STORAGE_KEY: "test",
@@ -91,9 +93,12 @@ function waiterContext(getJob) {
   let timerId = 0;
   const context = {
     api: { getJob }, ApiError,
-    latestJobRef: { current: created }, terminalResolverRef: { current: null },
-    setJob: noop, setCaptcha: noop, setNotice: noop, setReportsTrigger: noop,
-    persistentState: { removeItem: noop }, ACTIVE_JOB_STORAGE_KEY: "test",
+    latestJobRef: { current: created }, terminalResolverRef: { current: new Map() },
+    jobSnapshotsRef: {current: new Map([['job-a', created]])},
+    rememberJob: noop,
+    setJob: noop, setJobSnapshots: noop, setCaptcha: noop, setParallelCaptchas: noop,
+    setNotice: noop, setReportsTrigger: noop,
+    persistentState: { getItem: () => null, removeItem: noop }, ACTIVE_JOB_STORAGE_KEY: "test",
     refreshRunners: async () => {}, uiSocket: { connected: false },
     setTimeout: (callback) => { scheduled.set(++timerId, callback); return timerId; },
     clearTimeout: (id) => scheduled.delete(id),
@@ -123,9 +128,9 @@ assert.equal(polling.scheduled.size, 0);
 
 const socket = waiterContext(async () => { throw new Error("Polling should have been cancelled"); });
 const viaSocket = socket.wait("job-a");
-socket.context.terminalResolverRef.current({ id: "another-job", status: "COMPLETED" });
+socket.context.terminalResolverRef.current.get('job-a')({ id: "another-job", status: "COMPLETED" });
 assert.equal(socket.scheduled.size, 1, "unrelated terminal events must not release this case");
-socket.context.terminalResolverRef.current({ id: "job-a", status: "NO_DATA" });
+socket.context.terminalResolverRef.current.get('job-a')({ id: "job-a", status: "NO_DATA" });
 assert.equal((await viaSocket).status, "NO_DATA");
 assert.equal(socket.scheduled.size, 0);
 
@@ -375,6 +380,7 @@ runInNewContext(controlsCompiled, {module: controlModule, exports: controlModule
   require: name => name === 'react' ? {useState: value => [value, noop], useEffect: noop}
     : name === 'react/jsx-runtime' ? {jsx, jsxs: jsx}
     : name === '../matrix-plan' ? {currentReportYear: () => 2026}
+    : name === '../worker-settings' ? {TARGET_WORKER_COUNT: 10}
     : name === '../batch-timing' ? {estimateBatchTiming: () => ({remainingMs: null})}
     : name === './CompletedTasks' ? {CompletedTasks: noop}
     : (() => {throw new Error(`Unexpected import ${name}`);})(),
@@ -392,23 +398,20 @@ function label(node) {
   if (node && typeof node === 'object') return label(node.props?.children);
   return node == null || typeof node === 'boolean' ? '' : String(node);
 }
-let continued = 0, restarted = 0, retried = 0;
 const controlProps = {plan: {...savedPlan, states: ['State A', 'State B']}, scenarios: savedPlan.scenarios,
-  loading: false, loadingMessage: '', onRunAll: noop, onRunFrom: noop, onRunOne: noop,
-  onRetryFailed: () => {retried++;}, onContinueStopped: () => {continued++;},
-  onRestartAll: () => {restarted++;}, onStop: noop, running: false,
+  loading: false, loadingMessage: '', onRunFrom: noop, onRunOne: noop,
+  onRetryFailed: noop, running: false,
   progress: {done: 1, total: 2, current: 'Office B'}, batchStatus: 'stopped',
   startedAt: null, finishedAt: null, timings: [], currentFilterStartedAt: null,
   activeElapsedMs: 0, activeSegmentStartedAt: null, log: [{index: 0, status: 'error'}],
   failedAtIndex: 0, pendingRetries: 1, disabled: false};
-const stoppedButtons = visit(controlModule.exports.MatrixRunner(controlProps));
-assert.ok(stoppedButtons.some(button => label(button) === 'Continue saved session'));
-assert.ok(stoppedButtons.some(button => label(button) === 'Restart all offices from start'));
+const stoppedControls = controlModule.exports.MatrixRunner(controlProps);
+const stoppedButtons = visit(stoppedControls);
+assert.match(label(stoppedControls), /Use the crawl monitor above to continue or restart this session/);
+assert.ok(!stoppedButtons.some(button => /Continue|Restart/.test(label(button))),
+  'saved-run actions appear once in the crawl monitor');
 assert.ok(!stoppedButtons.some(button => /Retry .*failed reports/.test(label(button))),
   'stopped sessions must not offer a separate retry that overwrites the saved queue');
-stoppedButtons.find(button => label(button) === 'Continue saved session').props.onClick();
-stoppedButtons.find(button => label(button) === 'Restart all offices from start').props.onClick();
-assert.deepEqual([continued, restarted, retried], [1, 1, 0]);
 
 const savedTasksSource = readFileSync(new URL('../src/components/CompletedTasks.tsx', import.meta.url), 'utf8');
 function renderSavedTasks(log, page = 0) {

@@ -10,8 +10,9 @@
     "check": "tsc -b --pretty false",
     "smoke": "node scripts/smoke-ui.mjs",
     "test:timing": "node scripts/test-batch-timing.mjs",
-    "test:batch": "node scripts/test-batch-timing.mjs && node scripts/test-batch-flow.mjs",
+    "test:batch": "node scripts/test-batch-timing.mjs && node scripts/test-batch-flow.mjs && node scripts/test-parallel-batch.mjs && node scripts/test-worker-dashboard.mjs",
     "test:run-errors": "node scripts/test-run-error-log.mjs",
+    "test:worker-ui": "node scripts/test-worker-dashboard-ui.mjs",
     "test:options": "node scripts/test-runner-options.mjs"
   },
   "dependencies": {

@@ -1,33 +1,30 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import ts from "typescript";
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
 
-const source = readFileSync(new URL("../src/batch-timing.ts", import.meta.url), "utf8");
-const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText;
-const { estimateBatchTiming } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
+const source = readFileSync(new URL('../src/batch-timing.ts', import.meta.url), 'utf8');
+const compiled = ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.ESNext}}).outputText;
+const {estimateBatchTiming} = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 
-assert.equal(estimateBatchTiming([], 100, 0, 1000, 9000, 0, 1000).remainingMs, null);
-const samples = [{ index: 0, durationMs: 10000 }, { index: 1, durationMs: 20000 }];
-const active = estimateBatchTiming(samples, 10, 2, 100000, 105000, 40000, 100000);
-assert.equal(active.pace, "session");
-assert.equal(active.reportsPerHour, 180);
-assert.equal(active.remainingMs, 155000, "session pace must account for active time and the current report");
-assert.equal(estimateBatchTiming(samples, 10, 2, 100000, 130000, 40000, 100000).remainingMs, 140000,
-  "an overdue current report must not make future work disappear");
-assert.equal(estimateBatchTiming(samples, 10, 2, null, 105000, 40000, 100000).remainingMs, 180000);
-assert.equal(estimateBatchTiming(samples, 10, 10, null, 105000, 40000, 100000).remainingMs, 0);
-assert.equal(estimateBatchTiming([], 3, 0, null, 105000, 0, 105000).remainingMs, null,
-  "a new run without completed reports has no measurable throughput");
-assert.deepEqual(estimateBatchTiming(JSON.parse(JSON.stringify(samples)), 10, 2, 100000, 105000, 40000, 100000), active,
-  "restored run samples must preserve the estimate");
-const recentSamples = [10, 20, 30, 40, 50].map((activeElapsedMs, offset) => ({
-  index: offset,
-  durationMs: 10000,
-  completedCount: offset + 1,
-  activeElapsedMs: activeElapsedMs * 1000,
+assert.equal(estimateBatchTiming([], 1600, 0, null, 4000, 0, 0).remainingMs, null);
+const checkpoints = Array.from({length: 100}, (_, index) => ({
+  index, durationMs: index % 2 ? 3000 : 5000,
+  completedCount: index + 1, activeElapsedMs: (Math.floor(index / 10) + 1) * 4000,
 }));
-const recent = estimateBatchTiming(recentSamples, 10, 5, 50000, 52000, 50000, 50000);
-assert.equal(recent.pace, "recent");
-assert.equal(recent.reportsPerHour, 360);
-assert.equal(recent.remainingMs, 48000, "recent progress checkpoints must take over after five completed reports");
-console.log("Batch session throughput, recent pace, ETA and recovery passed.");
+const steady = estimateBatchTiming(checkpoints, 1600, 100, null, 40_000, 0, 0);
+assert.equal(steady.pace, 'recent');
+assert.equal(steady.reportsPerHour, 9000);
+assert.equal(steady.remainingMs, 600_000,
+  'Ten workers completing 100 cases in 40 seconds imply 10 minutes for 1,500 more cases.');
+assert.equal(estimateBatchTiming(checkpoints.map((item) => ({...item, durationMs: 600_000})),
+  1600, 100, null, 40_000, 0, 0).remainingMs, steady.remainingMs,
+  'Individual filter durations must not affect the aggregate-throughput forecast.');
+assert.equal(estimateBatchTiming(checkpoints, 1600, 100, null, 161_000, 0, 0).remainingMs, null,
+  'A stalled queue must stop presenting an optimistic ETA.');
+const early = estimateBatchTiming([], 10, 2, 100_000, 105_000, 40_000, 100_000);
+assert.equal(early.pace, 'session');
+assert.equal(early.remainingMs, 180_000, 'Initial forecast uses completed output per active wall time.');
+assert.equal(estimateBatchTiming([], 10, 2, null, 0, 45_000, null).remainingMs, early.remainingMs,
+  'Paused time must not change the forecast after restoring a session.');
+assert.equal(estimateBatchTiming(checkpoints, 1600, 1600, null, 40_000, 0, 0).remainingMs, 0);
+console.log('Aggregate throughput ETA, ten-worker pace, stalled queue and pause recovery passed.');

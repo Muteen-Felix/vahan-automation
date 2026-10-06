@@ -83,19 +83,14 @@ def recognize(
             "hoặc đặt biến TESSERACT_CMD."
         )
 
-    # The browser workers request English for every small report image. Their
-    # Docker image installs eng at build time, so spawning Tesseract again for
-    # --list-langs on each image wastes CPU and can exceed the worker deadline.
-    # Keep the descriptive language check for other CLI callers.
-    if language != "eng":
-        languages = available_languages(tesseract)
-        requested = language.split("+")
-        missing = [item for item in requested if item not in languages]
-        if missing:
-            raise ValueError(
-                f"Chưa cài ngôn ngữ OCR: {', '.join(missing)}. "
-                f"Ngôn ngữ hiện có: {', '.join(languages) or 'không có'}."
-            )
+    languages = available_languages(tesseract)
+    requested = language.split("+")
+    missing = [item for item in requested if item not in languages]
+    if missing:
+        raise ValueError(
+            f"Chưa cài ngôn ngữ OCR: {', '.join(missing)}. "
+            f"Ngôn ngữ hiện có: {', '.join(languages) or 'không có'}."
+        )
 
     cmd = [tesseract, str(image_path), "stdout", "-l", language, "--psm", str(psm)]
     if whitelist:
@@ -107,7 +102,6 @@ def recognize(
         text=True,
         encoding="utf-8",
         errors="replace",
-        env={**os.environ, "OMP_THREAD_LIMIT": os.environ.get("OMP_THREAD_LIMIT") or "1"},
         timeout=90,
         check=False,
     )

@@ -97,7 +97,8 @@ async def heartbeat(sid: str, _payload: dict | None = None) -> dict:
     runner = await services.runners.get_by_socket(sid)
     if not runner or runner.source != ReportSource.NEW:
         return {"ok": False, "error": "Runner is not registered."}
-    await services.runners.heartbeat(runner.id)
+    if not await services.runners.heartbeat(sid):
+        return {"ok": False, "error": "Runner connection changed."}
     return {"ok": True}
 
 
@@ -215,12 +216,15 @@ async def captcha_required(sid: str, payload: dict) -> dict:
     storage_result = await _save_captcha_image(job_id, image_data_url)
     if isinstance(storage_result, dict):
         return storage_result
-    await services.jobs.update_status(
+    updated = await services.jobs.update_status(
         job_id,
         JobStatus.WAITING_CAPTCHA,
         captcha_id=captcha_id,
         captcha_image_data_url=image_data_url,
+        expected_status=job.status,
     )
+    if updated is None:
+        return {"ok": False, "error": "Job changed before CAPTCHA was saved."}
     await sio.emit(
         "captcha:required",
         {
@@ -263,7 +267,11 @@ async def captcha_invalid(sid: str, payload: dict) -> dict:
         JobStatus.WAITING_CAPTCHA,
         captcha_id=captcha_id,
         captcha_image_data_url=image_data_url,
+        expected_status=job.status,
+        expected_captcha_id=job.captcha_id,
     )
+    if updated is None:
+        return {"ok": False, "error": "Job changed before invalid CAPTCHA was saved."}
     await sio.emit(
         "captcha:invalid",
         {
@@ -302,7 +310,7 @@ async def captcha_refreshed(sid: str, payload: dict) -> dict:
     job = await services.jobs.get(job_id)
     if not job or job.runner_id != runner.id:
         return {"ok": False, "error": "Job does not belong to this runner."}
-    if job.status not in {JobStatus.WAITING_CAPTCHA, JobStatus.SUBMITTING}:
+    if job.status != JobStatus.WAITING_CAPTCHA:
         return {"ok": False, "error": "Job is not waiting for CAPTCHA."}
     storage_result = await _save_captcha_image(job_id, image_data_url)
     if isinstance(storage_result, dict):
@@ -310,7 +318,11 @@ async def captcha_refreshed(sid: str, payload: dict) -> dict:
     updated = await services.jobs.update_status(
         job_id, JobStatus.WAITING_CAPTCHA,
         captcha_id=captcha_id, captcha_image_data_url=image_data_url,
+        expected_status=JobStatus.WAITING_CAPTCHA,
+        expected_captcha_id=job.captcha_id,
     )
+    if updated is None:
+        return {"ok": False, "error": "CAPTCHA changed before the refresh was saved."}
     await sio.emit(
         "captcha:refreshed",
         {"jobId": str(job_id), "captchaId": captcha_id, "imageDataUrl": image_data_url},

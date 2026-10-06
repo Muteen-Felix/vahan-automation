@@ -1,7 +1,7 @@
 import { persistentState, flushPersistentState } from './services/persistent-state';
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CaptchaPanel } from "./components/CaptchaPanel";
+import { CaptchaInbox, type CaptchaInboxItem } from './components/CaptchaInbox';
 import { UserManagement, StateSyncStatus } from './components/DataManagement';
 import { ConnectionBanner } from "./components/ConnectionBanner";
 import { AnnualReports } from './components/AnnualReports';
@@ -11,6 +11,7 @@ import { JobStatus } from "./components/JobStatus";
 import { CopyRunErrors } from './components/CopyRunErrors';
 import { jobRunOutcome, readRunErrors, recordRunOutcome, RUN_ERROR_STORAGE_KEY, type RunOutcome } from './run-error-log';
 import { MatrixRunner } from "./components/MatrixRunner";
+import { WorkerDashboard } from "./components/WorkerDashboard";
 import { buildMatrix, currentReportYear, fixedFilters, MATRIX_STORAGE_KEY, readMatrixPlan, updateMatrixYear, type MatrixPlan } from "./matrix-plan";
 import type {
   Acknowledgement,
@@ -26,10 +27,11 @@ import type {
   UiHealthCheckNowResponse,
   VahanFilters,
 } from "./contracts";
-import { AUTH_REQUIRED_EVENT, ApiError, api } from "./services/api-client";
+import { AUTH_REQUIRED_EVENT, ApiError, api, type BatchQueueTask } from "./services/api-client";
 import { uiSocket } from "./services/socket-client";
 import { requestRunnerOptions } from './services/runner-options';
 import type { FilterTiming } from "./batch-timing";
+import { TARGET_WORKER_COUNT, compareRunnerIds } from "./worker-settings";
 import { loadReportCoverage, uncoveredScenarios, type CoverageContext } from './report-coverage';
 
 const ACTIVE_JOB_STORAGE_KEY = "vahanActiveJobId";
@@ -38,6 +40,7 @@ const UI_SOCKET_ACK_TIMEOUT_MS = 15_000;
 const CAPTCHA_REFRESH_ACK_TIMEOUT_MS = 25_000;
 const AUTO_RETRY_CHECKPOINT_SIZE = 10;
 const MAX_AUTO_RETRY_ATTEMPTS = 1;
+const JOB_SNAPSHOT_LIMIT = Math.max(32, TARGET_WORKER_COUNT * 3);
 const EMPTY_SCENARIOS: Scenario[] = [];
 type AppSection = "configure" | "reports" | "settings";
 type BatchStatus = "idle" | "running" | "completed" | "completed_with_errors" | "stopped" | "error";
@@ -60,7 +63,7 @@ interface BatchLogEntry {
 }
 
 interface PersistedBatchRecovery {
-  version: 1;
+  version: 1 | 2 | 3;
   status: BatchStatus;
   queueIndices: number[];
   queueOfficeKeys?: string[];
@@ -84,6 +87,70 @@ interface PersistedBatchRecovery {
   currentFilterStartedAt?: number | null;
   activeElapsedMs?: number;
   activeSegmentStartedAt?: number | null;
+  lanes?: ParallelLaneRecovery[];
+}
+
+interface ParallelLaneRecovery {
+  runnerId: string;
+  indices: number[];
+  nextPosition: number;
+  currentIndex: number | null;
+  activeJobId: string | null;
+  lastJobId: string | null;
+  retryQueueIndices: number[];
+  retryIndex: number | null;
+  lastRetryCheckpoint: number;
+  currentFilterStartedAt: number | null;
+}
+
+function splitParallelLanes(indices: number[], runnerIds: string[]): ParallelLaneRecovery[] {
+  if (!runnerIds.length || new Set(runnerIds).size !== runnerIds.length) {
+    throw new Error('Every worker needs a distinct runner ID.');
+  }
+  const base = Math.floor(indices.length / runnerIds.length);
+  const extra = indices.length % runnerIds.length;
+  let offset = 0;
+  return runnerIds.map((runnerId, lane) => {
+    const size = base + (lane < extra ? 1 : 0);
+    const part = indices.slice(offset, offset + size);
+    offset += size;
+    return {
+      runnerId, indices: part, nextPosition: 0,
+      currentIndex: null, activeJobId: null, lastJobId: null,
+      retryQueueIndices: [], retryIndex: null, lastRetryCheckpoint: 0,
+      currentFilterStartedAt: null,
+    };
+  });
+}
+
+function validParallelLanes(lanes: unknown, queueIndices: number[]): lanes is ParallelLaneRecovery[] {
+  if (!Array.isArray(lanes) || (lanes.length !== 2 && lanes.length !== TARGET_WORKER_COUNT)
+    || new Set(lanes.map((lane) => lane?.runnerId)).size !== lanes.length) return false;
+  if (!lanes.every((lane) => lane && typeof lane.runnerId === 'string' && lane.runnerId.length > 0
+    && Array.isArray(lane.indices) && lane.indices.every((index: unknown) => Number.isInteger(index) && (index as number) >= 0)
+    && Number.isInteger(lane.nextPosition) && lane.nextPosition >= 0 && lane.nextPosition <= lane.indices.length
+    && (lane.currentIndex === null || Number.isInteger(lane.currentIndex))
+    && (lane.activeJobId === null || typeof lane.activeJobId === 'string')
+    && Array.isArray(lane.retryQueueIndices) && lane.retryQueueIndices.every((index: unknown) => lane.indices.includes(index))
+    && (lane.retryIndex === null || lane.indices.includes(lane.retryIndex))
+    && Number.isInteger(lane.lastRetryCheckpoint) && lane.lastRetryCheckpoint >= 0
+    && lane.lastRetryCheckpoint <= lane.nextPosition)) return false;
+  return lanes.flatMap((lane) => lane.indices).join(',') === queueIndices.join(',');
+}
+
+function validSharedLanes(lanes: unknown, queueIndices: number[]): lanes is ParallelLaneRecovery[] {
+  if (!Array.isArray(lanes) || lanes.length !== TARGET_WORKER_COUNT
+    || new Set(lanes.map((lane) => lane?.runnerId)).size !== lanes.length) return false;
+  const allowed = new Set(queueIndices);
+  const claimed = lanes.flatMap((lane) => lane?.indices || []);
+  return new Set(claimed).size === claimed.length && claimed.every((index) => allowed.has(index))
+    && lanes.every((lane) => typeof lane.runnerId === 'string' && lane.runnerId.length > 0
+      && Array.isArray(lane.indices) && Number.isInteger(lane.nextPosition)
+      && lane.nextPosition >= 0 && lane.nextPosition <= lane.indices.length
+      && (lane.currentIndex === null || allowed.has(lane.currentIndex))
+      && (lane.activeJobId === null || typeof lane.activeJobId === 'string')
+      && Array.isArray(lane.retryQueueIndices) && lane.retryQueueIndices.every((index: number) => allowed.has(index))
+      && (lane.retryIndex === null || allowed.has(lane.retryIndex)));
 }
 
 function readBatchRecovery(): PersistedBatchRecovery | null {
@@ -99,7 +166,7 @@ function readBatchRecovery(): PersistedBatchRecovery | null {
     }
     const validStatuses: BatchStatus[] = ["idle", "running", "completed", "completed_with_errors", "stopped", "error"];
     if (
-      stored.version !== 1
+      (stored.version !== 1 && stored.version !== 2 && stored.version !== 3)
       || !validStatuses.includes(stored.status)
       || !Array.isArray(stored.queueIndices)
       || !stored.queueIndices.every((index) => Number.isInteger(index) && index >= 0)
@@ -115,11 +182,15 @@ function readBatchRecovery(): PersistedBatchRecovery | null {
       || typeof stored.progress.current !== "string"
       || typeof stored.sessionId !== "string"
       || !Number.isInteger(stored.year)
+      || (stored.version === 2 && !validParallelLanes(stored.lanes, stored.queueIndices))
+      || (stored.version === 3 && !validSharedLanes(stored.lanes, stored.queueIndices))
     ) return null;
     const timings = Array.isArray(stored.timings) ? stored.timings.filter((sample) =>
       sample && Number.isInteger(sample.index) && Number.isFinite(sample.durationMs) && sample.durationMs >= 0) : [];
     return {
       ...stored,
+      status: stored.version === 3 && stored.stopRequested && stored.status === 'running'
+        ? 'stopped' : stored.status,
       timings,
       lastRetryCheckpoint: Number.isInteger(stored.lastRetryCheckpoint) && stored.lastRetryCheckpoint! >= 0
         ? stored.lastRetryCheckpoint : 0,
@@ -167,6 +238,9 @@ export default function App() {
   const [runners, setRunners] = useState<Runner[]>([]);
   const [job, setJob] = useState<Job | null>(null);
   const [captcha, setCaptcha] = useState<CaptchaChallenge | null>(null);
+  const [selectedCaptchaJobId, setSelectedCaptchaJobId] = useState<string | null>(null);
+  const [jobSnapshots, setJobSnapshots] = useState<Record<string, Job>>({});
+  const [parallelCaptchas, setParallelCaptchas] = useState<Record<string, CaptchaChallenge>>({});
   const [creating, setCreating] = useState(false);
   const [submittingCaptcha, setSubmittingCaptcha] = useState(false);
   const [refreshingCaptcha, setRefreshingCaptcha] = useState(false);
@@ -212,12 +286,15 @@ export default function App() {
 
   const runnersRef = useRef<Runner[]>([]);
   useEffect(() => { runnersRef.current = runners; }, [runners]);
-  const terminalResolverRef = useRef<((job: Job) => void) | null>(null);
+  const terminalResolverRef = useRef<Map<string, (job: Job) => void>>(new Map());
+  const jobSnapshotsRef = useRef<Map<string, Job>>(new Map());
   const latestJobRef = useRef<Job | null>(null);
   const batchStopRef = useRef(false);
   const batchRunningRef = useRef(initialBatchRecovery?.status === "running");
   const batchLoopStartedRef = useRef(false);
   const batchRecoveryRef = useRef<PersistedBatchRecovery | null>(initialBatchRecovery);
+  const sharedQueuePersistedAtRef = useRef(0);
+  const sharedQueuePersistedSessionRef = useRef<string | null>(null);
   const batchLogRef = useRef<BatchLogEntry[]>(initialBatchRecovery?.log || []);
   const failedAtIndexRef = useRef<number | null>(initialBatchRecovery?.failedAtIndex ?? null);
   const matrixLoadInFlightRef = useRef(false);
@@ -226,6 +303,21 @@ export default function App() {
   const makerUpdateJobRef = useRef<string | null>(null);
   const pendingManualCheckRef = useRef<PendingUiHealthCheck | null>(null);
   const runErrorsRef = useRef(runErrors);
+
+  function rememberJob(snapshot: Job) {
+    const stored = jobSnapshotsRef.current;
+    stored.delete(snapshot.id);
+    stored.set(snapshot.id, snapshot);
+    while (stored.size > JOB_SNAPSHOT_LIMIT) stored.delete(stored.keys().next().value!);
+    setJobSnapshots((current) => {
+      const next = {...current};
+      delete next[snapshot.id];
+      next[snapshot.id] = snapshot;
+      const ids = Object.keys(next);
+      for (const id of ids.slice(0, Math.max(0, ids.length - JOB_SNAPSHOT_LIMIT))) delete next[id];
+      return next;
+    });
+  }
 
   function logRunOutcome(outcome: RunOutcome) {
     const next = recordRunOutcome(runErrorsRef.current, outcome);
@@ -266,9 +358,18 @@ export default function App() {
 
   function writeBatchRecovery(next: PersistedBatchRecovery | null) {
     batchRecoveryRef.current = next;
+    // Queue tasks already live durably in PostgreSQL. Limit large dashboard
+    // checkpoint writes while workers are finishing cases in parallel.
+    if (next?.version === 3 && next.status === 'running' && !next.stopRequested
+      && sharedQueuePersistedSessionRef.current === next.sessionId && sharedQueuePersistedAtRef.current
+      && Date.now() - sharedQueuePersistedAtRef.current < 10_000) return;
     try {
       if (next) persistentState.setItem(BATCH_RECOVERY_STORAGE_KEY, JSON.stringify(next));
       else persistentState.removeItem(BATCH_RECOVERY_STORAGE_KEY);
+      if (next?.version === 3) {
+        sharedQueuePersistedAtRef.current = Date.now();
+        sharedQueuePersistedSessionRef.current = next.sessionId;
+      }
     } catch {
       setNotice("Could not save batch progress in this browser. Keep this page open to let the batch continue.");
     }
@@ -403,7 +504,8 @@ export default function App() {
 
   function resolveTerminal(finishedJob: Job) {
     latestJobRef.current = finishedJob;
-    const resolve = terminalResolverRef.current;
+    rememberJob(finishedJob);
+    const resolve = terminalResolverRef.current.get(finishedJob.id);
     if (!resolve) return;
     resolve(finishedJob);
   }
@@ -420,14 +522,20 @@ export default function App() {
         return;
       }
       latestJobRef.current = acknowledgement.job;
+      rememberJob(acknowledgement.job);
       setJob(acknowledgement.job);
       if (["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(acknowledgement.job.status)) {
-        persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
+        if (persistentState.getItem(ACTIVE_JOB_STORAGE_KEY) === acknowledgement.job.id) persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
+        setParallelCaptchas((current) => { const next = {...current}; delete next[acknowledgement.job!.id]; return next; });
         await refreshRunners();
         resolveTerminal(acknowledgement.job);
       }
     }
-    if (acknowledgement.captcha) setCaptcha({ ...acknowledgement.captcha, invalid: false });
+    if (acknowledgement.captcha) {
+      const challenge = { ...acknowledgement.captcha, invalid: false };
+      setCaptcha(challenge);
+      setParallelCaptchas((current) => ({...current, [challenge.jobId]: challenge}));
+    }
   }
 
   useEffect(() => {
@@ -441,6 +549,13 @@ export default function App() {
       setConnection("connected");
       setJobRestoreReady(false);
       refreshRunners();
+      const parallelIds = batchRecoveryRef.current?.status === 'running' &&
+        (batchRecoveryRef.current.version === 2 || batchRecoveryRef.current.version === 3)
+        ? batchRecoveryRef.current.lanes?.map((lane) => lane.activeJobId).filter((id): id is string => Boolean(id)) || [] : [];
+      if (parallelIds.length) {
+        void Promise.allSettled(parallelIds.map((id) => subscribeJob(id))).finally(() => setJobRestoreReady(true));
+        return;
+      }
       const activeJobId = (batchRecoveryRef.current?.status === "running" ? batchRecoveryRef.current.activeJobId : null)
         || persistentState.getItem(ACTIVE_JOB_STORAGE_KEY);
       if (activeJobId) {
@@ -472,14 +587,17 @@ export default function App() {
     const onRunnerChange = () => refreshRunners();
     const onJobStatus = async (updated: Job) => {
       latestJobRef.current = updated;
+      rememberJob(updated);
       setJob(updated);
       if (updated.status === "SUBMITTING" || updated.status === "WAITING_RESULT") {
-        setCaptcha(null);
+        setCaptcha((current) => current?.jobId === updated.id ? null : current);
+        setParallelCaptchas((current) => { const next = {...current}; delete next[updated.id]; return next; });
         setNotice("");
       }
       if (["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(updated.status)) {
-        persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
-        setCaptcha(null);
+        if (persistentState.getItem(ACTIVE_JOB_STORAGE_KEY) === updated.id) persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
+        setCaptcha((current) => current?.jobId === updated.id ? null : current);
+        setParallelCaptchas((current) => { const next = {...current}; delete next[updated.id]; return next; });
         setReportsTrigger((c) => c + 1);
         // Đợi danh sách runner cập nhật xong TRƯỚC KHI resolve — nếu không, batch runner
         // (runScenarioQueue) sẽ đọc runnersRef.current lúc còn stale (runner vẫn hiện "đang
@@ -488,9 +606,14 @@ export default function App() {
         resolveTerminal(updated);
       }
     };
-    const onCaptcha = (challenge: CaptchaChallenge) => setCaptcha({ ...challenge, invalid: false });
-    const onCaptchaInvalid = (challenge: CaptchaChallenge) => setCaptcha({ ...challenge, invalid: true });
-    const onCaptchaRefreshed = (challenge: CaptchaChallenge) => setCaptcha({ ...challenge, invalid: false, refreshed: true });
+    const saveCaptcha = (challenge: CaptchaChallenge) => {
+      setCaptcha(challenge);
+      setSelectedCaptchaJobId(challenge.jobId);
+      setParallelCaptchas((current) => ({...current, [challenge.jobId]: challenge}));
+    };
+    const onCaptcha = (challenge: CaptchaChallenge) => saveCaptcha({ ...challenge, invalid: false });
+    const onCaptchaInvalid = (challenge: CaptchaChallenge) => saveCaptcha({ ...challenge, invalid: true });
+    const onCaptchaRefreshed = (challenge: CaptchaChallenge) => saveCaptcha({ ...challenge, invalid: false, refreshed: true });
     const onUiHealthLogReceived = (payload: { trigger?: string; checkedAt?: string }) => {
       setHealthReportsRefreshToken((value) => value + 1);
       const pending = pendingManualCheckRef.current;
@@ -544,6 +667,7 @@ export default function App() {
     try {
       const created = await api.createJob(runnerId, filters, scenarioName, sessionId, retryOfJobId, update);
       latestJobRef.current = created;
+      rememberJob(created);
       setJob(created);
       setReportsTrigger((count) => count + 1);
       persistentState.setItem(ACTIVE_JOB_STORAGE_KEY, created.id);
@@ -581,18 +705,19 @@ export default function App() {
     }
   }
 
-  async function submitCaptcha(text1: string) {
-    if (!job || !captcha) return;
+  async function submitCaptcha(text1: string, target = captcha) {
+    if (!target) return;
     setSubmittingCaptcha(true);
     setError("");
     setNotice("");
     try {
       const acknowledgement = await uiSocket.timeout(UI_SOCKET_ACK_TIMEOUT_MS).emitWithAck(
         "captcha:submitted",
-        { jobId: job.id, captchaId: captcha.captchaId, text1 },
+        { jobId: target.jobId, captchaId: target.captchaId, text1 },
       ) as Acknowledgement;
       if (!acknowledgement.ok) throw new Error(acknowledgement.error || "Could not submit the CAPTCHA.");
-      setCaptcha(null);
+      setCaptcha((current) => current?.jobId === target.jobId ? null : current);
+      setParallelCaptchas((current) => { const next = {...current}; delete next[target.jobId]; return next; });
     } catch (reason) {
       if (isSocketTimeout(reason)) {
         // The server accepts this command before the browser worker performs the
@@ -607,19 +732,21 @@ export default function App() {
     }
   }
 
-  async function refreshCaptcha() {
-    if (!job || !captcha) return;
+  async function refreshCaptcha(target = captcha) {
+    if (!target) return;
     setRefreshingCaptcha(true);
     setError("");
     setNotice("");
     try {
       const acknowledgement = await uiSocket.timeout(CAPTCHA_REFRESH_ACK_TIMEOUT_MS).emitWithAck(
         "captcha:refresh",
-        { jobId: job.id, captchaId: captcha.captchaId },
+        { jobId: target.jobId, captchaId: target.captchaId },
       ) as Acknowledgement & { captcha?: CaptchaChallenge };
       if (!acknowledgement.ok) throw new Error(acknowledgement.error || "Could not load a new CAPTCHA.");
       if (acknowledgement.captcha) {
-        setCaptcha({ ...acknowledgement.captcha, invalid: false, refreshed: true });
+        const refreshed = { ...acknowledgement.captcha, invalid: false, refreshed: true };
+        setCaptcha(refreshed);
+        setParallelCaptchas((current) => ({...current, [refreshed.jobId]: refreshed}));
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not load a new CAPTCHA.");
@@ -677,7 +804,6 @@ export default function App() {
       if (!id) throw new Error("The created job has no identifier.");
       return await waitForExistingJob(id);
     } catch (reason) {
-      terminalResolverRef.current = null;
       throw reason;
     }
   }
@@ -685,7 +811,7 @@ export default function App() {
   async function waitForExistingJob(jobId: string): Promise<Job> {
     const isTerminal = (candidate: Job | null): candidate is Job =>
       Boolean(candidate && ["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(candidate.status));
-    const known = latestJobRef.current;
+    const known = jobSnapshotsRef.current.get(jobId) || latestJobRef.current;
     if (known?.id === jobId && isTerminal(known)) return known;
 
     // Socket.IO gives immediate completion; REST is a fallback for missed
@@ -697,20 +823,22 @@ export default function App() {
         if (settled || completed.id !== jobId) return;
         settled = true;
         clearTimeout(timer);
-        if (terminalResolverRef.current === finish) terminalResolverRef.current = null;
+        if (terminalResolverRef.current.get(jobId) === finish) terminalResolverRef.current.delete(jobId);
         resolve(completed);
       };
-      terminalResolverRef.current = finish;
+      terminalResolverRef.current.set(jobId, finish);
       const poll = async () => {
         if (settled) return;
         try {
           const snapshot = await api.getJob(jobId);
           if (settled) return;
           latestJobRef.current = snapshot;
+          rememberJob(snapshot);
           setJob(snapshot);
           if (isTerminal(snapshot)) {
-            persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
-            setCaptcha(null);
+            if (persistentState.getItem(ACTIVE_JOB_STORAGE_KEY) === jobId) persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
+            setCaptcha((current) => current?.jobId === jobId ? null : current);
+            setParallelCaptchas((current) => { const next = {...current}; delete next[jobId]; return next; });
             if (["COMPLETED", "NO_DATA"].includes(snapshot.status)) setReportsTrigger((value) => value + 1);
             await refreshRunners().catch(() => {});
             finish(snapshot);
@@ -720,7 +848,7 @@ export default function App() {
         } catch (reason) {
           if (reason instanceof ApiError && reason.status === 404) {
             settled = true;
-            if (terminalResolverRef.current === finish) terminalResolverRef.current = null;
+            if (terminalResolverRef.current.get(jobId) === finish) terminalResolverRef.current.delete(jobId);
             reject(new Error("The backend no longer has this job. It may have restarted; retry this filter."));
             return;
           }
@@ -728,7 +856,7 @@ export default function App() {
         }
         if (!settled) timer = setTimeout(() => void poll(), 3_000);
       };
-      const latest = latestJobRef.current;
+      const latest = jobSnapshotsRef.current.get(jobId) || latestJobRef.current;
       if (latest?.id === jobId && isTerminal(latest)) finish(latest);
       else timer = setTimeout(() => void poll(), known?.id === jobId ? 3_000 : 0);
     });
@@ -1406,9 +1534,663 @@ export default function App() {
     setReportsTrigger((count) => count + 1);
   }
 
+  async function runSharedScenarioQueue(plan: MatrixPlan, resumeState?: PersistedBatchRecovery) {
+    if (batchRunningRef.current && !resumeState) return;
+    if (resumeState && (resumeState.version !== 3 || !validSharedLanes(resumeState.lanes, resumeState.queueIndices))) {
+      setError('The saved shared queue is invalid. Start a new session.');
+      return;
+    }
+    if (plan.year !== currentReportYear() || (resumeState && resumeState.year !== plan.year)) {
+      setError('The saved batch belongs to a different calendar year. Start a new session.');
+      return;
+    }
+    const queueIndices = resumeState?.queueIndices || plan.scenarios.map((_, index) => index);
+    if (!queueIndices.length || queueIndices.some((index) => !plan.scenarios[index])
+      || resumeState?.queueOfficeKeys?.some((key, position) =>
+        key !== matrixOfficeKey(plan.scenarios[queueIndices[position]]))) {
+      setError('The saved State/RTO cases no longer match the office list.');
+      return;
+    }
+    let lanes: ParallelLaneRecovery[];
+    if (resumeState) {
+      lanes = resumeState.lanes!.map((lane) => ({...lane, indices: [...lane.indices], retryQueueIndices: [...lane.retryQueueIndices]}));
+    } else {
+      await refreshRunners();
+      const available = runnersRef.current.filter((runner) => (runner.source || 'new') === 'new'
+        && runner.status === 'ONLINE' && !runner.currentJobId)
+        .sort((left, right) => compareRunnerIds(left.id, right.id));
+      if (available.length < TARGET_WORKER_COUNT) {
+        setError(`${TARGET_WORKER_COUNT} online, idle browser workers are required to start a full run. ${available.length} available now.`);
+        return;
+      }
+      lanes = available.slice(0, TARGET_WORKER_COUNT).map((runner) => ({
+        runnerId: runner.id, indices: [], nextPosition: 0, currentIndex: null,
+        activeJobId: null, lastJobId: null, retryQueueIndices: [], retryIndex: null,
+        lastRetryCheckpoint: 0, currentFilterStartedAt: null,
+      }));
+      batchLogRef.current = [];
+      setBatchLog([]);
+      setParallelCaptchas({});
+      persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
+    }
+
+    const sessionId = resumeState?.sessionId || crypto.randomUUID();
+    let queueTasks: BatchQueueTask[];
+    try {
+      const snapshot = resumeState
+        ? await api.batchQueue(sessionId)
+        : await api.startBatchQueue(sessionId, queueIndices.map((index) => ({
+            name: plan.scenarios[index].name, filters: plan.scenarios[index].filters,
+          })));
+      if (snapshot.tasks.length !== queueIndices.length) throw new Error('The saved queue case count changed.');
+      if (snapshot.status === 'PAUSED') await api.resumeBatchQueue(sessionId);
+      queueTasks = snapshot.tasks;
+    } catch (reason) {
+      batchRunningRef.current = false;
+      setBatchRunning(false);
+      setError(reason instanceof Error ? reason.message : 'Could not initialise the shared queue.');
+      return;
+    }
+
+    const startedAt = resumeState?.startedAt || new Date().toISOString();
+    let timings = [...(resumeState?.timings || [])];
+    let activeElapsedMs = resumeState?.activeElapsedMs || 0;
+    let activeSegmentStartedAt = Date.now();
+    batchStopRef.current = false;
+    batchLoopStartedRef.current = true;
+    batchRunningRef.current = true;
+    setBatchRunning(true);
+    setBatchStatus('running');
+    setBatchStartedAt(startedAt);
+    setBatchFinishedAt(null);
+    setBatchActiveElapsedMs(activeElapsedMs);
+    setBatchActiveSegmentStartedAt(activeSegmentStartedAt);
+
+    const initial: PersistedBatchRecovery = resumeState
+      ? {...resumeState, status: 'running', stopRequested: false, finishedAt: null,
+        activeElapsedMs, activeSegmentStartedAt, lanes}
+      : {version: 3, status: 'running', queueIndices,
+        queueOfficeKeys: queueIndices.map((index) => matrixOfficeKey(plan.scenarios[index])),
+        nextPosition: 0, currentIndex: null, activeJobId: null, stopRequested: false,
+        hadErrors: false, log: [], failedAtIndex: null,
+        progress: {done: 0, total: queueIndices.length, current: ''}, sessionId,
+        year: plan.year, startedAt, finishedAt: null, timings: [],
+        currentFilterStartedAt: null, activeElapsedMs, activeSegmentStartedAt, lanes};
+    writeBatchRecovery(initial);
+
+    function publish(patch: Partial<PersistedBatchRecovery> = {}) {
+      for (const lane of lanes) {
+        const owned = queueTasks.filter((task) => task.runnerId === lane.runnerId);
+        lane.indices = owned.map((task) => queueIndices[task.position]);
+        lane.nextPosition = owned.filter((task) => ['COMPLETED', 'NO_DATA', 'FAILED'].includes(task.status)).length;
+        lane.retryQueueIndices = owned.filter((task) => task.status === 'PENDING' && task.failures > 0)
+          .map((task) => queueIndices[task.position]);
+        const current = owned.find((task) => task.status === 'PROCESSING');
+        lane.currentIndex = current ? queueIndices[current.position] : null;
+        lane.activeJobId = current?.jobId || null;
+        lane.retryIndex = current && current.attempts > 1 ? queueIndices[current.position] : null;
+        if (current) lane.currentFilterStartedAt ||= Date.now();
+        else lane.currentFilterStartedAt = null;
+        if (current?.jobId) lane.lastJobId = current.jobId;
+      }
+      const done = queueTasks.filter((task) => ['COMPLETED', 'NO_DATA', 'FAILED'].includes(task.status)).length;
+      const current = lanes.map((lane) => lane.currentIndex === null ? ''
+        : `${lane.runnerId}: ${plan.scenarios[lane.currentIndex]?.name || ''}`).filter(Boolean).join(' | ');
+      const started = lanes.map((lane) => lane.currentFilterStartedAt).filter((value): value is number => value !== null);
+      const currentFilterStartedAt = started.length ? Math.min(...started) : null;
+      const failedAtIndex = queueTasks.find((task) => task.status === 'FAILED')?.position ?? null;
+      const progress = {done, total: queueTasks.length, current};
+      const next: PersistedBatchRecovery = {...batchRecoveryRef.current!, version: 3,
+        nextPosition: done, lanes: lanes.map((lane) => ({...lane, indices: [...lane.indices],
+          retryQueueIndices: [...lane.retryQueueIndices]})),
+        log: batchLogRef.current, failedAtIndex, hadErrors: failedAtIndex !== null,
+        progress, timings, currentFilterStartedAt, ...patch};
+      writeBatchRecovery(next);
+      setBatchProgress(progress);
+      setBatchTimings(timings);
+      setCurrentFilterStartedAt(currentFilterStartedAt);
+      setFailedAtIndex(failedAtIndex);
+    }
+
+    function upsertTask(task: BatchQueueTask) {
+      queueTasks[task.position] = task;
+      publish();
+    }
+
+    function recordTask(task: BatchQueueTask, result?: Job, startedAtMs?: number) {
+      if (!['COMPLETED', 'NO_DATA', 'FAILED'].includes(task.status) && task.status !== 'PENDING') return;
+      const index = queueIndices[task.position];
+      const previous = batchLogRef.current.find((entry) => entry.index === index);
+      const status = task.status === 'COMPLETED' ? 'ok' : task.status === 'NO_DATA' ? 'empty' : 'error';
+      const entry: BatchLogEntry = {
+        index, name: plan.scenarios[index].name, state: plan.scenarios[index].filters.states[0],
+        rto: plan.scenarios[index].filters.rtos[0], status, jobId: task.jobId || undefined,
+        detail: status === 'ok' ? 'Manufacturer data saved to the main table.'
+          : status === 'empty' ? 'No record found. State and RTO saved to SQL.'
+          : (task.error || 'The report failed.') + (task.status === 'PENDING' ? ' Queued for retry.' : ' Retry limit reached.'),
+        autoRetryCount: Math.max(0, task.attempts - 1),
+        excelFileName: result?.excelFileName, noDataFileName: result?.noDataFileName,
+        rowCount: result?.mainReportSummary?.parsedRows ?? result?.reportRowCount ?? previous?.rowCount,
+        savedAt: result?.mainReportSavedAt || previous?.savedAt,
+        durationMs: startedAtMs ? Math.max(0, Date.now() - startedAtMs) : previous?.durationMs,
+        completedAt: new Date().toISOString(),
+      };
+      batchLogRef.current = previous
+        ? batchLogRef.current.map((item) => item.index === index ? entry : item)
+        : [...batchLogRef.current, entry];
+      setBatchLog(batchLogRef.current);
+      if (result && task.status !== 'PENDING' && (!previous || previous.jobId !== task.jobId)) {
+        const elapsed = activeElapsedMs + Math.max(0, Date.now() - activeSegmentStartedAt);
+        timings = [...timings, {index, durationMs: entry.durationMs || 0,
+          completedCount: queueTasks.filter((item) => ['COMPLETED', 'NO_DATA', 'FAILED'].includes(item.status)).length,
+          activeElapsedMs: elapsed}];
+      }
+      if (result && result.status === 'FAILED') logRunOutcome({
+        id: `job:${result.id}`, jobId: result.id, sessionId,
+        filters: plan.scenarios[index].filters, name: entry.name,
+        status: 'failed', detail: entry.detail, occurredAt: result.updatedAt,
+        attempt: entry.autoRetryCount,
+      });
+      publish();
+    }
+
+    // PostgreSQL is authoritative after a reload or a lost HTTP response.
+    for (const task of queueTasks) {
+      if (['COMPLETED', 'NO_DATA', 'FAILED'].includes(task.status)
+        && !batchLogRef.current.some((entry) => entry.index === queueIndices[task.position]
+          && entry.jobId === task.jobId)) recordTask(task);
+    }
+    publish();
+
+    let lastQueueReconcileAt = 0;
+    async function runLane(lane: ParallelLaneRecovery): Promise<'done' | 'stopped' | 'error'> {
+      while (!batchStopRef.current) {
+        if (currentReportYear() !== plan.year) {
+          setError('Calendar year changed during the batch.');
+          return 'error';
+        }
+        let claimed: Awaited<ReturnType<typeof api.claimBatchTask>>;
+        try {
+          claimed = await api.claimBatchTask(sessionId, lane.runnerId);
+        } catch (reason) {
+          // A committed claim may have lost its response; the next claim returns
+          // the same active job for this runner rather than assigning a second one.
+          setNotice(`Worker ${lane.runnerId} is reconnecting to the shared queue.`);
+          await sleep(1500);
+          continue;
+        }
+        if (claimed.type === 'done') return 'done';
+        if (claimed.type === 'paused') return 'stopped';
+        if (claimed.type === 'waiting' || claimed.type === 'runner_unavailable') {
+          await sleep(1500);
+          if (claimed.type === 'waiting' && Date.now() - lastQueueReconcileAt >= 30_000) {
+            lastQueueReconcileAt = Date.now();
+            try {
+              const snapshot = await api.batchQueue(sessionId);
+              for (const task of snapshot.tasks) {
+                const prior = queueTasks[task.position];
+                if (task.status !== prior?.status || task.jobId !== prior?.jobId) {
+                  queueTasks[task.position] = task;
+                  if (['COMPLETED', 'NO_DATA', 'FAILED'].includes(task.status)) recordTask(task);
+                }
+              }
+              publish();
+            } catch { /* Keep waiting; the next poll will reconcile. */ }
+          }
+          continue;
+        }
+        upsertTask(claimed.task);
+        const index = queueIndices[claimed.task.position];
+        const startedAtMs = Date.now();
+        try {
+          const existing = await api.getJob(claimed.jobId);
+          rememberJob(existing);
+          setJob(existing);
+          await subscribeJob(claimed.jobId).catch(() => {});
+          if (batchStopRef.current) await api.cancelJob(claimed.jobId).catch(() => {});
+          const result = await waitForExistingJob(claimed.jobId);
+          let settled: BatchQueueTask | null = null;
+          while (!settled && !batchStopRef.current) {
+            try { settled = await api.settleBatchTask(sessionId, claimed.task.position); }
+            catch { await sleep(1500); }
+          }
+          if (!settled) return 'stopped';
+          upsertTask(settled);
+          recordTask(settled, result, startedAtMs);
+        } catch (reason) {
+          setNotice(`Worker ${lane.runnerId} paused at ${plan.scenarios[index].name}: ${reason instanceof Error ? reason.message : String(reason)}`);
+          return 'error';
+        }
+      }
+      return 'stopped';
+    }
+
+    await Promise.all(lanes.map((lane) => runLane(lane)));
+    try {
+      const snapshot = await api.batchQueue(sessionId);
+      queueTasks = snapshot.tasks;
+      for (const task of queueTasks) {
+        if (['COMPLETED', 'NO_DATA', 'FAILED'].includes(task.status)
+          && !batchLogRef.current.some((entry) => entry.index === queueIndices[task.position]
+            && entry.jobId === task.jobId)) recordTask(task);
+      }
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : 'Could not refresh final queue state.');
+    }
+    const finishedAtMs = Date.now();
+    activeElapsedMs += Math.max(0, finishedAtMs - activeSegmentStartedAt);
+    activeSegmentStartedAt = 0;
+    const allFinal = queueTasks.every((task) => ['COMPLETED', 'NO_DATA', 'FAILED'].includes(task.status));
+    if (!allFinal) await api.pauseBatchQueue(sessionId).catch((reason) =>
+      setNotice(reason instanceof Error ? reason.message : 'Could not pause the unfinished queue.'));
+    const finalStatus: BatchStatus = allFinal
+      ? queueTasks.some((task) => task.status === 'FAILED') ? 'completed_with_errors' : 'completed'
+      : 'stopped';
+    const finishedAt = new Date(finishedAtMs).toISOString();
+    publish({status: finalStatus, stopRequested: false, finishedAt,
+      activeElapsedMs, activeSegmentStartedAt: null});
+    setBatchStatus(finalStatus);
+    setBatchFinishedAt(finishedAt);
+    setBatchActiveElapsedMs(activeElapsedMs);
+    setBatchActiveSegmentStartedAt(null);
+    batchRunningRef.current = false;
+    setBatchRunning(false);
+    setReportsTrigger((count) => count + 1);
+  }
+
+  async function runParallelScenarioQueue(plan: MatrixPlan, resumeState?: PersistedBatchRecovery) {
+    if (batchRunningRef.current && !resumeState) return;
+    if (resumeState && (resumeState.version !== 2 || !validParallelLanes(resumeState.lanes, resumeState.queueIndices))) {
+      setError('The saved parallel-worker session is invalid. Start a new session.');
+      return;
+    }
+    if (plan.year !== currentReportYear() || (resumeState && resumeState.year !== plan.year)) {
+      setError('The saved batch belongs to a different calendar year. Start a new session.');
+      return;
+    }
+    const queueIndices = resumeState?.queueIndices || plan.scenarios.map((_, index) => index);
+    if (!queueIndices.length || queueIndices.some((index) => !plan.scenarios[index])) {
+      setError('The saved State/RTO cases no longer match the office list.');
+      return;
+    }
+    if (resumeState?.queueOfficeKeys?.some((key, position) =>
+      key !== matrixOfficeKey(plan.scenarios[queueIndices[position]]))) {
+      setError('The State/RTO list changed since this session was saved. Start a new run.');
+      return;
+    }
+    let lanes: ParallelLaneRecovery[];
+    if (resumeState) {
+      lanes = resumeState.lanes!.map((lane) => ({...lane, indices: [...lane.indices],
+        retryQueueIndices: [...lane.retryQueueIndices]}));
+    } else {
+      await refreshRunners();
+      const available = runnersRef.current.filter((runner) => (runner.source || 'new') === 'new'
+        && runner.status === 'ONLINE' && !runner.currentJobId)
+        .sort((left, right) => compareRunnerIds(left.id, right.id));
+      if (available.length < TARGET_WORKER_COUNT) {
+        setError(`${TARGET_WORKER_COUNT} online, idle browser workers are required to start a full run. ${available.length} available now.`);
+        return;
+      }
+      lanes = splitParallelLanes(queueIndices, available.slice(0, TARGET_WORKER_COUNT).map((runner) => runner.id));
+      batchLogRef.current = [];
+      setBatchLog([]);
+      failedAtIndexRef.current = null;
+      setFailedAtIndex(null);
+      setParallelCaptchas({});
+      persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
+    }
+
+    const sessionId = resumeState?.sessionId || crypto.randomUUID();
+    const startedAt = resumeState?.startedAt || new Date().toISOString();
+    let timings = [...(resumeState?.timings || [])];
+    let activeElapsedMs = resumeState?.activeElapsedMs || 0;
+    let activeSegmentStartedAt = Date.now();
+    batchStopRef.current = false;
+    batchLoopStartedRef.current = true;
+    batchRunningRef.current = true;
+    setBatchRunning(true);
+    setBatchStatus('running');
+    setBatchStartedAt(startedAt);
+    setBatchFinishedAt(null);
+    setBatchTimings(timings);
+    setBatchActiveElapsedMs(activeElapsedMs);
+    setBatchActiveSegmentStartedAt(activeSegmentStartedAt);
+
+    const initial: PersistedBatchRecovery = resumeState
+      ? {...resumeState, status: 'running', stopRequested: false, finishedAt: null,
+        activeElapsedMs, activeSegmentStartedAt, lanes}
+      : {
+        version: 2, status: 'running', queueIndices,
+        queueOfficeKeys: queueIndices.map((index) => matrixOfficeKey(plan.scenarios[index])),
+        nextPosition: 0, currentIndex: null, activeJobId: null,
+        stopRequested: false, hadErrors: false, log: [], failedAtIndex: null,
+        progress: {done: 0, total: queueIndices.length, current: ''},
+        sessionId, year: plan.year, startedAt, finishedAt: null,
+        timings: [], currentFilterStartedAt: null, activeElapsedMs, activeSegmentStartedAt, lanes,
+      };
+    writeBatchRecovery(initial);
+
+    function publish(patch: Partial<PersistedBatchRecovery> = {}) {
+      const done = lanes.reduce((sum, lane) => sum + lane.nextPosition, 0);
+      const current = lanes.map((lane) => lane.currentIndex === null ? '' :
+        lane.runnerId + ': ' + (plan.scenarios[lane.currentIndex]?.name || '')).filter(Boolean).join(' | ');
+      const started = lanes.map((lane) => lane.currentFilterStartedAt).filter((time): time is number => time !== null);
+      const currentFilterStartedAt = started.length ? Math.min(...started) : null;
+      const log = batchLogRef.current;
+      const failedAtIndex = log.find((entry) => entry.status === 'error')?.index ?? null;
+      const progress = {done, total: queueIndices.length, current};
+      const next: PersistedBatchRecovery = {
+        ...batchRecoveryRef.current!, nextPosition: done, currentIndex: null, activeJobId: null,
+        lanes: lanes.map((lane) => ({...lane, indices: [...lane.indices],
+          retryQueueIndices: [...lane.retryQueueIndices]})),
+        log, failedAtIndex, hadErrors: failedAtIndex !== null,
+        progress, timings, currentFilterStartedAt, ...patch,
+      };
+      writeBatchRecovery(next);
+      setBatchProgress(progress);
+      setBatchTimings(timings);
+      setCurrentFilterStartedAt(currentFilterStartedAt);
+      setFailedAtIndex(failedAtIndex);
+    }
+    publish();
+
+    function recordResult(index: number, entry: BatchLogEntry, startedAtMs: number, result?: Job,
+      trackTiming = true) {
+      const completedAtMs = Date.now();
+      const previous = batchLogRef.current.find((item) => item.index === index);
+      entry.completedAt = new Date(completedAtMs).toISOString();
+      entry.durationMs = Math.max(0, completedAtMs - startedAtMs);
+      entry.state ||= plan.scenarios[index].filters.states[0];
+      entry.rto ||= plan.scenarios[index].filters.rtos[0];
+      entry.autoRetryCount ??= previous?.autoRetryCount || 0;
+      if (result && entry.status !== 'error') {
+        entry.savedAt = result.mainReportSavedAt || entry.completedAt;
+        entry.rowCount = result.mainReportSummary?.parsedRows ?? result.reportRowCount ?? 0;
+      }
+      const nextLog = previous
+        ? batchLogRef.current.map((item) => item.index === index ? entry : item)
+        : [...batchLogRef.current, entry];
+      batchLogRef.current = nextLog;
+      setBatchLog(nextLog);
+      if (trackTiming) {
+        const elapsed = activeElapsedMs + Math.max(0, completedAtMs - activeSegmentStartedAt);
+        timings = [...timings.filter((sample) => sample.index !== index), {
+          index, durationMs: entry.durationMs,
+          completedCount: lanes.reduce((sum, lane) => sum + lane.nextPosition, 0),
+          activeElapsedMs: elapsed,
+        }];
+      }
+      if (!(batchStopRef.current && entry.status === 'error')) {
+        logRunOutcome({id: result && result.status === 'FAILED' ? 'job:' + result.id
+          : 'batch:' + sessionId + ':' + index + ':' + entry.autoRetryCount + ':' + entry.completedAt,
+          jobId: result?.status === 'FAILED' ? result.id : undefined, sessionId,
+          filters: plan.scenarios[index].filters, name: entry.name,
+          status: entry.status === 'error' ? 'failed' : entry.status === 'empty' ? 'no_data' : 'completed',
+          detail: entry.detail, occurredAt: result?.updatedAt || entry.completedAt, attempt: entry.autoRetryCount});
+      }
+      publish();
+    }
+
+    async function findCreatedJob(lane: ParallelLaneRecovery, scenario: Scenario, retryOfJobId?: string): Promise<Job | null> {
+      const jobs = await api.jobs();
+      return jobs.find((candidate) => candidate.sessionId === sessionId
+        && candidate.runnerId === lane.runnerId && candidate.scenarioName === scenario.name
+        && (candidate.retryOfJobId || null) === (retryOfJobId || null)
+        && candidate.filters.states[0] === scenario.filters.states[0]
+        && candidate.filters.rtos[0] === scenario.filters.rtos[0]) || null;
+    }
+
+    async function waitForLaneRunner(runnerId: string): Promise<boolean> {
+      while (!batchStopRef.current) {
+        await refreshRunners();
+        const runner = runnersRef.current.find((item) => item.id === runnerId);
+        if (runner?.status === 'ONLINE' && !runner.currentJobId) return true;
+        await sleep(1000);
+      }
+      return false;
+    }
+
+    async function executeLaneCase(lane: ParallelLaneRecovery, index: number, retryOfJobId?: string): Promise<Job | null> {
+      const scenario = plan.scenarios[index];
+      const needsReconciliation = lane.currentIndex === index && !lane.activeJobId;
+      lane.currentIndex = index;
+      publish();
+      let existing: Job | null = null;
+      if (lane.activeJobId) existing = await api.getJob(lane.activeJobId);
+      else if (needsReconciliation) existing = await findCreatedJob(lane, scenario, retryOfJobId);
+      if (existing?.status === 'CANCELLED' && !batchStopRef.current) {
+        retryOfJobId = existing.id;
+        existing = null;
+        lane.activeJobId = null;
+        publish();
+      }
+      if (existing) {
+        lane.activeJobId = existing.id;
+        lane.lastJobId = existing.id;
+        rememberJob(existing);
+        publish();
+        return waitForExistingJob(existing.id);
+      }
+
+      while (!batchStopRef.current) {
+        if (!(await waitForLaneRunner(lane.runnerId))) return null;
+        if (batchStopRef.current) return null;
+        let created: Job;
+        try {
+          created = await api.createJob(lane.runnerId, scenario.filters, scenario.name, sessionId, retryOfJobId);
+        } catch (reason) {
+          const message = reason instanceof Error ? reason.message : String(reason || '');
+          // The server may have committed the job before a network response was lost.
+          let recovered: Job | null = null;
+          for (let attempt = 0; attempt < 3 && !recovered; attempt += 1) {
+            recovered = await findCreatedJob(lane, scenario, retryOfJobId).catch(() => null);
+            if (!recovered && attempt < 2) await sleep(1000);
+          }
+          if (recovered) created = recovered;
+          else if (/Runner is already processing|Runner was assigned another job|Runner is reconnecting|Runner is offline/i.test(message)) {
+            await sleep(1000);
+            continue;
+          } else {
+            throw reason;
+          }
+        }
+        lane.activeJobId = created.id;
+        lane.lastJobId = created.id;
+        rememberJob(created);
+        setJob(created);
+        publish();
+        if (batchStopRef.current) {
+          await api.cancelJob(created.id).catch(() => {});
+          return null;
+        }
+        await subscribeJob(created.id).catch(() => {});
+        return waitForExistingJob(created.id);
+      }
+      return null;
+    }
+
+    async function retryPending(lane: ParallelLaneRecovery): Promise<boolean> {
+      while (lane.retryQueueIndices.length) {
+        if (batchStopRef.current) return false;
+        const index = lane.retryQueueIndices[0];
+        const failed = batchLogRef.current.find((entry) => entry.index === index && entry.status === 'error');
+        if (!failed || (failed.autoRetryCount || 0) >= MAX_AUTO_RETRY_ATTEMPTS) {
+          lane.retryQueueIndices.shift();
+          lane.retryIndex = null;
+          lane.currentIndex = null;
+          lane.activeJobId = null;
+          publish();
+          continue;
+        }
+        lane.retryIndex = index;
+        lane.currentFilterStartedAt ||= Date.now();
+        publish();
+        let result: Job | null;
+        try {
+          result = await executeLaneCase(lane, index, failed.jobId);
+        } catch (reason) {
+          const message = reason instanceof Error ? reason.message : String(reason || '');
+          if (!(reason instanceof ApiError) || reason.status >= 500) {
+            setNotice('Worker ' + lane.runnerId + ' paused at a retry: ' + message);
+            return false;
+          }
+          lane.retryQueueIndices.shift();
+          lane.retryIndex = null;
+          lane.currentIndex = null;
+          lane.activeJobId = null;
+          recordResult(index, {...failed, status: 'error', autoRetryCount: (failed.autoRetryCount || 0) + 1,
+            detail: 'Automatic retry failed: ' + message}, lane.currentFilterStartedAt || Date.now(), undefined, false);
+          lane.currentFilterStartedAt = null;
+          publish();
+          continue;
+        }
+        if (!result || result.status === 'CANCELLED') return false;
+        const started = lane.currentFilterStartedAt || Date.now();
+        lane.retryQueueIndices.shift();
+        lane.retryIndex = null;
+        lane.currentIndex = null;
+        lane.activeJobId = null;
+        lane.currentFilterStartedAt = null;
+        const attempt = (failed.autoRetryCount || 0) + 1;
+        if (result.status === 'COMPLETED') {
+          recordResult(index, {...failed, status: 'ok', autoRetryCount: attempt, jobId: result.id,
+            excelFileName: result.excelFileName,
+            detail: 'Recovered on automatic retry. Manufacturer data saved to the main table.'}, started, result, false);
+        } else if (result.status === 'NO_DATA') {
+          recordResult(index, {...failed, status: 'empty', autoRetryCount: attempt, jobId: result.id,
+            noDataFileName: result.noDataFileName,
+            detail: 'Automatic retry confirmed no records. Saved to SQL.'}, started, result, false);
+        } else {
+          recordResult(index, {...failed, status: 'error', autoRetryCount: attempt, jobId: result.id,
+            detail: 'Automatic retry failed: ' + (result.error || result.status)}, started, result, false);
+        }
+      }
+      return true;
+    }
+
+    async function checkpoint(lane: ParallelLaneRecovery): Promise<boolean> {
+      if (lane.lastRetryCheckpoint >= lane.nextPosition) return true;
+      const group = lane.indices.slice(lane.lastRetryCheckpoint, lane.nextPosition);
+      lane.lastRetryCheckpoint = lane.nextPosition;
+      lane.retryQueueIndices = [...new Set([...lane.retryQueueIndices, ...group.filter((index) =>
+        batchLogRef.current.some((entry) => entry.index === index && entry.status === 'error'
+          && (entry.autoRetryCount || 0) < MAX_AUTO_RETRY_ATTEMPTS))])];
+      publish();
+      return retryPending(lane);
+    }
+
+    async function runLane(lane: ParallelLaneRecovery): Promise<'completed' | 'stopped' | 'error'> {
+      if (!(await retryPending(lane))) return 'stopped';
+      if (lane.nextPosition > lane.lastRetryCheckpoint
+        && (lane.nextPosition % AUTO_RETRY_CHECKPOINT_SIZE === 0 || lane.nextPosition === lane.indices.length)
+        && !(await checkpoint(lane))) return 'stopped';
+      for (let position = lane.nextPosition; position < lane.indices.length; position += 1) {
+        if (batchStopRef.current) return 'stopped';
+        if (currentReportYear() !== plan.year) {
+          setError('Calendar year changed during the batch. Start a new session.');
+          return 'error';
+        }
+        const index = lane.indices[position];
+        const scenario = plan.scenarios[index];
+        const started = lane.currentFilterStartedAt || Date.now();
+        lane.currentFilterStartedAt = started;
+        publish();
+        let result: Job | null;
+        try {
+          result = await executeLaneCase(lane, index);
+        } catch (reason) {
+          if (batchStopRef.current) return 'stopped';
+          const message = reason instanceof Error ? reason.message : String(reason || '');
+          if (!(reason instanceof ApiError) || reason.status >= 500) {
+            setNotice('Worker ' + lane.runnerId + ' paused at ' + scenario.name + ': ' + message);
+            return 'stopped';
+          }
+          lane.nextPosition = position + 1;
+          lane.currentIndex = null;
+          lane.activeJobId = null;
+          lane.currentFilterStartedAt = null;
+          recordResult(index, {index, name: scenario.name, status: 'error',
+            detail: message + ' It will be retried at the next checkpoint.'}, started);
+          if (lane.nextPosition % AUTO_RETRY_CHECKPOINT_SIZE === 0 && !(await checkpoint(lane))) return 'stopped';
+          continue;
+        }
+        if (!result || result.status === 'CANCELLED') return 'stopped';
+        lane.nextPosition = position + 1;
+        lane.currentIndex = null;
+        lane.activeJobId = null;
+        lane.lastJobId = result.id;
+        lane.currentFilterStartedAt = null;
+        if (result.status === 'COMPLETED') {
+          recordResult(index, {index, name: scenario.name, status: 'ok', jobId: result.id,
+            excelFileName: result.excelFileName,
+            detail: 'Saved ' + (result.mainReportSummary?.parsedRows ?? result.reportRowCount ?? 0)
+              + ' manufacturer rows to the main table.'}, started, result);
+        } else if (result.status === 'NO_DATA') {
+          recordResult(index, {index, name: scenario.name, status: 'empty', jobId: result.id,
+            noDataFileName: result.noDataFileName,
+            detail: 'No record found. State, RTO and collection timestamp saved to SQL.'}, started, result);
+        } else {
+          recordResult(index, {index, name: scenario.name, status: 'error', jobId: result.id,
+            detail: (result.error || 'Job ended with status ' + result.status)
+              + ' It will be retried at the next checkpoint.'}, started, result);
+        }
+        if (batchStopRef.current) return 'stopped';
+        if (lane.nextPosition % AUTO_RETRY_CHECKPOINT_SIZE === 0 && !(await checkpoint(lane))) return 'stopped';
+      }
+      if (!(await checkpoint(lane))) return 'stopped';
+      return 'completed';
+    }
+
+    const results = await Promise.all(lanes.map((lane) => runLane(lane).catch((reason) => {
+      setError(reason instanceof Error ? reason.message : 'A worker stopped unexpectedly.');
+      return 'error' as const;
+    })));
+    const finishedAtMs = Date.now();
+    activeElapsedMs += Math.max(0, finishedAtMs - activeSegmentStartedAt);
+    activeSegmentStartedAt = 0;
+    const finalStatus: BatchStatus = results.includes('error') ? 'error'
+      : results.includes('stopped') || batchStopRef.current ? 'stopped'
+        : batchLogRef.current.some((entry) => entry.status === 'error') ? 'completed_with_errors' : 'completed';
+    const finishedAt = new Date(finishedAtMs).toISOString();
+    publish({status: finalStatus, stopRequested: false, finishedAt,
+      activeElapsedMs, activeSegmentStartedAt: null});
+    setBatchStatus(finalStatus);
+    setBatchFinishedAt(finishedAt);
+    setBatchActiveElapsedMs(activeElapsedMs);
+    setBatchActiveSegmentStartedAt(null);
+    batchRunningRef.current = false;
+    setBatchRunning(false);
+    setReportsTrigger((count) => count + 1);
+  }
+
   async function stopBatch() {
     batchStopRef.current = true;
     updateBatchRecovery({ stopRequested: true });
+    if (batchRecoveryRef.current?.version === 2 || batchRecoveryRef.current?.version === 3) {
+      if (batchRecoveryRef.current.version === 3) {
+        try { await api.pauseBatchQueue(batchRecoveryRef.current.sessionId); }
+        catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not pause the shared queue.'); }
+      }
+      const activeIds = [...new Set(batchRecoveryRef.current.lanes?.map((lane) => lane.activeJobId)
+        .filter((id): id is string => Boolean(id)) || [])];
+      await Promise.allSettled(activeIds.map(async (id) => {
+        try {
+          const cancelled = await api.cancelJob(id);
+          rememberJob(cancelled);
+          setParallelCaptchas((current) => {const next = {...current}; delete next[id]; return next;});
+          resolveTerminal(cancelled);
+        } catch (reason) {
+          const latest = await api.getJob(id).catch(() => null);
+          if (latest && ['COMPLETED', 'NO_DATA', 'FAILED', 'CANCELLED'].includes(latest.status)) {
+            resolveTerminal(latest);
+          } else {
+            setError(reason instanceof Error ? reason.message : 'Could not stop a worker job.');
+          }
+        }
+      }));
+      await refreshRunners();
+      return;
+    }
     const current = latestJobRef.current;
     const activeJobId = batchRecoveryRef.current?.activeJobId
       || (current && !["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(current.status) ? current.id : null);
@@ -1455,6 +2237,14 @@ export default function App() {
       setError("The State/RTO list changed since this session was saved. Restart all offices to avoid assigning results to the wrong RTO.");
       return;
     }
+    if (recovery.version === 2) {
+      await runParallelScenarioQueue(plan, {...recovery, stopRequested: false});
+      return;
+    }
+    if (recovery.version === 3) {
+      await runSharedScenarioQueue(plan, {...recovery, stopRequested: false});
+      return;
+    }
     await runScenarioQueue(plan.scenarios, {
       clearLog: false,
       resumeState: { ...recovery, stopRequested: false, activeJobId: null, activeSegmentStartedAt: null },
@@ -1492,7 +2282,7 @@ export default function App() {
     if (batchRunningRef.current) return;
     const freshPlan = await prepareMatrix();
     if (!freshPlan) return;
-    await runScenarioQueue(freshPlan.scenarios, { planOverride: freshPlan });
+    await runSharedScenarioQueue(freshPlan);
   }
 
   async function runFromScenarioIndex(index: number) {
@@ -1560,6 +2350,14 @@ export default function App() {
       return;
     }
 
+    if (recovery.version === 2) {
+      void runParallelScenarioQueue(matrixPlan!, recovery);
+      return;
+    }
+    if (recovery.version === 3) {
+      void runSharedScenarioQueue(matrixPlan!, recovery);
+      return;
+    }
     const activeJobId = recovery.activeJobId || persistentState.getItem(ACTIVE_JOB_STORAGE_KEY);
     if (activeJobId) persistentState.setItem(ACTIVE_JOB_STORAGE_KEY, activeJobId);
     void runScenarioQueue(scenarios, {
@@ -1568,12 +2366,16 @@ export default function App() {
     });
   }, [jobRestoreReady, scenarios]);
 
-  async function cancelJob() {
-    if (!job) return;
+  async function cancelJob(jobId = job?.id) {
+    if (!jobId) return;
     try {
-      setJob(await api.cancelJob(job.id));
-      persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
-      setCaptcha(null);
+      const cancelled = await api.cancelJob(jobId);
+      setJob(cancelled);
+      rememberJob(cancelled);
+      resolveTerminal(cancelled);
+      if (persistentState.getItem(ACTIVE_JOB_STORAGE_KEY) === jobId) persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
+      setCaptcha((current) => current?.jobId === jobId ? null : current);
+      setParallelCaptchas((current) => {const next = {...current}; delete next[jobId]; return next;});
       await refreshRunners();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not cancel the job.");
@@ -1581,6 +2383,33 @@ export default function App() {
   }
 
   const busy = creating || batchRunning || makerUpdateRunning || Boolean(job && !["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(job.status));
+  const parallelLanes = batchRecoveryRef.current?.version === 2 || batchRecoveryRef.current?.version === 3
+    ? batchRecoveryRef.current.lanes || [] : [];
+  const parallelMode = parallelLanes.length >= 2;
+  const displayParallelLanes = parallelMode
+    ? [...parallelLanes].sort((left, right) => compareRunnerIds(left.runnerId, right.runnerId)) : [];
+  const parallelJobs = displayParallelLanes.map((lane) => jobSnapshots[lane.activeJobId || lane.lastJobId || ''] || null);
+  const captchaItems: CaptchaInboxItem[] = parallelMode
+    ? displayParallelLanes.flatMap((lane, index) => {
+      const challenge = lane.activeJobId ? parallelCaptchas[lane.activeJobId] : null;
+      if (!challenge) return [];
+      const activeJob = jobSnapshots[challenge.jobId];
+      return [{runnerId: lane.runnerId, workerLabel: `Worker ${index + 1}`,
+        office: activeJob?.scenarioName || (lane.currentIndex === null ? '' : scenarios[lane.currentIndex]?.name || ''),
+        challenge}];
+    })
+    : captcha ? [{runnerId: job?.runnerId || 'current-report', workerLabel: 'Current report',
+      office: job?.scenarioName || '', challenge: captcha}] : [];
+  const hasCaptcha = captchaItems.length > 0;
+
+  function openCaptchaForWorker(runnerId: string) {
+    const item = captchaItems.find((candidate) => candidate.runnerId === runnerId);
+    if (!item) return;
+    setSelectedCaptchaJobId(item.challenge.jobId);
+    window.requestAnimationFrame(() => document.getElementById('captcha-assistance')?.scrollIntoView({
+      behavior: 'smooth', block: 'center',
+    }));
+  }
 
   return (
     <div className="app-shell" data-view={view}>
@@ -1627,7 +2456,8 @@ export default function App() {
               <AnnualReports refreshTrigger={reportsTrigger} coverageControls={{plan: matrixPlan, busy,
                 running: batchRunning, loadingMatrix: matrixLoading, status: batchStatus, current: batchProgress.current,
                 onContinue: continueUncoveredReports, onStop: stopBatch}} />
-              {captcha && <CaptchaPanel challenge={captcha} submitting={submittingCaptcha} refreshing={refreshingCaptcha}
+              {hasCaptcha && <CaptchaInbox items={captchaItems} selectedJobId={selectedCaptchaJobId}
+                onSelect={setSelectedCaptchaJobId} submitting={submittingCaptcha} refreshing={refreshingCaptcha}
                 onSubmit={submitCaptcha} onRefresh={refreshCaptcha} />}
             </main>
           ) : (
@@ -1647,8 +2477,56 @@ export default function App() {
                 {error && <div className="global-error" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
                 {notice && <div className="global-notice" role="status">{notice}<button onClick={() => setNotice("")}>×</button></div>}
 
-                <div className="workspace">
+                <WorkerDashboard
+                  runners={runners}
+                  connection={connection}
+                  scenarios={scenarios}
+                  lanes={displayParallelLanes}
+                  jobs={jobSnapshots}
+                  log={batchLog}
+                  progress={batchProgress}
+                  status={batchStatus}
+                  running={batchRunning}
+                  loading={matrixLoading}
+                  disabled={busy}
+                  legacySession={batchRecoveryRef.current?.version === 1}
+                  sharedQueue={batchRecoveryRef.current?.version !== 1 && batchRecoveryRef.current?.version !== 2}
+                  timings={batchTimings}
+                  currentFilterStartedAt={currentFilterStartedAt}
+                  activeElapsedMs={batchActiveElapsedMs}
+                  activeSegmentStartedAt={batchActiveSegmentStartedAt}
+                  captchaJobIds={Object.keys(parallelCaptchas)}
+                  onOpenCaptcha={openCaptchaForWorker}
+                  onRunAll={runAllScenarios}
+                  onContinue={continueStoppedBatch}
+                  onRestart={restartStoppedBatch}
+                  onStop={stopBatch}
+                />
+
+                {hasCaptcha && <CaptchaInbox items={captchaItems} selectedJobId={selectedCaptchaJobId}
+                  onSelect={setSelectedCaptchaJobId} submitting={submittingCaptcha} refreshing={refreshingCaptcha}
+                  onSubmit={submitCaptcha} onRefresh={refreshCaptcha} />}
+
+                <div className="workspace workspace-full">
                   <div className="left-column">
+                    <MatrixRunner
+                      plan={matrixPlan}
+                      loading={matrixLoading}
+                      loadingMessage={matrixProgress}
+                      scenarios={scenarios}
+                      onRunFrom={runFromScenarioIndex}
+                      onRunOne={runSingleScenarioIndex}
+                      onRetryFailed={retryFailedScenario}
+                      running={batchRunning}
+                      progress={batchProgress}
+                      batchStatus={batchStatus}
+                      log={batchLog}
+                      failedAtIndex={failedAtIndex}
+                      pendingRetries={parallelMode
+                        ? parallelLanes.reduce((sum, lane) => sum + lane.retryQueueIndices.length, 0)
+                        : batchRecoveryRef.current?.retryQueueIndices?.length || 0}
+                      disabled={busy}
+                    />
                     <section className="maker-update-panel" aria-label="Incremental Maker update">
                       <div className="maker-update-heading">
                         <div><h3>Update Maker</h3><p>Quét Maker toàn State; chỉ dò và cập nhật RTO của Maker có số liệu thay đổi.</p></div>
@@ -1668,58 +2546,25 @@ export default function App() {
                         })}
                       </div>}
                     </section>
-                    <MatrixRunner
-                      plan={matrixPlan}
-                      loading={matrixLoading}
-                      loadingMessage={matrixProgress}
-                      scenarios={scenarios}
-                      onRunAll={runAllScenarios}
-                      onRunFrom={runFromScenarioIndex}
-                      onRunOne={runSingleScenarioIndex}
-                      onRetryFailed={retryFailedScenario}
-                      onContinueStopped={continueStoppedBatch}
-                      onRestartAll={restartStoppedBatch}
-                      onStop={stopBatch}
-                      running={batchRunning}
-                      progress={batchProgress}
-                      batchStatus={batchStatus}
-                      startedAt={batchStartedAt}
-                      timings={batchTimings}
-                      currentFilterStartedAt={currentFilterStartedAt}
-                      activeElapsedMs={batchActiveElapsedMs}
-                      activeSegmentStartedAt={batchActiveSegmentStartedAt}
-                      finishedAt={batchFinishedAt}
-                      log={batchLog}
-                      failedAtIndex={failedAtIndex}
-                      pendingRetries={batchRecoveryRef.current?.retryQueueIndices?.length || 0}
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="right-column">
-                    <div className="job-status-area" id="activity">
-                      {job && <JobStatus job={job} onCancel={cancelJob} />}
-                      <CopyRunErrors entries={runErrors} />
-                    </div>
-                    <CaptchaPanel
-                      challenge={captcha}
-                      submitting={submittingCaptcha}
-                      refreshing={refreshingCaptcha}
-                      onSubmit={submitCaptcha}
-                      onRefresh={refreshCaptcha}
-                    />
-                    {!job && <section className="empty-state" data-running={batchRunning}>
-                      <span className="empty-state-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none"><path d="M4.5 18.5V12m5 6.5V6m5 12.5v-9m5 9V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-                      </span>
-                      <span className="empty-state-kicker">SESSION ACTIVITY</span>
-                      <h2>{batchRunning ? "Connecting to VAHAN" : "Ready to run"}</h2>
-                      <p>{batchRunning
-                        ? "The next report is being prepared. Activity and CAPTCHA requests will appear here."
-                        : "Report progress and CAPTCHA requests will appear here after you start a session."}</p>
-                      <span className="empty-state-status"><i />{batchRunning ? "Session in progress" : "Waiting for a session"}</span>
-                    </section>}
                   </div>
                 </div>
+
+                <section className="activity-section" id="activity" aria-labelledby="activity-title">
+                  <div className="activity-section-header">
+                    <div><p className="worker-dashboard-eyebrow">LIVE JOBS</p><h2 id="activity-title">Worker activity</h2>
+                      <p>Current stage and result for each browser worker.</p></div>
+                    <CopyRunErrors entries={runErrors} />
+                  </div>
+                  {parallelMode ? <div className="activity-grid">
+                    {parallelJobs.map((activeJob, index) => activeJob && <div className="activity-worker" key={displayParallelLanes[index].runnerId}>
+                      <div className="activity-worker-label"><strong>Worker {index + 1}</strong><span>{displayParallelLanes[index].runnerId}</span></div>
+                      <JobStatus job={activeJob} onCancel={() => void stopBatch()} />
+                    </div>)}
+                  </div> : job ? <div className="activity-grid" data-single="true"><JobStatus job={job} onCancel={() => void cancelJob()} /></div>
+                    : <div className="activity-empty" data-running={batchRunning}>{batchRunning
+                      ? "Waiting for the next worker update…"
+                      : "Job activity will appear here when a session starts."}</div>}
+                </section>
 
               </main>
           )}

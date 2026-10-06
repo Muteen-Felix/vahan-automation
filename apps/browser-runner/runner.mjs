@@ -1,11 +1,11 @@
 import { chromium } from 'playwright';
 import { io } from 'socket.io-client';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { createServer } from 'node:http';
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { normalizeJobFilters, VAHAN_OPTION_SELECTORS } from './config.mjs';
@@ -13,6 +13,8 @@ import { normalizeJobFilters, VAHAN_OPTION_SELECTORS } from './config.mjs';
 const API = process.env.VAHAN_API_URL || 'http://api:8000';
 const TOKEN = process.env.VAHAN_API_RUNNER_TOKEN;
 const ID = process.env.VAHAN_RUNNER_ID || 'playwright-1';
+const CAPTCHA_IMAGE_DIR = process.env.VAHAN_CAPTCHA_IMAGE_DIR
+  || '/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1';
 const URL = process.env.VAHAN_URL || 'https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en';
 const LOCAL_FIXTURE = process.env.VAHAN_ALLOW_LOCAL_FIXTURE === 'true';
 const DRIVER = fileURLToPath(new globalThis.URL('./page-driver.js', import.meta.url));
@@ -47,9 +49,17 @@ async function ack(event, payload, timeout = 15_000) {
 function assertCurrent(job) {
   if (!job || job !== active || job.cancelled) throw new Error('Job was cancelled.');
 }
+function captchaImagePath() {
+  const match = /^playwright-(\d+)$/.exec(ID);
+  const imageIndex = match ? Number(match[1]) : 0;
+  if (!Number.isInteger(imageIndex) || imageIndex < 1 || imageIndex > 10) {
+    throw new Error(`Runner ID must be playwright-1 through playwright-10 to save CAPTCHA images: ${ID}`);
+  }
+  return join(CAPTCHA_IMAGE_DIR, `ảnh${imageIndex}.png`);
+}
 async function saveCaptchaImage(imageDataUrl) {
   try {
-    const targetPath = '/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1/ảnh1.png';
+    const targetPath = captchaImagePath();
     await mkdir(dirname(targetPath), { recursive: true });
     const base64Data = imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
     await writeFile(targetPath, Buffer.from(base64Data, 'base64'));
@@ -89,53 +99,68 @@ async function submitCaptchaInternal(job, captchaId, value) {
   }
 }
 async function refreshCaptchaInternal(job, captchaId) {
-  if (!job || job.status !== 'WAITING_CAPTCHA') return;
+  if (!job || job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
+      || job.captchaId !== captchaId || job.refreshingCaptchaId) {
+    return {ok: false, error: 'Stale CAPTCHA or job.'};
+  }
+  job.refreshingCaptchaId = captchaId;
   try {
     const captcha = await page.evaluate(id => globalThis.vahanDriver.refreshCaptcha(id), captchaId);
+    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
+        || job.captchaId !== captchaId) return {ok: false, error: 'Stale CAPTCHA or job.'};
     await saveCaptchaImage(captcha.imageDataUrl);
-    assertCurrent(job); job.captchaId = captcha.captchaId;
-    await ack('captcha:refreshed', {jobId: job.jobId, captchaId: captcha.captchaId, imageDataUrl: captcha.imageDataUrl});
+    const update = {jobId: job.jobId, captchaId: captcha.captchaId, imageDataUrl: captcha.imageDataUrl};
+    try {
+      await ack('captcha:refreshed', update);
+    } catch (error) {
+      // The API may have committed the new challenge while its ACK was lost.
+      // Repeating the same challenge is idempotent and restores the local ID.
+      if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA') throw error;
+      await ack('captcha:refreshed', update);
+    }
+    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA') {
+      return {ok: false, error: 'Stale CAPTCHA or job.'};
+    }
+    job.captchaId = captcha.captchaId;
     autoSolveCaptcha(job, captcha.captchaId).catch(console.error);
+    return {ok: true};
   } catch (error) {
-    console.error('Failed to auto-refresh captcha:', error.message);
+    console.error('Failed to refresh captcha:', error.message);
+    if (job === active && !job.cancelled && job.status === 'WAITING_CAPTCHA') {
+      await fail(new Error(`CAPTCHA_REFRESH_FAILED: ${error.message}`), job);
+    }
+    return {ok: false, error: error.message};
+  } finally {
+    if (job.refreshingCaptchaId === captchaId) job.refreshingCaptchaId = null;
   }
 }
 
 async function autoSolveCaptcha(job, captchaId) {
-  const timeoutId = setTimeout(async () => {
-    if (job && job.status === 'WAITING_CAPTCHA' && job.captchaId === captchaId) {
-      console.log('2 seconds passed without captcha submission, auto-refreshing...');
-      await refreshCaptchaInternal(job, captchaId);
-    }
-  }, 2000);
-
   try {
-    const targetPath = '/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1/ảnh1.png';
-    const scriptPath = '/Users/mac/Desktop/vahan-automation/apps/api-server/app/ocr/ocr_to_text.py';
-    const { stdout } = await execAsync(`python3 "${scriptPath}" --input "${targetPath}" --lang eng --psm 6`, { timeout: 1900 });
+    const targetPath = captchaImagePath();
+    // The runner image already has English Tesseract. A Python wrapper spawns
+    // another Tesseract just to list languages for every image; under ten
+    // workers that extra process frequently hits the 1.9 s deadline.
+    const { stdout } = await execFileAsync('tesseract', [targetPath, 'stdout', '-l', 'eng', '--psm', '6'], {
+      timeout: 3000, env: {...process.env, OMP_THREAD_LIMIT: '1'},
+    });
+    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
+        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
 
-    const parts = stdout.split('--- Kết quả OCR ---');
-    if (parts.length > 1) {
-      const rawText = parts[1].trim();
-      const text = rawText.replace(/[^A-Z0-9]/ig, '').toUpperCase();
-      console.log(`Python OCR raw output: ${rawText}`);
-      console.log(`Auto-OCR result: ${text}`);
-      if (text.length === 6) {
-        console.log('Valid captcha detected, auto-submitting...');
-        const result = await submitCaptchaInternal(job, captchaId, text);
-        if (result.ok) clearTimeout(timeoutId);
-      } else {
-        console.log('Captcha length not 6, auto-refreshing...');
-        clearTimeout(timeoutId);
-        await refreshCaptchaInternal(job, captchaId);
-      }
+    const rawText = stdout.trim();
+    const text = rawText.replace(/[^A-Z0-9]/ig, '').toUpperCase();
+    console.log(`OCR raw output: ${rawText}`);
+    console.log(`Auto-OCR result: ${text}`);
+    if (text.length === 6) {
+      console.log('Valid captcha detected, auto-submitting...');
+      await submitCaptchaInternal(job, captchaId, text);
     } else {
-      console.log('Unexpected OCR output format, auto-refreshing...');
-      clearTimeout(timeoutId);
+      console.log('Captcha length not 6, auto-refreshing...');
       await refreshCaptchaInternal(job, captchaId);
     }
   } catch (err) {
-    clearTimeout(timeoutId);
+    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
+        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
     console.error('Auto-OCR failed, auto-refreshing...', err.message);
     await refreshCaptchaInternal(job, captchaId);
   }
@@ -227,11 +252,20 @@ async function challenge(event = 'captcha:required', job = active) {
 async function fail(error, job = active) {
   if (!job || job !== active || job.cancelled) return;
   await snapshot('failure', job);
-  try { await status('FAILED', error.message, job); } catch (failure) { console.error(failure.message); }
+  let statusLost = false;
+  try { await status('FAILED', error.message, job); }
+  catch (failure) { statusLost = true; console.error(failure.message); }
   if (active === job) active = null;
   await saveState().catch(error => console.error(error.message));
+  if (statusLost && !stopping) {
+    // Reconciliation on connect marks an unreported job failed and releases
+    // the runner, so one lost status ACK cannot block its whole lane.
+    socket.disconnect();
+    socket.connect();
+  }
 }
 async function execute(job) {
+  if (active?.jobId === job.jobId) return;
   // A committed result can release the server's worker before its HTTP response arrives.
   // Wait for that response before accepting the next assignment on this browser.
   if (active?.finishing) await active.finishPromise;
@@ -264,6 +298,7 @@ async function finalizeResult(job, operation) {
 }
 async function waitForResult(job) {
   assertCurrent(job);
+  const resultWaitStartedAt = Date.now();
   const jobPage = page;
   const assertReportPage = () => {
     const current = new globalThis.URL(jobPage.url());
@@ -303,6 +338,7 @@ async function waitForResult(job) {
       await new Promise(resolve => setTimeout(resolve, Math.min(100, Math.max(0, deadline - Date.now()))));
     }
   }
+  const resultReadyAt = Date.now();
   assertReportPage();
   if (active !== job || job.cancelled) return;
   if (authRequired || result.type === 'AUTH_REQUIRED') throw new Error('VAHAN_AUTH_REQUIRED');
@@ -321,16 +357,23 @@ async function waitForResult(job) {
       if (failure) throw new Error(failure);
       assertCurrent(job);
       const data = await readFile(await download.path());
+      const exportReadyAt = Date.now();
       const form = new FormData();
       form.append('file', new Blob([data], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), download.suggestedFilename());
       form.append('observedAt', result.report.observedAt);
       form.append('pageUrl', result.report.pageUrl || '');
       await finalizeResult(job, () => http(`/api/jobs/${job.jobId}/main-report`, {method: 'POST', body: form}));
+      console.log('RESULT_STAGE', JSON.stringify({jobId: job.jobId, outcome: 'COMPLETED',
+        resultWaitMs: resultReadyAt - resultWaitStartedAt,
+        exportMs: exportReadyAt - resultReadyAt, saveMs: Date.now() - exportReadyAt}));
     } finally { await download.delete(); }
   } else if (result.type === 'NO_RECORD') {
     assertCurrent(job);
     await finalizeResult(job, () => http(`/api/jobs/${job.jobId}/report-result`, {method: 'POST',
       headers: {'Content-Type': 'application/json'}, body: JSON.stringify(result.report)}));
+    console.log('RESULT_STAGE', JSON.stringify({jobId: job.jobId, outcome: 'NO_DATA',
+      resultWaitMs: resultReadyAt - resultWaitStartedAt, exportMs: 0,
+      saveMs: Date.now() - resultReadyAt}));
   } else if (result.type === 'TIMEOUT') {
     throw new Error('VAHAN_RESULT_TIMEOUT: no confirmed report within the result timeout.');
   } else throw new Error(`Unexpected result: ${result.type}`);
@@ -376,14 +419,7 @@ socket.on('captcha:refresh', async (payload, respond) => {
   if (!job || payload.jobId !== job.jobId || payload.captchaId !== job.captchaId || job.status !== 'WAITING_CAPTCHA') {
     respond({ok: false, error: 'No waiting job.'}); return;
   }
-  try {
-    const captcha = await page.evaluate(id => globalThis.vahanDriver.refreshCaptcha(id), payload.captchaId);
-    await saveCaptchaImage(captcha.imageDataUrl);
-    assertCurrent(job); job.captchaId = captcha.captchaId;
-    await ack('captcha:refreshed', {jobId: job.jobId, captchaId: captcha.captchaId, imageDataUrl: captcha.imageDataUrl});
-    respond({ok: true});
-    autoSolveCaptcha(job, captcha.captchaId).catch(console.error);
-  } catch (error) { respond({ok: false, error: error.message}); }
+  respond(await refreshCaptchaInternal(job, payload.captchaId));
 });
 socket.on('job:cancelled', async ({jobId}) => {
   if (active?.jobId === jobId) { const cancelled = active; cancelled.cancelled = true; await page?.close().catch(() => {}); if (active === cancelled) active = null; }

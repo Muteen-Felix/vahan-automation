@@ -10,6 +10,7 @@ from app.api.data import router as data_router
 from app.api.annual_reports import router as annual_reports_router
 from app.api.report_coverage import router as report_coverage_router
 from app.api.maker_updates import router as maker_updates_router
+from app.api.batch_queue import router as batch_queue_router
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(health_router)
@@ -22,3 +23,4 @@ api_router.include_router(data_router)
 api_router.include_router(annual_reports_router)
 api_router.include_router(report_coverage_router)
 api_router.include_router(maker_updates_router)
+api_router.include_router(batch_queue_router)

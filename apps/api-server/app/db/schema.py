@@ -1,7 +1,7 @@
 """Durable PostgreSQL schema. JSONB retains complete versioned application payloads."""
 from sqlalchemy import (
     MetaData, Table, Column, String, Text, Boolean, Integer, BigInteger,
-    DateTime, LargeBinary, ForeignKey, JSON, Index, UniqueConstraint,
+    DateTime, LargeBinary, ForeignKey, JSON, Index, UniqueConstraint, text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -40,6 +40,29 @@ runners = Table("runners", metadata,
     Column("connected", Boolean, nullable=False),
     Column("current_job_id", ForeignKey("jobs.id"), nullable=True),
     Column("payload", document, nullable=False))
+batch_queue_sessions = Table("batch_queue_sessions", metadata,
+    Column("session_id", ForeignKey("report_sessions.id", ondelete="CASCADE"), primary_key=True),
+    Column("owner_username", ForeignKey("users.username"), nullable=False, index=True),
+    Column("status", String(16), nullable=False),
+    Column("total", Integer, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False))
+batch_queue_tasks = Table("batch_queue_tasks", metadata,
+    Column("session_id", ForeignKey("batch_queue_sessions.session_id", ondelete="CASCADE"), primary_key=True),
+    Column("position", Integer, primary_key=True),
+    Column("scenario_name", Text, nullable=False),
+    Column("filters", document, nullable=False),
+    Column("status", String(16), nullable=False, index=True),
+    Column("attempts", Integer, nullable=False),
+    Column("failures", Integer, nullable=False),
+    Column("runner_id", String(128)),
+    Column("job_id", ForeignKey("jobs.id", ondelete="SET NULL")),
+    Column("error", Text),
+    Column("updated_at", DateTime(timezone=True), nullable=False))
+Index('ix_batch_queue_claim', batch_queue_tasks.c.session_id, batch_queue_tasks.c.position,
+      postgresql_where=text("status = 'PENDING'"))
+Index('ix_batch_queue_job', batch_queue_tasks.c.job_id, unique=True,
+      postgresql_where=text('job_id IS NOT NULL'))
 job_events = Table("job_events", metadata,
     Column("id", String(36), primary_key=True),
     Column("job_id", ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True),

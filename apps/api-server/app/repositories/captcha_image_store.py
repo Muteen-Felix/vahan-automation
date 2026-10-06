@@ -17,7 +17,7 @@ _IMAGE_TYPES = {
 }
 _MAX_IMAGE_BYTES = 750_000
 _IMAGE_EXTENSIONS = {image_type[0] for image_type in _IMAGE_TYPES.values()}
-_DEFAULT_PATH_TEMPLATE = "ảnh1"
+_DEFAULT_PATH_TEMPLATE = "{job_id}/ảnh1"
 
 
 class CaptchaImageStore:

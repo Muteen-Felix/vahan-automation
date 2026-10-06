@@ -141,3 +141,81 @@ const landing = openingFixture({redirect: homepage});
 await assert.rejects(landing.ensure(), /VAHAN_REPORT_NAVIGATED_AWAY/);
 assert.deepEqual(landing.calls, ['navigate']);
 console.log('5 page-readiness checks passed: navigation commit, usable timeout recovery, missing controls, authentication and redirect.');
+
+const refreshStart = source.indexOf('async function refreshCaptchaInternal(');
+const refreshEnd = source.indexOf('async function autoSolveCaptcha(', refreshStart);
+assert.ok(refreshStart >= 0 && refreshEnd > refreshStart);
+function refreshFixture(ackFailures = 0) {
+  const calls = [];
+  const job = {jobId: 'refresh-job', status: 'WAITING_CAPTCHA', captchaId: 'old-captcha'};
+  let releasePage;
+  const context = {
+    active: job,
+    page: {evaluate: async () => {
+      calls.push('refresh-page');
+      await new Promise(resolve => { releasePage = resolve; });
+      return {captchaId: 'new-captcha', imageDataUrl: 'data:image/png;base64,AA=='};
+    }},
+    saveCaptchaImage: async () => calls.push('save-image'),
+    ack: async () => {calls.push('ack'); if (ackFailures-- > 0) throw new Error('operation has timed out'); return {ok: true};},
+    autoSolveCaptcha: async () => calls.push('solve-next'),
+    fail: async () => calls.push('failed-job'),
+    console: {error: () => calls.push('refresh-error')},
+  };
+  const refresh = runInNewContext(`${source.slice(refreshStart, refreshEnd)}\nrefreshCaptchaInternal`, context);
+  return {refresh, job, calls, releasePage: () => releasePage()};
+}
+const refreshOnce = refreshFixture();
+const firstRefresh = refreshOnce.refresh(refreshOnce.job, 'old-captcha');
+assert.equal((await refreshOnce.refresh(refreshOnce.job, 'old-captcha')).ok, false);
+refreshOnce.releasePage();
+assert.equal((await firstRefresh).ok, true);
+assert.deepEqual(refreshOnce.calls, ['refresh-page', 'save-image', 'ack', 'solve-next']);
+assert.equal(refreshOnce.job.captchaId, 'new-captcha');
+const staleRefresh = refreshFixture();
+const staleAttempt = staleRefresh.refresh(staleRefresh.job, 'old-captcha');
+staleRefresh.job.status = 'SUBMITTING';
+staleRefresh.releasePage();
+assert.equal((await staleAttempt).ok, false);
+assert.deepEqual(staleRefresh.calls, ['refresh-page']);
+const lostAck = refreshFixture(1);
+const recoveredAck = lostAck.refresh(lostAck.job, 'old-captcha');
+lostAck.releasePage();
+assert.equal((await recoveredAck).ok, true);
+assert.deepEqual(lostAck.calls, ['refresh-page', 'save-image', 'ack', 'ack', 'solve-next']);
+const exhaustedAck = refreshFixture(2);
+const failedRefresh = exhaustedAck.refresh(exhaustedAck.job, 'old-captcha');
+exhaustedAck.releasePage();
+assert.equal((await failedRefresh).ok, false);
+assert.deepEqual(exhaustedAck.calls, ['refresh-page', 'save-image', 'ack', 'ack', 'refresh-error', 'failed-job']);
+console.log('CAPTCHA refresh stays single-flight, retries a lost ACK and fails a stalled job.');
+
+const failStart = source.indexOf('async function fail(');
+const failEnd = source.indexOf('async function execute(', failStart);
+const failedJob = {jobId: 'unreported-job', cancelled: false};
+const recoveryCalls = [];
+const failContext = {
+  active: failedJob, stopping: false,
+  snapshot: async () => recoveryCalls.push('snapshot'),
+  status: async () => {throw new Error('status ACK lost');},
+  saveState: async () => recoveryCalls.push('save-state'),
+  socket: {disconnect: () => recoveryCalls.push('disconnect'), connect: () => recoveryCalls.push('reconnect')},
+  console: {error: () => recoveryCalls.push('status-error')},
+};
+const reportFailure = runInNewContext(`${source.slice(failStart, failEnd)}\nfail`, failContext);
+await reportFailure(new Error('CAPTCHA_REFRESH_FAILED'), failedJob);
+assert.deepEqual(recoveryCalls, ['snapshot', 'status-error', 'save-state', 'disconnect', 'reconnect']);
+console.log('A lost failure ACK reconnects the runner for server-side reconciliation.');
+
+const executeStart = source.indexOf('async function execute(');
+const executeEnd = source.indexOf('async function finalizeResult(', executeStart);
+const activeAssignment = {jobId: 'same-job', finishing: false};
+const duplicateDispatchCalls = [];
+const executeDuplicate = runInNewContext(`${source.slice(executeStart, executeEnd)}\nexecute`, {
+  active: activeAssignment, optionsBusy: false,
+  ack: async () => duplicateDispatchCalls.push('failed-busy'),
+  status: async () => duplicateDispatchCalls.push('opened'),
+});
+await executeDuplicate({jobId: 'same-job'});
+assert.deepEqual(duplicateDispatchCalls, [], 'replayed assignment for the same job must be harmless');
+console.log('A recovered assignment does not fail or restart the active job.');

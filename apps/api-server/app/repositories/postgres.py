@@ -51,7 +51,8 @@ async def release_runner(connection, runner_id, job_id):
     if row and row["current_job_id"] == str(job_id):
         runner = Runner.model_validate(row["payload"])
         runner.current_job_id = None
-        runner.status = RunnerStatus.ONLINE
+        if runner.status != RunnerStatus.RECONNECTING:
+            runner.status = RunnerStatus.ONLINE
         await connection.execute(update(db.runners).where(db.runners.c.id == runner_id).values(
             current_job_id=None, payload=runner_document(runner)))
 
@@ -259,8 +260,19 @@ class PostgresRunnerRegistry:
                 payload=runner_document(runner), current_job_id=runner.current_job_id))
         return runner
 
-    async def heartbeat(self, runner_id):
-        return await self._edit(runner_id, lambda runner: None)
+    async def heartbeat(self, socket_id):
+        async with engine.begin() as connection:
+            row = (await connection.execute(select(db.runners).where(
+                db.runners.c.socket_id == socket_id,
+                db.runners.c.connected.is_(True)).with_for_update())).mappings().first()
+            if not row:
+                return None
+            runner = Runner.model_validate(row["payload"])
+            runner.status = RunnerStatus.BUSY if row["current_job_id"] else RunnerStatus.ONLINE
+            runner.last_seen_at = now()
+            await connection.execute(update(db.runners).where(db.runners.c.id == runner.id).values(
+                payload=runner_document(runner)))
+        return runner
 
     async def set_job(self, runner_id, job_id):
         def edit(runner):
@@ -274,8 +286,18 @@ class PostgresRunnerRegistry:
         return await self.get(runner_id)
 
     async def mark_reconnecting(self, socket_id):
-        runner = await self.get_by_socket(socket_id)
-        return await self._edit(runner.id, lambda r: setattr(r, "status", RunnerStatus.RECONNECTING)) if runner else None
+        async with engine.begin() as connection:
+            row = (await connection.execute(select(db.runners).where(
+                db.runners.c.socket_id == socket_id,
+                db.runners.c.connected.is_(True)).with_for_update())).mappings().first()
+            if not row:
+                return None
+            runner = Runner.model_validate(row["payload"])
+            runner.status = RunnerStatus.RECONNECTING
+            runner.last_seen_at = now()
+            await connection.execute(update(db.runners).where(db.runners.c.id == runner.id).values(
+                payload=runner_document(runner)))
+        return runner
 
     async def remove_by_socket(self, socket_id):
         async with engine.begin() as connection:

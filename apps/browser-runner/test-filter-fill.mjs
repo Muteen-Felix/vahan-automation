@@ -156,6 +156,23 @@ try {
       assert.equal(await page.locator('#xAxis_hidden').inputValue(), 'Month Wise');
     } finally { await page.close(); }
   });
+  await check('X-Axis selection does not wait on an unrelated filter request', async () => {
+    const page = await fixture();
+    try {
+      await page.route('http://fill.test/unrelated', async route => {
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        await route.fulfill({contentType: 'application/json', body: '[]'});
+      });
+      await page.evaluate(() => document.querySelector('#yAxis').addEventListener('change', () => {
+        fetch('/unrelated').catch(() => {});
+      }));
+      const proof = await page.evaluate(config => vahanDriver.fill(config), requested);
+      const axis = proof.groups.find(group => group.name === 'axis');
+      assert.ok(axis.durationMs < 1800, `X-Axis waited on another request: ${axis.durationMs} ms`);
+      assert.ok(proof.durationMs >= 2200, 'Final verification must wait for every filter request.');
+      assert.ok(proof.checks.every(check => check.match));
+    } finally { await page.close(); }
+  });
   await check('missing RTO options reload the selected State once and preserve all filters', async () => {
     const page = await fixture({rtoResponses: [[], ['Test RTO']]});
     try {

@@ -1,4 +1,26 @@
 name: vahan-automation
+x-extra-runner: &extra-runner
+  build:
+    context: .
+    dockerfile: apps/browser-runner/Dockerfile
+  init: true
+  shm_size: 1gb
+  security_opt: ["seccomp=./docker/seccomp_profile.json"]
+  environment: &extra-runner-environment
+    VAHAN_API_URL: http://api:8000
+    VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN}
+    VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
+  volumes:
+    - ./apps/api-server/runtime/images1:/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1
+    - ./apps/api-server/app/ocr:/Users/mac/Desktop/vahan-automation/apps/api-server/app/ocr
+  depends_on:
+    api: {condition: service_healthy}
+  healthcheck:
+    test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    interval: 10s
+    timeout: 5s
+    retries: 12
+  restart: unless-stopped
 services:
   postgres:
     image: postgres:17.7-bookworm
@@ -24,6 +46,7 @@ services:
       VAHAN_UI_AUTH_TOKEN_SECRET: ${VAHAN_UI_AUTH_TOKEN_SECRET:?Configure signing secret}
       VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token}
       VAHAN_BROWSER_STATE_KEY: ${VAHAN_BROWSER_STATE_KEY:?Configure encryption key}
+      VAHAN_CAPTCHA_IMAGE_PATH_TEMPLATE: "{job_id}/ảnh1"
       VAHAN_API_CORS_ORIGINS: http://localhost:${WEB_PORT:-5173},http://127.0.0.1:${WEB_PORT:-5173}
     ports: ["127.0.0.1:${API_PORT:-8000}:8000"]
     depends_on:
@@ -45,6 +68,31 @@ services:
       VAHAN_API_URL: http://api:8000
       VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN}
       VAHAN_RUNNER_ID: playwright-1
+      VAHAN_RUNNER_NAME: Chromium Playwright 1
+      VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
+    volumes:
+      - ./apps/api-server/runtime/images1:/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1
+      - ./apps/api-server/app/ocr:/Users/mac/Desktop/vahan-automation/apps/api-server/app/ocr
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+  runner-2:
+    build:
+      context: .
+      dockerfile: apps/browser-runner/Dockerfile
+    init: true
+    shm_size: 1gb
+    security_opt: ["seccomp=./docker/seccomp_profile.json"]
+    environment:
+      VAHAN_API_URL: http://api:8000
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN}
+      VAHAN_RUNNER_ID: playwright-2
+      VAHAN_RUNNER_NAME: Chromium Playwright 2
       VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
     volumes:
       - ./apps/api-server/runtime/images1:/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1
@@ -70,5 +118,53 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+  runner-3:
+    <<: *extra-runner
+    environment:
+      <<: *extra-runner-environment
+      VAHAN_RUNNER_ID: playwright-3
+      VAHAN_RUNNER_NAME: Chromium Playwright 3
+  runner-4:
+    <<: *extra-runner
+    environment:
+      <<: *extra-runner-environment
+      VAHAN_RUNNER_ID: playwright-4
+      VAHAN_RUNNER_NAME: Chromium Playwright 4
+  runner-5:
+    <<: *extra-runner
+    environment:
+      <<: *extra-runner-environment
+      VAHAN_RUNNER_ID: playwright-5
+      VAHAN_RUNNER_NAME: Chromium Playwright 5
+  runner-6:
+    <<: *extra-runner
+    environment:
+      <<: *extra-runner-environment
+      VAHAN_RUNNER_ID: playwright-6
+      VAHAN_RUNNER_NAME: Chromium Playwright 6
+  runner-7:
+    <<: *extra-runner
+    environment:
+      <<: *extra-runner-environment
+      VAHAN_RUNNER_ID: playwright-7
+      VAHAN_RUNNER_NAME: Chromium Playwright 7
+  runner-8:
+    <<: *extra-runner
+    environment:
+      <<: *extra-runner-environment
+      VAHAN_RUNNER_ID: playwright-8
+      VAHAN_RUNNER_NAME: Chromium Playwright 8
+  runner-9:
+    <<: *extra-runner
+    environment:
+      <<: *extra-runner-environment
+      VAHAN_RUNNER_ID: playwright-9
+      VAHAN_RUNNER_NAME: Chromium Playwright 9
+  runner-10:
+    <<: *extra-runner
+    environment:
+      <<: *extra-runner-environment
+      VAHAN_RUNNER_ID: playwright-10
+      VAHAN_RUNNER_NAME: Chromium Playwright 10
 volumes:
   postgres_data:

@@ -46,11 +46,13 @@ class InMemoryRunnerRegistry:
             runner.status = RunnerStatus.RECONNECTING
             return runner.model_copy(deep=True)
 
-    async def heartbeat(self, runner_id: str) -> Runner | None:
+    async def heartbeat(self, socket_id: str) -> Runner | None:
         async with self._lock:
-            runner = self._runners.get(runner_id)
-            if not runner:
+            runner_id = self._socket_to_runner.get(socket_id)
+            runner = self._runners.get(runner_id) if runner_id else None
+            if not runner or runner.socket_id != socket_id:
                 return None
+            runner.status = RunnerStatus.BUSY if runner.current_job_id else RunnerStatus.ONLINE
             runner.last_seen_at = datetime.now(timezone.utc)
             return runner.model_copy(deep=True)
 
