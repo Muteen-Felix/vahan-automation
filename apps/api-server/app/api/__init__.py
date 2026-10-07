@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.update_status import router as update_status_router
 from app.api.auth import router as auth_router
 from app.api.excel import router as excel_router
 from app.api.health import router as health_router
@@ -23,6 +24,7 @@ api_router.include_router(runners_router)
 api_router.include_router(ui_health_router)
 api_router.include_router(data_router)
 api_router.include_router(annual_reports_router)
+api_router.include_router(update_status_router)
 api_router.include_router(report_coverage_router)
 api_router.include_router(maker_updates_router)
 api_router.include_router(batch_queue_router)

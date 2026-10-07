@@ -1,8 +1,9 @@
-import {useEffect, useId, useRef, useState} from 'react';
+import {useEffect, useId, useLayoutEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {Runner} from '../contracts';
 import {currentReportYear, MIN_REPORT_YEAR, type MatrixPlan} from '../matrix-plan';
 import {api} from '../services/api-client';
+import {cachedFilterOptions,saveFilterOptions} from '../filter-options-cache';
 import {defaultProfile, parentContext, previewFilterProfile, PROFILE_FIELDS,
   type FilterProfile, type FilterPolicy, type ProfileDefinition, type ProfileField, type ProfileOptions, type CombinationRule} from '../filter-profiles';
 
@@ -16,15 +17,33 @@ function ValuePicker({label,values,options,disabled,one,required,onChange,onSear
   const [error,setError]=useState('');
   const [open,setOpen]=useState(false);
   const [editingExcluded,setEditingExcluded]=useState(false);
-  const dialog=useRef<HTMLDialogElement>(null);
+  const popover=useRef<HTMLDivElement>(null),trigger=useRef<HTMLButtonElement>(null),searchInput=useRef<HTMLInputElement>(null);
   const dialogId=useId();
-  useEffect(()=>{
-    const element=dialog.current;
-    if(open&&!element?.open)element?.showModal();
-    if(!open&&element?.open)element.close();
-  },[open]);
+  const [portalHost,setPortalHost]=useState<HTMLElement>(()=>document.body);
+  useLayoutEffect(()=>{setPortalHost(trigger.current?.closest('dialog')||document.body);},[]);
+  const [position,setPosition]=useState({left:0,top:0,width:320,height:460});
   const selected=policy?.mode==='iterate'?(editingExcluded?policy.exclude:policy.include):values;
   const visible=[...new Set([...options,...selected])].filter(value=>value.toLowerCase().includes(search.toLowerCase()));
+  function place(ensureSpace=false){
+    const button=trigger.current;if(!button)return;
+    let rect=button.getBoundingClientRect();
+    if(ensureSpace&&window.innerHeight-rect.bottom<280){button.scrollIntoView({block:'center',behavior:'instant'});rect=button.getBoundingClientRect();}
+    const width=Math.min(rect.width,window.innerWidth-24);
+    const next={left:Math.max(12,Math.min(rect.left,window.innerWidth-width-12)),top:rect.bottom+6,width,
+      height:Math.min(430,(policy?270:200)+(policy?.mode==='iterate'?40:0)+(onSearch?38:0)+(label==='Active / Archive Type'?38:0)+Math.min(Math.max(visible.length,1),5)*30,Math.max(160,window.innerHeight-rect.bottom-18))};
+    setPosition(current=>Object.keys(next).every(key=>next[key as keyof typeof next]===current[key as keyof typeof current])?current:next);
+  }
+  function close(){popover.current?.hidePopover();trigger.current?.focus({preventScroll:true});}
+  useEffect(()=>{
+    if(!open)return;
+    place();
+    const update=()=>place();
+    const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'&&popover.current?.matches(':popover-open')){event.preventDefault();event.stopPropagation();close();}};
+    const outside=(event:PointerEvent)=>{if(popover.current?.matches(':popover-open')&&!popover.current.contains(event.target as Node)&&!trigger.current?.contains(event.target as Node))popover.current.hidePopover();};
+    document.addEventListener('keydown',escape,true);document.addEventListener('pointerdown',outside,true);
+    window.addEventListener('resize',update);window.addEventListener('scroll',update,true);
+    return()=>{document.removeEventListener('keydown',escape,true);document.removeEventListener('pointerdown',outside,true);window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
+  },[open,visible.length,policy?.mode]);
   const summary=policy?.mode==='iterate'?(policy.include.length?`${policy.include.length} selected`:'All valid values')
     :values.length?`${values.length} selected`:required?'Select values':'No restriction';
   const displayed=policy?.mode==='iterate'?policy.include:values;
@@ -36,20 +55,22 @@ function ValuePicker({label,values,options,disabled,one,required,onChange,onSear
   const renderOption=(value:string)=><label key={value}><input type="checkbox" checked={selected.includes(value)} disabled={disabled} onChange={event=>selectValues(event.target.checked
     ?one&&policy?.mode!=='iterate'?[value]:[...selected,value]:selected.filter(item=>item!==value))} /><span>{archiveLabels[value]||value}</span></label>;
   return <div className="profile-value-picker">
-    <button type="button" className="profile-picker-trigger" disabled={disabled} aria-label={policy?label:undefined} aria-haspopup="dialog" aria-expanded={open} aria-controls={dialogId}
-      title={label} onClick={()=>{setEditingExcluded(false);setOpen(true);}}><span>{policy?summary:label}</span>{!policy&&<strong>{summary}</strong>}<i aria-hidden="true">⌄</i></button>
+    <button type="button" ref={trigger} className="profile-picker-trigger" disabled={disabled} aria-label={policy?label:undefined} aria-haspopup="dialog" aria-expanded={open} aria-controls={dialogId}
+      title={label} popoverTarget={dialogId} onClick={()=>place(true)}><span>{policy?summary:label}</span>{!policy&&<strong>{summary}</strong>}<i aria-hidden="true">⌄</i></button>
     <div className="profile-selected-values" title={displayed.join(', ')}>{displayed.map(value=>archiveLabels[value]||value).join(', ')}{policy?.mode==='iterate'&&policy.exclude.length?`${displayed.length?' · ':''}${policy.exclude.length} excluded`:''}</div>
-    {createPortal(<dialog ref={dialog} id={dialogId} className="profile-picker-dialog" aria-label={label}
-      onCancel={event=>{if(event.target===event.currentTarget){event.preventDefault();setOpen(false);}}} onClose={event=>{if(event.target===event.currentTarget)setOpen(false);}}
-      onClick={event=>{if(event.target===event.currentTarget){const box=event.currentTarget.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)setOpen(false);}}}>
+    {createPortal(<div ref={popover} id={dialogId} popover="auto" role="dialog" className="profile-picker-dialog profile-value-popover" aria-label={label}
+      style={{left:position.left,top:position.top,width:position.width,height:position.height}}
+      onToggle={event=>{const expanded=event.currentTarget.matches(':popover-open');setOpen(expanded);
+        if(expanded){setEditingExcluded(false);setSearch('');setError('');place(true);searchInput.current?.focus({preventScroll:true});}}}>
       <div className="profile-picker-header"><div><h3>{label}</h3><p>{summary} · {policy?.mode==='iterate'?'One case per valid value':one?'Choose one value':'Choose the values to use'}</p></div>
-        <button type="button" className="profile-picker-close" aria-label="Close value picker" onClick={()=>setOpen(false)}>×</button></div>
+        <button type="button" className="profile-picker-close" aria-label="Close value picker" onClick={close}>×</button></div>
+      <div className="profile-picker-top-actions"><button type="button" disabled={disabled||!selected.length} onClick={()=>selectValues([])}>Clear selection</button><button type="button" className="profile-picker-done" onClick={close}>Done</button></div>
       <div className="profile-picker-body">
         {policy&&<label className="profile-dialog-mode">Mode<select aria-label={`${label} mode`} value={policy.mode} disabled={disabled}
           onChange={event=>{setEditingExcluded(false);onPolicy?.({mode:event.target.value as FilterPolicy['mode']});}}><option value="fixed">Fixed values</option><option value="iterate">Iterate all</option></select></label>}
         {policy?.mode==='iterate'&&<div className="profile-iteration-tools"><p>{editingExcluded?'Checked values will be excluded.':'Select values to limit iteration, or leave empty to use all valid values.'}</p>
           <button type="button" aria-pressed={editingExcluded} onClick={()=>setEditingExcluded(value=>!value)}>{editingExcluded?'Back to values':`Exclusions (${policy.exclude.length})`}</button></div>}
-        <input type="search" aria-label={`Search ${label}`} value={search} placeholder="Search values"
+        <input ref={searchInput} type="search" aria-label={`Search ${label}`} value={search} placeholder="Search values"
           disabled={disabled} onChange={event=>setSearch(event.target.value)} />
         {onSearch&&<button type="button" disabled={disabled||searching||!search.trim()} onClick={async()=>{
           setSearching(true);setError('');try{await onSearch(search.trim());}catch(reason){setError(reason instanceof Error?reason.message:'Search failed.');}finally{setSearching(false);}
@@ -59,28 +80,26 @@ function ValuePicker({label,values,options,disabled,one,required,onChange,onSear
           ?<>{['Active Type','Archive Type'].map(group=><section className="profile-archive-group" key={group}><h4>{group}</h4>{visible.filter(value=>group==='Active Type'?value.startsWith('ACTIVE_'):!value.startsWith('ACTIVE_')).map(renderOption)}</section>)}</>
           :visible.map(renderOption):<p>Load options or choose a parent filter first.</p>}</div>
       </div>
-      <div className="profile-picker-footer"><span>{visible.length} matching values</span><button type="button" disabled={disabled||!selected.length} onClick={()=>selectValues([])}>Clear selection</button>
-        <button type="button" className="profile-picker-done" onClick={()=>setOpen(false)}>Done</button></div>
-    </dialog>,document.body)}
+      <div className="profile-picker-footer"><span>{visible.length} matching values</span></div>
+    </div>,portalHost)}
   </div>;
 }
 
-export function FilterProfiles({profiles,runners,year:legacyYear,busy,onSaved,onSelect}: {
-  profiles:FilterProfile[];runners:Runner[];year:number;busy:boolean;
+export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onSelect}: {
+  profiles:FilterProfile[];runners:Runner[];busy:boolean;knownPlan?:MatrixPlan|null;
   onSaved:()=>Promise<void>;onSelect:(id:string,plan:MatrixPlan)=>void;
 }) {
   const [id,setId]=useState(''),[name,setName]=useState(''),[revision,setRevision]=useState<number>();
-  const [definition,setDefinition]=useState<ProfileDefinition>(()=>defaultProfile(legacyYear));
-  const year=definition.report?.year??legacyYear;
+  const [definition,setDefinition]=useState<ProfileDefinition>(()=>defaultProfile());
+  const year=definition.report?.year??currentReportYear();
   const years=Array.from({length:currentReportYear()-MIN_REPORT_YEAR+1},(_,index)=>currentReportYear()-index);
   function changeYear(value:number){setDefinition(current=>({...current,report:{year:value,period:'CALENDAR YEAR',yAxis:'Maker',xAxis:'Month Wise'}}));setPreview(null);setMessage('');}
-  const [options,setOptions]=useState<ProfileOptions>({});
+  const [options,setOptions]=useState<ProfileOptions>(()=>cachedFilterOptions(year,parentContext(definition),knownPlan));
   const [runnerId,setRunnerId]=useState('');
   const [working,setWorking]=useState(false),[loading,setLoading]=useState(false);
   const [error,setError]=useState(''),[message,setMessage]=useState('');
   const [preview,setPreview]=useState<MatrixPlan|null>(null);
   const [refresh,setRefresh]=useState(0);
-  const [optionsState,setOptionsState]=useState('');
   const [rulesOpen,setRulesOpen]=useState(false);
   const rulesDialog=useRef<HTMLDialogElement>(null);
   useEffect(()=>{
@@ -90,15 +109,21 @@ export function FilterProfiles({profiles,runners,year:legacyYear,busy,onSaved,on
   const mounted=useRef(true),optionsPending=useRef(false),wantedContext=useRef(''),loadedContext=useRef('');
   const previewAbort=useRef<AbortController|null>(null);
   const parents=parentContext(definition);
-  if(definition.fields.states.mode==='iterate'&&optionsState)parents.states=[optionsState];
+  if(definition.fields.states.mode==='iterate')parents.states=definition.fields.states.include.filter(state=>!definition.fields.states.exclude.includes(state));
   const contextKey=JSON.stringify([runnerId,year,parents,refresh]);
+  const runnerAvailable=Boolean(runners.find(runner=>runner.id===runnerId&&runner.status==='ONLINE'&&!runner.currentJobId));
+  const optionsWaiting=Boolean(runnerAvailable&&!error&&loadedContext.current!==contextKey);
   const disabled=working;
 
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;previewAbort.current?.abort();};},[]);
-  useEffect(()=>{if(!runnerId){const runner=runners.find(item=>item.source==='new'&&item.status==='ONLINE'&&!item.currentJobId);if(runner)setRunnerId(runner.id);}},[runners,runnerId]);
+  useEffect(()=>{
+    const current=runners.find(item=>item.id===runnerId);
+    if(!current||current.status!=='ONLINE'||current.currentJobId){const idle=runners.find(item=>item.source==='new'&&item.status==='ONLINE'&&!item.currentJobId);if(idle&&idle.id!==runnerId)setRunnerId(idle.id);}
+  },[runners,runnerId]);
+  useEffect(()=>{setOptions(cachedFilterOptions(year,parents,knownPlan));},[contextKey,knownPlan]);
   useEffect(()=>{
     wantedContext.current=contextKey;
-    if(!runnerId||disabled||busy)return;
+    if(!runnerAvailable||disabled)return;
     const timer=window.setTimeout(async()=>{
       if(optionsPending.current)return;
       optionsPending.current=true;setLoading(true);setError('');
@@ -106,20 +131,20 @@ export function FilterProfiles({profiles,runners,year:legacyYear,busy,onSaved,on
         while(mounted.current&&loadedContext.current!==wantedContext.current){
           const key=wantedContext.current;const [runner,selectedYear,context]=JSON.parse(key);
           const loaded=await api.filterOptions(runner,selectedYear,context);
+          saveFilterOptions(selectedYear,context,loaded);
           if(mounted.current&&wantedContext.current===key){setOptions(loaded);loadedContext.current=key;}
         }
       }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:'Could not load filter options.');}
       finally{optionsPending.current=false;if(mounted.current)setLoading(false);}
     },450);
     return()=>window.clearTimeout(timer);
-  },[contextKey,runnerId,disabled,busy]);
+  },[contextKey,runnerId,runnerAvailable,disabled]);
 
   function changeField(field:ProfileField,patch:Partial<FilterPolicy>){
     setPreview(null);setMessage('');
-    if(field==='delhiNcr')setOptionsState('');
     setDefinition(current=>{
       const fields={...current.fields,[field]:{...current.fields[field],...patch}};
-      if(patch.values||patch.mode){
+      if(patch.values||patch.mode||patch.include||patch.exclude){
         const children:Partial<Record<ProfileField,ProfileField[]>>={delhiNcr:['states','rtos'],states:['rtos'],categoryGroups:['subCategories','classes'],subCategories:['classes'],evTypes:['fuels']};
         for(const child of children[field]||[])fields[child]={...fields[child],values:[],include:[],exclude:[]};
       }
@@ -127,7 +152,7 @@ export function FilterProfiles({profiles,runners,year:legacyYear,busy,onSaved,on
     });
   }
   function edit(profile?:FilterProfile){setId(profile?.id||'');setName(profile?.name||'');setRevision(profile?.revision);
-    setDefinition(profile?{...structuredClone(profile.definition),report:profile.definition.report??{year:legacyYear,period:'CALENDAR YEAR',yAxis:'Maker',xAxis:'Month Wise'}}:defaultProfile(legacyYear));setOptionsState('');setPreview(null);setError('');setMessage('');}
+    setDefinition(profile?{...structuredClone(profile.definition),report:profile.definition.report??{year:currentReportYear(),period:'CALENDAR YEAR',yAxis:'Maker',xAxis:'Month Wise'}}:defaultProfile());setPreview(null);setError('');setMessage('');}
   function validate(){
     if(!name.trim())throw new Error('Enter a profile name.');
     for(const field of ['states','rtos','delhiNcr','archivedFlags'] as ProfileField[])if(definition.fields[field].mode==='fixed'&&!definition.fields[field].values.length)
@@ -163,24 +188,12 @@ export function FilterProfiles({profiles,runners,year:legacyYear,busy,onSaved,on
         <div className="profile-editor-toolbar"><label>Profile name<input value={name} maxLength={120} disabled={disabled} onChange={event=>{setName(event.target.value);setPreview(null);}} /></label>
           <label>Options worker<select value={runnerId} disabled={disabled||loading} onChange={event=>setRunnerId(event.target.value)}><option value="">Select an idle worker</option>
             {runners.filter(runner=>runner.source==='new').map(runner=><option key={runner.id} value={runner.id} disabled={runner.status!=='ONLINE'&&runner.id!==runnerId}>{runner.name} · {runner.status}</option>)}</select></label>
-          <button type="button" disabled={disabled||busy||loading||!runnerId} onClick={()=>setRefresh(value=>value+1)}>Refresh options</button></div>
+          <button type="button" disabled={disabled||loading||!runnerAvailable} onClick={()=>setRefresh(value=>value+1)}>Refresh options</button></div>
         <div className="profile-report-context" aria-label="Report settings">
           <label>Year Type<input value="CALENDAR YEAR" readOnly /></label><label>From<select aria-label="Report from year" value={year} disabled={disabled} onChange={event=>changeYear(Number(event.target.value))}>{years.map(value=><option key={value}>{value}</option>)}</select></label><label>To<select aria-label="Report to year" value={year} disabled={disabled} onChange={event=>changeYear(Number(event.target.value))}>{years.map(value=><option key={value}>{value}</option>)}</select></label>
           <label>Y-Axis<input value="Maker" readOnly /></label><label>X-Axis<input value="Month Wise" readOnly /></label>
         </div>
-        <p className="profile-help">Maker reports use one calendar year: changing From or To updates both. SQL import currently supports Calendar Year / Maker / Month Wise.</p>
-        {definition.fields.states.mode==='iterate'&&<label className="profile-rto-options-state">RTO options for State<select value={optionsState} disabled={disabled||loading}
-          onChange={event=>setOptionsState(event.target.value)}><option value="">Choose a State to browse RTO limits</option>{(options.states||[]).map(state=><option key={state}>{state}</option>)}</select><small>This only changes the options shown below; State iteration stays enabled.</small></label>}
-        <p className="profile-help">Fixed keeps selected values together. Iterate creates a case per value, using Include/Exclude limits. State and RTO always run one office per case. Changing a parent clears dependent selections.</p>
-        {busy&&<p className="profile-help">You can save profile edits now. Stop the active crawl before loading live options or previewing combinations.</p>}
-        <div className="profile-options-status" data-error={Boolean(error)} role={error?'alert':'status'}>{error|| (loading?'Loading live VAHAN options for the selected parent filters…':options.states?.length?'Live options loaded':'')}</div>
-        <div className="profile-fields">{PROFILE_FIELDS.map(field=>{
-          const policy=definition.fields[field.id];const scalar='scalar' in field&&field.scalar;
-          return <div className="profile-field-row" key={field.id}><div><strong>{field.label}</strong>
-            {'parents' in field&&<small>Depends on {field.parents.map(parent=>PROFILE_FIELDS.find(item=>item.id===parent)?.label).join(' + ')}</small>}</div>
-            <div className="profile-field-values" data-mode="single"><ValuePicker label={field.label} options={options[field.id]||[]} values={policy.values} one={scalar} required={['states','rtos','delhiNcr','archivedFlags'].includes(field.id)}
-              policy={policy} onPolicy={patch=>changeField(field.id,patch)} disabled={disabled||loading} onChange={values=>changeField(field.id,{values})} onSearch={field.id==='makers'?searchMakers:undefined} /></div></div>;
-        })}</div>
+        <div className="profile-options-status" data-error={Boolean(error)} role={error?'alert':'status'}>{error|| (loading||optionsWaiting?'Loading live VAHAN options for the selected parent filters…':options.states?.length?(loadedContext.current===contextKey?'Live options loaded':'Saved options ready'):!runnerAvailable?'Waiting for an idle worker to load options.':'')}</div>
         <div className="profile-rules"><span>Combination rules · {definition.rules.length}</span><button type="button" onClick={()=>setRulesOpen(true)}>Edit rules</button></div>
         {createPortal(<dialog ref={rulesDialog} className="profile-picker-dialog profile-rules-dialog" aria-label="Combination rules"
           onCancel={event=>{if(event.target===event.currentTarget){event.preventDefault();setRulesOpen(false);}}} onClose={event=>{if(event.target===event.currentTarget)setRulesOpen(false);}}>
@@ -209,6 +222,13 @@ export function FilterProfiles({profiles,runners,year:legacyYear,busy,onSaved,on
             setWorking(true);setError('');try{await api.deleteFilterProfile(id,revision!);edit();await onSaved();}catch(reason){setError(reason instanceof Error?reason.message:'Delete failed.');}finally{setWorking(false);}
           }}>Delete</button>}
         </div>
+        <div className="profile-fields">{PROFILE_FIELDS.map(field=>{
+          const policy=definition.fields[field.id];const scalar='scalar' in field&&field.scalar;
+          return <div className="profile-field-row" key={field.id}><div><strong>{field.label}</strong>
+            {'parents' in field&&<small>Depends on {field.parents.map(parent=>PROFILE_FIELDS.find(item=>item.id===parent)?.label).join(' + ')}</small>}</div>
+            <div className="profile-field-values" data-mode="single"><ValuePicker label={field.label} options={options[field.id]||[]} values={policy.values} one={scalar} required={['states','rtos','delhiNcr','archivedFlags'].includes(field.id)}
+              policy={policy} onPolicy={patch=>changeField(field.id,patch)} disabled={disabled||((loading||optionsWaiting)&&!(options[field.id]?.length))} onChange={values=>changeField(field.id,{values})} onSearch={field.id==='makers'?searchMakers:undefined} /></div></div>;
+        })}</div>
         {message&&<p className="profile-message" role="status">{message}</p>}
         {preview&&<section className="profile-preview"><div><h3>{preview.scenarios.length.toLocaleString()} cases · {preview.states.length} States</h3><button type="button" disabled={disabled||busy} onClick={()=>onSelect(id,preview)}>Use on home page</button></div>
           <p>Preview only. Starting a run rechecks the saved profile and live VAHAN options.</p>

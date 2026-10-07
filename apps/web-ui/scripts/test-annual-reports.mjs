@@ -11,6 +11,8 @@ try {
   let lastSaved = null;
   let nextReadDelayMs = 0, watchReads = false, failedReads = 0, activeReads = 0, peakReads = 0;
   page.on('pageerror', error => errors.push(error.message));
+  await page.route('https://fonts.googleapis.com/**',route=>route.abort());
+  await page.route('https://fonts.gstatic.com/**',route=>route.abort());
   page.on('requestfailed', request => {
     if (watchReads && new URL(request.url()).pathname === '/api/annual-reports') failedReads++;
   });
@@ -43,6 +45,7 @@ try {
     if (url.pathname === '/api/auth/status') body = {configured: true};
     else if (url.pathname === '/api/auth/me') body = {username:'shared-reader', role:'user'};
     else if (url.pathname === '/api/auth/renew') body = {accessToken:'fixture-token'};
+    else if (url.pathname === '/api/user-state') body={vahanRunSettingsV1:{year:2024,workerCount:5}};
     else if (url.pathname === '/api/runners') body = [];
     else if (url.pathname === '/api/health') body = {status:'ok'};
     else if (url.pathname === '/api/jobs/reports/sessions' || url.pathname === '/api/files') body = [];
@@ -72,10 +75,12 @@ try {
     } finally {if (watched) activeReads--;}
   });
   await page.goto(process.env.ANNUAL_UI_URL || 'http://127.0.0.1:5174/#reports');
+  await page.getByLabel('Year',{exact:true}).waitFor();
+  assert.equal(await page.getByLabel('Year',{exact:true}).inputValue(),String(new Date().getFullYear()),'reports default to the current year even when crawl settings use a historical year');
   await page.getByRole('rowheader', {name:'OLA ELECTRIC TECHNOLOGIES PVT LTD', exact:true}).waitFor();
   assert.deepEqual(await page.getByLabel('Report filters',{exact:true}).locator('option').allTextContents(),
     ['Two Wheeler · Electric','Two Wheeler · Petrol']);
-  assert.ok(await page.getByText('',{exact:true}).isVisible());
+  assert.ok(await page.getByRole('heading',{name:'Exported Reports',exact:true}).isVisible());
   assert.equal(await page.locator('.annual-table thead th').count(),17);
   assert.equal(await page.locator('.annual-table thead th.annual-month').count(),12);
   assert.equal(await page.locator('.annual-table tbody tr').count(),100);

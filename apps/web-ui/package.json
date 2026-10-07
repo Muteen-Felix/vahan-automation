@@ -14,7 +14,8 @@
     "test:run-errors": "node scripts/test-run-error-log.mjs",
     "test:worker-ui": "node scripts/test-worker-dashboard-ui.mjs",
     "test:filters-ui": "node scripts/test-filter-profiles-ui.mjs",
-    "test:options": "node scripts/test-runner-options.mjs"
+    "test:options": "node scripts/test-runner-options.mjs",
+    "test:update-history-ui": "node scripts/test-update-history-ui.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

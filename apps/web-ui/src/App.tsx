@@ -1727,7 +1727,8 @@ export default function App() {
     const startedAt = resumeState?.startedAt || new Date().toISOString();
     let timings = [...(resumeState?.timings || [])];
     let activeElapsedMs = resumeState?.activeElapsedMs || 0;
-    let activeSegmentStartedAt = Date.now();
+    let activeSegmentStartedAt = resumeState?.status === 'running' && resumeState.activeSegmentStartedAt != null
+      ? resumeState.activeSegmentStartedAt : Date.now();
     batchStopRef.current = false;
     batchLoopStartedRef.current = true;
     batchRunningRef.current = true;
@@ -1992,7 +1993,8 @@ export default function App() {
     const startedAt = resumeState?.startedAt || new Date().toISOString();
     let timings = [...(resumeState?.timings || [])];
     let activeElapsedMs = resumeState?.activeElapsedMs || 0;
-    let activeSegmentStartedAt = Date.now();
+    let activeSegmentStartedAt = resumeState?.status === 'running' && resumeState.activeSegmentStartedAt != null
+      ? resumeState.activeSegmentStartedAt : Date.now();
     batchStopRef.current = false;
     batchLoopStartedRef.current = true;
     batchRunningRef.current = true;
@@ -2583,7 +2585,7 @@ export default function App() {
       <div className="app-layout">
         <div className="app-main">
           <StateSyncStatus />
-          {view === 'filters' ? <FilterProfiles profiles={filterProfiles} runners={runners} year={selectedYear} busy={busy||matrixLoading}
+          {view === 'filters' ? <FilterProfiles profiles={filterProfiles} runners={runners} knownPlan={matrixPlan} busy={busy||matrixLoading}
             onSaved={refreshFilterProfiles} onSelect={(id,plan)=>{
               selectFilterProfile(id);if(batchStatus!=='stopped'){setMatrixPlan(plan);persistentState.setItem(MATRIX_STORAGE_KEY,JSON.stringify(plan));}
               window.location.hash='configure';
@@ -2608,7 +2610,7 @@ export default function App() {
             <main className="page-content exported-reports-page" id="reports">
               {error && <div className="global-error" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
               {notice && <div className="global-notice" role="status">{notice}<button onClick={() => setNotice("")}>×</button></div>}
-              <AnnualReports initialYear={selectedYear} refreshTrigger={reportsTrigger} coverageControls={{plan: matrixPlan, busy,
+              <AnnualReports refreshTrigger={reportsTrigger} coverageControls={{plan: matrixPlan, busy,
                 running: batchRunning, loadingMatrix: matrixLoading, status: batchStatus, current: batchProgress.current,
                 onContinue: continueUncoveredReports, onStop: stopBatch}} />
             </main>

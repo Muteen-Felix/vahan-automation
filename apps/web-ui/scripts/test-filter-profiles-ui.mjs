@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from '../../browser-runner/node_modules/playwright/index.mjs';
 const browser=await chromium.launch({headless:true});
+let forceBusy=false;
 let profiles=[],state={vahanRunSettingsV1:{year:2024,workerCount:2}},previewCalls=0,queueBody,queueSnapshot;
 const id='11111111-1111-4111-8111-111111111111';
 const runners=[1,2].map(index=>({id:`playwright-${index}`,name:`Crawler ${index}`,source:'new',status:'ONLINE',lastSeenAt:new Date().toISOString()}));
@@ -24,7 +25,7 @@ try{
     else if(path==='/api/auth/renew')body={accessToken:'fixture-token'};
     else if(path==='/api/user-state')body=state;
     else if(path.startsWith('/api/user-state/'))state[decodeURIComponent(path.slice('/api/user-state/'.length))]=request.postDataJSON().value;
-    else if(path==='/api/runners')body=runners;
+    else if(path==='/api/runners')body=forceBusy?runners.map(runner=>({...runner,status:'BUSY',currentJobId:'busy-fixture'})):runners;
     else if(path==='/api/worker-pool')body={enabled:true,desiredCount:2,runningCount:2,phase:'ready',workers:[]};
     else if(path==='/api/maker-updates'||path==='/api/jobs')body=[];
     else if(path==='/api/filter-profiles'&&request.method()==='GET')body=profiles;
@@ -32,6 +33,7 @@ try{
       const input=request.postDataJSON();body={id,name:input.name,definition:input.definition,revision:(profiles[0]?.revision||0)+1,updatedAt:new Date().toISOString()};profiles=[body];
     }
     else if(path==='/api/filter-profiles/options'){
+      assert.equal(forceBusy,false,'option reads must not target busy workers');
       const context=request.postDataJSON().context;body={...options,rtos:context.states.length?['RTO A']:[],
         subCategories:context.categoryGroups.includes('Three Wheeler')?['Three-wheel subcategory']:['Sub A','Sub B']};
     }
@@ -55,6 +57,8 @@ try{
   });
   await page.goto(process.env.WORKER_UI_URL||'http://127.0.0.1:5184/#filters');
   await page.getByRole('heading',{name:'Filters',exact:true}).waitFor();
+  assert.equal(await page.getByLabel('Report from year',{exact:true}).inputValue(),String(new Date().getFullYear()),'new profile defaults to the current year rather than saved home settings');
+  assert.equal(await page.getByLabel('Report to year',{exact:true}).inputValue(),String(new Date().getFullYear()));
   await page.getByLabel('Profile name',{exact:true}).fill('Customer filters');
   await page.getByLabel('Report from year',{exact:true}).selectOption('2023');
   assert.equal(await page.getByLabel('Report to year',{exact:true}).inputValue(),'2023');
@@ -66,7 +70,16 @@ try{
   const boxes=()=>page.locator('.profile-field-row').evaluateAll(rows=>rows.map(row=>{const box=row.getBoundingClientRect();return {y:box.y+scrollY,height:box.height};}));
   assert.equal(await page.locator('.profile-field-row').count(),15);
   assert.equal(await page.locator('.profile-field-row .profile-picker-trigger').count(),15,'one value picker per field');
-  assert.equal(await page.locator('.profile-field-row select').count(),0,'Mode is inside the picker dialog');
+  assert.equal(await page.locator('.profile-field-row select:visible').count(),0,'Mode is inside the value menu');
+  for(const row of await page.locator('.profile-field-row').all()){
+    await row.scrollIntoViewIfNeeded();const trigger=row.locator('.profile-picker-trigger');await trigger.click();
+    const menu=page.getByRole('dialog',{name:await trigger.getAttribute('aria-label'),exact:true});await menu.waitFor();
+    assert.ok(await menu.evaluate(element=>element.matches(':popover-open')),'value picker uses an anchored non-modal popover');
+    const anchor=await trigger.boundingBox(),panel=await menu.boundingBox();
+    assert.ok(Math.abs(panel.y-anchor.y-anchor.height-6)<2,'every menu opens directly beneath its field');
+    assert.ok(Math.abs(panel.width-anchor.width)<2,'menu width matches its field');
+    await menu.getByRole('button',{name:'Done',exact:true}).click();
+  }
   await group.scrollIntoViewIfNeeded();const before=await boxes();
   await group.getByRole('button',{name:/^Category Group/}).click();
   const groupDialog=page.getByRole('dialog',{name:'Category Group',exact:true});
@@ -145,5 +158,26 @@ try{
   await mobileDialog.getByRole('button',{name:'Done',exact:true}).click();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'filter editor fits mobile width');
   await page.screenshot({path:'/tmp/vahan-filter-profiles-mobile.png',fullPage:true});
+  assert.ok(Array.isArray(state.vahanFilterOptionsV1),'live option snapshots persist in the SQL-backed user state');
+  forceBusy=true;await page.reload();await page.getByRole('heading',{name:'Filters',exact:true}).waitFor();
+  await page.locator('.profile-list').getByRole('button',{name:/Customer filters/}).click();
+  const cachedState=page.locator('.profile-field-row').filter({has:page.getByText('State',{exact:true})});
+  await cachedState.getByRole('button',{name:'State',exact:true}).click();
+  const cachedDialog=page.getByRole('dialog',{name:'State',exact:true});
+  await cachedDialog.getByRole('checkbox',{name:'State A',exact:true}).uncheck();
+  await cachedDialog.getByRole('checkbox',{name:'State A',exact:true}).check();
+  assert.ok(await cachedDialog.getByRole('checkbox',{name:'State B',exact:true}).isEnabled(),'State choices remain available when every worker is busy');
+  await cachedDialog.getByRole('button',{name:'Done',exact:true}).click();
+  state.vahanFilterOptionsV1=[];state.vahanSelectedFilterProfileV1='';state.vahanRunSettingsV1={year:2026,workerCount:2};
+  delete state.vahanStateRtoBatchRecoveryV1;delete state.vahanActiveJobId;
+  state.vahanStateRtoMatrixV1={year:2026,states:['Recorded State'],scenarios:[{name:'Recorded office',filters:{states:['Recorded State'],rtos:['Recorded Office'],fromYear:'2026',toYear:'2026',delhiNcr:'ALL STATES',yAxis:'Maker',xAxis:'Month Wise'}}]};
+  await page.reload();await page.getByRole('heading',{name:'Filters',exact:true}).waitFor();
+  await page.locator('.profile-field-row').filter({has:page.getByText('State',{exact:true})}).getByRole('button',{name:'State',exact:true}).click();
+  const recorded=page.getByRole('dialog',{name:'State',exact:true});
+  await recorded.getByRole('checkbox',{name:'Recorded State',exact:true}).check();
+  await recorded.getByRole('button',{name:'Done',exact:true}).click();
+  await page.locator('.profile-field-row').filter({has:page.getByText('RTO',{exact:true})}).getByRole('button',{name:'RTO',exact:true}).click();
+  await page.getByRole('dialog',{name:'RTO',exact:true}).getByRole('checkbox',{name:'Recorded Office',exact:true}).waitFor();
+  await page.keyboard.press('Escape');
   assert.deepEqual(errors,[]);console.log('Filters UI: dependent selections, SQL saves, live preview, home choice, two scopes at one RTO, year and reload passed.');
 }finally{await browser.close();}

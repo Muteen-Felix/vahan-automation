@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, request } from '../services/api-client';
 import { uiSocket } from '../services/socket-client';
+import {UpdateHistory} from './UpdateHistory';
 import { ReportCoverage } from './ReportCoverage';
 import { useLiveQuery } from '../hooks/use-live-query';
 import {currentReportYear, MIN_REPORT_YEAR} from '../matrix-plan';
@@ -20,8 +21,8 @@ const dateTime = (value: string | null) => value ? new Date(value).toLocaleStrin
   hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
 }) : '—';
 
-function MonthlyData({refreshTrigger, coverageControls, initialYear}: {refreshTrigger?: number; coverageControls?: CoverageControls; initialYear?: number}) {
-  const [year, setYear] = useState(() => initialYear || currentReportYear());
+function MonthlyData({refreshTrigger, coverageControls}: {refreshTrigger?: number; coverageControls?: CoverageControls}) {
+  const [year, setYear] = useState(currentReportYear);
   const [dataset, setDataset] = useState('');
   const [state, setState] = useState('');
   const [rto, setRto] = useState('');
@@ -101,6 +102,7 @@ function MonthlyData({refreshTrigger, coverageControls, initialYear}: {refreshTr
           title={hasSearch ? 'Export every matching row across all pages' : 'Confirm and export the entire selected report'}>
           {exporting ? 'Exporting…' : hasSearch ? 'Export search to Excel' : 'Export all to Excel'}
         </button>
+        <UpdateHistory/>
         <button type="button" onClick={() => {setExportError(''); setRefresh(value => value + 1); refreshData(true);}}
           aria-label="Refresh monthly data">↻ Refresh</button>
       </div>
@@ -161,10 +163,10 @@ function MonthlyData({refreshTrigger, coverageControls, initialYear}: {refreshTr
   </>;
 }
 
-export function AnnualReports({refreshTrigger, coverageControls, initialYear}: {refreshTrigger?: number; coverageControls?: CoverageControls; initialYear?: number}) {
+export function AnnualReports({refreshTrigger, coverageControls}: {refreshTrigger?: number; coverageControls?: CoverageControls}) {
   return <div className="annual-reports">
     <div className="annual-title"><div><p>MANUFACTURER REGISTRATIONS</p><h2>Exported Reports</h2></div>
     </div>
-    <MonthlyData refreshTrigger={refreshTrigger} coverageControls={coverageControls} initialYear={initialYear} />
+    <MonthlyData refreshTrigger={refreshTrigger} coverageControls={coverageControls} />
   </div>;
 }
