@@ -81,12 +81,12 @@ const api = {
   getJob: async (id) => created.find((job) => job.id === id),
 };
 const context = {
-  currentReportYear: () => 2026,
+  currentReportYear: () => 2026, isReportYear: year => year >= 1900 && year <= 2026, selectedWorkerCount: 10,
   TARGET_WORKER_COUNT: 10,
   compareRunnerIds: (left, right) => left.localeCompare(right, undefined, {numeric: true}),
   validParallelLanes: validLanes, splitParallelLanes: split,
   matrixOfficeKey: (scenario) => scenario.name,
-  refreshRunners: async () => {}, runnersRef,
+  ensureDockerWorkers: async () => {}, refreshRunners: async () => {}, runnersRef,
   persistentState: {removeItem: noop}, ACTIVE_JOB_STORAGE_KEY: 'active',
   crypto: {randomUUID: () => 'session-ten-workers'},
   batchLogRef: logRef, batchRecoveryRef: recoveryRef,

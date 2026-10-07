@@ -1,10 +1,10 @@
-"""Full workbook ingestion. Existing month values are never silently overwritten."""
+"""Full workbook ingestion with observed-time ordering and retained value history."""
 import hashlib
 import json
 import re
 from datetime import datetime, timezone
 
-from sqlalchemy import select, update, text
+from sqlalchemy import bindparam, select, update, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.db import engine, schema as db
@@ -30,6 +30,7 @@ def saved_report_summary(item):
             'rtos': item['rtos'], 'status': item['status'], 'savedAt': item['imported_at'].isoformat(),
             'observedAt': item['observed_at'].isoformat(), 'manufacturerRows': details.get('parsedRows', 0),
             'newRows': details.get('newRows', 0), 'newMonthValues': details.get('newCells', 0),
+            'updatedMonthValues': details.get('replacedCells', 0),
             'alreadySavedMonthValues': details.get('duplicates', 0), 'conflicts': details.get('conflicts', 0)}
 
 
@@ -40,12 +41,19 @@ def dataset(owner, filters):
             continue
         scope[key] = sorted({clean(v).upper() for v in value}) if isinstance(value, list) else clean(value).upper()
     parts = [', '.join(scope[key]) for key in ('categoryGroups', 'fuels', 'classes', 'emissions') if key in scope]
-    if 'subCategories' in scope and len(scope['subCategories']) != 3:
+    default_subcategories = {'TWO WHEELER (INVALID CARRIAGE)', 'TWO WHEELER(NT)', 'TWO WHEELER(T)'}
+    if 'subCategories' in scope and set(scope['subCategories']) != default_subcategories:
         parts.append(', '.join(scope['subCategories']))
-    if 'archivedFlags' in scope and len(scope['archivedFlags']) != 4:
+    default_archives = {'ACTIVE_COMPLIANT', 'ACTIVE_NON_COMPLIANT', 'PERMANENT_ARCHIVE', 'TEMPORARY_ARCHIVE'}
+    if 'archivedFlags' in scope and set(scope['archivedFlags']) != default_archives:
         parts.append(', '.join(scope['archivedFlags']))
     if scope.get('delhiNcr') not in (None, 'ALL STATES'):
         parts.append(scope['delhiNcr'])
+    for key, title in (('evTypes', 'EV type'), ('statuses', 'Status'), ('ownerTypes', 'Owner type'),
+                       ('vehicleType', 'Vehicle type'), ('fitness', 'Fitness')):
+        if key in scope:
+            value = ', '.join(scope[key]) if isinstance(scope[key], list) else scope[key]
+            parts.append(f'{title}: {value}')
     label = ' · '.join(parts)
     # Report identity is shared. The actor is retained only in the update ledger.
     return {'id': digest(scope), 'owner_key': owner or '',
@@ -54,7 +62,7 @@ def dataset(owner, filters):
 
 def context_year(filters):
     years = {int(str(filters[k])) for k in ('fromYear', 'toYear', 'reportYear')
-             if str(filters.get(k, '')).isdigit() and 2026 <= int(str(filters[k])) <= 9999}
+             if str(filters.get(k, '')).isdigit() and 1900 <= int(str(filters[k])) <= 9999}
     return next(iter(years)) if len(years) == 1 else None
 
 
@@ -67,8 +75,13 @@ def month_column(label, fallback_year):
     raw_year = match[1] or match[3]
     year = int(raw_year) if raw_year else fallback_year
     if raw_year and len(raw_year) == 2:
-        year += 2000
-    if not year or not 2026 <= year <= 9999:
+        reference = fallback_year or datetime.now().year
+        year += (reference // 100) * 100
+        if year > reference + 50:
+            year -= 100
+        elif year < reference - 50:
+            year += 100
+    if not year or not 1900 <= year <= 9999:
         return None
     return year, MONTHS.index(match[2][:3]) + 1
 
@@ -151,14 +164,14 @@ def parse_rows(rows, filters):
             else:
                 item['months'][month] = value
     if not headers:
-        issues.append('No manufacturer/month table with an unambiguous year (2026 onward) was found.')
+        issues.append('No manufacturer/month table with an unambiguous year (1900 onward) was found.')
     # Counts cover every issue; retain a bounded diagnostic sample rather than a huge response.
     return list(entries.values()), {**stats, 'issueCount': len(issues), 'warnings': issues[:30]}
 
 
 async def import_rows(connection, *, source_key, name, rows, filters, owner, observed_at,
                       job_id=None, no_data=False, warning=None, strict=False, checksum=None,
-                      replace_existing=False):
+                      replace_existing=False, update_newer=False):
     """Write full filter data and its update history in the caller's transaction."""
     scope = dataset(owner, filters)
     timestamp = datetime.now(timezone.utc)
@@ -166,6 +179,9 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
         'warnings': [warning] if warning else [], 'issueCount': int(bool(warning))})
     if strict and not no_data and (details['issueCount'] or not entries):
         raise ValueError('MAIN_REPORT_PARSE_FAILED: ' + '; '.join(details['warnings'] or ['No manufacturer data found.']))
+    expected_year = context_year(filters)
+    if strict and job_id and expected_year and any(entry['year'] != expected_year for entry in entries):
+        raise ValueError(f'MAIN_REPORT_YEAR_MISMATCH: workbook does not match the selected year {expected_year}.')
     if replace_existing:
         selected = filters.get('makers', [])
         if len(selected) != 1 or len(filters.get('states', [])) != 1 or len(filters.get('rtos', [])) != 1:
@@ -199,6 +215,7 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
         existing.update({r['id']: dict(r) for r in (await connection.execute(select(db.main_reports)
             .where(db.main_reports.c.id.in_(ids[start:start + 500])))).mappings()})
     additions, index_rows, conflicts, duplicates, new_cells, replaced_cells = [], [], [], 0, 0, 0
+    pending_updates = {}
     for record_id in ids:
         entry = records[record_id]
         previous = existing.get(record_id)
@@ -208,18 +225,36 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
             'updated_at': timestamp, 'month_sources': {}, **dict.fromkeys(db.MONTH_COLUMNS)}
         changes = {}
         provenance = dict(value['month_sources'])
+        provenance_changed = False
         for month, incoming in entry['months'].items():
             column = db.MONTH_COLUMNS[month - 1]
             stored = value[column]
+            previous_source = provenance.get(str(month))
+            previous_observed = value['updated_at']
+            if isinstance(previous_source, dict):
+                try:
+                    previous_observed = datetime.fromisoformat(previous_source['observedAt'].replace('Z', '+00:00'))
+                    if previous_observed.tzinfo is None:
+                        previous_observed = previous_observed.replace(tzinfo=timezone.utc)
+                except (KeyError, TypeError, ValueError, AttributeError):
+                    pass
+            newer = observed_at > previous_observed
             if stored is None:
                 changes[column] = incoming
                 provenance[str(month)] = {'sourceKey': source_key, 'observedAt': observed_at.isoformat()}
                 new_cells += 1
             elif stored == incoming:
                 duplicates += 1
-            elif replace_existing:
+                # An unchanged newer observation still prevents an older
+                # in-flight response from overwriting this confirmed value.
+                if update_newer and newer:
+                    fresh_source = {'sourceKey': source_key, 'observedAt': observed_at.isoformat()}
+                    if isinstance(previous_source, dict) and 'replaced' in previous_source:
+                        fresh_source['replaced'] = previous_source['replaced']
+                    provenance[str(month)] = fresh_source
+                    provenance_changed = True
+            elif replace_existing or (update_newer and newer):
                 changes[column] = incoming
-                previous_source = provenance.get(str(month))
                 provenance[str(month)] = {'sourceKey': source_key, 'observedAt': observed_at.isoformat(),
                     'replaced': {'value': stored, 'source': previous_source}}
                 replaced_cells += 1
@@ -227,12 +262,21 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
                 conflicts.append({k: entry[k] for k in ('maker', 'state', 'rto', 'year')} | {
                     'month': month, 'stored': stored, 'incoming': incoming})
         if previous:
-            if changes:
-                await connection.execute(update(db.main_reports).where(db.main_reports.c.id == record_id)
-                    .values(**changes, month_sources=provenance, updated_at=timestamp))
+            if changes or provenance_changed:
+                values = {**changes, 'month_sources': provenance, 'updated_at': timestamp}
+                columns = tuple(sorted(values))
+                pending_updates.setdefault(columns, []).append({'record_id': record_id,
+                    **{'v_' + key: incoming for key, incoming in values.items()}})
         else:
             additions.append(value | changes | {'month_sources': provenance})
         index_rows.append((value | changes) | {'id': record_id})
+    # Update changed values and fresh observations in batches rather than a
+    # SQL round trip per Maker while ten workers are saving concurrently.
+    for columns, values in pending_updates.items():
+        statement = update(db.main_reports).where(db.main_reports.c.id == bindparam('record_id')).values(
+            {key: bindparam('v_' + key) for key in columns})
+        for start in range(0, len(values), 500):
+            await connection.execute(statement, values[start:start + 500])
     for start in range(0, len(additions), 500):
         await connection.execute(pg_insert(db.main_reports).values(additions[start:start + 500]))
     offices = []
@@ -246,7 +290,8 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
         statement = pg_insert(db.maker_office_index).values(offices[start:start + 300])
         await connection.execute(statement.on_conflict_do_update(
             index_elements=[db.maker_office_index.c.id],
-            set_={key: statement.excluded[key] for key in offices[0] if key != 'id'}))
+            set_={key: statement.excluded[key] for key in offices[0] if key != 'id'},
+            where=(statement.excluded.observed_at >= db.maker_office_index.c.observed_at) if update_newer else None))
     details.update(newRows=len(additions), newCells=new_cells, replacedCells=replaced_cells, duplicates=duplicates,
                    conflicts=len(conflicts), conflictExamples=conflicts[:20], parsedRows=len(records))
     if checksum:

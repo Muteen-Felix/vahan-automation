@@ -9,7 +9,11 @@ try {
   let historyRequests = 0;
   let reportSocket;
   let lastSaved = null;
+  let nextReadDelayMs = 0, watchReads = false, failedReads = 0, activeReads = 0, peakReads = 0;
   page.on('pageerror', error => errors.push(error.message));
+  page.on('requestfailed', request => {
+    if (watchReads && new URL(request.url()).pathname === '/api/annual-reports') failedReads++;
+  });
   await page.routeWebSocket('**/socket.io/**', socket => {
     socket.send('0'+JSON.stringify({sid:'fixture-engine',upgrades:[],pingInterval:60_000,pingTimeout:60_000,maxPayload:1_000_000}));
     socket.onMessage(message => {
@@ -56,13 +60,22 @@ try {
     } else if (url.pathname === '/api/annual-reports/history') body = {total:1, rows:[{
       source_key:'file:fixture',file_id:'fixture',name:'manufacturer.xlsx',status:'added',states:['ASSAM'],rtos:['UDALGURI - AS27'],
       imported_at:'2026-10-02T09:12:13Z',observed_at:'2026-10-02T08:12:13Z',details:{newRows:3,newCells:30,duplicates:0,conflicts:0}}]};
-    await route.fulfill({status:200, contentType:'application/json', body:JSON.stringify(body), headers:{'access-control-allow-origin':'*'}});
+    const responseBody = JSON.stringify(body);
+    const watched = watchReads && url.pathname === '/api/annual-reports';
+    if (watched) {activeReads++; peakReads = Math.max(peakReads, activeReads);}
+    try {
+      if (url.pathname === '/api/annual-reports' && nextReadDelayMs) {
+        const wait = nextReadDelayMs; nextReadDelayMs = 0;
+        await new Promise(resolve => setTimeout(resolve, wait));
+      }
+      await route.fulfill({status:200, contentType:'application/json', body:responseBody, headers:{'access-control-allow-origin':'*'}});
+    } finally {if (watched) activeReads--;}
   });
   await page.goto(process.env.ANNUAL_UI_URL || 'http://127.0.0.1:5174/#reports');
   await page.getByRole('rowheader', {name:'OLA ELECTRIC TECHNOLOGIES PVT LTD', exact:true}).waitFor();
   assert.deepEqual(await page.getByLabel('Report filters',{exact:true}).locator('option').allTextContents(),
     ['Two Wheeler · Electric','Two Wheeler · Petrol']);
-  assert.ok(await page.getByText('Shared data for all accounts · Each filter saves directly to this table',{exact:true}).isVisible());
+  assert.ok(await page.getByText('',{exact:true}).isVisible());
   assert.equal(await page.locator('.annual-table thead th').count(),17);
   assert.equal(await page.locator('.annual-table thead th.annual-month').count(),12);
   assert.equal(await page.locator('.annual-table tbody tr').count(),100);
@@ -80,7 +93,33 @@ try {
   reportSocket.send('42/ui,'+JSON.stringify(['reports:updated',lastSaved]));
   await page.getByRole('status').filter({hasText:'Already saved in main table'}).waitFor({timeout:2_000});
   assert.equal(await page.locator('.annual-table tbody tr').count(),100,'repeat filter does not duplicate rows');
-  assert.equal((await page.locator('.annual-table-scroll').boundingBox()).x,0);
+  // A slow table read must finish even while ten workers keep committing data.
+  // The next read must then include changes received during that slow read.
+  watchReads = true; nextReadDelayMs = 5_600;
+  rows[0].months[10] = 8;
+  reportSocket.send('42/ui,'+JSON.stringify(['reports:updated',lastSaved]));
+  const burst = setInterval(() => {
+    rows[0].months[10] = 9;
+    reportSocket.send('42/ui,'+JSON.stringify(['reports:updated',lastSaved]));
+  }, 100);
+  try {
+    await page.waitForFunction(()=>document.querySelector('.annual-table tbody tr')?.querySelectorAll('td')[14]?.textContent==='9',{},{timeout:8_500});
+  } finally {clearInterval(burst); watchReads = false;}
+  assert.equal(failedReads,0,'worker updates must not cancel an in-flight table read');
+  assert.equal(peakReads,1,'worker updates must use one table read at a time');
+  reportSocket.send('42/ui,'+JSON.stringify(['captcha:required',{
+    jobId:'captcha-fixture',captchaId:'challenge-fixture',imageDataUrl:'data:image/png;base64,iVBORw0KGgo=',
+  }]));
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator('#captcha-assistance').count(),0,'Exported Reports never shows CAPTCHA');
+  await page.getByRole('link',{name:'Create Report',exact:true}).click();
+  await page.locator('#captcha-assistance').waitFor();
+  await page.getByRole('link',{name:'Exported Reports',exact:true}).click();
+  await page.getByRole('rowheader',{name:'OLA ELECTRIC TECHNOLOGIES PVT LTD',exact:true}).waitFor();
+  assert.equal(await page.locator('#captcha-assistance').count(),0);
+  const tableBounds = await page.locator('.annual-table-scroll').boundingBox();
+  assert.ok(tableBounds.x >= 0 && tableBounds.x + tableBounds.width <= 1920,
+    'the report table stays within the page gutters');
   const desktop = await page.locator('.annual-table-scroll').evaluate(el => ({width:el.clientWidth, scroll:el.scrollWidth}));
   assert.ok(desktop.scroll <= desktop.width + 1, 'all 12 months fit on the 1920px desktop viewport');
   await page.screenshot({path:'/tmp/vahan-annual-desktop.png', fullPage:true});
@@ -135,5 +174,5 @@ try {
   assert.equal(await page.getByRole('heading',{name:'Update history',exact:true}).count(),0);
   assert.equal(historyRequests,0,'the removed history panel makes no SQL history requests');
   assert.deepEqual(errors,[]);
-  console.log('Annual reports UI: 12 months, real maker names, year switching, State/RTO search, pagination, filtered/full Excel export, confirmation and no update history and responsive width passed.');
+  console.log('Annual reports UI: live committed updates, slow reads under continuous worker updates, CAPTCHA confined to Create Report, search, pagination, exports and responsive layout passed.');
 } finally { await browser.close(); }

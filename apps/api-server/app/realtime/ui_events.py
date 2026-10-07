@@ -139,6 +139,14 @@ async def runner_options(_sid: str, payload: dict) -> dict:
     runner = await services.runners.get(runner_id)
     if not runner:
         return {"ok": False, "error": "Runner is offline."}
+    from app.db import engine, schema as db
+    from sqlalchemy import select
+    from app.repositories.postgres import now
+    async with engine.connect() as connection:
+        reserved = await connection.scalar(select(db.runner_planning_leases.c.runner_id).where(
+            db.runner_planning_leases.c.runner_id == runner_id, db.runner_planning_leases.c.expires_at > now()))
+    if reserved:
+        return {'ok': False, 'error': 'Worker is preparing a filter preview.', 'code': 'RUNNER_BUSY', 'retryAfterMs': 1000}
     try:
         result = await sio.call(
             "runner:options",

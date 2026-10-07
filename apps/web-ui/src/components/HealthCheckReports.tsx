@@ -227,7 +227,7 @@ export function HealthCheckReports({
   return (
     <section className="panel health-reports" id="health-reports">
       <div className="panel-heading">
-        <span className="step-number">4</span>
+        <span className="step-number" aria-hidden="true">≡</span>
         <div>
           <h2>Daily UI health reports</h2>
           <p>Review check history and download CSV files from the backend.</p>

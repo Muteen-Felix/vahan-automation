@@ -109,6 +109,7 @@ export interface VahanFilters {
 
 export interface Scenario {
   name: string;
+  caseKey?: string;
   filters: VahanFilters;
 }
 

@@ -20,11 +20,13 @@ interface ResultEntry {
   status: "ok" | "empty" | "error";
   completedAt?: string;
   rowCount?: number;
+  detail?: string;
 }
 
 type BatchStatus = "idle" | "running" | "completed" | "completed_with_errors" | "stopped" | "error";
 
 interface Props {
+  workerCount?: number;
   runners: Runner[];
   connection: ConnectionState;
   scenarios: Scenario[];
@@ -109,9 +111,10 @@ export function WorkerDashboard(props: Props) {
   const availableRunners = props.runners
     .filter((runner) => runner.source === "new")
     .sort((left, right) => compareRunnerIds(left.id, right.id));
-  const hasParallelSession = props.lanes.length >= 2;
-  const activeWorkerCount = hasParallelSession ? props.lanes.length : TARGET_WORKER_COUNT;
-  const savedSmallerRun = hasParallelSession && activeWorkerCount < TARGET_WORKER_COUNT;
+  const hasParallelSession = props.lanes.length >= 1;
+  const selectedCount = props.workerCount || TARGET_WORKER_COUNT;
+  const activeWorkerCount = hasParallelSession ? props.lanes.length : props.legacySession ? 1 : selectedCount;
+  const savedSmallerRun = hasParallelSession && activeWorkerCount !== selectedCount;
   const workerCards = Array.from({length: activeWorkerCount}, (_, workerIndex) => {
     const lane = props.lanes[workerIndex];
     const runnerId = lane?.runnerId || availableRunners[workerIndex]?.id || null;
@@ -151,8 +154,7 @@ export function WorkerDashboard(props: Props) {
       taskLabel, taskTone, nextIndex, nextCase,
     };
   });
-  const onlineCount = props.connection === "connected" ? Math.min(TARGET_WORKER_COUNT,
-    availableRunners.filter((runner) => runner.status !== "RECONNECTING").length) : 0;
+  const onlineCount = workerCards.filter(card => card.online).length;
   const total = props.progress.total || props.scenarios.length;
   const done = props.progress.total ? Math.min(props.progress.done, total) : 0;
   const progressPercent = total ? Math.round(done / total * 100) : 0;
@@ -165,42 +167,48 @@ export function WorkerDashboard(props: Props) {
     props.timings, total, done, props.currentFilterStartedAt, clockNow,
     props.activeElapsedMs, props.activeSegmentStartedAt,
   );
-
+  const casesPerMinute = estimate.reportsPerHour !== null ? estimate.reportsPerHour / 60
+    : ['completed', 'completed_with_errors'].includes(props.status) && estimate.activeElapsedMs > 0
+      ? done * 60_000 / estimate.activeElapsedMs : null;
   return <section className="worker-dashboard" data-workers={activeWorkerCount} aria-labelledby="worker-dashboard-title">
     <div className="worker-dashboard-header">
       <div>
-        <p className="worker-dashboard-eyebrow">LIVE OPERATIONS</p>
+        <p className="worker-dashboard-eyebrow">WORKERS</p>
         <h2 id="worker-dashboard-title">{activeWorkerCount}-worker crawl monitor</h2>
         <p>{savedSmallerRun
-          ? `This saved run keeps its ${activeWorkerCount}-worker assignment. New full runs use ${TARGET_WORKER_COUNT} workers.`
+          ? props.sharedQueue ? `Saved progress used ${activeWorkerCount} workers. Continue or restart with ${selectedCount} selected workers.`
+            : `This saved run keeps its ${activeWorkerCount}-worker assignment. New full runs use ${selectedCount} workers.`
           : props.sharedQueue
-            ? `All ${TARGET_WORKER_COUNT} workers take the next available State × RTO case from one shared queue. Failed cases retry up to twice.`
-            : `Each worker processes one of ${TARGET_WORKER_COUNT} ordered State × RTO segments. Progress is saved after each case.`}</p>
+            ? `One shared queue · ${activeWorkerCount} workers · one case per worker.`
+            : `Each worker processes its assigned cases in order.`}</p>
       </div>
       <div className="worker-dashboard-actions">
-        <span className="worker-dashboard-online" data-online={onlineCount === TARGET_WORKER_COUNT ? "all" : "partial"}>
-          <i aria-hidden="true" />{onlineCount}/{TARGET_WORKER_COUNT} workers online
+        <span className="worker-dashboard-online" data-online={onlineCount === activeWorkerCount ? "all" : "partial"}>
+          <i aria-hidden="true" />{onlineCount}/{activeWorkerCount} workers online
         </span>
         {props.running
-          ? <button type="button" className="secondary-button" onClick={props.onStop}>Stop active workers</button>
+          ? <button type="button" className="secondary-button" onClick={props.onStop}>Stop run</button>
           : props.status === "stopped"
             ? <>
                 <button type="button" className="primary-button" disabled={props.disabled || props.loading}
-                  onClick={props.onContinue}>Continue saved run ({props.legacySession ? "1 worker" : `${activeWorkerCount} workers`})</button>
+                  onClick={props.onContinue}>Continue · {props.legacySession ? "1 worker" : `${props.sharedQueue ? selectedCount : activeWorkerCount} workers`}</button>
                 <button type="button" className="secondary-button" disabled={props.disabled || props.loading}
-                  onClick={props.onRestart}>Restart with {TARGET_WORKER_COUNT} workers</button>
+                  onClick={props.onRestart}>Restart · {selectedCount} workers</button>
               </>
             : <button type="button" className="primary-button" disabled={props.disabled || props.loading}
-                onClick={props.onRunAll}>Run all with {TARGET_WORKER_COUNT} workers</button>}
+                onClick={props.onRunAll}>Run all · {selectedCount} workers</button>}
       </div>
     </div>
 
-    {props.legacySession && <p className="worker-dashboard-legacy">This saved session uses one worker. Restart to split the full matrix across {TARGET_WORKER_COUNT} workers.</p>}
+    {props.legacySession && <p className="worker-dashboard-legacy">This saved session uses one worker. Restart to use {selectedCount} selected workers.</p>}
 
     <div className="worker-dashboard-overall">
       <div className="worker-dashboard-total">
-        <div><span>Overall progress</span><strong>{done.toLocaleString("en-GB")} <small>/ {total.toLocaleString("en-GB")} cases</small></strong></div>
-        <span className="worker-dashboard-status" data-status={props.status}>{statusLabels[props.status]}</span>
+        <div className="crawl-progress-heading"><span>Progress</span><strong>{done.toLocaleString("en-GB")} <small>/ {total.toLocaleString("en-GB")} cases</small></strong>
+          <span className="worker-dashboard-status" data-status={props.status}>{statusLabels[props.status]}</span></div>
+        <div className="crawl-throughput" aria-label="Crawl speed in cases per minute">
+          <strong>{casesPerMinute === null ? '—' : casesPerMinute.toFixed(1)}</strong><span>cases/min</span>
+        </div>
       </div>
       <div className="worker-progress-track" role="progressbar" aria-label="Overall crawl progress"
         aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressPercent}>
@@ -214,10 +222,7 @@ export function WorkerDashboard(props: Props) {
         <span><strong>{pendingRetries.toLocaleString("en-GB")}</strong>Queued retries</span>
         <span><strong>{props.running ? estimate.remainingMs !== null
           ? formatDuration(estimate.remainingMs) : "Calibrating" : "—"}</strong>
-          Estimated remaining{props.running && estimate.reportsPerHour !== null
-            ? <small>Finish ~{new Date(clockNow + estimate.remainingMs!).toLocaleTimeString('en-GB', {
-              hour: '2-digit', minute: '2-digit',
-            })} · {(estimate.reportsPerHour / 60).toFixed(1)} cases/min</small> : null}</span>
+          ETA</span>
       </div>
     </div>
 
@@ -256,22 +261,25 @@ export function WorkerDashboard(props: Props) {
             <div className="worker-current-heading"><span>{card.currentCase ? "CURRENT CASE" : "WORK STATUS"}</span>
               <strong data-tone={card.taskTone}>{card.taskLabel}</strong></div>
             {card.currentCase ? <>
-              <p className="worker-current-name">#{(card.currentIndex! + 1).toLocaleString("en-GB")} · {card.currentCase.filters.states[0]} · {card.currentCase.filters.rtos[0]}</p>
-              <p className="worker-current-detail">{card.lane?.retryIndex !== null && card.lane?.retryIndex !== undefined ? "Retrying failed case" : props.sharedQueue ? "Processing a shared-queue case" : "Processing assigned case"}{caseElapsed ? " · " + caseElapsed + " elapsed" : ""}</p>
+              <p className="worker-current-name" title={card.currentCase.name}>#{(card.currentIndex! + 1).toLocaleString("en-GB")} · {card.currentCase.filters.states[0]} · {card.currentCase.filters.rtos[0]}</p>
+              <p className="worker-current-detail" title={card.currentCase.name}>{card.currentCase.caseKey&&card.currentCase.name.includes(' · ')
+                ?card.currentCase.name.split(' · ').slice(1).join(' · ')
+                :card.lane?.retryIndex !== null && card.lane?.retryIndex !== undefined ? "Retrying failed case" : props.sharedQueue ? "Processing a shared-queue case" : "Processing assigned case"}{caseElapsed ? " · " + caseElapsed + " elapsed" : ""}</p>
             </> : <p className="worker-current-name">{card.nextCase
               ? "Next: #" + (card.nextIndex! + 1).toLocaleString("en-GB") + " · " + card.nextCase.filters.states[0] + " · " + card.nextCase.filters.rtos[0]
               : props.sharedQueue && props.running ? "Ready to claim the next available case"
                 : card.assigned && card.completed === card.assigned && hasParallelSession ? "All assigned cases processed" : "No case in progress"}</p>}
             {card.captchaWaiting && card.runnerId && <button type="button" className="worker-captcha-link"
               onClick={() => props.onOpenCaptcha(card.runnerId!)}>Open this worker's CAPTCHA →</button>}
-            {!card.captchaWaiting && card.activeJob?.error && <p className="worker-current-error">{card.activeJob.error}</p>}
+            {!card.captchaWaiting && card.activeJob?.error && <p className="worker-current-error" title={card.activeJob.error}>{card.activeJob.error}</p>}
           </div>
           <div className="worker-card-footer">
-            <span>Last result</span><strong>{card.lane ? resultLabel(card.last) : "No parallel session yet"}</strong>
+            <span>Last result</span><strong title={card.last?.detail}>{card.lane ? resultLabel(card.last) : "No parallel session yet"}</strong>
             {card.lane && card.completed < card.assigned && <small>{(card.assigned - card.completed).toLocaleString("en-GB")} {card.assigned - card.completed === 1 ? "case" : "cases"} remain</small>}
           </div>
         </article>;
       })}
     </div>
+
   </section>;
 }

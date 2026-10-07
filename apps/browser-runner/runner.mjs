@@ -31,6 +31,7 @@ if (!LOCAL_FIXTURE && (target.origin !== 'https://analytics.parivahan.gov.in' ||
 }
 
 let browser, browserPromise, context, page, active, optionsBusy = false, authRequired = false, stopping = false;
+let optionsCancellation = null;
 const socket = io(`${API}/runner`, {autoConnect: false, transports: ['websocket'], auth: {
   runnerId: ID, runnerName: process.env.VAHAN_RUNNER_NAME || 'Chromium Playwright', token: TOKEN,
   source: 'new', engine: 'playwright', version: '0.2.0',
@@ -429,11 +430,17 @@ async function runnerOptions(request, respond) {
   if (active || optionsBusy) { respond({ok: false, error: 'Worker is busy.', code: 'RUNNER_BUSY', retryAfterMs: 1000}); return; }
   optionsBusy = true;
   let timer, expired = false;
+  let finished;
+  const completion = new Promise(resolve => {finished = resolve;});
+  const cancellation = optionsCancellation = {requestId: request.requestId || null, cancel: async () => {
+    expired = true; await page?.close().catch(() => {}); await completion;
+  }};
   const work = async () => {
     await ensurePage(() => expired);
     if (expired) throw new Error('VAHAN_OPTIONS_TIMEOUT: options loading was cancelled.');
     const operations = {GET_ALL_OPTIONS: ['readOptions', VAHAN_OPTION_SELECTORS], GET_STATE_OPTIONS: ['states', request.delhiNcr],
-      GET_RTO_OPTIONS: ['rtos', request.stateLabels], GET_X_AXIS_OPTIONS: ['xAxis', request.yAxis], SEARCH_MAKERS: ['makers', request.search]};
+      GET_RTO_OPTIONS: ['rtos', request.stateLabels], GET_X_AXIS_OPTIONS: ['xAxis', request.yAxis], SEARCH_MAKERS: ['makers', request.search],
+      GET_FILTER_CONTEXT: ['filterContext', request.filters], GET_ALL_MAKERS: ['allMakers', null]};
     const operation = operations[request.type];
     if (!operation) throw new Error('Unsupported options request.');
     return page.evaluate(([method, value]) => globalThis.vahanDriver[method](value), operation);
@@ -452,9 +459,15 @@ async function runnerOptions(request, respond) {
     // would leave the old request running and every retry would see busy.
     await page?.close().catch(() => {});
     respond({ok: false, error: error.message});
-  } finally { clearTimeout(timer); optionsBusy = false; }
+  } finally { clearTimeout(timer); optionsBusy = false; if (optionsCancellation === cancellation) optionsCancellation = null; finished(); }
 }
 socket.on('runner:options', runnerOptions);
+socket.on('runner:cancel-options', async (request, respond) => {
+  if (!optionsBusy) {respond({ok:true});return;}
+  const cancellation = optionsCancellation;
+  if (!request.requestId || cancellation?.requestId !== request.requestId) {respond({ok:false,error:'Stale options request.'});return;}
+  await cancellation.cancel();respond({ok:true});
+});
 let nextHealthCheck = Infinity;
 socket.on('ui-health:schedule-updated', schedule => { nextHealthCheck = Date.parse(schedule.nextCheckAt); });
 async function healthCheck(request = {}) {

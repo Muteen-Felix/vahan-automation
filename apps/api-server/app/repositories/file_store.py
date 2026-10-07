@@ -124,7 +124,8 @@ class PostgresFileStore:
                 await import_rows(connection, source_key=source_key, job_id=str(job.id), name=name, rows=rows,
                     filters=job.filters.model_dump(mode='json', by_alias=True), owner=job.owner_username,
                     observed_at=observed_at, strict=True, checksum=checksum,
-                    replace_existing=job.update_kind == UpdateKind.REFRESH)
+                    replace_existing=job.update_kind == UpdateKind.REFRESH,
+                    update_newer=job.update_kind == UpdateKind.NORMAL)
                 summary = await connection.scalar(select(db.report_update_history.c.details)
                     .where(db.report_update_history.c.source_key == source_key))
                 if job.update_kind == UpdateKind.REFRESH:

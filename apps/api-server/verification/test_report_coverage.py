@@ -3,7 +3,7 @@ import os
 import subprocess
 import sys
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -20,7 +20,7 @@ from fastapi import HTTPException
 from starlette.requests import Request
 from app.api.report_coverage import CoverageQuery, report_coverage
 from app.db import engine, schema as db
-from sqlalchemy import delete
+from sqlalchemy import delete, update
 from app.models.job import Job, JobStatus
 from app.repositories.annual_reports import dataset, import_rows
 from app.services import services
@@ -122,6 +122,22 @@ class CoverageTest(unittest.IsolatedAsyncioTestCase):
         result = await self.read()
         self.assertFalse(result['canContinue'])
         self.assertIn('already running', result['blockedReason'])
+
+    async def test_newer_full_crawl_counts_as_covered_after_replacing_all_values(self):
+        first = await self.job(0)
+        await self.save(first, value=7)
+        newer = await self.job(0)
+        async with engine.begin() as connection:
+            await connection.execute(update(db.report_update_history).where(
+                db.report_update_history.c.job_id == str(first.id)).values(status='review'))
+            await import_rows(connection, source_key='newer:' + str(uuid4()), name='Newer crawl',
+                rows=[{'sheet': 'Report', 'row_number': 1, 'cells': ['Maker', f'{YEAR}-Jan']},
+                      {'sheet': 'Report', 'row_number': 2, 'cells': ['Fixture maker', 11]}],
+                filters=newer.filters.model_dump(mode='json', by_alias=True), owner=newer.owner_username,
+                observed_at=datetime.now(timezone.utc) + timedelta(seconds=1),
+                job_id=str(newer.id), update_newer=True)
+        result = await self.read()
+        self.assertEqual((result['covered'], result['withData']), (1, 1))
 
     async def test_unknown_scope_duplicate_offices_and_empty_plan(self):
         with self.assertRaises(HTTPException):

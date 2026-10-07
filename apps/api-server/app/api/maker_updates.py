@@ -16,7 +16,7 @@ def _run(row):
 
 
 @router.get('')
-async def latest_update(request: Request, year: int = Query(ge=2026, le=9999)):
+async def latest_update(request: Request, year: int = Query(ge=1900, le=9999)):
     async with engine.connect() as connection:
         rows = (await connection.execute(select(db.maker_update_runs).where(
             db.maker_update_runs.c.year == year,

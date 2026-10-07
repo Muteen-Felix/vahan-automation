@@ -2,11 +2,20 @@ import { persistentState } from './services/persistent-state';
 import type { Scenario, VahanFilters } from "./contracts";
 
 export const MATRIX_STORAGE_KEY = "vahanStateRtoMatrixV1";
+export const MIN_REPORT_YEAR = 1900;
+
+export function isReportYear(year: number): boolean {
+  return Number.isInteger(year) && year >= MIN_REPORT_YEAR && year <= currentReportYear();
+}
 
 export interface MatrixPlan {
   year: number;
   states: string[];
   scenarios: Scenario[];
+  profileId?: string;
+  profileRevision?: number;
+  profileName?: string;
+  skippedBranches?: number;
 }
 
 export function currentReportYear(): number {
@@ -55,10 +64,12 @@ export function updateMatrixYear(plan: MatrixPlan, year: number): MatrixPlan {
   return {
     ...plan,
     year,
-    scenarios: plan.scenarios.map(({ filters }) => {
+    scenarios: plan.scenarios.map((scenario) => {
+      const {filters} = scenario;
       const state = filters.states[0];
       const rto = filters.rtos[0];
-      return { name: reportName(state, rto, year), filters: fixedFilters(state, rto, year) };
+      const suffix=scenario.caseKey&&scenario.name.includes(' · ')?` · ${scenario.name.split(' · ').slice(1).join(' · ')}`:'';
+      return {...scenario, name: reportName(state, rto, year)+suffix, filters: {...filters, fromYear: String(year), toYear: String(year)} };
     }),
   };
 }

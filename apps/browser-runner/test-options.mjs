@@ -71,6 +71,15 @@ releaseSave();
 await waitingForSave;
 assert.equal(finishing.replies[0].ok, true, 'options must wait for SQL finalization rather than report busy');
 
+const cancelled = fixture();
+const pendingCancellation = cancelled.run();
+await new Promise(resolve => setImmediate(resolve));
+await cancelled.context.optionsCancellation.cancel();
+await pendingCancellation;
+assert.equal(cancelled.context.optionsBusy,false,'an acknowledged preview cancellation releases the browser immediately');
+assert.equal(cancelled.context.optionsCancellation,null);
+assert.ok(cancelled.calls.includes('close'));
+
 // A real Chromium DOM reproduces VAHAN's hidden native select. No report is
 // submitted and no CAPTCHA is read or solved by this fixture.
 const browser = await chromium.launch({headless: true});

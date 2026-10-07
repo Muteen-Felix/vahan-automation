@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { currentReportYear } from '../matrix-plan';
+import { useEffect, useMemo, useState } from 'react';
+import { isReportYear } from '../matrix-plan';
+import { useLiveQuery } from '../hooks/use-live-query';
 import { loadReportCoverage, type CoverageContext, type CoverageControls, type ReportCoverageData } from '../report-coverage';
 
 const statusLabels: Record<string, string> = {idle: 'Ready', running: 'Running', completed: 'Completed',
@@ -8,36 +9,29 @@ const statusLabels: Record<string, string> = {idle: 'Ready', running: 'Running',
 export function ReportCoverage({context, controls, refreshTrigger}: {
   context: CoverageContext; controls: CoverageControls; refreshTrigger?: number;
 }) {
-  const [data, setData] = useState<ReportCoverageData | null>(null);
-  const [loadedKey, setLoadedKey] = useState('');
-  const [error, setError] = useState('');
-  const [refresh, setRefresh] = useState(0);
+  const [actionError, setActionError] = useState('');
   const [starting, setStarting] = useState(false);
   const viewKey = JSON.stringify(context);
+  const queryKey = useMemo(() => [viewKey, controls.plan], [viewKey, controls.plan]);
+  const {data: shown, error: readError, refresh} = useLiveQuery<ReportCoverageData>(queryKey,
+    signal => loadReportCoverage(context, controls.plan, signal), 3_000);
+  const error = actionError || readError;
   useEffect(() => {
-    const refreshVisible = () => {if (!document.hidden) setRefresh(value => value + 1);};
+    const refreshVisible = () => {if (!document.hidden) refresh();};
     const timer = window.setInterval(refreshVisible, 5_000);
     window.addEventListener('focus', refreshVisible);
     return () => {window.clearInterval(timer); window.removeEventListener('focus', refreshVisible);};
-  }, []);
-  useEffect(() => {
-    const controller = new AbortController();
-    setError('');
-    void loadReportCoverage(context, controls.plan, controller.signal).then(result => {
-      if (!controller.signal.aborted) {setData(result); setLoadedKey(viewKey);}
-    }).catch(reason => {if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'Could not load coverage.');});
-    return () => controller.abort();
-  }, [viewKey, controls.plan, refresh, refreshTrigger]);
-  const shown = loadedKey === viewKey ? data : null;
+  }, [refresh]);
+  useEffect(() => {refresh();}, [refreshTrigger, refresh]);
   const percent = shown?.total ? 100 * shown.covered / shown.total : 0;
   const complete = Boolean(shown?.matrixLoaded && shown.total > 0 && shown.missing === 0);
-  const blocked = controls.busy || starting || controls.loadingMatrix || context.year !== currentReportYear()
+  const blocked = controls.busy || starting || controls.loadingMatrix || !isReportYear(context.year)
     || Boolean(shown?.matrixLoaded && !shown.canContinue) || !shown || Boolean(error);
   async function continueMissing() {
-    setStarting(true); setError('');
+    setStarting(true); setActionError('');
     try {await controls.onContinue(context);}
-    catch (reason) {setError(reason instanceof Error ? reason.message : 'Could not continue the reports.');}
-    finally {setStarting(false); setRefresh(value => value + 1);}
+    catch (reason) {setActionError(reason instanceof Error ? reason.message : 'Could not continue the reports.');}
+    finally {setStarting(false); refresh(true);}
   }
   return <section className="report-coverage" aria-label="Main table data coverage">
     <div className="report-coverage-heading">

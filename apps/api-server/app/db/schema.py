@@ -1,7 +1,7 @@
 """Durable PostgreSQL schema. JSONB retains complete versioned application payloads."""
 from sqlalchemy import (
     MetaData, Table, Column, String, Text, Boolean, Integer, BigInteger,
-    DateTime, LargeBinary, ForeignKey, JSON, Index, UniqueConstraint, text,
+    DateTime, LargeBinary, ForeignKey, JSON, Index, UniqueConstraint, CheckConstraint, text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -45,8 +45,10 @@ batch_queue_sessions = Table("batch_queue_sessions", metadata,
     Column("owner_username", ForeignKey("users.username"), nullable=False, index=True),
     Column("status", String(16), nullable=False),
     Column("total", Integer, nullable=False),
+    Column("max_workers", Integer, nullable=False, server_default=text('10')),
     Column("created_at", DateTime(timezone=True), nullable=False),
-    Column("updated_at", DateTime(timezone=True), nullable=False))
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    CheckConstraint('max_workers BETWEEN 1 AND 10', name='ck_batch_queue_worker_count'))
 batch_queue_tasks = Table("batch_queue_tasks", metadata,
     Column("session_id", ForeignKey("batch_queue_sessions.session_id", ondelete="CASCADE"), primary_key=True),
     Column("position", Integer, primary_key=True),
@@ -76,6 +78,17 @@ user_state = Table("user_state", metadata,
     Column("key", String(128), primary_key=True),
     Column("value", document, nullable=False),
     Column("updated_at", DateTime(timezone=True), nullable=False))
+filter_profiles = Table('filter_profiles', metadata,
+    Column('id', String(36), primary_key=True),
+    Column('owner_username', ForeignKey('users.username'), nullable=False, index=True),
+    Column('name', String(120), nullable=False), Column('definition', document, nullable=False),
+    Column('revision', Integer, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False),
+    Column('updated_at', DateTime(timezone=True), nullable=False))
+runner_planning_leases = Table('runner_planning_leases', metadata,
+    Column('runner_id', ForeignKey('runners.id', ondelete='CASCADE'), primary_key=True),
+    Column('owner_username', ForeignKey('users.username'), nullable=False),
+    Column('token', String(36), nullable=False), Column('expires_at', DateTime(timezone=True), nullable=False))
 stored_files = Table("stored_files", metadata,
     Column("id", String(36), primary_key=True),
     Column("owner_username", ForeignKey("users.username"), nullable=True, index=True),

@@ -1,6 +1,6 @@
 """Use the same strictly guarded disposable PostgreSQL database as report verification."""
 import io
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 import unittest
 import asyncio
@@ -12,6 +12,7 @@ from openpyxl import Workbook
 from app.db import engine, schema as db
 from app.repositories.annual_reports import import_rows, parse_rows, backfill
 from app.repositories.file_store import PostgresFileStore
+from app.models.job import Job, JobStatus
 from app.api.annual_reports import annual_reports, annual_history, export_annual_reports
 from fastapi import HTTPException
 from openpyxl import load_workbook
@@ -114,7 +115,50 @@ class AnnualReportsTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(history['rows'][0]['details']['invalidCells'], 1)
         entries, details = parse_rows(data, {**FILTERS, 'states': ['ASSAM', 'DELHI']})
         self.assertFalse(entries)
-        self.assertEqual(details['missingContext'], 1)
+        self.assertEqual(details['missingContext'], 2)  # Both OTHERS and the named Maker need State/RTO.
+
+    async def test_newer_crawl_replaces_values_and_preserves_previous_source(self):
+        await self.ingest('old', rows(['Maker', '2026-Jan'], [['BAJAJ AUTO LTD', 7]]))
+        async with engine.begin() as connection:
+            await import_rows(connection, source_key='new', name='New crawl',
+                rows=rows(['Maker', '2026-Jan'], [['BAJAJ AUTO LTD', 11]]), filters=FILTERS,
+                owner='alpha', observed_at=OBSERVED + timedelta(seconds=2), update_newer=True, strict=True)
+        result = await self.read()
+        self.assertEqual(result['rows'][0]['months'][0], 11)
+        self.assertEqual(result['lastSaved']['status'], 'updated')
+        self.assertEqual(result['lastSaved']['updatedMonthValues'], 1)
+        async with engine.connect() as connection:
+            provenance = await connection.scalar(select(db.main_reports.c.month_sources))
+        self.assertEqual(provenance['1']['replaced']['value'], 7)
+        self.assertEqual(provenance['1']['replaced']['source']['sourceKey'], 'old')
+
+    async def test_newer_identical_observation_blocks_late_changed_result(self):
+        await self.ingest('initial', rows(['Maker', '2026-Jan'], [['BAJAJ AUTO LTD', 7]]))
+        for source, seconds, value in [('newer-identical', 3, 7), ('late-older', 2, 11)]:
+            async with engine.begin() as connection:
+                await import_rows(connection, source_key=source, name=source,
+                    rows=rows(['Maker', '2026-Jan'], [['BAJAJ AUTO LTD', value]]), filters=FILTERS,
+                    owner='alpha', observed_at=OBSERVED + timedelta(seconds=seconds), update_newer=True, strict=True)
+        self.assertEqual((await self.read())['rows'][0]['months'][0], 7)
+        async with engine.connect() as connection:
+            provenance = await connection.scalar(select(db.main_reports.c.month_sources))
+        self.assertEqual(provenance['1']['sourceKey'], 'newer-identical')
+
+    async def test_normal_worker_updates_main_table_while_another_case_is_running(self):
+        from app.services import services
+        job = await services.jobs.create(Job(runnerId='live-save-fixture', filters=FILTERS,
+            status=JobStatus.WAITING_RESULT))
+        waiting = await services.jobs.create(Job(runnerId='other-live-fixture', filters=FILTERS,
+            status=JobStatus.WAITING_RESULT))
+        await self.ingest('previous-crawl', rows(['Maker', '2026-Jan'], [['BAJAJ AUTO LTD', 7]]),
+            filters=job.filters.model_dump(mode='json', by_alias=True))
+        workbook = Workbook(); workbook.active.append(['Maker', '2026-Jan']); workbook.active.append(['BAJAJ AUTO LTD', 11])
+        content = io.BytesIO(); workbook.save(content); workbook.close()
+        saved = await PostgresFileStore().commit_excel(job.id, 'crawl.xlsx', content.getvalue(),
+            observed_at=OBSERVED + timedelta(seconds=5), runner_id=job.runner_id)
+        self.assertEqual(saved['status'], 'COMPLETED')
+        self.assertEqual((await services.jobs.get(waiting.id)).status, JobStatus.WAITING_RESULT)
+        self.assertEqual((await self.read())['rows'][0]['months'][0], 11)
 
     async def test_shared_scope_search_and_literal_wildcards(self):
         await self.ingest('alpha', rows(['Maker','2026-Jan'], [['BAJAJ AUTO LTD',5]]))

@@ -45,7 +45,7 @@ def report_order():
 
 
 @router.get('')
-async def annual_reports(request: Request, year: int = Query(2026, ge=2026, le=9999),
+async def annual_reports(request: Request, year: int = Query(2026, ge=1900, le=9999),
                          dataset: str = '', state: str = Query('', max_length=200),
                          rto: str = Query('', max_length=200), offset: int = Query(0, ge=0),
                          limit: int = Query(100, ge=1, le=500)):
@@ -53,22 +53,24 @@ async def annual_reports(request: Request, year: int = Query(2026, ge=2026, le=9
     async with engine.connect() as connection:
         selected, datasets = await select_scope(connection, request, dataset)
         years = list(await connection.scalars(select(records.c.year)
-            .where(records.c.year >= 2026).distinct().order_by(records.c.year)))
+            .where(records.c.year >= 1900).distinct().order_by(records.c.year)))
         conditions = report_conditions(request, selected, year, state, rto)
-        summary = (await connection.execute(select(func.count().label('rows'),
+        aggregates = (await connection.execute(select(func.count().label('rows'),
             func.count(func.distinct(records.c.maker)).label('makers'),
             func.count(func.distinct(records.c.state + '|' + records.c.rto + '|' + records.c.rto_code)).label('offices'),
-            func.max(records.c.updated_at).label('updatedAt')).select_from(records).where(*conditions))).mappings().one()
+            func.max(records.c.updated_at).label('updatedAt'),
+            *[func.bool_or(records.c[m].is_not(None)).label(m) for m in db.MONTH_COLUMNS],
+        ).select_from(records).where(*conditions))).mappings().one()
+        summary = {key: aggregates[key] for key in ('rows', 'makers', 'offices', 'updatedAt')}
         options = [records.c.scope_key == selected, records.c.year == year]
         states = list(await connection.scalars(select(records.c.state)
             .where(*options).distinct().order_by(records.c.state)))
         rtos = list(await connection.scalars(select((records.c.rto + ' ' + records.c.rto_code).label('name'))
             .where(*options).distinct().order_by('name')))
-        rows = (await connection.execute(select(records).where(*conditions)
+        rows = (await connection.execute(select(*[records.c[key] for key in
+            ('id', 'state', 'rto', 'rto_code', 'maker', 'year', 'created_at', 'updated_at', *db.MONTH_COLUMNS)]).where(*conditions)
             .order_by(*report_order())
             .offset(offset).limit(limit))).mappings().all()
-        populated = (await connection.execute(select(*[func.bool_or(records.c[m].is_not(None)).label(m)
-            for m in db.MONTH_COLUMNS]).where(*conditions))).mappings().one()
         ledger = db.report_update_history
         saved_conditions = [ledger.c.scope_key == selected, cast(ledger.c.years, JSONB).contains([year])]
         if state.strip():
@@ -78,8 +80,8 @@ async def annual_reports(request: Request, year: int = Query(2026, ge=2026, le=9
         latest = (await connection.execute(select(ledger).where(*saved_conditions)
             .order_by(ledger.c.imported_at.desc(), ledger.c.source_key).limit(1))).mappings().first()
     return {'year': year, 'datasetId': selected, 'datasets': [dict(d) for d in datasets],
-            'years': years or [2026], 'states': states, 'rtos': rtos, 'summary': dict(summary),
-            'coverage': [i for i, m in enumerate(db.MONTH_COLUMNS, 1) if populated[m]],
+            'years': years or [year], 'states': states, 'rtos': rtos, 'summary': dict(summary),
+            'coverage': [i for i, m in enumerate(db.MONTH_COLUMNS, 1) if aggregates[m]],
             'lastSaved': saved_report_summary(latest) if latest else None,
             'offset': offset, 'limit': limit, 'rows': [{k: r[k] for k in
                 ('id', 'state', 'rto', 'rto_code', 'maker', 'year', 'created_at', 'updated_at')} | {
@@ -87,7 +89,7 @@ async def annual_reports(request: Request, year: int = Query(2026, ge=2026, le=9
 
 
 @router.get('/history')
-async def annual_history(request: Request, year: int = Query(2026, ge=2026, le=9999), dataset: str = '',
+async def annual_history(request: Request, year: int = Query(2026, ge=1900, le=9999), dataset: str = '',
                          state: str = Query('', max_length=200), rto: str = Query('', max_length=200),
                          offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100)):
     ledger = db.report_update_history
@@ -107,7 +109,7 @@ async def annual_history(request: Request, year: int = Query(2026, ge=2026, le=9
 
 
 @router.get('/export')
-async def export_annual_reports(request: Request, year: int = Query(2026, ge=2026, le=9999),
+async def export_annual_reports(request: Request, year: int = Query(2026, ge=1900, le=9999),
                                 dataset: str = '', state: str = Query('', max_length=200),
                                 rto: str = Query('', max_length=200),
                                 confirm_all: bool = Query(False, alias='confirmAll')):

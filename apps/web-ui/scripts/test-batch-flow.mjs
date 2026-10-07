@@ -19,11 +19,20 @@ const noop = () => {};
 const runnersRef = {current: [{id: 'stale', source: 'new', status: 'RECONNECTING', currentJobId: null}]};
 const refresh = loadFunction('refreshRunners', 'resolveTerminal', {
   api: {runners: async () => [{id: 'ready', source: 'new', status: 'ONLINE', currentJobId: null}]},
-  runnersRef, setRunners: noop, setError: noop,
+  runnersRef, runnerRefreshRef: {current: null}, setRunners: noop, setError: noop,
 });
 await refresh();
 assert.equal(runnersRef.current[0].id, 'ready',
   'the batch runner reference must update before a React state render');
+let runnerReads = 0;
+const coalescedRefresh = loadFunction('refreshRunners', 'resolveTerminal', {
+  api: {runners: async () => {runnerReads++; await Promise.resolve(); return []; }},
+  runnersRef: {current: []}, runnerRefreshRef: {current: null}, setRunners: noop, setError: noop,
+});
+await Promise.all(Array.from({length: 10}, () => coalescedRefresh()));
+assert.equal(runnerReads, 1, 'ten simultaneous worker completions share one runner refresh');
+await coalescedRefresh();
+assert.equal(runnerReads, 2, 'a later refresh must read current availability again');
 const create = loadFunction("createJob", "submitCaptcha", {
   api: { createJob: async () => created },
   setCreating: noop, setError: noop, setNotice: noop, setCaptcha: noop,
@@ -100,6 +109,7 @@ function waiterContext(getJob) {
     setNotice: noop, setReportsTrigger: noop,
     persistentState: { getItem: () => null, removeItem: noop }, ACTIVE_JOB_STORAGE_KEY: "test",
     refreshRunners: async () => {}, uiSocket: { connected: false },
+    batchRecoveryRef: {current: null}, batchRunningRef: {current: false}, subscribeJob: async () => {},
     setTimeout: (callback) => { scheduled.set(++timerId, callback); return timerId; },
     clearTimeout: (id) => scheduled.delete(id),
   };
@@ -133,6 +143,16 @@ assert.equal(socket.scheduled.size, 1, "unrelated terminal events must not relea
 socket.context.terminalResolverRef.current.get('job-a')({ id: "job-a", status: "NO_DATA" });
 assert.equal((await viaSocket).status, "NO_DATA");
 assert.equal(socket.scheduled.size, 0);
+
+const shared = waiterContext(async () => ({id: 'job-a', status: 'COMPLETED'}));
+shared.context.batchRecoveryRef.current = {version: 3};
+shared.context.batchRunningRef.current = true;
+shared.context.refreshRunners = () => new Promise(() => {});
+let sharedFinished = false;
+const sharedResult = shared.wait('job-a').then(job => {sharedFinished = true; return job;});
+await shared.tick();
+assert.ok(sharedFinished, 'a committed shared-queue case must not wait for a slow runner-list request');
+assert.equal((await sharedResult).status, 'COMPLETED');
 
 const missing = waiterContext(async () => { throw new ApiError(404); });
 const rejected = assert.rejects(missing.wait("job-a"), /backend no longer has this job/);
@@ -345,7 +365,9 @@ const savedRun = {status: 'stopped', year: 2026, queueIndices: [0, 1],
 const continueCalls = [], continueErrors = [];
 const continueContext = {
   batchRecoveryRef: {current: savedRun}, batchRunningRef: {current: false},
-  matrixPlan: savedPlan, currentReportYear: () => 2026,
+  matrixPlan: savedPlan, currentReportYear: () => 2026, isReportYear: year => year >= 1900 && year <= 2026,
+  updateMatrixYear: plan => plan, setRunSettings: noop, setMatrixPlan: noop, selectedWorkerCount: 10,
+  persistentState: {setItem: noop}, RUN_SETTINGS_STORAGE_KEY: "settings", MATRIX_STORAGE_KEY: "matrix",
   matrixOfficeKey: scenario => `${scenario.filters.states[0].toLowerCase()}\u0000${scenario.filters.rtos[0].toLowerCase()}`,
   setError: message => continueErrors.push(message),
   runScenarioQueue: async (queue, options) => continueCalls.push({queue, options}),

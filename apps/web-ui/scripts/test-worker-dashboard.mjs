@@ -5,15 +5,16 @@ import ts from 'typescript';
 import {renderToStaticMarkup} from 'react-dom/server';
 
 const require = createRequire(import.meta.url);
-function loadComponent() {
-  const source = readFileSync(new URL('../src/components/WorkerDashboard.tsx', import.meta.url), 'utf8');
+function loadComponent(file = '../src/components/WorkerDashboard.tsx') {
+  const source = readFileSync(new URL(file, import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, {compilerOptions: {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
   }}).outputText;
   const exports = {};
   const module = {exports};
   new Function('require', 'module', 'exports', compiled)((name) => {
-    if (name === '../batch-timing') return {estimateBatchTiming: () => ({remainingMs: 30_000})};
+    if (name === '../batch-timing') return {estimateBatchTiming: (_samples, _total, _done, _start, _now, activeElapsedMs) =>
+      ({remainingMs: 30_000, reportsPerHour: 240, activeElapsedMs, pace: null})};
     if (name === '../worker-settings') return {
       TARGET_WORKER_COUNT: 10,
       compareRunnerIds: (left, right) => left.localeCompare(right, undefined, {numeric: true}),
@@ -26,10 +27,10 @@ function loadComponent() {
     };
     return require(name);
   }, module, exports);
-  return module.exports.WorkerDashboard;
+  return module.exports;
 }
 
-const WorkerDashboard = loadComponent();
+const {WorkerDashboard} = loadComponent();
 const React = require('react');
 const scenarios = Array.from({length: 4}, (_, index) => ({
   name: 'Office ' + index,
@@ -70,14 +71,16 @@ assert.match(running, /Waiting for result/);
 assert.match(running, /CAPTCHA required/);
 assert.match(running, /Open this worker&#x27;s CAPTCHA/);
 assert.match(running, /25 rows to SQL/);
-assert.match(running, /Stop active workers/);
+assert.match(running, /Stop run/);
+assert.match(running, /aria-label="Crawl speed in cases per minute"/);
+assert.match(running, /<strong>4.0<\/strong><span>cases\/min<\/span>/);
 assert.equal((running.match(/aria-valuenow="50"/g) || []).length, 3);
 
 const offline = render({connection: 'disconnected', status: 'stopped', running: false,
   jobs: {}, captchaJobIds: []});
-assert.match(offline, /0\/10 workers online/);
-assert.match(offline, /Continue saved run \(2 workers\)/);
-assert.match(offline, /Restart with 10 workers/);
+assert.match(offline, /0\/2 workers online/);
+assert.match(offline, /Continue · 2 workers/);
+assert.match(offline, /Restart · 10 workers/);
 assert.match(offline, /Paused/);
 
 const previewScenarios = Array.from({length: 20}, (_, index) => ({
@@ -87,7 +90,7 @@ const projected = render({lanes: [], log: [], jobs: {}, status: 'idle', running:
   scenarios: previewScenarios, progress: {done: 0, total: 0}, captchaJobIds: []});
 assert.match(projected, /#1–#2/);
 assert.match(projected, /#19–#20/);
-assert.match(projected, /Run all with 10 workers/);
+assert.match(projected, /Run all · 10 workers/);
 assert.equal((projected.match(/aria-valuenow="0"/g) || []).length, 11);
 
 const tenLanes = Array.from({length: 10}, (_, index) => ({

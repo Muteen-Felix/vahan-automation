@@ -9,6 +9,7 @@ import type {
   UiHealthSchedule,
   VahanFilters,
 } from "../contracts";
+import type {FilterProfile, ProfileDefinition, ProfileOptions} from '../filter-profiles';
 
 export const API_URL = (import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
 export const ACCESS_TOKEN_STORAGE_KEY = "vahanUiAccessToken";
@@ -42,6 +43,15 @@ export interface BatchQueueSnapshot {
   sessionId: string;
   status: "RUNNING" | "PAUSED";
   tasks: BatchQueueTask[];
+  maxWorkers?: number;
+}
+
+export interface WorkerPoolState {
+  enabled: boolean;
+  desiredCount: number | null;
+  runningCount: number | null;
+  phase: 'ready' | 'applying';
+  workers: {number: number; service: string; running: boolean}[];
 }
 
 export type BatchQueueClaim =
@@ -49,7 +59,9 @@ export type BatchQueueClaim =
   | {type: "waiting"}
   | {type: "done"}
   | {type: "paused"}
-  | {type: "runner_unavailable"};
+  | {type: "runner_unavailable"}
+  | {type: "pool_updating"}
+  | {type: "worker_disabled"; workerCount: number};
 
 export function getAccessToken(): string | null {
   try {
@@ -112,7 +124,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     if (response.status === 401 && path !== "/api/auth/login") notifyAuthenticationRequired();
-    throw new ApiError(response.status, body.detail || `Request failed (${response.status}).`);
+    const detail=Array.isArray(body.detail)?body.detail.map((item:{msg?:string})=>item.msg||'Invalid input').join('; '):body.detail;
+    throw new ApiError(response.status, detail || `Request failed (${response.status}).`);
   }
   return response.json() as Promise<T>;
 }
@@ -140,6 +153,14 @@ async function downloadFile(path: string, fileName?: string): Promise<void> {
 }
 
 export const api = {
+  filterProfiles:()=>request<FilterProfile[]>('/api/filter-profiles'),
+  saveFilterProfile:(name:string,definition:ProfileDefinition,id?:string,revision?:number)=>request<FilterProfile>(
+    `/api/filter-profiles${id?`/${id}`:''}`,{method:id?'PUT':'POST',body:JSON.stringify({name,definition,revision})}),
+  deleteFilterProfile:(id:string,revision:number)=>request(`/api/filter-profiles/${id}?revision=${revision}`,{method:'DELETE'}),
+  filterOptions:(runnerId:string,year:number,context:Record<string,unknown>)=>request<ProfileOptions>('/api/filter-profiles/options',{
+    method:'POST',body:JSON.stringify({runnerId,year,context})}),
+  filterMakers:(runnerId:string,year:number,search:string)=>request<string[]>('/api/filter-profiles/makers',{
+    method:'POST',body:JSON.stringify({runnerId,year,search})}),
   health: () => request<{ status: string }>("/api/health"),
   authStatus: () => request<AuthStatus>("/api/auth/status"),
   login: (username: string, password: string) =>
@@ -159,6 +180,10 @@ export const api = {
   logout,
   downloadFile,
   runners: () => request<Runner[]>("/api/runners"),
+  workerPool: () => request<WorkerPoolState>('/api/worker-pool'),
+  setWorkerPool: (count: number) => request<WorkerPoolState>('/api/worker-pool', {
+    method: 'PUT', body: JSON.stringify({count}),
+  }),
   jobs: () => request<Job[]>("/api/jobs"),
   uiHealthSchedule: () => request<UiHealthSchedule>("/api/ui-health/schedule"),
   updateUiHealthSchedule: (intervalDays: number) =>
@@ -180,9 +205,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ runnerId, filters, scenarioName, sessionId, retryOfJobId, ...update }),
     }),
-  startBatchQueue: (sessionId: string, tasks: {name: string; filters: VahanFilters}[]) =>
+  startBatchQueue: (sessionId: string, tasks: {name: string; filters: VahanFilters}[], maxWorkers = 10) =>
     request<BatchQueueSnapshot>('/api/batch-queue/sessions', {
-      method: 'POST', body: JSON.stringify({sessionId, tasks}),
+      method: 'POST', body: JSON.stringify({sessionId, tasks, maxWorkers}),
     }),
   batchQueue: (sessionId: string) => request<BatchQueueSnapshot>(`/api/batch-queue/sessions/${sessionId}`),
   claimBatchTask: (sessionId: string, runnerId: string) =>
@@ -193,8 +218,8 @@ export const api = {
     request<BatchQueueTask>(`/api/batch-queue/sessions/${sessionId}/tasks/${position}/settle`, {method: 'POST'}),
   pauseBatchQueue: (sessionId: string) =>
     request<{status: string}>(`/api/batch-queue/sessions/${sessionId}/pause`, {method: 'POST'}),
-  resumeBatchQueue: (sessionId: string) =>
-    request<{status: string}>(`/api/batch-queue/sessions/${sessionId}/resume`, {method: 'POST'}),
+  resumeBatchQueue: (sessionId: string, maxWorkers?: number) =>
+    request<{status: string}>(`/api/batch-queue/sessions/${sessionId}/resume`, {method: 'POST', body: JSON.stringify({maxWorkers})}),
   makerUpdates: (year: number) => request<MakerUpdateRun[]>(`/api/maker-updates?year=${year}`),
   makerUpdate: (id: string) => request<MakerUpdateRun>(`/api/maker-updates/${id}`),
   getJob: (jobId: string) => request<Job>(`/api/jobs/${jobId}`),

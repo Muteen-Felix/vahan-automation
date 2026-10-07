@@ -98,8 +98,16 @@ class PostgresJobRepository:
 
     async def assign(self, job):
         async with engine.begin() as connection:
+            from app.worker_pool import assignment_allowed
+            if not await assignment_allowed(connection, job.runner_id):
+                raise ValueError('This Docker worker is stopped or its pool is being updated.')
             row = (await connection.execute(select(db.runners).where(db.runners.c.id == job.runner_id).with_for_update())).mappings().first()
             if not row or not row["connected"] or row["current_job_id"]:
+                return None
+            reserved = await connection.scalar(select(db.runner_planning_leases.c.runner_id).where(
+                db.runner_planning_leases.c.runner_id == job.runner_id,
+                db.runner_planning_leases.c.expires_at > now()))
+            if reserved:
                 return None
             runner = Runner.model_validate(row["payload"])
             if runner.status == RunnerStatus.RECONNECTING:
@@ -246,7 +254,13 @@ class PostgresRunnerRegistry:
 
     async def list(self):
         async with engine.connect() as connection:
-            return [Runner.model_validate(p) for p in (await connection.execute(select(db.runners.c.payload).where(db.runners.c.connected.is_(True)))).scalars()]
+            runners = [Runner.model_validate(p) for p in (await connection.execute(select(db.runners.c.payload).where(db.runners.c.connected.is_(True)))).scalars()]
+            reserved = set((await connection.execute(select(db.runner_planning_leases.c.runner_id).where(
+                db.runner_planning_leases.c.expires_at > now()))).scalars())
+            for runner in runners:
+                if runner.id in reserved:
+                    runner.status = RunnerStatus.BUSY
+            return runners
 
     async def _edit(self, runner_id, operation):
         async with engine.begin() as connection:
@@ -433,6 +447,7 @@ async def recover_after_restart():
         if job.status not in TERMINAL:
             await repository.update_status(job.id, JobStatus.FAILED, error="API restarted; browser context must be restarted. Retry this report explicitly.")
     async with engine.begin() as connection:
+            await connection.execute(delete(db.runner_planning_leases))
             await connection.execute(update(db.runners).values(connected=False, socket_id=None, current_job_id=None))
 
 async def audit(actor, event, payload):

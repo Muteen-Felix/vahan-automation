@@ -39,15 +39,15 @@ export function UserManagement() {
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not update account'); }
   }
   if (!admin) return null;
-  return <section className="data-panel"><h3>User accounts</h3>
+  return <section className="data-panel"><div className="settings-card-heading"><div><h3>User accounts</h3><p>Manage access to the workspace.</p></div><span>{users.length} accounts</span></div>
     <form className="data-user-form" onSubmit={event => void create(event)}>
       <label>Username<input value={username} onChange={e => setUsername(e.target.value)} pattern="[a-zA-Z0-9_.@\-]+" maxLength={128} required /></label>
       <label>Password<input type="password" autoComplete="new-password" minLength={12} maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} required /></label>
       <button className="primary-button" disabled={busy}>{busy ? 'Saving…' : 'Create user'}</button>
     </form>
     {error && <p role="alert">{error}</p>}
-    <div className="data-table"><table><thead><tr><th>Username</th><th>Role</th><th>Status</th><th /></tr></thead>
-      <tbody>{users.map(user => <tr key={user.username}><td>{user.username}</td><td>{user.role}</td><td>{user.active ? 'Active' : 'Disabled'}</td>
+    <div className="data-table"><table><thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>{users.map(user => <tr key={user.username}><td>{user.username}</td><td><span className="settings-user-role">{user.role}</span></td><td><span className="settings-user-status" data-active={user.active}>{user.active ? 'Active' : 'Disabled'}</span></td>
         <td><button className="secondary-button" onClick={() => void toggle(user)}>{user.active ? 'Disable' : 'Enable'}</button></td></tr>)}</tbody></table></div>
   </section>;
 }

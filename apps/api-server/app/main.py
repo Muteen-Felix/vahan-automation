@@ -13,7 +13,7 @@ from app.services import services
 from app.db import engine
 from app.repositories.postgres import recover_after_restart
 from sqlalchemy import text
-import logging, time
+import asyncio, logging, time
 from app.repositories.postgres import audit
 
 
@@ -25,7 +25,13 @@ async def lifespan(_app: FastAPI):
         await connection.execute(text("SELECT 1 FROM users LIMIT 1"))
     await services.users.bootstrap(settings.ui_auth_username, settings.ui_auth_password)
     await recover_after_restart()
+    from app.worker_pool import initialize_pool, reconcile_pool
+    await initialize_pool(reset_phase=True)
+    pool_task = asyncio.create_task(reconcile_pool())
     yield
+    pool_task.cancel()
+    try: await pool_task
+    except asyncio.CancelledError: pass
     await engine.dispose()
 
 

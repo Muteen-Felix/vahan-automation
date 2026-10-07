@@ -338,6 +338,35 @@ async function fetchMakers(search) {
   ).filter(Boolean);
 }
 
+async function fetchAllMakers() {
+  const result = [], seen = new Set();
+  for (let pageNumber = 0; pageNumber < 1000; pageNumber++) {
+    const url = new URL('/analytics/vahanpublicreport/lazy/vehicle-makers', location.origin);
+    url.search = new URLSearchParams({page: String(pageNumber), size: '200', search: ''}).toString();
+    const response = await fetch(url, {credentials: 'same-origin'});
+    if (!response.ok) throw new Error(`Could not load Maker page ${pageNumber + 1} (${response.status}).`);
+    const payload = await response.json();
+    const rows = Array.isArray(payload) ? payload : payload.content || payload.results || payload.data || payload.items || [];
+    if (!rows.length) return result;
+    const labels = rows.map(item => typeof item === 'string' ? item : item.label || item.name || item.value || item.makerName).filter(Boolean);
+    const newLabels = labels.filter(label => !seen.has(normalize(label)));
+    if (!newLabels.length) throw new Error('Maker pagination did not advance. Restrict Maker with Include and retry.');
+    for (const label of newLabels) {seen.add(normalize(label)); result.push(label);}
+    if (result.length > 20_000) throw new Error('Too many Maker values. Restrict Maker with Include.');
+    if (new TextEncoder().encode(JSON.stringify(result)).byteLength > 850_000) {
+      throw new Error('The Maker option list is too large for one preview. Restrict Maker with Include.');
+    }
+    if (payload.last === true || (Number.isInteger(payload.totalPages) && pageNumber + 1 >= payload.totalPages)) return result;
+  }
+  throw new Error('Maker pagination limit reached. Restrict Maker with Include.');
+}
+
+async function filterContext(filters) {
+  await fillVahan(filters);
+  return readOptions(Object.fromEntries(Object.entries(FILTER_SELECTORS)
+    .filter(([field]) => field !== 'makers').map(([field, selector]) => [field, {selector}])));
+}
+
 async function getXAxisOptions(yAxisLabel) {
   if (!yAxisLabel) return [];
   return refreshXAxisOptions(yAxisLabel);
@@ -1001,6 +1030,7 @@ let pendingResult;
 globalThis.vahanDriver = {
   fill: fillVahan, captureCaptcha, refreshCaptcha, readOptions, captureReport, verifyFilters,
   states: getStateOptions, rtos: fetchRtos, xAxis: getXAxisOptions, makers: fetchMakers,
+  allMakers: fetchAllMakers, filterContext,
   prepareResult(timeout, rto) {
     pendingResult = waitForVahanResult(timeout, captureVahanResultBaseline(), rto);
     return true;

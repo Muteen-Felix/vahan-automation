@@ -12,7 +12,11 @@ import { CopyRunErrors } from './components/CopyRunErrors';
 import { jobRunOutcome, readRunErrors, recordRunOutcome, RUN_ERROR_STORAGE_KEY, type RunOutcome } from './run-error-log';
 import { MatrixRunner } from "./components/MatrixRunner";
 import { WorkerDashboard } from "./components/WorkerDashboard";
-import { buildMatrix, currentReportYear, fixedFilters, MATRIX_STORAGE_KEY, readMatrixPlan, updateMatrixYear, type MatrixPlan } from "./matrix-plan";
+import { RunControls } from './components/RunControls';
+import {FilterProfiles} from './components/FilterProfiles';
+import {FILTER_PROFILE_STORAGE_KEY, previewFilterProfile, type FilterProfile} from './filter-profiles';
+import { readRunSettings, RUN_SETTINGS_STORAGE_KEY, type RunSettings } from './run-settings';
+import { buildMatrix, isReportYear, fixedFilters, MATRIX_STORAGE_KEY, readMatrixPlan, updateMatrixYear, type MatrixPlan } from "./matrix-plan";
 import type {
   Acknowledgement,
   CaptchaChallenge,
@@ -42,7 +46,7 @@ const AUTO_RETRY_CHECKPOINT_SIZE = 10;
 const MAX_AUTO_RETRY_ATTEMPTS = 1;
 const JOB_SNAPSHOT_LIMIT = Math.max(32, TARGET_WORKER_COUNT * 3);
 const EMPTY_SCENARIOS: Scenario[] = [];
-type AppSection = "configure" | "reports" | "settings";
+type AppSection = "configure" | "reports" | "settings" | "filters";
 type BatchStatus = "idle" | "running" | "completed" | "completed_with_errors" | "stopped" | "error";
 
 interface BatchLogEntry {
@@ -139,7 +143,7 @@ function validParallelLanes(lanes: unknown, queueIndices: number[]): lanes is Pa
 }
 
 function validSharedLanes(lanes: unknown, queueIndices: number[]): lanes is ParallelLaneRecovery[] {
-  if (!Array.isArray(lanes) || lanes.length !== TARGET_WORKER_COUNT
+  if (!Array.isArray(lanes) || lanes.length < 1 || lanes.length > TARGET_WORKER_COUNT
     || new Set(lanes.map((lane) => lane?.runnerId)).size !== lanes.length) return false;
   const allowed = new Set(queueIndices);
   const claimed = lanes.flatMap((lane) => lane?.indices || []);
@@ -219,11 +223,13 @@ function sectionFromHash(): AppSection {
   const hash = window.location.hash.replace(/^#/, "").split("?")[0];
   if (hash === "reports") return "reports";
   if (hash === "settings") return "settings";
+  if (hash === "filters") return "filters";
   return "configure";
 }
 
 function matrixOfficeKey(scenario: Scenario): string {
-  return `${scenario.filters.states[0]?.trim().toLocaleLowerCase() || ""}\u0000${scenario.filters.rtos[0]?.trim().toLocaleLowerCase() || ""}`;
+  const office = `${scenario.filters.states[0]?.trim().toLocaleLowerCase() || ""}\u0000${scenario.filters.rtos[0]?.trim().toLocaleLowerCase() || ""}`;
+  return scenario.caseKey ? `${office}\u0000${scenario.caseKey}` : office;
 }
 
 function findMatrixOfficeIndex(plan: MatrixPlan, target: Scenario): number {
@@ -250,12 +256,26 @@ export default function App() {
   const scenarios = matrixPlan?.scenarios || EMPTY_SCENARIOS;
   const [matrixLoading, setMatrixLoading] = useState(false);
   const [matrixProgress, setMatrixProgress] = useState("");
+  const [filterProfiles,setFilterProfiles]=useState<FilterProfile[]>([]);
+  const [selectedProfileId,setSelectedProfileId]=useState<string>(()=>{
+    const stored=persistentState.getItem(FILTER_PROFILE_STORAGE_KEY)||'';
+    return /^[0-9a-f-]{36}$/i.test(stored)?stored:'';
+  });
   const [makerUpdate, setMakerUpdate] = useState<MakerUpdateRun | null>(null);
   const [makerUpdateRunning, setMakerUpdateRunning] = useState(false);
   const [makerUpdateProgress, setMakerUpdateProgress] = useState("");
   const [initialBatchRecovery] = useState(readBatchRecovery);
+  const [runSettings, setRunSettings] = useState<RunSettings>(() => {
+    const saved = readRunSettings(matrixPlan?.year, initialBatchRecovery?.lanes?.length || TARGET_WORKER_COUNT);
+    return initialBatchRecovery?.status === 'running'
+      ? {year: initialBatchRecovery.year, workerCount: initialBatchRecovery.lanes?.length || 1} : saved;
+  });
+  const selectedWorkerCount = runSettings.workerCount;
+  const [poolChanging, setPoolChanging] = useState(false);
+  const [poolRunningCount, setPoolRunningCount] = useState<number | null>(null);
   const [batchRunning, setBatchRunning] = useState(initialBatchRecovery?.status === "running");
   const [batchStatus, setBatchStatus] = useState<BatchStatus>(initialBatchRecovery?.status || "idle");
+  const selectedYear = ((batchRunning||batchStatus==='stopped')&&matrixPlan?matrixPlan.year:filterProfiles.find(profile=>profile.id===selectedProfileId)?.definition.report?.year) ?? runSettings.year;
   const [failedAtIndex, setFailedAtIndex] = useState<number | null>(initialBatchRecovery?.failedAtIndex ?? null);
   const [reportsTrigger, setReportsTrigger] = useState(0);
   const [batchProgress, setBatchProgress] = useState(initialBatchRecovery?.progress || { done: 0, total: 0, current: "" });
@@ -295,6 +315,7 @@ export default function App() {
   const batchRecoveryRef = useRef<PersistedBatchRecovery | null>(initialBatchRecovery);
   const sharedQueuePersistedAtRef = useRef(0);
   const sharedQueuePersistedSessionRef = useRef<string | null>(null);
+  const runnerRefreshRef = useRef<Promise<void> | null>(null);
   const batchLogRef = useRef<BatchLogEntry[]>(initialBatchRecovery?.log || []);
   const failedAtIndexRef = useRef<number | null>(initialBatchRecovery?.failedAtIndex ?? null);
   const matrixLoadInFlightRef = useRef(false);
@@ -357,10 +378,13 @@ export default function App() {
   }, [error]);
 
   function writeBatchRecovery(next: PersistedBatchRecovery | null) {
+    const previous = batchRecoveryRef.current;
+    const changed = previous?.status !== next?.status || previous?.year !== next?.year
+      || previous?.lanes?.length !== next?.lanes?.length;
     batchRecoveryRef.current = next;
     // Queue tasks already live durably in PostgreSQL. Limit large dashboard
     // checkpoint writes while workers are finishing cases in parallel.
-    if (next?.version === 3 && next.status === 'running' && !next.stopRequested
+    if (!changed && next?.version === 3 && next.status === 'running' && !next.stopRequested
       && sharedQueuePersistedSessionRef.current === next.sessionId && sharedQueuePersistedAtRef.current
       && Date.now() - sharedQueuePersistedAtRef.current < 10_000) return;
     try {
@@ -380,6 +404,34 @@ export default function App() {
     if (current) writeBatchRecovery({ ...current, ...patch });
   }
 
+  async function ensureDockerWorkers(count: number) {
+    setPoolChanging(true);
+    try {
+      const pool = await api.setWorkerPool(count);
+      setPoolRunningCount(pool.enabled ? pool.runningCount : null);
+      await refreshRunners();
+      return pool;
+    } finally {setPoolChanging(false);}
+  }
+
+  async function configureRun(patch: Partial<RunSettings>) {
+    if (busy || matrixLoading || poolChanging) return;
+    const next = {...runSettings, ...patch};
+    if (!isReportYear(next.year) || !Number.isInteger(next.workerCount)
+      || next.workerCount < 1 || next.workerCount > TARGET_WORKER_COUNT) return;
+    if (patch.workerCount !== undefined) {
+      try {await ensureDockerWorkers(next.workerCount);}
+      catch (reason) {setError(reason instanceof Error ? reason.message : 'Could not update Docker workers.'); return;}
+    }
+    setRunSettings(next);
+    persistentState.setItem(RUN_SETTINGS_STORAGE_KEY, JSON.stringify(next));
+    if (matrixPlan && matrixPlan.year !== next.year) {
+      const plan = updateMatrixYear(matrixPlan, next.year);
+      setMatrixPlan(plan);
+      persistentState.setItem(MATRIX_STORAGE_KEY, JSON.stringify(plan));
+    }
+  }
+
   function updateBatchProgress(next: { done: number; total: number; current: string }) {
     setBatchProgress(next);
     updateBatchRecovery({ progress: next });
@@ -395,19 +447,48 @@ export default function App() {
   useEffect(() => {
     if (!jobRestoreReady) return;
     let current = true;
-    api.makerUpdates(currentReportYear()).then((runs) => {
+    api.makerUpdates(selectedYear).then((runs) => {
       if (current && runs.length) api.makerUpdate(runs[0].id).then((run) => {
         if (current) setMakerUpdate(run);
       }).catch(() => {});
     }).catch(() => {});
     return () => { current = false; };
+  }, [jobRestoreReady, selectedYear]);
+
+  useEffect(() => {
+    if (!jobRestoreReady) return;
+    let active = true;
+    const refresh = () => api.workerPool().then(pool => {
+      if (active) setPoolRunningCount(pool.enabled ? pool.runningCount : null);
+    }).catch(() => {});
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 10_000);
+    return () => {active = false; window.clearInterval(timer);};
   }, [jobRestoreReady]);
+
+  useEffect(() => {
+    if (!batchRunningRef.current && !matrixLoading && matrixPlan && matrixPlan.year !== selectedYear) {
+      const plan = updateMatrixYear(matrixPlan, selectedYear);
+      setMatrixPlan(plan);
+      persistentState.setItem(MATRIX_STORAGE_KEY, JSON.stringify(plan));
+    }
+  }, [matrixPlan, selectedYear, batchRunning, matrixLoading]);
 
   useEffect(() => {
     document.title = view === "settings"
       ? "VAHAN · Settings"
-      : view === "reports" ? "VAHAN · Exported Reports" : "VAHAN · Report Automation";
+      : view === 'filters' ? 'VAHAN · Filters' : view === "reports" ? "VAHAN · Exported Reports" : "VAHAN · Report Automation";
   }, [view]);
+
+  async function refreshFilterProfiles(){
+    const profiles=await api.filterProfiles();
+    if(!Array.isArray(profiles))throw new Error('The filter profile list was invalid. Retry loading profiles.');
+    setFilterProfiles(profiles);
+  }
+  useEffect(()=>{if(jobRestoreReady)void refreshFilterProfiles().catch(reason=>setError(reason.message));},[jobRestoreReady]);
+  function selectFilterProfile(id:string){
+    setSelectedProfileId(id);persistentState.setItem(FILTER_PROFILE_STORAGE_KEY,JSON.stringify(id));
+  }
 
   const onHealthCheckRequested = useCallback((request: UiHealthCheckNowResponse) => {
     const pending = {
@@ -430,10 +511,20 @@ export default function App() {
     setError("");
     setNotice("");
     setMatrixProgress("Connecting to VAHAN before this session…");
-    const year = currentReportYear();
+    const year = filterProfiles.find(profile=>profile.id===selectedProfileId)?.definition.report?.year ?? selectedYear;
     try {
+      if(!selectedProfileId)throw new Error('Choose a saved filter profile. Create and save one on the Filters page first.');
+      const profile=filterProfiles.find(item=>item.id===selectedProfileId);
+      if(!profile)throw new Error('The selected filter profile is unavailable. Reload the saved profiles.');
+      if(!profile.definition.report)throw new Error('Open this profile on the Filters page, choose its reporting year and save it before running.');
+      setMatrixProgress(`Starting ${selectedWorkerCount} Docker workers…`);
+      await ensureDockerWorkers(selectedWorkerCount);
       const runnerId = await pickAvailableRunnerWithRetry();
       if (!runnerId) throw new Error("No online browser runner is available.");
+      if(selectedProfileId){
+        const plan=await previewFilterProfile(selectedProfileId,runnerId,year,setMatrixProgress);
+        persistentState.setItem(MATRIX_STORAGE_KEY,JSON.stringify(plan));setMatrixPlan(plan);return plan;
+      }
       const requestPayload = (request: Record<string, unknown>, message: string) =>
         requestRunnerOptions(uiSocket, runnerId, request, message, setMatrixProgress);
       const requestOptions = async (request: Record<string, unknown>, message: string): Promise<string[]> => {
@@ -493,13 +584,19 @@ export default function App() {
   }
 
   async function refreshRunners() {
-    try {
-      const available = await api.runners();
-      runnersRef.current = available;
-      setRunners(available);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not load the runner list.");
-    }
+    if (runnerRefreshRef.current) return runnerRefreshRef.current;
+    const refresh = (async () => {
+      try {
+        const available = await api.runners();
+        runnersRef.current = available;
+        setRunners(available);
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : "Could not load the runner list.");
+      }
+    })();
+    runnerRefreshRef.current = refresh;
+    try { await refresh; }
+    finally { runnerRefreshRef.current = null; }
   }
 
   function resolveTerminal(finishedJob: Job) {
@@ -527,7 +624,8 @@ export default function App() {
       if (["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(acknowledgement.job.status)) {
         if (persistentState.getItem(ACTIVE_JOB_STORAGE_KEY) === acknowledgement.job.id) persistentState.removeItem(ACTIVE_JOB_STORAGE_KEY);
         setParallelCaptchas((current) => { const next = {...current}; delete next[acknowledgement.job!.id]; return next; });
-        await refreshRunners();
+        if (batchRecoveryRef.current?.version === 3 && batchRunningRef.current) void refreshRunners();
+        else await refreshRunners();
         resolveTerminal(acknowledgement.job);
       }
     }
@@ -536,6 +634,7 @@ export default function App() {
       setCaptcha(challenge);
       setParallelCaptchas((current) => ({...current, [challenge.jobId]: challenge}));
     }
+    return acknowledgement.job;
   }
 
   useEffect(() => {
@@ -602,7 +701,10 @@ export default function App() {
         // Đợi danh sách runner cập nhật xong TRƯỚC KHI resolve — nếu không, batch runner
         // (runScenarioQueue) sẽ đọc runnersRef.current lúc còn stale (runner vẫn hiện "đang
         // bận") và báo nhầm "không còn runner rảnh" ngay sau job đầu tiên.
-        await refreshRunners();
+        // The shared queue checks availability transactionally in SQL. Its next
+        // claim can start immediately after the committed terminal event.
+        if (batchRecoveryRef.current?.version === 3 && batchRunningRef.current) void refreshRunners();
+        else await refreshRunners();
         resolveTerminal(updated);
       }
     };
@@ -840,10 +942,12 @@ export default function App() {
             setCaptcha((current) => current?.jobId === jobId ? null : current);
             setParallelCaptchas((current) => { const next = {...current}; delete next[jobId]; return next; });
             if (["COMPLETED", "NO_DATA"].includes(snapshot.status)) setReportsTrigger((value) => value + 1);
-            await refreshRunners().catch(() => {});
+            if (batchRecoveryRef.current?.version === 3 && batchRunningRef.current) void refreshRunners();
+            else await refreshRunners().catch(() => {});
             finish(snapshot);
             return;
           }
+          // Retry a lost initial subscription as well as missed terminal events.
           if (uiSocket.connected) await subscribeJob(jobId).catch(() => {});
         } catch (reason) {
           if (reason instanceof ApiError && reason.status === 404) {
@@ -854,11 +958,11 @@ export default function App() {
           }
           setNotice("Connection interrupted. Waiting for the current filter's confirmed result.");
         }
-        if (!settled) timer = setTimeout(() => void poll(), 3_000);
+        if (!settled) timer = setTimeout(() => void poll(), uiSocket.connected ? 10_000 : 3_000);
       };
       const latest = jobSnapshotsRef.current.get(jobId) || latestJobRef.current;
       if (latest?.id === jobId && isTerminal(latest)) finish(latest);
-      else timer = setTimeout(() => void poll(), known?.id === jobId ? 3_000 : 0);
+      else timer = setTimeout(() => void poll(), known?.id === jobId ? (uiSocket.connected ? 10_000 : 3_000) : 0);
     });
   }
 
@@ -938,7 +1042,7 @@ export default function App() {
     setMakerUpdateRunning(true);
     setError("");
     try {
-      const year = currentReportYear();
+      const year = selectedYear;
       const previous = await api.makerUpdates(year);
       const active = previous.find((run) => run.status === "RUNNING");
       if (active) {
@@ -999,8 +1103,8 @@ export default function App() {
       setError("The State–RTO office list could not be loaded. Start a new session to refresh it.");
       return;
     }
-    if (resumeState && resumeState.year !== currentReportYear()) {
-      setError("The saved batch belongs to a previous calendar year. Start a new run for the current year.");
+    if (resumeState && resumeState.year !== sourcePlan.year) {
+      setError("The saved batch belongs to another report year. Restore its original year to continue.");
       if (resumeState) {
         batchRunningRef.current = false;
         setBatchRunning(false);
@@ -1009,15 +1113,7 @@ export default function App() {
       }
       return;
     }
-    const activePlan = updateMatrixYear(sourcePlan, currentReportYear());
-    if (activePlan !== sourcePlan) {
-      persistentState.setItem(MATRIX_STORAGE_KEY, JSON.stringify(activePlan));
-      setMatrixPlan(activePlan);
-      batchLogRef.current = [];
-      setBatchLog([]);
-      failedAtIndexRef.current = null;
-      setFailedAtIndex(null);
-    }
+    const activePlan = sourcePlan;
     const activeScenarios = activePlan.scenarios;
     batchLoopStartedRef.current = true;
     batchRunningRef.current = true;
@@ -1355,11 +1451,6 @@ export default function App() {
 
     for (let position = startPosition; position < queueIndices.length; position += 1) {
       if (outcome !== "completed") break;
-      if (currentReportYear() !== activePlan.year) {
-        outcome = "error";
-        setError("Calendar year changed during the batch. Reload the matrix to use the new year.");
-        break;
-      }
       const activeJobId = resumeState && position === startPosition && resumeState.retryIndex == null
         ? resumeState.activeJobId : null;
       if (batchStopRef.current) {
@@ -1540,7 +1631,7 @@ export default function App() {
       setError('The saved shared queue is invalid. Start a new session.');
       return;
     }
-    if (plan.year !== currentReportYear() || (resumeState && resumeState.year !== plan.year)) {
+    if (!isReportYear(plan.year) || (resumeState && resumeState.year !== plan.year)) {
       setError('The saved batch belongs to a different calendar year. Start a new session.');
       return;
     }
@@ -1551,19 +1642,57 @@ export default function App() {
       setError('The saved State/RTO cases no longer match the office list.');
       return;
     }
+    let savedQueue: Awaited<ReturnType<typeof api.batchQueue>> | null = null;
+    let effectiveWorkerCount = selectedWorkerCount;
+    let managedIds: Set<string> | null = null;
+    try {
+      if (resumeState) {
+        savedQueue = await api.batchQueue(resumeState.sessionId);
+        if (resumeState.status === 'running' && savedQueue.status === 'PAUSED') {
+          batchRunningRef.current = false; setBatchRunning(false); setBatchStatus('stopped');
+          writeBatchRecovery({...resumeState, status: 'stopped', stopRequested: false});
+          return;
+        }
+        if (resumeState.status === 'running') effectiveWorkerCount = savedQueue.maxWorkers ?? resumeState.lanes!.length;
+      }
+      const pool = await ensureDockerWorkers(effectiveWorkerCount);
+      if (pool?.enabled) managedIds = new Set(Array.from({length: effectiveWorkerCount}, (_, index) => `playwright-${index + 1}`));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not prepare Docker workers.');
+      return;
+    }
     let lanes: ParallelLaneRecovery[];
     if (resumeState) {
       lanes = resumeState.lanes!.map((lane) => ({...lane, indices: [...lane.indices], retryQueueIndices: [...lane.retryQueueIndices]}));
+      if (managedIds) {
+        const saved = new Map(lanes.map(lane => [lane.runnerId, lane]));
+        lanes = [...managedIds].map(runnerId => saved.get(runnerId) || {
+          runnerId, indices: [], nextPosition: 0, currentIndex: null, activeJobId: null,
+          lastJobId: null, retryQueueIndices: [], retryIndex: null, lastRetryCheckpoint: 0, currentFilterStartedAt: null,
+        });
+      } else if (effectiveWorkerCount !== lanes.length) {
+        await refreshRunners();
+        const available = runnersRef.current.filter(runner => runner.source === 'new'
+          && runner.status === 'ONLINE' && !runner.currentJobId).sort((a, b) => compareRunnerIds(a.id, b.id));
+        if (available.length < effectiveWorkerCount) {
+          setError(`${effectiveWorkerCount} idle workers are required; ${available.length} available.`);
+          return;
+        }
+        lanes = available.slice(0, effectiveWorkerCount).map(runner => ({
+          runnerId: runner.id, indices: [], nextPosition: 0, currentIndex: null, activeJobId: null,
+          lastJobId: null, retryQueueIndices: [], retryIndex: null, lastRetryCheckpoint: 0, currentFilterStartedAt: null,
+        }));
+      }
     } else {
       await refreshRunners();
       const available = runnersRef.current.filter((runner) => (runner.source || 'new') === 'new'
-        && runner.status === 'ONLINE' && !runner.currentJobId)
+        && runner.status === 'ONLINE' && !runner.currentJobId && (!managedIds || managedIds.has(runner.id)))
         .sort((left, right) => compareRunnerIds(left.id, right.id));
-      if (available.length < TARGET_WORKER_COUNT) {
-        setError(`${TARGET_WORKER_COUNT} online, idle browser workers are required to start a full run. ${available.length} available now.`);
+      if (available.length < effectiveWorkerCount) {
+        setError(`${effectiveWorkerCount} online, idle browser workers are required to start a full run. ${available.length} available now.`);
         return;
       }
-      lanes = available.slice(0, TARGET_WORKER_COUNT).map((runner) => ({
+      lanes = available.slice(0, effectiveWorkerCount).map((runner) => ({
         runnerId: runner.id, indices: [], nextPosition: 0, currentIndex: null,
         activeJobId: null, lastJobId: null, retryQueueIndices: [], retryIndex: null,
         lastRetryCheckpoint: 0, currentFilterStartedAt: null,
@@ -1578,12 +1707,13 @@ export default function App() {
     let queueTasks: BatchQueueTask[];
     try {
       const snapshot = resumeState
-        ? await api.batchQueue(sessionId)
+        ? savedQueue!
         : await api.startBatchQueue(sessionId, queueIndices.map((index) => ({
             name: plan.scenarios[index].name, filters: plan.scenarios[index].filters,
-          })));
+          })), lanes.length);
       if (snapshot.tasks.length !== queueIndices.length) throw new Error('The saved queue case count changed.');
-      if (snapshot.status === 'PAUSED') await api.resumeBatchQueue(sessionId);
+      if (snapshot.status === 'PAUSED') await api.resumeBatchQueue(sessionId, lanes.length);
+      else if (snapshot.maxWorkers !== undefined && snapshot.maxWorkers !== lanes.length) throw new Error('Saved worker count does not match the queue.');
       queueTasks = snapshot.tasks;
     } catch (reason) {
       batchRunningRef.current = false;
@@ -1591,6 +1721,8 @@ export default function App() {
       setError(reason instanceof Error ? reason.message : 'Could not initialise the shared queue.');
       return;
     }
+    setNotice('');
+    setRunSettings(current => ({...current, workerCount: effectiveWorkerCount}));
 
     const startedAt = resumeState?.startedAt || new Date().toISOString();
     let timings = [...(resumeState?.timings || [])];
@@ -1704,23 +1836,37 @@ export default function App() {
 
     let lastQueueReconcileAt = 0;
     async function runLane(lane: ParallelLaneRecovery): Promise<'done' | 'stopped' | 'error'> {
+      let connectionFailures = 0;
       while (!batchStopRef.current) {
-        if (currentReportYear() !== plan.year) {
-          setError('Calendar year changed during the batch.');
-          return 'error';
-        }
         let claimed: Awaited<ReturnType<typeof api.claimBatchTask>>;
         try {
           claimed = await api.claimBatchTask(sessionId, lane.runnerId);
         } catch (reason) {
           // A committed claim may have lost its response; the next claim returns
           // the same active job for this runner rather than assigning a second one.
-          setNotice(`Worker ${lane.runnerId} is reconnecting to the shared queue.`);
-          await sleep(1500);
+          if (reason instanceof ApiError && [400, 403, 404, 409, 422].includes(reason.status)) {
+            setError(`Worker ${lane.runnerId}: ${reason.message}`);
+            return 'error';
+          }
+          if (++connectionFailures >= 3) setNotice(`Connection to the queue was interrupted: ${reason instanceof Error ? reason.message : String(reason)}`);
+          await sleep(Math.min(5_000, 1000 * connectionFailures));
           continue;
         }
+        if (connectionFailures) setNotice('');
+        connectionFailures = 0;
         if (claimed.type === 'done') return 'done';
         if (claimed.type === 'paused') return 'stopped';
+        if (claimed.type === 'worker_disabled') {
+          lanes = lanes.filter(item => {
+            const number = /^playwright-(\d+)$/.exec(item.runnerId);
+            return !number || Number(number[1]) <= claimed.workerCount;
+          });
+          setNotice('');
+          setRunSettings(current => ({...current, workerCount: claimed.workerCount}));
+          publish();
+          return 'done';
+        }
+        if (claimed.type === 'pool_updating') {await sleep(1500); continue;}
         if (claimed.type === 'waiting' || claimed.type === 'runner_unavailable') {
           await sleep(1500);
           if (claimed.type === 'waiting' && Date.now() - lastQueueReconcileAt >= 30_000) {
@@ -1743,10 +1889,10 @@ export default function App() {
         const index = queueIndices[claimed.task.position];
         const startedAtMs = Date.now();
         try {
-          const existing = await api.getJob(claimed.jobId);
+          const existing = await subscribeJob(claimed.jobId).catch(() => null)
+            || await api.getJob(claimed.jobId);
           rememberJob(existing);
           setJob(existing);
-          await subscribeJob(claimed.jobId).catch(() => {});
           if (batchStopRef.current) await api.cancelJob(claimed.jobId).catch(() => {});
           const result = await waitForExistingJob(claimed.jobId);
           let settled: BatchQueueTask | null = null;
@@ -1804,7 +1950,7 @@ export default function App() {
       setError('The saved parallel-worker session is invalid. Start a new session.');
       return;
     }
-    if (plan.year !== currentReportYear() || (resumeState && resumeState.year !== plan.year)) {
+    if (!isReportYear(plan.year) || (resumeState && resumeState.year !== plan.year)) {
       setError('The saved batch belongs to a different calendar year. Start a new session.');
       return;
     }
@@ -1818,6 +1964,8 @@ export default function App() {
       setError('The State/RTO list changed since this session was saved. Start a new run.');
       return;
     }
+    try {await ensureDockerWorkers(resumeState?.lanes?.length || selectedWorkerCount);}
+    catch (reason) {setError(reason instanceof Error ? reason.message : 'Could not prepare Docker workers.'); return;}
     let lanes: ParallelLaneRecovery[];
     if (resumeState) {
       lanes = resumeState.lanes!.map((lane) => ({...lane, indices: [...lane.indices],
@@ -1827,11 +1975,11 @@ export default function App() {
       const available = runnersRef.current.filter((runner) => (runner.source || 'new') === 'new'
         && runner.status === 'ONLINE' && !runner.currentJobId)
         .sort((left, right) => compareRunnerIds(left.id, right.id));
-      if (available.length < TARGET_WORKER_COUNT) {
-        setError(`${TARGET_WORKER_COUNT} online, idle browser workers are required to start a full run. ${available.length} available now.`);
+      if (available.length < selectedWorkerCount) {
+        setError(`${selectedWorkerCount} online, idle browser workers are required to start a full run. ${available.length} available now.`);
         return;
       }
-      lanes = splitParallelLanes(queueIndices, available.slice(0, TARGET_WORKER_COUNT).map((runner) => runner.id));
+      lanes = splitParallelLanes(queueIndices, available.slice(0, selectedWorkerCount).map((runner) => runner.id));
       batchLogRef.current = [];
       setBatchLog([]);
       failedAtIndexRef.current = null;
@@ -2086,10 +2234,6 @@ export default function App() {
         && !(await checkpoint(lane))) return 'stopped';
       for (let position = lane.nextPosition; position < lane.indices.length; position += 1) {
         if (batchStopRef.current) return 'stopped';
-        if (currentReportYear() !== plan.year) {
-          setError('Calendar year changed during the batch. Start a new session.');
-          return 'error';
-        }
         const index = lane.indices[position];
         const scenario = plan.scenarios[index];
         const started = lane.currentFilterStartedAt || Date.now();
@@ -2217,11 +2361,17 @@ export default function App() {
     const recovery = batchRecoveryRef.current;
     if (!recovery || recovery.status !== "stopped") return;
     if (batchRunningRef.current) return;
-    const plan = matrixPlan;
-    if (!plan || recovery.year !== currentReportYear() || plan.year !== recovery.year) {
+    const plan = matrixPlan ? updateMatrixYear(matrixPlan, recovery.year) : null;
+    if (!plan || !isReportYear(recovery.year)) {
       setError("The saved batch belongs to a different report year. Start a new session with the current office list.");
       return;
     }
+    const restoredSettings = {year: recovery.year, workerCount: recovery.version === 3
+      ? selectedWorkerCount : recovery.lanes?.length || 1};
+    setRunSettings(restoredSettings);
+    persistentState.setItem(RUN_SETTINGS_STORAGE_KEY, JSON.stringify(restoredSettings));
+    setMatrixPlan(plan);
+    persistentState.setItem(MATRIX_STORAGE_KEY, JSON.stringify(plan));
     if (recovery.progress.total !== recovery.queueIndices.length
       || recovery.queueIndices.some((index) => !plan.scenarios[index])) {
       setError("The saved batch no longer matches the available offices. Start a new session with the current office list.");
@@ -2256,10 +2406,12 @@ export default function App() {
     if (batchRunningRef.current || creating || (latestJobRef.current && !["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(latestJobRef.current.status))) {
       throw new Error('Stop the current report before continuing missing data.');
     }
-    if (context.year !== currentReportYear()) throw new Error('Only the current calendar year can be continued.');
+    if (!isReportYear(context.year)) throw new Error('Choose a supported calendar year.');
     const loadedPlan = matrixPlan || await prepareMatrix();
     if (!loadedPlan) throw new Error('Could not load the State–RTO office list. Check the browser runner connection.');
     const plan = updateMatrixYear(loadedPlan, context.year);
+    setRunSettings(current => ({...current, year: context.year}));
+    persistentState.setItem(RUN_SETTINGS_STORAGE_KEY, JSON.stringify({...runSettings, year: context.year}));
     persistentState.setItem(MATRIX_STORAGE_KEY, JSON.stringify(plan));
     setMatrixPlan(plan);
     const coverage = await loadReportCoverage(context, plan);
@@ -2324,7 +2476,7 @@ export default function App() {
     const failedIndices = batchLogRef.current.filter((entry) => entry.status === "error")
       .map((entry) => entry.index);
     if (!failedIndices.length) return;
-    if (!matrixPlan || !recovery || recovery.year !== currentReportYear()
+    if (!matrixPlan || !recovery || recovery.year !== matrixPlan.year
       || failedIndices.some((index) => !matrixPlan.scenarios[index])) {
       setError("The original failed cases could not be restored. Review the saved session before retrying.");
       return;
@@ -2382,10 +2534,10 @@ export default function App() {
     }
   }
 
-  const busy = creating || batchRunning || makerUpdateRunning || Boolean(job && !["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(job.status));
+  const busy = creating || batchRunning || makerUpdateRunning || poolChanging || Boolean(job && !["COMPLETED", "NO_DATA", "FAILED", "CANCELLED"].includes(job.status));
   const parallelLanes = batchRecoveryRef.current?.version === 2 || batchRecoveryRef.current?.version === 3
     ? batchRecoveryRef.current.lanes || [] : [];
-  const parallelMode = parallelLanes.length >= 2;
+  const parallelMode = parallelLanes.length >= 1;
   const displayParallelLanes = parallelMode
     ? [...parallelLanes].sort((left, right) => compareRunnerIds(left.runnerId, right.runnerId)) : [];
   const parallelJobs = displayParallelLanes.map((lane) => jobSnapshots[lane.activeJobId || lane.lastJobId || ''] || null);
@@ -2400,8 +2552,6 @@ export default function App() {
     })
     : captcha ? [{runnerId: job?.runnerId || 'current-report', workerLabel: 'Current report',
       office: job?.scenarioName || '', challenge: captcha}] : [];
-  const hasCaptcha = captchaItems.length > 0;
-
   function openCaptchaForWorker(runnerId: string) {
     const item = captchaItems.find((candidate) => candidate.runnerId === runnerId);
     if (!item) return;
@@ -2422,6 +2572,7 @@ export default function App() {
           <a className={activeSection === "configure" ? "active" : undefined} aria-current={activeSection === "configure" ? "page" : undefined} href="#configure">Create Report</a>
           <a className={activeSection === "reports" ? "active" : undefined} aria-current={activeSection === "reports" ? "page" : undefined} href="#reports">Exported Reports</a>
           <a className={activeSection === "settings" ? "active" : undefined} aria-current={activeSection === "settings" ? "page" : undefined} href="#settings">Settings</a>
+          <a className={activeSection === "filters" ? "active" : undefined} aria-current={activeSection === "filters" ? "page" : undefined} href="#filters">Filters</a>
         </nav>
         <div className="header-actions">
           <ConnectionBanner backend={connection} runners={runners.length} />
@@ -2432,10 +2583,14 @@ export default function App() {
       <div className="app-layout">
         <div className="app-main">
           <StateSyncStatus />
-          {view === "settings" ? (
+          {view === 'filters' ? <FilterProfiles profiles={filterProfiles} runners={runners} year={selectedYear} busy={busy||matrixLoading}
+            onSaved={refreshFilterProfiles} onSelect={(id,plan)=>{
+              selectFilterProfile(id);if(batchStatus!=='stopped'){setMatrixPlan(plan);persistentState.setItem(MATRIX_STORAGE_KEY,JSON.stringify(plan));}
+              window.location.hash='configure';
+            }} /> : view === "settings" ? (
             <main className="page-content settings-page" id="settings">
               <div className="section-intro settings-intro">
-                <h2>Settings</h2>
+                <div><h2>Settings</h2><p>Manage accounts and VAHAN interface checks.</p></div>
               </div>
               <UserManagement />
 
@@ -2453,12 +2608,9 @@ export default function App() {
             <main className="page-content exported-reports-page" id="reports">
               {error && <div className="global-error" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
               {notice && <div className="global-notice" role="status">{notice}<button onClick={() => setNotice("")}>×</button></div>}
-              <AnnualReports refreshTrigger={reportsTrigger} coverageControls={{plan: matrixPlan, busy,
+              <AnnualReports initialYear={selectedYear} refreshTrigger={reportsTrigger} coverageControls={{plan: matrixPlan, busy,
                 running: batchRunning, loadingMatrix: matrixLoading, status: batchStatus, current: batchProgress.current,
                 onContinue: continueUncoveredReports, onStop: stopBatch}} />
-              {hasCaptcha && <CaptchaInbox items={captchaItems} selectedJobId={selectedCaptchaJobId}
-                onSelect={setSelectedCaptchaJobId} submitting={submittingCaptcha} refreshing={refreshingCaptcha}
-                onSubmit={submitCaptcha} onRefresh={refreshCaptcha} />}
             </main>
           ) : (
               <main className="page-content report-page-content">
@@ -2466,18 +2618,26 @@ export default function App() {
                   <div className="report-intro-copy">
                     <p className="report-eyebrow"><span aria-hidden="true" />REPORTING WORKSPACE</p>
                     <h2>Create Report</h2>
-                    <p>Run the standard VAHAN Maker report across State and RTO offices.</p>
+                    <p>Run the VAHAN Maker report across State and RTO offices.</p>
                   </div>
                   <div className="report-period-summary">
                     <span className="report-period-icon" aria-hidden="true">FY</span>
-                    <span><small>REPORTING PERIOD</small><strong>Calendar year {currentReportYear()}</strong></span>
+                    <span><small>REPORTING PERIOD</small><strong>Calendar year {selectedYear}</strong></span>
                   </div>
                 </div>
 
                 {error && <div className="global-error" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
                 {notice && <div className="global-notice" role="status">{notice}<button onClick={() => setNotice("")}>×</button></div>}
 
+                <RunControls workerCount={selectedWorkerCount} disabled={busy || matrixLoading}
+                  applying={poolChanging} runningContainers={poolRunningCount}
+                  profileId={selectedProfileId} profiles={filterProfiles} onProfile={selectFilterProfile}
+                  onLoadCases={()=>void prepareMatrix()} savedRun={batchStatus==='stopped'}
+                  onWorkers={workerCount => configureRun({workerCount})} />
+                {batchStatus==='stopped'&&matrixPlan&&(matrixPlan.profileId||'')!==selectedProfileId&&<p className="profile-saved-run-note">Continue keeps the saved run's filters. Restart uses the selected profile.</p>}
+
                 <WorkerDashboard
+                  workerCount={selectedWorkerCount}
                   runners={runners}
                   connection={connection}
                   scenarios={scenarios}
@@ -2503,7 +2663,7 @@ export default function App() {
                   onStop={stopBatch}
                 />
 
-                {hasCaptcha && <CaptchaInbox items={captchaItems} selectedJobId={selectedCaptchaJobId}
+                {captchaItems.length > 0 && <CaptchaInbox items={captchaItems} selectedJobId={selectedCaptchaJobId} taskRunning={busy}
                   onSelect={setSelectedCaptchaJobId} submitting={submittingCaptcha} refreshing={refreshingCaptcha}
                   onSubmit={submitCaptcha} onRefresh={refreshCaptcha} />}
 
@@ -2531,7 +2691,8 @@ export default function App() {
                       <div className="maker-update-heading">
                         <div><h3>Update Maker</h3><p>Quét Maker toàn State; chỉ dò và cập nhật RTO của Maker có số liệu thay đổi.</p></div>
                         <div className="maker-update-actions">
-                          <button type="button" onClick={() => void startMakerUpdate()} disabled={busy}>Update</button>
+                          <button type="button" onClick={() => void startMakerUpdate()} disabled={busy||Boolean(selectedProfileId)}
+                            title={selectedProfileId?'Incremental Maker update uses the standard profile.':'Update changed Makers'}>Update</button>
                           {makerUpdateRunning && <button type="button" onClick={() => void stopMakerUpdate()}>Dừng</button>}
                         </div>
                       </div>
@@ -2549,7 +2710,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <section className="activity-section" id="activity" aria-labelledby="activity-title">
+                {(parallelJobs.some(Boolean) || job || runErrors.length > 0) && <section className="activity-section" id="activity" aria-labelledby="activity-title">
                   <div className="activity-section-header">
                     <div><p className="worker-dashboard-eyebrow">LIVE JOBS</p><h2 id="activity-title">Worker activity</h2>
                       <p>Current stage and result for each browser worker.</p></div>
@@ -2564,7 +2725,7 @@ export default function App() {
                     : <div className="activity-empty" data-running={batchRunning}>{batchRunning
                       ? "Waiting for the next worker update…"
                       : "Job activity will appear here when a session starts."}</div>}
-                </section>
+                </section>}
 
               </main>
           )}

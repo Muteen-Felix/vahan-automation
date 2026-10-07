@@ -4,7 +4,8 @@ import json
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import cast, func, literal, select
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.db import engine, schema as db
 from app.repositories.annual_reports import clean, context_year, dataset
@@ -19,7 +20,7 @@ class PlannedReport(BaseModel):
 
 
 class CoverageQuery(BaseModel):
-    year: int = Field(ge=2026, le=9999)
+    year: int = Field(ge=1900, le=9999)
     dataset: str = Field(default='', max_length=64)
     state: str = Field(default='', max_length=200)
     rto: str = Field(default='', max_length=200)
@@ -64,39 +65,48 @@ async def report_coverage(command: CoverageQuery, request: Request):
                 raise HTTPException(404, 'Report filters not found.')
         # Shared coverage includes committed imports by every account. Job control
         # and the active-run guard remain attached to the requesting account.
-        imports = (await connection.execute(select(ledger).where(ledger.c.scope_key == selected)
-            .order_by(ledger.c.imported_at, ledger.c.source_key))).mappings().all()
-        job_ids = [item['job_id'] for item in imports if item['job_id']]
-        jobs = (await connection.execute(select(db.jobs).where(db.jobs.c.id.in_(job_ids))
-            .order_by(db.jobs.c.created_at, db.jobs.c.id))).mappings().all()
+        # Coverage needs filters and committed evidence, not browser images,
+        # verification proofs or every historical attempt's full job payload.
+        # Reduce repeated imports in SQL before decoding JSON in the API loop.
+        empty_warnings = literal([], type_=JSONB)
+        imports = (await connection.execute(select(
+            db.jobs.c.filters,
+            func.max(ledger.c.imported_at).label('imported_at'),
+            func.bool_or(ledger.c.status != 'no-data').label('with_data'),
+        ).select_from(ledger.join(db.jobs, ledger.c.job_id == db.jobs.c.id)).where(
+            ledger.c.scope_key == selected,
+            cast(ledger.c.years, JSONB).contains([command.year]),
+            ledger.c.status.in_(['added', 'updated', 'unchanged', 'no-data']),
+            func.coalesce(ledger.c.details['issueCount'].as_integer(), 0) == 0,
+            func.coalesce(ledger.c.details['warnings'], empty_warnings) == empty_warnings,
+            (ledger.c.status == 'no-data')
+            | (func.coalesce(ledger.c.details['newCells'].as_integer(), 0) > 0)
+            | (func.coalesce(ledger.c.details['duplicates'].as_integer(), 0) > 0)
+            | (func.coalesce(ledger.c.details['replacedCells'].as_integer(), 0) > 0),
+        ).group_by(db.jobs.c.filters))).mappings().all()
         active = await connection.scalar(select(db.jobs.c.id).where(
             db.jobs.c.owner_username == username, db.jobs.c.status.not_in(TERMINAL)).limit(1))
-    job_by_id = {job['id']: job for job in jobs}
     planned, seen = [], set()
     for index, scenario in enumerate(command.scenarios):
         key = office(scenario.filters)
         if not key or context_year(scenario.filters) != command.year:
             raise HTTPException(400, 'Each report must select one State, one RTO and the requested year.')
-        if key in seen:
-            raise HTTPException(400, 'The office list contains duplicate reports.')
-        seen.add(key)
+        identity = filter_key(scenario.filters)
+        if identity in seen:
+            raise HTTPException(400, 'The office list contains duplicate filter combinations.')
+        seen.add(identity)
+        if dataset(username, scenario.filters)['id'] != selected:
+            continue
         if command.state.strip().upper() not in key[0] or command.rto.strip().upper() not in key[1]:
             continue
         planned.append((index, scenario, normalized(scenario.filters)))
     successful = {}
     for item in imports:
-        job = job_by_id.get(item['job_id'])
-        if not job or command.year not in item['years'] or item['status'] not in {'added', 'unchanged', 'no-data'}:
-            continue
-        details = item['details']
-        if details.get('issueCount') or details.get('warnings'):
-            continue
-        if item['status'] != 'no-data' and not any(details.get(k, 0) for k in ('newCells', 'duplicates')):
-            continue
-        key = filter_key(job['filters'])
+        key = filter_key(item['filters'])
         previous = successful.get(key)
         # Existing saved values remain covered even if a later attempt fails or returns no data.
-        successful[key] = (item, bool(previous and previous[1]) or item['status'] != 'no-data')
+        latest_item = previous[0] if previous and previous[0]['imported_at'] > item['imported_at'] else item
+        successful[key] = (latest_item, bool(previous and previous[1]) or item['with_data'])
     covered, missing, with_data, no_data, through = [], [], 0, 0, 0
     gap = False
     latest = None
@@ -114,11 +124,11 @@ async def report_coverage(command: CoverageQuery, request: Request):
         else:
             gap = True
             missing.append(index)
-    compatible = bool(own_scope) and selected == own_scope['id'] and all(
+    compatible = bool(planned) and all(
         dataset(username, scenario.filters)['id'] == selected for _, scenario, _ in planned)
-    can_continue = compatible and command.year == datetime.now().year and not active
+    can_continue = compatible and command.year <= datetime.now().year and not active
     reason = ('A report is already running for this account.' if active else
-              'Run continuation is available for the current calendar year only.' if command.year != datetime.now().year else
+              'Future report years cannot be crawled.' if command.year > datetime.now().year else
               'These report filters do not match the State–RTO matrix.' if not compatible else '')
     missing_set = set(missing)
     first_missing = next((describe(i, scenario) for i, scenario, _ in planned if i in missing_set), None)

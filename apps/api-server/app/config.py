@@ -71,6 +71,7 @@ class Settings:
     max_excel_upload_bytes: int = 50 * 1024 * 1024  # 50 MB
     database_url: str = "postgresql+asyncpg://vahan@127.0.0.1:5432/vahan"
     browser_state_key: str = ""
+    worker_controller_url: str = ""
 
     @property
     def ui_auth_configured(self) -> bool:
@@ -108,6 +109,7 @@ class Settings:
         return cls(
             database_url=os.getenv("DATABASE_URL", "postgresql+asyncpg://vahan@127.0.0.1:5432/vahan"),
             browser_state_key=os.getenv("VAHAN_BROWSER_STATE_KEY", ""),
+            worker_controller_url=os.getenv('VAHAN_WORKER_CONTROLLER_URL', ''),
             host=os.getenv("VAHAN_API_HOST", "127.0.0.1"),
             port=int(os.getenv("VAHAN_API_PORT", "8000")),
             debug=_as_bool(os.getenv("VAHAN_API_DEBUG")),

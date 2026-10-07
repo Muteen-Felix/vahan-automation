@@ -1,5 +1,6 @@
 """Durable shared queue for independent State/RTO report cases."""
 from datetime import datetime, timezone
+import re
 from uuid import UUID
 
 from sqlalchemy import func, insert, or_, select, update
@@ -29,11 +30,15 @@ def task_document(row):
 
 
 class BatchQueueRepository:
-    async def start(self, session_id: UUID, owner: str, tasks: list):
-        office_keys = [(task.filters.states[0].strip().casefold(), task.filters.rtos[0].strip().casefold())
-                       for task in tasks if len(task.filters.states) == 1 and len(task.filters.rtos) == 1]
+    async def start(self, session_id: UUID, owner: str, tasks: list, max_workers: int = MAX_ACTIVE_WORKERS):
+        if isinstance(max_workers, bool) or not isinstance(max_workers, int) or not 1 <= max_workers <= MAX_ACTIVE_WORKERS:
+            raise ValueError('Choose between 1 and 10 workers.')
+        from app.models.filter_profile import case_key
+        office_keys = [case_key(task.filters.model_dump(mode='json', by_alias=True))
+                      for task in tasks if len(task.filters.states) == 1 and len(task.filters.rtos) == 1
+                      and task.filters.states[0].strip() and task.filters.rtos[0].strip()]
         if len(office_keys) != len(tasks) or len(set(office_keys)) != len(tasks):
-            raise ValueError('Every queue case needs a distinct State and RTO.')
+            raise ValueError('Every queue case needs one State, one RTO and a distinct filter combination.')
         session_key = str(session_id)
         async with engine.begin() as connection:
             await connection.execute(pg_insert(db.report_sessions).values(
@@ -45,7 +50,7 @@ class BatchQueueRepository:
             existing = (await connection.execute(select(db.batch_queue_sessions).where(
                 db.batch_queue_sessions.c.session_id == session_key).with_for_update())).mappings().first()
             if existing:
-                if existing['owner_username'] != owner or existing['total'] != len(tasks):
+                if existing['owner_username'] != owner or existing['total'] != len(tasks) or existing['max_workers'] != max_workers:
                     raise ValueError('Saved queue has a different owner or case count.')
                 originals = (await connection.execute(select(db.batch_queue_tasks.c.position,
                     db.batch_queue_tasks.c.scenario_name, db.batch_queue_tasks.c.filters).where(
@@ -57,7 +62,7 @@ class BatchQueueRepository:
                 return
             await connection.execute(insert(db.batch_queue_sessions).values(
                 session_id=session_key, owner_username=owner, status='RUNNING',
-                total=len(tasks), created_at=now(), updated_at=now()))
+                total=len(tasks), max_workers=max_workers, created_at=now(), updated_at=now()))
             await connection.execute(insert(db.batch_queue_tasks), [{
                 'session_id': session_key, 'position': position, 'scenario_name': task.name,
                 'filters': task.filters.model_dump(mode='json', by_alias=True),
@@ -133,7 +138,7 @@ class BatchQueueRepository:
                 db.batch_queue_tasks.c.position).with_for_update())).mappings().all()
             rows = await self._reconcile_successful_retries(connection, rows)
             tasks = [task_document(await self._settle(connection, row)) for row in rows]
-        return {'sessionId': str(session_id), 'status': session['status'], 'tasks': tasks}
+        return {'sessionId': str(session_id), 'status': session['status'], 'maxWorkers': session['max_workers'], 'tasks': tasks}
 
     async def settle(self, session_id: UUID, owner: str, position: int):
         async with engine.begin() as connection:
@@ -145,14 +150,36 @@ class BatchQueueRepository:
                 raise LookupError('Queue case not found.')
             return task_document(await self._settle(connection, row))
 
-    async def set_status(self, session_id: UUID, owner: str, status: str):
+    async def set_status(self, session_id: UUID, owner: str, status: str, max_workers: int | None = None):
         async with engine.begin() as connection:
-            await self._session(connection, session_id, owner, lock=True)
+            session = await self._session(connection, session_id, owner, lock=True)
+            values = dict(status=status, updated_at=now())
+            if max_workers is not None and max_workers != session['max_workers']:
+                if not 1 <= max_workers <= MAX_ACTIVE_WORKERS or session['status'] != 'PAUSED':
+                    raise ValueError('Pause the queue before changing its worker count.')
+                processing = (await connection.execute(select(db.batch_queue_tasks).where(
+                    db.batch_queue_tasks.c.session_id == str(session_id), db.batch_queue_tasks.c.status == 'PROCESSING')
+                    .with_for_update())).mappings().all()
+                for task in processing:
+                    await self._settle(connection, task)
+                active = await connection.scalar(select(func.count()).select_from(db.batch_queue_tasks).where(
+                    db.batch_queue_tasks.c.session_id == str(session_id), db.batch_queue_tasks.c.status == 'PROCESSING'))
+                if active:
+                    raise ValueError('Wait for active cases to stop before changing workers.')
+                values['max_workers'] = max_workers
             await connection.execute(update(db.batch_queue_sessions).where(
-                db.batch_queue_sessions.c.session_id == str(session_id)).values(status=status, updated_at=now()))
+                db.batch_queue_sessions.c.session_id == str(session_id)).values(**values))
 
     async def claim(self, session_id: UUID, owner: str, runner_id: str):
         async with engine.begin() as connection:
+            preliminary = await self._session(connection, session_id, owner)
+            if preliminary['status'] != 'RUNNING': return {'type': 'paused'}
+            from app.worker_pool import assignment_status
+            allocation, count = await assignment_status(connection, runner_id)
+            if allocation == 'updating': return {'type': 'pool_updating'}
+            number = re.fullmatch(r'playwright-(\d+)', runner_id)
+            if allocation == 'disabled' or (number and int(number[1]) > preliminary['max_workers']):
+                return {'type': 'worker_disabled', 'workerCount': min(preliminary['max_workers'], count or 10)}
             runner_row = (await connection.execute(select(db.runners).where(
                 db.runners.c.id == runner_id).with_for_update())).mappings().first()
             await connection.execute(select(db.report_sessions.c.id).where(
@@ -162,6 +189,9 @@ class BatchQueueRepository:
                 return {'type': 'paused'}
             if not runner_row or not runner_row['connected']:
                 return {'type': 'runner_unavailable'}
+            if await connection.scalar(select(db.runner_planning_leases.c.runner_id).where(
+                db.runner_planning_leases.c.runner_id == runner_id, db.runner_planning_leases.c.expires_at > now())):
+                return {'type': 'waiting'}
             runner = Runner.model_validate(runner_row['payload'])
             if runner.current_job_id:
                 existing = (await connection.execute(select(db.batch_queue_tasks).where(
@@ -177,22 +207,23 @@ class BatchQueueRepository:
             active_count = await connection.scalar(select(func.count()).select_from(db.batch_queue_tasks).where(
                 db.batch_queue_tasks.c.session_id == str(session_id),
                 db.batch_queue_tasks.c.status == 'PROCESSING'))
-            if active_count >= MAX_ACTIVE_WORKERS:
+            if active_count >= session['max_workers']:
                 processing = (await connection.execute(select(db.batch_queue_tasks).where(
                     db.batch_queue_tasks.c.session_id == str(session_id),
-                    db.batch_queue_tasks.c.status == 'PROCESSING').limit(MAX_ACTIVE_WORKERS)
+                    db.batch_queue_tasks.c.status == 'PROCESSING').limit(session['max_workers'])
                     .with_for_update(skip_locked=True))).mappings().all()
                 for active_task in processing:
                     await self._settle(connection, active_task)
                 active_count = await connection.scalar(select(func.count()).select_from(db.batch_queue_tasks).where(
                     db.batch_queue_tasks.c.session_id == str(session_id),
                     db.batch_queue_tasks.c.status == 'PROCESSING'))
-                if active_count >= MAX_ACTIVE_WORKERS:
+                if active_count >= session['max_workers']:
                     return {'type': 'waiting'}
             row = (await connection.execute(select(db.batch_queue_tasks).where(
                 db.batch_queue_tasks.c.session_id == str(session_id),
                 db.batch_queue_tasks.c.status == 'PENDING',
                 or_(db.batch_queue_tasks.c.failures == 0,
+                    session['max_workers'] == 1,
                     db.batch_queue_tasks.c.runner_id.is_(None),
                     db.batch_queue_tasks.c.runner_id != runner_id)).order_by(
                 db.batch_queue_tasks.c.position).limit(1).with_for_update(skip_locked=True))).mappings().first()
@@ -210,6 +241,7 @@ class BatchQueueRepository:
                     db.batch_queue_tasks.c.session_id == str(session_id),
                     db.batch_queue_tasks.c.status == 'PENDING',
                     or_(db.batch_queue_tasks.c.failures == 0,
+                        session['max_workers'] == 1,
                         db.batch_queue_tasks.c.runner_id.is_(None),
                         db.batch_queue_tasks.c.runner_id != runner_id)).order_by(
                     db.batch_queue_tasks.c.position).limit(1).with_for_update(skip_locked=True))).mappings().first()

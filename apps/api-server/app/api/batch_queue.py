@@ -21,11 +21,16 @@ class StartQueueInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     session_id: UUID = Field(alias='sessionId')
     tasks: list[QueueTaskInput] = Field(min_length=1, max_length=3000)
+    max_workers: int = Field(default=10, alias='maxWorkers', ge=1, le=10, strict=True)
 
 
 class ClaimInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     runner_id: str = Field(alias='runnerId', min_length=1, max_length=128)
+
+class ResumeQueueInput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    max_workers: int | None = Field(default=None, alias='maxWorkers', ge=1, le=10, strict=True)
 
 
 async def call(operation):
@@ -39,7 +44,7 @@ async def call(operation):
 
 @router.post('/sessions')
 async def start_queue(command: StartQueueInput, request: Request):
-    await call(queue.start(command.session_id, request.state.authenticated_user, command.tasks))
+    await call(queue.start(command.session_id, request.state.authenticated_user, command.tasks, command.max_workers))
     return await call(queue.snapshot(command.session_id, request.state.authenticated_user))
 
 
@@ -55,8 +60,9 @@ async def pause_queue(session_id: UUID, request: Request):
 
 
 @router.post('/sessions/{session_id}/resume')
-async def resume_queue(session_id: UUID, request: Request):
-    await call(queue.set_status(session_id, request.state.authenticated_user, 'RUNNING'))
+async def resume_queue(session_id: UUID, request: Request, command: ResumeQueueInput | None = None):
+    await call(queue.set_status(session_id, request.state.authenticated_user, 'RUNNING',
+        command.max_workers if command else None))
     return {'status': 'RUNNING'}
 
 

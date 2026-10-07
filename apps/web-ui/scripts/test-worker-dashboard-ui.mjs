@@ -26,6 +26,9 @@ const recovery = {
       lastRetryCheckpoint: 0, currentFilterStartedAt: null},
   ],
 };
+let runningDocker = 10;
+const dockerChanges = [];
+const profileId='11111111-1111-4111-8111-111111111111';
 let state = {
   vahanStateRtoMatrixV1: {year: 2026, states: ['ASSAM', 'Andaman & Nicobar Island'], scenarios},
   vahanStateRtoBatchRecoveryV1: recovery,
@@ -37,6 +40,8 @@ try {
   const errors = [];
   let uiSocket;
   page.on('pageerror', error => errors.push(error.message));
+  await page.route('https://fonts.googleapis.com/**',route=>route.abort());
+  await page.route('https://fonts.gstatic.com/**',route=>route.abort());
   await page.routeWebSocket('**/socket.io/**', socket => {
     uiSocket = socket;
     socket.send('0' + JSON.stringify({sid: 'fixture-engine', upgrades: [], pingInterval: 60_000,
@@ -53,11 +58,19 @@ try {
     else if (path === '/api/auth/me') body = {username: 'fixture', role: 'admin'};
     else if (path === '/api/auth/renew') body = {accessToken: 'fixture-token'};
     else if (path === '/api/user-state') body = state;
-    else if (path === '/api/runners') body = Array.from({length: 10}, (_, index) => ({
+    else if (path.startsWith('/api/user-state/') && route.request().method() === 'PUT') {
+      state[decodeURIComponent(path.slice('/api/user-state/'.length))] = route.request().postDataJSON().value;
+    }
+    else if (path === '/api/worker-pool') {
+      if (route.request().method() === 'PUT') {runningDocker = route.request().postDataJSON().count; dockerChanges.push(runningDocker);}
+      body = {enabled:true,desiredCount:runningDocker,runningCount:runningDocker,phase:'ready',workers:[]};
+    }
+    else if (path === '/api/runners') body = Array.from({length: runningDocker}, (_, index) => ({
       id: 'playwright-' + (index + 1), name: 'Crawler ' + (index + 1),
       source: 'new', status: 'ONLINE', lastSeenAt: '2026-10-05T01:00:00Z',
     }));
     else if (path === '/api/maker-updates') body = [];
+    else if (path === '/api/filter-profiles') body = [{id:profileId,name:'Historical 2023',revision:1,definition:{report:{year:2023}},updatedAt:new Date().toISOString()}];
     else if (path === '/api/health') body = {status: 'ok'};
     await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(body),
       headers: {'access-control-allow-origin': '*'}});
@@ -65,7 +78,7 @@ try {
 
   await page.goto(process.env.WORKER_UI_URL || 'http://127.0.0.1:5174/#configure');
   await page.getByRole('heading', {name: '2-worker crawl monitor'}).waitFor();
-  await page.getByText('10/10 workers online').waitFor();
+  await page.getByText('2/2 workers online').waitFor();
   assert.equal(await page.locator('.worker-card').count(), 2);
   assert.match(await page.locator('.worker-card').first().innerText(), /Worker 1[\s\S]*playwright-1[\s\S]*#3–#4/);
   assert.match(await page.locator('.worker-card').last().innerText(), /Worker 2[\s\S]*playwright-2[\s\S]*#1–#2/);
@@ -73,7 +86,7 @@ try {
   assert.match(await page.locator('.worker-card').last().innerText(), /25 rows to SQL/);
   assert.equal(await page.getByRole('progressbar', {name: 'Worker 1 progress'}).getAttribute('aria-valuenow'), '50');
   assert.equal(await page.getByRole('progressbar', {name: 'Worker 2 progress'}).getAttribute('aria-valuenow'), '50');
-  assert.ok(await page.getByRole('button', {name: 'Continue saved run (2 workers)'}).isVisible());
+  assert.ok(await page.getByRole('button', {name: 'Continue · 2 workers'}).isVisible());
 
   const tenScenarios = Array.from({length: 20}, (_, index) => ({
     name: 'Maker Month Wise Data of Office ' + index,
@@ -93,7 +106,9 @@ try {
         status: 'ok', detail: 'Saved', rowCount: index + 1,
         completedAt: '2026-10-05T01:00:00Z',
       })), failedAtIndex: null, hadErrors: false, progress: {done: 10, total: 20, current: ''},
-      sessionId: 'fixture-10-worker', lanes: tenLanes},
+      sessionId: 'fixture-10-worker', lanes: tenLanes, activeElapsedMs:360_000,
+      timings: tenLanes.map((lane,index) => ({index:lane.indices[0],durationMs:12_000,
+        completedCount:index+1,activeElapsedMs:(index+1)*30_000}))},
   };
   await page.reload();
   await page.getByRole('heading', {name: '10-worker crawl monitor'}).waitFor();
@@ -101,7 +116,8 @@ try {
   assert.equal(await page.locator('.worker-card').count(), 10);
   assert.match(await page.locator('.worker-card').first().innerText(), /Worker 1[\s\S]*#1–#2/);
   assert.match(await page.locator('.worker-card').last().innerText(), /Worker 10[\s\S]*#19–#20/);
-  assert.ok(await page.getByRole('button', {name: 'Continue saved run (10 workers)'}).isVisible());
+  assert.ok(await page.getByRole('button', {name: 'Continue · 10 workers'}).isVisible());
+  assert.doesNotMatch(await page.locator('.worker-dashboard').innerText(),/NaN|Infinity/);
   for (let index = 0; index < 10; index++) {
     uiSocket.send('42/ui,' + JSON.stringify(['job:status', {
       id: 'job-' + (index + 1), runnerId: 'playwright-' + (index + 1),
@@ -129,7 +145,7 @@ try {
         status: 'ok', detail: 'Saved', completedAt: '2026-10-05T01:00:00Z'}))},
   };
   await page.reload();
-  await page.getByText(/workers take the next available State/).waitFor();
+  await page.getByText(/One shared queue/).waitFor();
   assert.match(await page.locator('.worker-card').first().innerText(), /2 claimed[\s\S]*1 settled/);
   assert.doesNotMatch(await page.locator('.worker-card').first().innerText(), /#1–#2/);
   assert.equal(await page.locator('.worker-card').count(), 10);
@@ -174,8 +190,37 @@ try {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
     'mobile page has no horizontal overflow');
   await page.screenshot({path: '/tmp/vahan-worker-dashboard-mobile.png', fullPage: true});
+  state = {
+    vahanStateRtoMatrixV1: {year: 2026, states: ['ASSAM'], scenarios: tenScenarios},
+    vahanRunSettingsV1: {year: 2024, workerCount: 5},
+  };
+  await page.setViewportSize({width: 1440, height: 1000});
+  await page.reload();
+  await page.getByRole('heading', {name: '5-worker crawl monitor'}).waitFor();
+  assert.equal(await page.getByLabel('Crawl year', {exact:true}).count(),0);
+  assert.equal(await page.getByLabel('Active workers', {exact:true}).inputValue(), '5');
+  assert.equal(await page.locator('.worker-card').count(), 5);
+  await page.getByLabel('Filter profile',{exact:true}).selectOption(profileId);
+  await page.getByLabel('Active workers', {exact:true}).selectOption('3');
+  await page.getByRole('heading', {name: '3-worker crawl monitor'}).waitFor();
+  await page.getByText('Calendar year 2023', {exact:true}).waitFor();
+  await page.waitForFunction(() => document.querySelector('.scenario-run-info summary')?.textContent.includes('2023'));
+  await page.waitForTimeout(300);
+  assert.equal(state.vahanStateRtoMatrixV1.year, 2023);
+  assert.equal(state.vahanStateRtoMatrixV1.scenarios[0].filters.fromYear, '2023');
+  assert.equal(state.vahanRunSettingsV1.workerCount, 3);
+  assert.equal(runningDocker, 3);
+  assert.ok(dockerChanges.includes(3), 'worker choice must call the Docker pool endpoint');
+  await page.getByText('3 Docker worker containers running.', {exact:false}).waitFor();
+  await page.reload();
+  await page.getByRole('heading', {name: '3-worker crawl monitor'}).waitFor();
+  assert.equal(await page.getByLabel('Filter profile',{exact:true}).inputValue(),profileId);
+  await page.getByText('Calendar year 2023',{exact:true}).waitFor();
+  await page.screenshot({path:'/tmp/vahan-run-controls-desktop.png', fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   assert.deepEqual(errors, []);
-  console.log('Ten-worker home UI: legacy saved run, ten assignments, controls and mobile width passed.');
+  console.log('Home UI: 1–10 worker controls, saved profile reporting year, persisted settings, saved runs and mobile layout passed.');
 } finally {
   await browser.close();
 }

@@ -97,7 +97,7 @@ export function HealthCheckSchedule({
   return (
     <section className="panel health-schedule" id="health-check">
       <div className="panel-heading">
-        <span className="step-number">0</span>
+        <span className="step-number" aria-hidden="true">↻</span>
         <div>
           <h2>UI health check schedule</h2>
           <p>Check the official VAHAN page and save a log for review.</p>
