@@ -23,7 +23,7 @@ export async function hydratePersistentState() {
   if (current !== generation) return;
   // Claim unowned legacy browser data once, for the administrator only.
   const previous = localStorage.getItem('vahanStateOwner');
-  if ((!previous && user.role === 'admin') || previous === user.username) {
+  if (user.role === 'admin' && (!previous || previous === user.username)) {
     for (const key of LEGACY_KEYS) {
       const raw = localStorage.getItem(key);
       if (raw && restored[key] === undefined) {

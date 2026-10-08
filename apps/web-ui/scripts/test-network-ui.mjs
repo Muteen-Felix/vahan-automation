@@ -8,8 +8,8 @@ try {
  await page.routeWebSocket('**/socket.io/**',s=>{socket=s;s.send('0'+JSON.stringify({sid:'fixture',upgrades:[],pingInterval:60000,pingTimeout:60000}));s.onMessage(m=>{if(String(m).startsWith('40/ui,'))s.send('40/ui,'+JSON.stringify({sid:'ui'}));});});
  await page.route('**/api/**',async r=>{
   const p=new URL(r.request().url()).pathname;let body=[];
-  if(p==='/api/auth/status')body={configured:true};else if(p==='/api/auth/me')body={username:'fixture',role:'user'};
-  else if(p==='/api/auth/renew')body={accessToken:'fixture'};else if(p==='/api/user-state')body={};
+  if(p==='/api/auth/status')body={configured:true};else if(p==='/api/auth/me')body={username:'fixture',role:'admin'};
+  else if(p==='/api/auth/activity')body={accessToken:'fixture'};else if(p==='/api/user-state')body={};
   else if(p==='/api/ui-health/status')body={blocked:false};
   else if(p==='/api/network/status'){if(unreachable)return r.abort('failed');body={online,checkedAt:new Date().toISOString()};}
   else if(p==='/api/annual-reports')body={year:2026,datasetId:'fixture',datasets:[],years:[2026],states:[],rtos:[],rows:[],coverage:[],summary:{rows:0,makers:0,offices:0,updatedAt:null}};

@@ -3,7 +3,7 @@ import {api} from './api-client';
 import type {RunSchedule} from '../run-schedules';
 
 /** Observe backend-owned scheduled work without dispatching browser jobs. */
-export function useRunSchedules() {
+export function useRunSchedules(enabled = true) {
   const [schedules, setSchedules] = useState<RunSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,6 +23,10 @@ export function useRunSchedules() {
     }
   }, []);
   useEffect(() => {
+    // Keep the initial load pending while authorization is being resolved.
+    // Otherwise the schedule form initializes against an empty list before
+    // the admin's saved schedules arrive.
+    if (!enabled) {setLoading(true); return;}
     mounted.current = true;
     let timer: ReturnType<typeof setTimeout>;
     let live = true;
@@ -32,7 +36,7 @@ export function useRunSchedules() {
     };
     void poll();
     return () => {live = false; mounted.current = false; revision.current++; clearTimeout(timer);};
-  }, [refresh]);
+  }, [refresh, enabled]);
   const upsert = useCallback((value: RunSchedule) => {
     revision.current++;
     setSchedules(current => current.some(item => item.id === value.id)

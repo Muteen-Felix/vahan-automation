@@ -20,7 +20,7 @@ try {
  const sqlState=()=>({revision:2,versionId:'fixture',blocked,runnerErrors:blocked?{'playwright-1':failed(1),'playwright-2':failed(2)}:{},lastCheck:blocked?failed(2):{allowed:true,status:'DATA_CHANGED',repairs:[{field:'states',after:'#newState'}]},latestPreflight:blocked?{id:'gate-failed',status:'BLOCKED',runner_ids:['playwright-1','playwright-2'],created_at:'2026-10-07T15:00:01Z',reports:[failed(1),failed(2)]}:{status:'PASS'}});
  await page.route('**/api/**',async r=>{
   const p=new URL(r.request().url()).pathname;let body={};
-  if(p==='/api/auth/status')body={configured:true};else if(p==='/api/auth/me')body={username:'fixture',role:'admin'};else if(p==='/api/auth/renew')body={accessToken:'fixture-token'};
+  if(p==='/api/auth/status')body={configured:true};else if(p==='/api/auth/me')body={username:'fixture',role:'admin'};else if(p==='/api/auth/activity')body={accessToken:'fixture-token'};
   else if(p==='/api/users')body=[{username:'fixture',role:'admin',active:true}];
   else if(p==='/api/filter-profiles')body=[profile];
   else if(p==='/api/run-schedules')body=[schedule];

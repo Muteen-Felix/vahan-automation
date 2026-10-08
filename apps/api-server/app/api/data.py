@@ -27,6 +27,7 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     active: bool | None = None
+    role: str | None = Field(default=None, pattern=r'^(admin|user)$')
     profile: dict | None = None
 
 class RunnerLog(BaseModel):
@@ -91,19 +92,22 @@ async def update_user(username: str, command: UserUpdate, request: Request):
         user = next((r for r in rows if r['username'] == username), None)
         if not user:
             raise HTTPException(404, 'User not found.')
-        if command.active is False and user['role'] == 'admin' and user['active']:
+        if (command.active is False or command.role == 'user') and user['role'] == 'admin' and user['active']:
             if sum(r['active'] and r['role'] == 'admin' for r in rows) <= 1:
                 raise HTTPException(409, 'At least one active administrator is required.')
         await connection.execute(update(db.users).where(db.users.c.username == username).values(**command.model_dump(exclude_none=True)))
-        if command.active is False:
+        role_changed = command.role is not None and command.role != user['role']
+        if command.active is False or role_changed:
             await connection.execute(update(db.auth_sessions).where(db.auth_sessions.c.username == username).values(revoked=True))
-    if command.active is False:
+    if command.active is False or role_changed:
         from app.realtime.ui_events import invalidate_user
         await invalidate_user(username)
     return {'ok': True}
 
 @router.get('/user-state')
 async def state(request: Request):
+    if request.state.authenticated_role != 'admin':
+        return {}
     return await services.users.state(request.state.authenticated_user)
 
 @router.put('/user-state/{key}')

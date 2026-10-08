@@ -8,6 +8,7 @@ const npmPackageVite = resolve(webRoot, 'node_modules/vite/bin/vite.js');
 const testFiles = [
   'scripts/test-batch-timing.mjs',
   'scripts/test-schedule-timing.mjs',
+  'scripts/test-session-ui.mjs',
   'scripts/test-annual-reports.mjs',
   'scripts/test-filter-profiles-ui.mjs',
   'scripts/test-health-page-ui.mjs',

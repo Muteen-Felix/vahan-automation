@@ -18,6 +18,8 @@ auth_sessions = Table("auth_sessions", metadata,
     Column("id", String(64), primary_key=True),
     Column("username", ForeignKey("users.username"), nullable=False, index=True),
     Column("revoked", Boolean, nullable=False),
+    Column("expires_at", DateTime(timezone=True), nullable=False),
+    Column("last_activity_at", DateTime(timezone=True), nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False))
 report_sessions = Table("report_sessions", metadata,
     Column("id", String(36), primary_key=True),

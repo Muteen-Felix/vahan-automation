@@ -26,7 +26,7 @@ try {
     const request=route.request(), path=new URL(request.url()).pathname; let body={};
     if(path==='/api/auth/status') body={configured:true};
     else if(path==='/api/auth/me') body={username:'fixture',role:'admin'};
-    else if(path==='/api/auth/renew') body={accessToken:'fixture-token'};
+    else if(path==='/api/auth/activity') body={accessToken:'fixture-token'};
     else if(path==='/api/users') body=[{username:'fixture',role:'admin',active:true}];
     else if(path==='/api/filter-profiles') body=[profile];
     else if(path==='/api/user-state') body={vahanStateRtoMatrixV1:{year:2026,states:['State'],scenarios:[{name:'Fixture office',filters:{states:['State'],rtos:['Office']}}]}};

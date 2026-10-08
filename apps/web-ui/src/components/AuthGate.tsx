@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import {
   ACCESS_TOKEN_STORAGE_KEY,
@@ -9,6 +9,7 @@ import {
   getAccessToken,
 } from "../services/api-client";
 import { hydratePersistentState, resetPersistentState } from '../services/persistent-state';
+import {observeSessionActivity} from '../services/session-activity';
 
 type GateState = "checking" | "setup" | "login" | "unavailable" | "authenticated";
 
@@ -18,10 +19,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const generation = useRef(0);
+
+  useEffect(() => {
+    if (gate === 'authenticated') return observeSessionActivity();
+  }, [gate]);
 
   useEffect(() => {
     let active = true;
     const expireSession = () => {
+      generation.current++;
       resetPersistentState();
       clearAccessToken();
       setPassword("");
@@ -29,6 +36,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       setError("Your session is no longer valid. Please sign in again.");
     };
     const signOut = () => {
+      generation.current++;
       resetPersistentState();
       setPassword("");
       setError("You have signed out.");
@@ -38,9 +46,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
     window.addEventListener(AUTH_LOGOUT_EVENT, signOut);
 
     async function restoreSession() {
+      const expected = ++generation.current;
+      const current = () => active && generation.current === expected;
       try {
         const status = await api.authStatus();
-        if (!active) return;
+        if (!current()) return;
         if (!status.configured) {
           setGate("setup");
           return;
@@ -50,50 +60,56 @@ export function AuthGate({ children }: { children: ReactNode }) {
           return;
         }
         try {
+          const token = getAccessToken();
           await api.currentUser();
-          try {
-            const renewed = await api.renewSession();
-            window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, renewed.accessToken);
-          } catch {
-            // The current token remains usable; retry renewal the next time the page opens.
-            if (!getAccessToken()) {
-              if (active) setGate("login");
-              return;
-            }
-          }
+          if (!current() || getAccessToken() !== token) return;
           await hydratePersistentState();
-          if (active) setGate("authenticated");
+          if (current() && getAccessToken() === token) setGate("authenticated");
         } catch {
+          if (!current()) return;
           clearAccessToken();
-          if (active) setGate("login");
+          setGate("login");
         }
       } catch (reason) {
-        if (!active) return;
+        if (!current()) return;
         setError(reason instanceof Error ? reason.message : "Could not connect to the API.");
         setGate("unavailable");
       }
     }
 
     void restoreSession();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== ACCESS_TOKEN_STORAGE_KEY) return;
+      resetPersistentState();
+      if (!event.newValue) signOut();
+      else {
+        setGate('checking');
+        void restoreSession();
+      }
+    };
+    window.addEventListener('storage', onStorage);
     return () => {
       active = false;
       window.removeEventListener(AUTH_REQUIRED_EVENT, expireSession);
       window.removeEventListener(AUTH_LOGOUT_EVENT, signOut);
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const expected = ++generation.current;
     setError("");
     setSubmitting(true);
     try {
       const result = await api.login(username.trim(), password);
+      if (generation.current !== expected) return;
       window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, result.accessToken);
       setPassword("");
       await hydratePersistentState();
-      setGate("authenticated");
+      if (generation.current === expected && getAccessToken() === result.accessToken) setGate("authenticated");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Sign-in failed.");
+      if (generation.current === expected) setError(reason instanceof Error ? reason.message : "Sign-in failed.");
     } finally {
       setSubmitting(false);
     }
@@ -120,7 +136,7 @@ export VAHAN_UI_AUTH_PASSWORD="password-at-least-12-characters"
 export VAHAN_UI_AUTH_TOKEN_SECRET="$(python -c 'import secrets; print(secrets.token_hex(32))')"
 python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</pre>
             <p className="auth-footnote">
-              Keep the password and token secret on the server. Sign-in tokens do not expire automatically.
+              Keep the password and token secret on the server. Sessions end after 12 hours or 60 minutes without activity.
             </p>
           </>
         ) : gate === "unavailable" ? (

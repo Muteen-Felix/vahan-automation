@@ -17,6 +17,7 @@
     "test:network-ui": "node scripts/test-network-ui.mjs",
     "test:account-ui": "node scripts/test-account-settings-ui.mjs",
     "test:navigation-ui": "node scripts/test-navigation-ui.mjs",
+    "test:permissions-ui": "node scripts/test-permissions-ui.mjs",
     "test:platform": "node scripts/test-platform.mjs"
   },
   "dependencies": {

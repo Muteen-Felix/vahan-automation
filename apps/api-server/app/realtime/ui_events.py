@@ -61,7 +61,7 @@ async def connect(_sid: str, _environ: dict, auth: dict | None) -> bool:
     token = str(auth.get("token", ""))
     user = await authenticate_access_token(token)
     expires_at = access_token_expiry(token)
-    if not user:
+    if not user or user['role'] != 'admin':
         return False
     await sio.save_session(_sid, {"token": token, 'username': user['username']}, namespace="/ui")
     await sio.enter_room(_sid, 'reports:shared', namespace='/ui')
@@ -76,12 +76,24 @@ async def connect(_sid: str, _environ: dict, auth: dict | None) -> bool:
 
 async def _disconnect_after_expiry(sid: str, expires_at: int) -> None:
     try:
-        await asyncio.sleep(max(0, expires_at - time.time()))
-        await sio.disconnect(sid, namespace="/ui")
+        while True:
+            session = await sio.get_session(sid, namespace='/ui')
+            user = await authenticate_access_token(session.get('token', ''))
+            if not user:
+                await sio.disconnect(sid, namespace='/ui')
+                return
+            from app.security import IDLE_TIMEOUT_SECONDS
+            idle_deadline = user['session_last_activity_at'].timestamp() + IDLE_TIMEOUT_SECONDS
+            deadline = min(expires_at, user['session_expires_at'].timestamp(), idle_deadline)
+            await asyncio.sleep(max(0, min(5, deadline - time.time())))
     except asyncio.CancelledError:
         return
-    except Exception:  # The socket may have disconnected before its token expired.
+    except KeyError:  # The socket may already have disconnected.
         return
+    except Exception:
+        # Never leave an authenticated feed open after its session can no
+        # longer be validated (for example during a database outage).
+        await sio.disconnect(sid, namespace='/ui')
     finally:
         current_task = asyncio.current_task()
         if _ui_token_expiry_tasks.get(sid) is current_task:
@@ -123,7 +135,7 @@ async def subscribe_job(sid: str, payload: dict) -> dict:
 
 @sio.on("ui:runner-options", namespace="/ui")
 async def runner_options(_sid: str, payload: dict) -> dict:
-    user = await authenticated_ui(_sid)
+    user = await authenticated_ui(_sid, activity=True)
     if not user:
         return {"ok": False, "error": "Authentication required."}
     runner_id = str(payload.get("runnerId", "")).strip()
@@ -167,7 +179,7 @@ async def runner_options(_sid: str, payload: dict) -> dict:
 
 @sio.on("captcha:submitted", namespace="/ui")
 async def submit_captcha(_sid: str, payload: dict) -> dict:
-    user = await authenticated_ui(_sid)
+    user = await authenticated_ui(_sid, activity=True)
     if not user:
         return {"ok": False, "error": "Authentication required."}
     try:
@@ -215,7 +227,7 @@ async def submit_captcha(_sid: str, payload: dict) -> dict:
 
 @sio.on("captcha:refresh", namespace="/ui")
 async def refresh_captcha(_sid: str, payload: dict) -> dict:
-    user = await authenticated_ui(_sid)
+    user = await authenticated_ui(_sid, activity=True)
     if not user:
         return {"ok": False, "error": "Authentication required."}
     """Ask the browser worker to click VAHAN's official CAPTCHA refresh control."""
@@ -266,13 +278,13 @@ async def refresh_captcha(_sid: str, payload: dict) -> dict:
     }
 
 
-async def authenticated_ui(sid):
+async def authenticated_ui(sid, *, activity=False):
     try:
         session = await sio.get_session(sid, namespace="/ui")
-        user = await authenticate_access_token(session.get("token", ""))
+        user = await authenticate_access_token(session.get("token", ""), activity=activity)
         if not user:
             await sio.disconnect(sid, namespace="/ui")
-        return user
+        return user if user and user['role'] == 'admin' else None
     except KeyError:
         return None
 

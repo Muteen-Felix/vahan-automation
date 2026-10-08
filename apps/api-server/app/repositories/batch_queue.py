@@ -295,7 +295,7 @@ class BatchQueueRepository:
         async with engine.begin() as connection:
             preliminary = await self._session(connection, session_id, owner)
             if preliminary['status'] != 'RUNNING': return {'type': 'paused'}
-            from app.worker_pool import assignment_status
+            from app.worker_pool import assignment_status, capacity_available
             allocation, count = await assignment_status(connection, runner_id)
             if allocation == 'offline': return {'type': 'network_paused'}
             if allocation == 'updating': return {'type': 'pool_updating'}
@@ -385,6 +385,8 @@ class BatchQueueRepository:
                 if previous and previous.status not in {JobStatus.FAILED, JobStatus.CANCELLED}:
                     raise ValueError('Previous queue attempt has not ended.')
             from app.models.filters import VahanFilters
+            if not await capacity_available(connection, [runner_id]):
+                return {'type': 'waiting'}
             job = Job(runnerId=runner_id, sessionId=session_id,
                 filters=VahanFilters.model_validate(row['filters']), scenarioName=row['scenario_name'],
                 status=JobStatus.ASSIGNED, ownerUsername=owner,

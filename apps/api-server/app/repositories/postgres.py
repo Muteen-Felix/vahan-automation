@@ -6,7 +6,7 @@ import hashlib
 import hmac
 import secrets
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy import select, update, delete, insert, func
@@ -97,11 +97,13 @@ class PostgresJobRepository:
 
     async def assign(self, job):
         async with engine.begin() as connection:
-            from app.worker_pool import assignment_allowed
+            from app.worker_pool import assignment_allowed, capacity_available
             if not await assignment_allowed(connection, job.runner_id):
-                raise ValueError('This Docker worker is stopped or its pool is being updated.')
+                raise ValueError('This worker is outside the active pool or work is paused.')
             row = (await connection.execute(select(db.runners).where(db.runners.c.id == job.runner_id).with_for_update())).mappings().first()
             if not row or not row["connected"] or row["current_job_id"]:
+                return None
+            if not await capacity_available(connection, [job.runner_id]):
                 return None
             reserved = await connection.scalar(select(db.runner_planning_leases.c.runner_id).where(
                 db.runner_planning_leases.c.runner_id == job.runner_id,
@@ -254,6 +256,9 @@ class PostgresRunnerRegistry:
     async def list(self):
         async with engine.connect() as connection:
             runners = [Runner.model_validate(p) for p in (await connection.execute(select(db.runners.c.payload).where(db.runners.c.connected.is_(True)))).scalars()]
+            from app.worker_pool import pool_value, worker_enabled
+            count = (await pool_value(connection))['desiredCount']
+            runners = [runner for runner in runners if worker_enabled(runner.id, count)]
             reserved = set((await connection.execute(select(db.runner_planning_leases.c.runner_id).where(
                 db.runner_planning_leases.c.expires_at > now()))).scalars())
             for runner in runners:
@@ -400,17 +405,37 @@ class PostgresUsers:
             user = (await connection.execute(select(db.users).where(db.users.c.username == username).with_for_update())).mappings().first()
             if not user or not user['active'] or (expected_password_hash is not None and user['password_hash'] != expected_password_hash):
                 raise ValueError('Credentials changed. Please sign in again.')
+            from app.security import ABSOLUTE_TTL_SECONDS
+            created = now()
             await connection.execute(insert(db.auth_sessions).values(id=session_hash(raw), username=username,
-                revoked=False, created_at=now()))
+                revoked=False, created_at=created, last_activity_at=created,
+                expires_at=created + timedelta(seconds=ABSOLUTE_TTL_SECONDS)))
         return raw
 
-    async def session_user(self, username, session_id):
-        async with engine.connect() as connection:
-            row = (await connection.execute(select(db.users).join(db.auth_sessions,
-                db.auth_sessions.c.username == db.users.c.username).where(db.users.c.username == username,
-                db.users.c.active.is_(True), db.auth_sessions.c.id == session_hash(session_id),
-                db.auth_sessions.c.revoked.is_(False)))).mappings().first()
-        return dict(row) if row else None
+    async def session_user(self, username, session_id, *, touch=False):
+        from app.security import IDLE_TIMEOUT_SECONDS
+        async with engine.begin() as connection:
+            sessions = db.auth_sessions
+            query = select(db.users, sessions.c.expires_at.label('session_expires_at'),
+                sessions.c.last_activity_at.label('session_last_activity_at')).join(sessions,
+                sessions.c.username == db.users.c.username).where(db.users.c.username == username,
+                db.users.c.active.is_(True), sessions.c.id == session_hash(session_id),
+                sessions.c.revoked.is_(False))
+            # A row lock prevents logout/password reset from racing an activity
+            # update. Background reads use the same SQL deadlines without touch.
+            if touch:
+                query = query.with_for_update(of=sessions)
+            row = (await connection.execute(query)).mappings().first()
+            checked_at = now()
+            if not row or row['session_expires_at'] <= checked_at or (
+                row['session_last_activity_at'] + timedelta(seconds=IDLE_TIMEOUT_SECONDS) <= checked_at):
+                return None
+            result = dict(row)
+            if touch:
+                await connection.execute(update(sessions).where(sessions.c.id == session_hash(session_id))
+                    .values(last_activity_at=checked_at))
+                result['session_last_activity_at'] = checked_at
+            return result
 
     async def revoke(self, session_id):
         async with engine.begin() as connection:

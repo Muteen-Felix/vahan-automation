@@ -1,16 +1,16 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 
-from app.access import owner_filter
+from app.access import owner_filter, require_admin
 from app.db import engine, schema as db
 from app.models.job import Job, JobStatus
 from app.models.run_schedule import RunScheduleCreate, RunScheduleToggle, RunScheduleResume
 from app.repositories.run_schedules import RunScheduleRepository, public_schedule
 from app.scheduler_wakeup import wake_scheduler
 
-router = APIRouter(prefix='/run-schedules', tags=['run-schedules'])
+router = APIRouter(prefix='/run-schedules', tags=['run-schedules'], dependencies=[Depends(require_admin)])
 repository = RunScheduleRepository()
 
 
@@ -26,7 +26,13 @@ async def call(operation):
 @router.get('')
 async def list_schedules(request: Request):
     from app.run_diagnostics import attach_diagnostics
-    return await attach_diagnostics([public_schedule(value) for value in await repository.list(request.state.authenticated_user)])
+    return await attach_diagnostics([public_schedule(value) for value in await repository.list(owner_filter(request))])
+
+
+async def schedule_owner(schedule_id, request):
+    require_admin(request)
+    value = await call(repository.get(schedule_id, owner_filter(request)))
+    return value['owner']
 
 
 @router.get('/captchas')
@@ -52,7 +58,7 @@ async def create_schedule(command: RunScheduleCreate, request: Request):
 
 @router.patch('/{schedule_id}')
 async def toggle_schedule(schedule_id: UUID, command: RunScheduleToggle, request: Request):
-    value = await call(repository.toggle(schedule_id, request.state.authenticated_user, command.enabled))
+    value = await call(repository.toggle(schedule_id, await schedule_owner(schedule_id, request), command.enabled))
     wake_scheduler()
     return public_schedule(value)
 
@@ -60,28 +66,28 @@ async def toggle_schedule(schedule_id: UUID, command: RunScheduleToggle, request
 @router.post('/{schedule_id}/stop')
 async def stop_schedule(schedule_id: UUID, request: Request):
     from app.run_scheduler import stop_scheduled_run
-    value = await call(repository.get(schedule_id, request.state.authenticated_user))
+    value = await call(repository.get(schedule_id, owner_filter(request)))
     await stop_scheduled_run(value)
     wake_scheduler()
-    return public_schedule(await repository.get(schedule_id, request.state.authenticated_user))
+    return public_schedule(await repository.get(schedule_id, owner_filter(request)))
 
 
 @router.post('/{schedule_id}/pause')
 async def pause_schedule(schedule_id: UUID, request: Request):
-    value = await call(repository.pause(schedule_id, request.state.authenticated_user))
+    value = await call(repository.pause(schedule_id, await schedule_owner(schedule_id, request)))
     wake_scheduler()
     return public_schedule(value)
 
 
 @router.post('/{schedule_id}/resume')
 async def resume_schedule(schedule_id: UUID, command: RunScheduleResume, request: Request):
-    value = await call(repository.resume(schedule_id, request.state.authenticated_user, command.worker_count))
+    value = await call(repository.resume(schedule_id, await schedule_owner(schedule_id, request), command.worker_count))
     wake_scheduler()
     return public_schedule(value)
 
 
 @router.delete('/{schedule_id}')
 async def delete_schedule(schedule_id: UUID, request: Request):
-    await call(repository.delete(schedule_id, request.state.authenticated_user))
+    await call(repository.delete(schedule_id, await schedule_owner(schedule_id, request)))
     wake_scheduler()
     return {'ok': True}

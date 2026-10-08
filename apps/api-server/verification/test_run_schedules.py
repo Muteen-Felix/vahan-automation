@@ -180,9 +180,10 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
             'operation': {'stage': 'Docker worker pool', 'startedAt': timestamp,
                 'heartbeatAt': now().isoformat(), 'progressAt': timestamp, 'error': 'Worker busy.'}})
         async with engine.begin() as connection:
-            await connection.execute(insert(db.app_settings).values(key='docker-worker-pool', value={'desiredCount': 3}))
+            await connection.execute(update(db.app_settings).where(db.app_settings.c.key == 'docker-worker-pool')
+                .values(value={'desiredCount': 3, 'phase': 'ready'}))
         health = AsyncMock(return_value={'connected': True, 'browserReady': True, 'optionsBusy': True})
-        with patch('app.run_diagnostics.settings', SimpleNamespace(worker_controller_url='fixture')), patch('app.run_diagnostics.read_health', health):
+        with patch('app.run_diagnostics.settings', SimpleNamespace(runner_health_checks=True)), patch('app.run_diagnostics.read_health', health):
             values = await attach_diagnostics([public_schedule(saved)])
         diagnostics = values[0]['diagnostics']
         self.assertIn('over 5 minutes', diagnostics['warning'])
@@ -192,7 +193,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len([worker for worker in diagnostics['workers'] if worker['jobId']]), 2)
         self.assertNotIn('definition', values[0])
         # Endpoint failures are diagnostic information, never a reason to stop work.
-        with patch('app.run_diagnostics.settings', SimpleNamespace(worker_controller_url='fixture')), patch('app.run_diagnostics.read_health', AsyncMock(return_value={'reachable': False})):
+        with patch('app.run_diagnostics.settings', SimpleNamespace(runner_health_checks=True)), patch('app.run_diagnostics.read_health', AsyncMock(return_value={'reachable': False})):
             values = await attach_diagnostics([public_schedule(saved)])
         self.assertFalse(values[0]['diagnostics']['workers'][0]['reachable'])
 
@@ -216,6 +217,24 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
 
     async def jobs(self):
         return await services.jobs.list_all('schedule-test')
+
+    async def test_expired_or_revoked_dashboard_session_does_not_stop_dispatch(self):
+        from app.security import authenticate_access_token, issue_access_token
+        from app.repositories.postgres import session_hash
+        saved = await self.schedule()
+        raw = await services.users.create_session('schedule-test')
+        token = issue_access_token('schedule-test', raw)
+        async with engine.begin() as connection:
+            await connection.execute(update(db.auth_sessions).where(db.auth_sessions.c.id == session_hash(raw))
+                .values(last_activity_at=now() - timedelta(hours=1)))
+        self.assertIsNone(await authenticate_access_token(token))
+        await services.users.revoke(raw)
+        for _ in range(3):
+            await scheduler_tick()
+        current = await self.repo.get(saved['id'])
+        self.assertEqual(current['status'], 'RUNNING')
+        self.assertEqual(len(await self.jobs()), 2)
+        self.assertTrue(all(job.status == JobStatus.ASSIGNED for job in await self.jobs()))
 
     async def test_dates_validation_and_daily_time_zone(self):
         future = now()+timedelta(days=1)

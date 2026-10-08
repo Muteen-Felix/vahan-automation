@@ -19,8 +19,8 @@ try {
     if(path.startsWith('/api/batch-queue/')||path==='/api/jobs'&&request.method()==='POST')manualWrites.push(path);
     let body=[];
     if(path==='/api/auth/status')body={configured:true};
-    else if(path==='/api/auth/me')body={username:'fixture',role:'user'};
-    else if(path==='/api/auth/renew')body={accessToken:'fixture'};
+    else if(path==='/api/auth/me')body={username:'fixture',role:'admin'};
+    else if(path==='/api/auth/activity')body={accessToken:'fixture'};
     else if(path==='/api/user-state')body={};
     else if(path==='/api/ui-health/status')body={blocked:false,latestPreflight:null};
     else if(path==='/api/annual-reports')body={year:2026,datasetId:'fixture',datasets:[],years:[2026],states:[],rtos:[],rows:[],coverage:[],
@@ -58,10 +58,11 @@ try {
   await page.getByRole('button',{name:'Account',exact:true}).click();
   assert.equal(await logout.isEnabled(),true,'Failed logout is retryable');
   assert.equal(await page.evaluate(()=>localStorage.getItem('vahanUiAccessToken')),'fixture','Failed logout preserves auth');
+  await page.getByRole('button',{name:'Close account settings',exact:true}).click();
   for(const hash of ['#configure','#configure?scheduled=old-schedule']){
     await page.goto(origin+hash);
     await nav.waitFor();
-    const expected=hash.includes('?')?'Settings':'Exported Reports';
+    const expected='Settings';
     await page.waitForFunction(label=>document.querySelector('.main-nav [aria-current="page"]')?.textContent===label,expected);
     assert.equal(await page.getByRole('heading',{name:'Create Report',exact:true}).count(),0);
     assert.equal(await page.getByRole('link',{name:'View in Create Report',exact:true}).count(),0);

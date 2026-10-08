@@ -53,6 +53,15 @@ export function UserManagement({currentUsername}: {currentUsername?: string}) {
     try { await request(`/api/users/${encodeURIComponent(user.username)}`, {method: 'PATCH', body: JSON.stringify({active: !user.active})}); await load(); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not update account'); }
   }
+  async function changeRole(user: User) {
+    setBusy(true); setError(''); setNotice('');
+    try {
+      await request(`/api/users/${encodeURIComponent(user.username)}`, {method:'PATCH', body:JSON.stringify({role:user.role === 'admin' ? 'user' : 'admin'})});
+      setNotice(`Updated permissions for ${user.username}. They must sign in again.`);
+      await load();
+    } catch (reason) {setError(reason instanceof Error ? reason.message : 'Could not update permissions.');}
+    finally {setBusy(false);}
+  }
   if (!admin) return null;
   return <section className="data-panel"><div className="settings-card-heading"><div><h3>User accounts</h3><p>Manage access to the workspace.</p></div><span>{users.length} accounts</span></div>
     <form className="data-user-form" onSubmit={event => void create(event)}>
@@ -70,6 +79,6 @@ export function UserManagement({currentUsername}: {currentUsername?: string}) {
     </form>}
     <div className="data-table"><table><thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
       <tbody>{users.map(user => <tr key={user.username}><td>{user.username}</td><td><span className="settings-user-role">{user.role}</span></td><td><span className="settings-user-status" data-active={user.active}>{user.active ? 'Active' : 'Disabled'}</span></td>
-        <td><button className="secondary-button" disabled={busy} onClick={() => void toggle(user)}>{user.active ? 'Disable' : 'Enable'}</button> {user.username !== currentUsername && <button type="button" className="secondary-button" disabled={busy} onClick={()=>{setResetUser(user.username);setResetPassword('');setResetConfirm('');setError('');setNotice('');}}>Reset password</button>}</td></tr>)}</tbody></table></div>
+        <td><button className="secondary-button" disabled={busy} onClick={() => void toggle(user)}>{user.active ? 'Disable' : 'Enable'}</button> {user.username !== currentUsername && <><button type="button" className="secondary-button" disabled={busy} onClick={() => void changeRole(user)}>{user.role === 'admin' ? 'Revoke admin' : 'Grant admin'}</button> <button type="button" className="secondary-button" disabled={busy} onClick={()=>{setResetUser(user.username);setResetPassword('');setResetConfirm('');setError('');setNotice('');}}>Reset password</button></>}</td></tr>)}</tbody></table></div>
   </section>;
 }

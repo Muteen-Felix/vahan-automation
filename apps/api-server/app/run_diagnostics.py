@@ -42,7 +42,7 @@ async def attach_diagnostics(records):
             db.jobs.c.session_id.in_([value['sessionId'] for value in active]),
             db.jobs.c.status.not_in(['COMPLETED', 'NO_DATA', 'FAILED', 'CANCELLED'])))).mappings()}
     count = max([value['workerCount'] for value in active] + [pool.get('desiredCount', 0)])
-    health = await asyncio.gather(*(read_health(number) for number in range(1, count + 1))) if settings.worker_controller_url else [{}] * count
+    health = await asyncio.gather(*(read_health(number) for number in range(1, count + 1))) if settings.runner_health_checks else [{}] * count
     for value in active:
         workers = []
         for number in range(1, count + 1):

@@ -8,6 +8,8 @@
 
 ## 1. Mục tiêu và phạm vi sản phẩm
 
+**Cập nhật phân quyền 08/10/2026:** user thường chỉ xem/tra cứu/xuất tại Exported Reports. Filters và Settings bị ẩn; truy cập URL trực tiếp báo không có quyền, API quản trị trả 403. Admin quản lý bộ lọc, lịch chạy (gồm lịch của admin khác) và cấp/thu hồi role admin trong Account → Manage user accounts. Đổi role thu hồi phiên tài khoản đích; hệ thống giữ ít nhất một admin hoạt động.
+
 Hệ thống thu thập báo cáo đăng ký phương tiện từ VAHAN, chạy nhiều browser worker song song, lưu kết quả vào PostgreSQL và cung cấp giao diện theo dõi, tra cứu, xuất Excel và kiểm tra mức độ cập nhật dữ liệu.
 
 | Khái niệm | Ý nghĩa trong hệ thống |
@@ -319,7 +321,7 @@ Mỗi hàng timeline nên có: `WBS | Nhóm chức năng | Công việc | Hiện
 | --- | --- |
 | UI và điều phối | `apps/web-ui/src/App.tsx`, `components/RunControls.tsx`, `components/WorkerDashboard.tsx`, `components/MatrixRunner.tsx` |
 | Profile và lựa chọn | `components/FilterProfiles.tsx`, `filter-profiles.ts`, `filter-options-cache.ts`, API `filter_profiles.py`, `filter_planner.py` |
-| Queue/worker | API và repository `batch_queue.py`, `worker_pool.py`, `apps/worker-control/controller.py` |
+| Queue/worker | API và repository `batch_queue.py`, `worker_pool.py` |
 | Browser/CAPTCHA | `apps/browser-runner/runner.mjs`, `page-driver.js` |
 | Nhập dữ liệu | `repositories/file_store.py`, `repositories/annual_reports.py`, `repositories/report_results.py` |
 | Export và freshness | API `annual_reports.py`, `report_coverage.py`, `update_status.py`; UI `AnnualReports.tsx`, `UpdateHistory.tsx` |
@@ -327,6 +329,6 @@ Mỗi hàng timeline nên có: `WBS | Nhóm chức năng | Công việc | Hiện
 | Auth/Settings/health | API `auth.py`, `data.py`, `ui_health.py`; UI `AuthGate.tsx`, `DataManagement.tsx`, `HealthCheckSchedule.tsx`, `HealthCheckReports.tsx` |
 | Schema và Docker | `apps/api-server/app/db/schema.py`, migrations, `compose.yaml` |
 | ETA | `apps/web-ui/src/batch-timing.ts` |
-| Kiểm thử | `apps/api-server/verification/`, `apps/web-ui/scripts/`, các test browser-runner và worker-control |
+| Kiểm thử | `apps/api-server/verification/`, `apps/web-ui/scripts/`, các test browser-runner, worker pool và session limits |
 
 Tài liệu này được đối chiếu bằng mã nguồn. Các kiểm tra tập trung trong quá trình làm việc trước gồm queue/timing, profile UI, cache khi worker BUSY, nhập SQL và Update history; không thay thế một vòng UAT hoặc benchmark đầy đủ cho mọi profile, mọi năm và mọi trạng thái lỗi. Các đề xuất mở rộng trong timeline cần có thiết kế và nghiệm thu riêng.

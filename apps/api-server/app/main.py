@@ -25,9 +25,8 @@ async def lifespan(_app: FastAPI):
         await connection.execute(text("SELECT 1 FROM users LIMIT 1"))
     await services.users.bootstrap(settings.ui_auth_username, settings.ui_auth_password)
     await recover_after_restart()
-    from app.worker_pool import initialize_pool, reconcile_pool
+    from app.worker_pool import initialize_pool
     await initialize_pool(reset_phase=True)
-    pool_task = asyncio.create_task(reconcile_pool())
     from app.run_scheduler import run_scheduler
     scheduler_task = asyncio.create_task(run_scheduler())
     from app.network_guard import monitor
@@ -37,8 +36,7 @@ async def lifespan(_app: FastAPI):
     finally:
         network_task.cancel()
         scheduler_task.cancel()
-        pool_task.cancel()
-        await asyncio.gather(scheduler_task, pool_task, network_task, return_exceptions=True)
+        await asyncio.gather(scheduler_task, network_task, return_exceptions=True)
         await engine.dispose()
 
 
@@ -86,11 +84,16 @@ async def require_ui_authentication(request: Request, call_next):
 
     authorization = request.headers.get("authorization", "")
     scheme, _, credential = authorization.partition(" ")
+    # UI activity is recorded explicitly; even background POSTs must not keep
+    # an unattended dashboard session alive.
     user = await authenticate_access_token(credential.strip()) if scheme.lower() == "bearer" else None
     if user:
         request.state.authenticated_user = user["username"]
         request.state.authenticated_role = user["role"]
         request.state.token_session = user["session_id"]
+        from app.access import member_api_allowed
+        if user['role'] != 'admin' and not member_api_allowed(request.method, path):
+            return JSONResponse(status_code=403, content={'detail': 'Bạn không có quyền truy cập chức năng này.'})
         return await call_next(request)
 
     if not settings.ui_auth_configured:

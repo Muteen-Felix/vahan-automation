@@ -112,6 +112,15 @@ async def reserve_preflight_runners(runner_ids, owner):
     token = str(uuid4())
     unavailable = None
     async with engine.begin() as connection:
+        from app.worker_pool import assignment_status, capacity_available
+        for runner_id in ids:
+            allocation, _count = await assignment_status(connection, runner_id)
+            if allocation != 'ready':
+                raise PreflightUnavailable(runner_id, 'WORKER_BUSY',
+                    'The selected worker is outside the active pool or work is paused.')
+        if not await capacity_available(connection, ids):
+            raise PreflightUnavailable(None, 'WORKER_BUSY',
+                'The worker limit is in use. The website check will retry when capacity is available.')
         rows = (await connection.execute(select(db.runners).where(
             db.runners.c.id.in_(ids)).order_by(db.runners.c.id).with_for_update())).mappings().all()
         by_id = {row['id']: row for row in rows}
@@ -190,6 +199,13 @@ async def reserve_options_runner(runner_id, owner):
     await require_connection()
     token = str(uuid4())
     async with engine.begin() as connection:
+        from app.worker_pool import assignment_allowed, capacity_available
+        if not await assignment_allowed(connection, runner_id):
+            raise PreflightUnavailable(runner_id, 'WORKER_BUSY',
+                'The selected worker is outside the active pool or work is paused.')
+        if not await capacity_available(connection, [runner_id]):
+            raise PreflightUnavailable(runner_id, 'WORKER_BUSY',
+                'The worker limit is in use. Filter options will retry when capacity is available.')
         runner = (await connection.execute(select(db.runners).where(db.runners.c.id == runner_id)
             .with_for_update())).mappings().first()
         if not runner:

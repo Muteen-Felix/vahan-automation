@@ -23,7 +23,7 @@ try{
     const request=route.request(),url=new URL(request.url()),path=url.pathname;let body={};
     if(path==='/api/auth/status')body={configured:true};
     else if(path==='/api/auth/me')body={username:'fixture',role:'admin'};
-    else if(path==='/api/auth/renew')body={accessToken:'fixture-token'};
+    else if(path==='/api/auth/activity')body={accessToken:'fixture-token'};
     else if(path==='/api/user-state')body=state;
     else if(path.startsWith('/api/user-state/'))state[decodeURIComponent(path.slice('/api/user-state/'.length))]=request.postDataJSON().value;
     else if(path==='/api/run-schedules'||path==='/api/users')body=[];

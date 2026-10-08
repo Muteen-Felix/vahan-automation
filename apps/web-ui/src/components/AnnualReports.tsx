@@ -67,12 +67,12 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
   const shownData = data;
   const total = shownData?.summary.rows ?? 0;
   const searchPending = state !== search.state || rto !== search.rto;
-  const hasSearch = Boolean(search.state.trim() || search.rto.trim());
+  const hasSearch = Boolean(state.trim() || rto.trim() || search.state.trim() || search.rto.trim());
   const exportExcel = async () => {
-    if (!shownData || searchPending || exporting || !total) return;
-    if (!hasSearch && !window.confirm(`Export all ${total.toLocaleString()} manufacturer rows for ${year} in the selected report to Excel?`)) return;
+    if (!shownData || searchPending || hasSearch || exporting || !total) return;
+    if (!window.confirm(`Export all ${total.toLocaleString()} manufacturer rows for ${year} in the selected report to Excel?`)) return;
     const params = new URLSearchParams({year: String(year), dataset: shownData.datasetId,
-      state: search.state.trim(), rto: search.rto.trim(), confirmAll: String(!hasSearch)});
+      state: '', rto: '', confirmAll: 'true'});
     setExporting(true); setExportError('');
     try { await api.downloadFile(`/api/annual-reports/export?${params}`); }
     catch (reason) {setExportError(reason instanceof Error ? reason.message : 'Could not export Excel.');}
@@ -97,11 +97,11 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
       </select></label>}
       <div className="annual-toolbar-actions">
         {(state || rto) && <button type="button" onClick={() => {setState(''); setRto('');}}>Clear</button>}
-        <button type="button" className="annual-export-button" onClick={() => void exportExcel()}
+        {!hasSearch && <button type="button" className="annual-export-button" onClick={() => void exportExcel()}
           disabled={searchPending || exporting || !shownData || !total}
-          title={hasSearch ? 'Export every matching row across all pages' : 'Confirm and export the entire selected report'}>
-          {exporting ? 'Exporting…' : hasSearch ? 'Export search to Excel' : 'Export all to Excel'}
-        </button>
+          title="Confirm and export the entire selected report">
+          {exporting ? 'Exporting…' : 'Export all to Excel'}
+        </button>}
         <UpdateHistory/>
         <button type="button" onClick={() => {setExportError(''); setRefresh(value => value + 1); refreshData(true);}}
           aria-label="Refresh monthly data">↻ Refresh</button>

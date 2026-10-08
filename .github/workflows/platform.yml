@@ -131,6 +131,7 @@ jobs:
               'vahan_results_platform_controls_test',
               'vahan_results_platform_update_test',
               'vahan_results_platform_pool_test',
+              'vahan_session_platform_test',
               'vahan_retry_platform_test',
               'vahan_coverage_platform_test',
               'vahan_schedule_platform_test',
@@ -166,6 +167,7 @@ jobs:
           VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_controls_test python -m pytest verification/test_run_controls.py
           VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_update_test python -m pytest verification/test_update_status.py
           VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_pool_test python -m pytest verification/test_worker_pool.py
+          VAHAN_SESSION_TEST_DATABASE=vahan_session_platform_test python -m pytest verification/test_session_limits.py
           VAHAN_RETRY_TEST_DATABASE=vahan_retry_platform_test python -m pytest verification/test_retry_sessions.py
           VAHAN_COVERAGE_TEST_DATABASE=vahan_coverage_platform_test python -m pytest verification/test_report_coverage.py
           VAHAN_SCHEDULE_TEST_DATABASE=vahan_schedule_platform_test python -m pytest verification/test_run_schedules.py

@@ -157,7 +157,7 @@ async def prepare_run(value):
         if await execution_busy(session_id):
             await checkpoint(value, {'stage': 'Waiting for other work', 'message': 'Waiting for the current run or filter preview to finish.'})
             return
-        await checkpoint(value, {'stage': 'Docker worker pool', 'message': f"Preparing {value['workerCount']} Docker workers."})
+        await checkpoint(value, {'stage': 'Worker pool', 'message': f"Preparing {value['workerCount']} workers."})
         await apply_pool(value['workerCount'])
         if not await still_current(value):
             return

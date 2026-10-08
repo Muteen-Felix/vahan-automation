@@ -12,7 +12,7 @@ try {
   const req=route.request(),path=new URL(req.url()).pathname;let body=[];
   if(path==='/api/auth/status')body={configured:true};
   else if(path==='/api/auth/me')body={username:'admin-fixture',role};
-  else if(path==='/api/auth/renew')body={accessToken:'fixture'};
+  else if(path==='/api/auth/activity')body={accessToken:'fixture'};
   else if(path==='/api/user-state')body={};
   else if(path==='/api/ui-health/status')body={blocked:false,latestPreflight:null};
   else if(path==='/api/users')body=[{username:'admin-fixture',role:'admin',active:true},{username:'member-fixture',role:'user',active:true}];

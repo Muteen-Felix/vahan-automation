@@ -10,6 +10,9 @@ from typing import Any
 
 from app.config import settings
 
+ABSOLUTE_TTL_SECONDS = 12 * 60 * 60
+IDLE_TIMEOUT_SECONDS = 60 * 60
+
 
 def credentials_match(username: str, password: str) -> bool:
     username_matches = secrets.compare_digest(username.encode(), settings.ui_auth_username.encode())
@@ -17,11 +20,12 @@ def credentials_match(username: str, password: str) -> bool:
     return settings.ui_auth_configured and username_matches and password_matches
 
 
-def issue_access_token(username: str, session_id: str | None = None) -> str:
+def issue_access_token(username: str, session_id: str | None = None, *, expires_at: int | None = None) -> str:
     now = int(time.time())
     payload = {
         "sub": username,
         "iat": now,
+        "exp": expires_at if expires_at is not None else now + ABSOLUTE_TTL_SECONDS,
         "aud": "vahan-rpa-ui",
         "typ": "access",
     }
@@ -61,11 +65,15 @@ def _verified_payload(token: str) -> dict[str, Any] | None:
             return None
         username = payload.get("sub")
         expires_at = payload.get("exp")
+        issued_at = payload.get("iat")
         if (
             payload.get("aud") != "vahan-rpa-ui"
             or payload.get("typ") != "access"
             or not isinstance(username, str)
-            or ("exp" in payload and (type(expires_at) is not int or expires_at <= int(time.time())))
+            or type(issued_at) is not int
+            or type(expires_at) is not int
+            or expires_at <= int(time.time())
+            or expires_at > issued_at + ABSOLUTE_TTL_SECONDS
         ):
             return None
         return payload
@@ -91,10 +99,10 @@ def runner_token_matches(candidate: str | None) -> bool:
     return secrets.compare_digest(candidate.encode(), settings.runner_token.encode())
 
 
-async def authenticate_access_token(token: str):
+async def authenticate_access_token(token: str, *, activity: bool = False):
     from app.services import services
     payload = _verified_payload(token)
     if not payload or not isinstance(payload.get("sid"), str):
         return None
-    user = await services.users.session_user(payload["sub"], payload["sid"])
+    user = await services.users.session_user(payload["sub"], payload["sid"], touch=activity)
     return {**user, "session_id": payload["sid"]} if user else None

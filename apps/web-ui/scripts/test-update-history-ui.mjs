@@ -10,7 +10,7 @@ try{
  const daily=(all=false)=>({date:'2026-10-07',updatedCases:all?2:1,totalCases:2,remainingCases:all?0:1,percent:all?100:50,state:all?'complete':'partial',activeCases:0,failedCases:0,reviewCases:0,lastSavedAt:'2026-10-07T08:00:00Z',lastSavedCase:'Office 1',firstNotUpdated:all?null:{name:'Office 2',state:'State A',rto:'Office 2'}});
  await page.route('**/api/**',async r=>{
   const url=new URL(r.request().url()),p=url.pathname;let body={};
-  if(p==='/api/auth/status')body={configured:true};else if(p==='/api/auth/me')body={username:'fixture',role:'user'};else if(p==='/api/auth/renew')body={accessToken:'fixture-token'};
+  if(p==='/api/auth/status')body={configured:true};else if(p==='/api/auth/me')body={username:'fixture',role:'user'};else if(p==='/api/auth/activity')body={accessToken:'fixture-token'};
   else if(['/api/runners','/api/filter-profiles','/api/jobs','/api/maker-updates','/api/run-schedules'].includes(p))body=[];
   else if(p==='/api/worker-pool')body={enabled:true,desiredCount:5,runningCount:5,phase:'ready',workers:[]};
   else if(p==='/api/annual-reports')body={year:Number(url.searchParams.get('year')),datasetId:'fixture',datasets:[],years:[2026],states:[],rtos:[],rows:[],summary:{rows:0,makers:0,offices:0,updatedAt:null},coverage:[],lastSaved:null};
@@ -27,7 +27,7 @@ try{
  assert.ok(await dialog.getByText('1 cases not refreshed on this day',{exact:true}).isVisible());assert.ok(await dialog.getByText('State A · Office 2',{exact:true}).isVisible());
  await dialog.getByText('2 days',{exact:true}).click();assert.ok(await dialog.getByText('06/10/2026',{exact:true}).isVisible());
  await page.screenshot({path:testArtifactPath('vahan-update-history-desktop.png')});
- complete=true;socket.send('42/ui,'+JSON.stringify(['reports:updated',{}]));
+ complete=true; // Ordinary report readers refresh through polling, without admin sockets.
  await dialog.getByText('0 cases not refreshed on this day',{exact:true}).waitFor({timeout:18000});
  assert.equal(await dialog.locator('progress').first().getAttribute('value'),'2');assert.equal(await dialog.getByText('First case not refreshed',{exact:true}).count(),0);
  await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});

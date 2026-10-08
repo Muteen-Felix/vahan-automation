@@ -17,12 +17,19 @@ export const AUTH_LOGOUT_EVENT = "vahan:logout";
 export interface AuthStatus {
   configured: boolean;
   tokenTtlSeconds: number | null;
+  idleTimeoutSeconds?: number;
 }
 
-export interface LoginResponse {
+export interface SessionDeadlines {
+  expiresAt?: number;
+  idleExpiresAt?: number;
+}
+
+export interface LoginResponse extends SessionDeadlines {
   accessToken: string;
   tokenType: "Bearer";
   expiresIn: number | null;
+  idleTimeoutSeconds?: number;
   username: string;
 }
 
@@ -74,9 +81,12 @@ export function clearAccessToken() {
 }
 
 async function logout() {
+  const token = getAccessToken();
   await request('/api/auth/logout', {method: 'POST'});
-  clearAccessToken();
-  window.dispatchEvent(new Event(AUTH_LOGOUT_EVENT));
+  if (getAccessToken() === token) {
+    clearAccessToken();
+    window.dispatchEvent(new Event(AUTH_LOGOUT_EVENT));
+  }
 }
 
 export class ApiError extends Error {
@@ -97,7 +107,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    if (response.status === 401 && path !== "/api/auth/login") notifyAuthenticationRequired();
+    if (response.status === 401 && path !== "/api/auth/login" && getAccessToken() === token) notifyAuthenticationRequired();
     const detail=Array.isArray(body.detail)?body.detail.map((item:{msg?:string})=>item.msg||'Invalid input').join('; '):body.detail;
     throw new ApiError(response.status, (typeof detail==='object'&&detail!==null?JSON.stringify(detail):detail) || `Request failed (${response.status}).`);
   }
@@ -111,7 +121,7 @@ async function downloadFile(path: string, fileName?: string): Promise<void> {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    if (response.status === 401) notifyAuthenticationRequired();
+    if (response.status === 401 && getAccessToken() === token) notifyAuthenticationRequired();
     throw new Error(body.detail || `Could not download the file (${response.status}).`);
   }
   const objectUrl = URL.createObjectURL(await response.blob());
@@ -154,11 +164,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ username, password }),
     }),
-  renewSession: () => request<LoginResponse>("/api/auth/renew", {
+  sessionActivity: () => request<SessionDeadlines>("/api/auth/activity", {
     method: "POST",
     body: JSON.stringify({}),
   }),
-  currentUser: () => request<{ username: string; role: string }>("/api/auth/me"),
+  currentUser: () => request<{ username: string; role: string } & SessionDeadlines>("/api/auth/me"),
   userState: () => request<Record<string, unknown>>('/api/user-state'),
   putUserState: (key: string, value: unknown, token?: string | null) => request(`/api/user-state/${encodeURIComponent(key)}`, {
     method: 'PUT', body: JSON.stringify({value}), ...(token ? {headers: {Authorization: `Bearer ${token}`}} : {}),

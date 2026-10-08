@@ -40,8 +40,8 @@ def main() -> int:
 
     if not args.no_build:
         run([*COMPOSE, "build"])
-    run([*COMPOSE, "create", "--no-build", *RUNNERS])
-    run([*COMPOSE, "up", "-d", "--no-build", "postgres", "worker-control", "api", "web"])
+    # Remove the retired controller when upgrading an existing deployment.
+    run([*COMPOSE, "up", "-d", "--no-build", "--remove-orphans", "postgres", "api", "web", *RUNNERS])
     run([*COMPOSE, "ps"])
     return 0
 

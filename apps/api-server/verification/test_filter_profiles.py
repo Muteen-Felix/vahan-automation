@@ -14,7 +14,7 @@ from app.filter_planner import FilterPlanner
 from app.models.filter_profile import FIELD_ORDER, ProfileDefinition, ProfileWrite, case_key
 from app.models.job import Job
 from app.api.batch_queue import QueueTaskInput
-from app.repositories.filter_profiles import FilterProfileRepository, reserve_options_runner
+from app.repositories.filter_profiles import FilterProfileRepository, reserve_options_runner, PreflightUnavailable
 from app.repositories.batch_queue import BatchQueueRepository
 from app.security import issue_access_token
 from app.services import services
@@ -117,8 +117,9 @@ class ProfileTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual((await queue.claim(session,self.owner,self.runner))['type'],'waiting')
             self.assertIsNone(await services.jobs.assign(Job(runnerId=self.runner,ownerUsername=self.owner,filters=tasks[0].filters)))
             self.assertEqual(next(r for r in await services.runners.list() if r.id==self.runner).status,'BUSY')
-            with self.assertRaisesRegex(ValueError,'another filter preview'):
+            with self.assertRaises(PreflightUnavailable) as blocked:
                 async with reserve_options_runner(self.runner,self.other):pass
+            self.assertEqual(blocked.exception.code, 'WORKER_BUSY')
             async with engine.begin() as connection:
                 await connection.execute(update(db.runner_planning_leases).where(db.runner_planning_leases.c.runner_id==self.runner)
                     .values(expires_at=datetime.now(timezone.utc)-timedelta(seconds=1)))

@@ -1,6 +1,6 @@
 # Tài liệu API toàn hệ thống VAHAN Automation
 
-Ngày rà soát: **08/10/2026**, theo giờ Việt Nam (UTC+07:00). Phạm vi: checkout `vahan-automation`, FastAPI, Socket.IO, browser runner và Docker worker controller. Tài liệu mô tả **mã nguồn hiện tại**, gồm cả API vẫn tồn tại sau khi giao diện Create Report đã được gỡ.
+Ngày rà soát: **08/10/2026**, theo giờ Việt Nam (UTC+07:00). Phạm vi: checkout `vahan-automation`, FastAPI, Socket.IO, browser runner và giới hạn worker tại backend. Tài liệu mô tả **mã nguồn hiện tại**, gồm cả API vẫn tồn tại sau khi giao diện Create Report đã được gỡ.
 
 Đối chiếu OpenAPI lần gần nhất: **81 thao tác HTTP trong source và 81 trên API live** tại `127.0.0.1:8000`. `GET /api/network/status` có trên live; gọi không kèm token trả 401 như yêu cầu xác thực. Chưa đọc được giá trị trạng thái mạng vì lần kiểm tra này không dùng token. Việc có cùng route/schema không chứng minh mọi chi tiết xử lý của hai build hoàn toàn giống nhau.
 
@@ -15,7 +15,7 @@ Việc rà soát dùng đọc mã nguồn và GET OpenAPI; **không gọi API t�
 5. [Danh mục HTTP đầy đủ](#5-danh-mục-http-đầy-đủ)
 6. [Các response không có schema OpenAPI đầy đủ](#6-các-response-không-có-schema-openapi-đầy-đủ)
 7. [Socket.IO](#7-socketio)
-8. [API nội bộ worker/controller](#8-api-nội-bộ-workercontroller)
+8. [API nội bộ worker](#8-api-nội-bộ-worker)
 9. [Trạng thái, retry và chẩn đoán](#9-trạng-thái-retry-và-chẩn-đoán)
 10. [Ví dụ gọi API](#10-ví-dụ-gọi-api)
 11. [Giới hạn và API tương thích](#11-giới-hạn-và-api-tương-thích)
@@ -31,9 +31,8 @@ Việc rà soát dùng đọc mã nguồn và GET OpenAPI; **không gọi API t�
 | Dashboard/Nginx | `http://127.0.0.1:5173` | Proxy `/api/` và `/socket.io/` sang API; phần còn lại phục vụ React. |
 | Swagger | `http://127.0.0.1:8000/docs` | Dùng cổng API trực tiếp; Nginx dashboard không proxy `/docs`. |
 | ReDoc | `http://127.0.0.1:8000/redoc` | Tài liệu tự sinh của build đang chạy. |
-| OpenAPI live | `http://127.0.0.1:8000/openapi.json` | Không bao gồm Socket.IO, controller hoặc runner health. |
+| OpenAPI live | `http://127.0.0.1:8000/openapi.json` | Không bao gồm Socket.IO hoặc runner health. |
 | Socket.IO | `http://127.0.0.1:8000`, path `/socket.io/` | Namespace `/ui` và `/runner`; client hiện dùng WebSocket. Có thể đi qua proxy dashboard. |
-| Worker controller | `http://worker-control:3002` | Nội bộ mạng Docker; không phải URL công khai cho người dùng. |
 | Browser worker | `http://runner:3001`, `http://runner-2:3001` … | Chỉ có health endpoint nội bộ; ID tương ứng là `playwright-1`, `playwright-2` … |
 
 Request JSON dùng `Content-Type: application/json`; upload dùng `multipart/form-data`; preview dùng NDJSON; tải tệp trả binary. Dùng URL HTTPS và prefix theo cấu hình reverse proxy thực tế khi triển khai ngoài máy cục bộ.
@@ -47,7 +46,7 @@ Authorization: Bearer <accessToken>
 Content-Type: application/json
 ```
 
-Token lấy từ `POST /api/auth/login`. Token mới có `expiresIn=null`, nhưng vẫn gắn với session trong SQL: logout, khóa tài khoản hoặc reset mật khẩu có thể thu hồi quyền. `POST /api/auth/renew` chỉ cấp token mới cho một session còn hợp lệ; không đăng nhập thay cho một session đã mất hiệu lực.
+Token lấy từ `POST /api/auth/login`, có `expiresIn=43200` và gắn với session SQL. Phiên hết hạn sau 12 giờ kể từ lúc đăng nhập hoặc 60 phút không có hoạt động. Logout, khóa tài khoản hoặc reset mật khẩu có thể thu hồi quyền. `POST /api/auth/activity` chỉ cập nhật idle deadline cho phiên còn hợp lệ; không cấp token mới và không kéo dài absolute TTL. Polling, heartbeat và lưu user-state nền không tính là hoạt động. `/api/auth/renew` đã được bỏ.
 
 Không đặt access token trong query string. Các API download cần header Bearer giống API JSON; một đường dẫn được mở trực tiếp trong tab mới không tự lấy token đang lưu ở localStorage của React.
 
@@ -66,17 +65,19 @@ Runner token khác access token dashboard. Middleware chỉ chấp nhận token 
 | Bearer | Tài khoản đã xác thực. Không tự suy ra quyền admin. |
 | Bearer admin | Handler gọi `require_admin`; user thường nhận 403. |
 | owner/admin | User bị giới hạn theo owner; admin được truy cập rộng hơn ở đúng endpoint áp dụng chính sách này. |
-| owner hiện tại | Profile, schedule và queue gắn với username hiện tại, **kể cả khi role=admin**. Không có query để chọn owner khác. |
+| owner hiện tại | Profile và queue gắn với username hiện tại. Lịch vẫn lưu owner người tạo, nhưng mọi admin được xem và quản lý lịch của admin khác. |
 | Báo cáo dùng chung | Bảng annual-reports, lịch sử nhập, update-status và bằng chứng coverage không bị owner_filter chia riêng dữ liệu. Quyền điều khiển job/lịch vẫn riêng theo tài khoản. |
 | Runner + ID | Cần runner-token và đúng runner ID; Bearer không thay thế được ở handler chỉ cho authenticated runner. |
 
-`PUT /api/worker-pool` hiện yêu cầu Bearer qua middleware nhưng **không có require_admin riêng**; nó thay đổi pool toàn hệ thống. Đây là mô tả quyền thực tế của source, không phải cam kết rằng chỉ admin được đổi worker.
+**Phân quyền từ 08/10/2026:** middleware chỉ cho user thường đọc/xuất `annual-reports` (gồm history, update-status và coverage), đọc trạng thái kết nối và quản lý phiên/mật khẩu của chính mình. `GET /api/user-state` của user thường trả `{}`. Mọi API điều khiển, filter, lịch, tài khoản và worker đều yêu cầu admin; các nhãn Bearer/owner trong bảng endpoint bên dưới chỉ mô tả thêm kiểm tra trong handler, không bỏ qua giới hạn này. Truy cập trái quyền trả 403.
+
+Admin dùng `PATCH /api/users/{username}` với `role: "admin"` hoặc `"user"` để cấp/thu hồi quyền quản trị. Server khóa bảng tài khoản trong transaction để giữ ít nhất một admin hoạt động; thay đổi role thu hồi các phiên và Socket.IO của tài khoản đích. Admin được xem, bật/tắt, dừng, pause/resume và xóa lịch của admin khác; thao tác giữ owner gốc của lịch và queue.
 
 **OpenAPI tự sinh chưa khai báo đầy đủ security schemes vì xác thực nằm trong middleware.** Không hiểu một operation không có `security` là cho phép gọi ẩn danh. Bảng quyền trong tài liệu và kiểm tra handler mới thể hiện đúng yêu cầu xác thực.
 
 ### 2.3. Socket.IO
 
-- `/ui`: handshake `auth: {token: "<accessToken>"}`. Server kiểm tra session; quyền được kiểm tra lại ở các handler. Token legacy có hạn vẫn có thể dẫn đến ngắt socket khi hết hạn.
+- `/ui`: handshake `auth: {token: "<accessToken>"}` chỉ chấp nhận admin. Server kiểm tra lại session và quyền trong handler; user thường đọc báo cáo qua REST/polling.
 - `/runner`: handshake `auth: {token: "<runner-secret>", runnerId: "playwright-1", runnerName: "Worker 1", engine: "playwright", version: "<version>", source: "new"}`.
 - Room `runner:<runnerId>` nhận lệnh cho worker; room `job:<jobId>` nhận trạng thái job sau khi UI subscribe; room `reports:shared` nhận thông báo báo cáo đã commit cho dashboard đã xác thực.
 
@@ -112,10 +113,10 @@ FastAPI thường trả `{"detail":"..."}`. Với UI Health, detail có thể l�
 | 410 | Source VAHAN `old`; endpoint `/files/{id}/rows` đã ngừng hỗ trợ. |
 | 413 | Upload/value quá lớn, export vượt số dòng Excel. |
 | 422 | Kiểu dữ liệu, UUID, giới hạn model, timezone, field bắt buộc hoặc custom validator không hợp lệ. |
-| 503 | Thiếu cấu hình xác thực/mã hóa, controller không truy cập được, hoặc network guard đang pause theo source mới. |
+| 503 | Thiếu cấu hình xác thực/mã hóa hoặc network guard đang pause theo source mới. |
 | 5xx khác | Lỗi hạ tầng hoặc lỗi chưa được handler ánh xạ; không chuyển thành NO_DATA. |
 
-Worker controller dùng `{"error":"..."}` thay vì `detail`. Socket.IO ACK dùng `{ok:false,error:"..."}` và có thể kèm `code`, `retryAfterMs`; không áp dụng HTTP status cho ACK.
+Socket.IO ACK dùng `{ok:false,error:"..."}` và có thể kèm `code`, `retryAfterMs`; không áp dụng HTTP status cho ACK.
 
 ### 3.3. Tải tệp
 
@@ -188,9 +189,9 @@ Danh mục dưới đây gồm đủ **81 method + path** đăng ký trong sourc
 | `GET` | `/api/health`<br>Liveness của API | Công khai | Không có tham số/body. | JSON: status=ok.<br><br>Không kiểm tra browser hoặc kết nối VAHAN. | 200 |
 | `GET` | `/api/ready`<br>Readiness của PostgreSQL | Công khai | Không có tham số/body. | JSON: status=ok, storage=postgresql.<br><br>Đọc bảng users; lỗi DB có thể trả 5xx. Không phải trạng thái của toàn bộ worker. | 200 |
 | `GET` | `/api/network/status`<br>Kết nối upstream VAHAN | Bearer | Không có tham số/body. | JSON: online, checkedAt, changedAt, message; một số trường có thể chưa tồn tại trước lần kiểm tra đầu.<br><br>Có trong source và OpenAPI live. Lần gọi không token trả 401; trạng thái online thực tế chưa được đọc. | 200 |
-| `GET` | `/api/auth/status`<br>Trạng thái cấu hình đăng nhập | Công khai | Không có tham số/body. | JSON: configured, tokenTtlSeconds=null.<br><br>configured chỉ true khi secret hợp lệ và đã có tài khoản. | 200 |
-| `POST` | `/api/auth/login`<br>Đăng nhập | Công khai | body `application/json` → `LoginRequest` (bắt buộc) | JSON: accessToken, tokenType=Bearer, expiresIn=null, username; Cache-Control: no-store.<br><br>401 sai tài khoản/mật khẩu hoặc credentials vừa thay đổi; 503 thiếu cấu hình. Token mới không tự hết hạn nhưng session có thể bị thu hồi. | 200, 422 validation |
-| `POST` | `/api/auth/renew`<br>Cấp lại token cho session hiện tại | Bearer | Không có tham số/body. | Cùng dạng response đăng nhập, giữ token_session.<br><br>Không khôi phục session đã bị thu hồi; 401 nếu token không hợp lệ. | 200 |
+| `GET` | `/api/auth/status`<br>Trạng thái cấu hình đăng nhập | Công khai | Không có tham số/body. | JSON: configured, tokenTtlSeconds=43200, idleTimeoutSeconds=3600.<br><br>configured chỉ true khi secret hợp lệ và đã có tài khoản. | 200 |
+| `POST` | `/api/auth/login`<br>Đăng nhập | Công khai | body `application/json` → `LoginRequest` (bắt buộc) | JSON: accessToken, tokenType=Bearer, expiresIn=43200, idleTimeoutSeconds=3600, expiresAt, idleExpiresAt, username; Cache-Control: no-store.<br><br>401 sai tài khoản/mật khẩu hoặc credentials vừa thay đổi; 503 thiếu cấu hình. Token và session có thời hạn; session cũng có thể bị thu hồi. | 200, 422 validation |
+| `POST` | `/api/auth/activity`<br>Ghi nhận thao tác người dùng | Bearer | Không có tham số/body. | JSON: expiresAt, idleExpiresAt (Unix seconds). Không khôi phục phiên hết hạn hoặc thay đổi absolute TTL; 401 nếu phiên không hợp lệ. | 200 |
 | `GET` | `/api/auth/me`<br>Tài khoản hiện tại | Bearer | Không có tham số/body. | JSON: username, role.<br><br>role là admin hoặc user; 401 nếu chưa xác thực. | 200 |
 | `POST` | `/api/auth/logout`<br>Thu hồi phiên đăng nhập hiện tại | Bearer | Không có tham số/body. | JSON: ok=true; Socket.IO của session bị ngắt.<br><br>Không xóa lịch chạy hay dữ liệu báo cáo. Đóng tab không đồng nghĩa logout. | 200 |
 | `POST` | `/api/auth/password`<br>Đổi mật khẩu của chính tài khoản | Bearer | body `application/json` → `ChangePasswordRequest` (bắt buộc) | JSON: ok=true; giữ session hiện tại và thu hồi các session khác.<br><br>409 nếu mật khẩu mới giống cũ hoặc mật khẩu hiện tại không đúng; mật khẩu mới 12–1024 ký tự. | 200, 422 validation |
@@ -278,8 +279,8 @@ Danh mục dưới đây gồm đủ **81 method + path** đăng ký trong sourc
 | `POST` | `/api/batch-queue/sessions/{session_id}/resume`<br>Resume queue cấp thấp | Bearer; owner hiện tại | path `session_id` (string, bắt buộc); body `application/json` → `ResumeQueueInput hoặc null` (tùy chọn) | JSON: status=RUNNING.<br><br>Body tùy chọn; cần fresh preflight cho worker count hiện tại/mới. 409 nếu đổi workers khi case chưa dừng; với lịch dùng endpoint resume của lịch. | 200, 422 validation |
 | `POST` | `/api/batch-queue/sessions/{session_id}/tasks/{position}/settle`<br>Reconcile một vị trí case | Bearer; owner hiện tại | path `session_id` (string, bắt buộc); path `position` (integer, bắt buộc) | QueueTask: position, name, status, attempts, failures, runnerId, jobId, error; có metadata retry theo policy.<br><br>position là zero-based; 404 nếu không có queue/case. Không đồng nghĩa xác nhận dữ liệu chưa được commit. | 200, 422 validation |
 | `POST` | `/api/batch-queue/sessions/{session_id}/claim`<br>Giao case tiếp theo cho một runner | Bearer; owner hiện tại | path `session_id` (string, bắt buộc); body `application/json` → `ClaimInput` (bắt buộc) | Discriminated response: assigned, waiting, done, paused, runner_unavailable, pool_updating, worker_disabled hoặc network_paused; assigned có task, jobId, recovered.<br><br>Tạo/giao job chỉ khi gate, kết nối mạng và giới hạn worker cho phép; row lock chống claim trùng. Với lịch đang chạy, scheduler đã claim; không điều phối song song từ client. | 200, 422 validation |
-| `GET` | `/api/worker-pool`<br>Pool Docker và desired count | Bearer | Không có tham số/body. | JSON: enabled, runningCount, desiredCount, phase, workers.<br><br>503 controller không truy cập được. Khi chưa cấu hình controller: enabled=false và số lượng null. | 200 |
-| `PUT` | `/api/worker-pool`<br>Thay số container browser | Bearer; không có require_admin trong handler hiện tại | body `application/json` → `WorkerCount` (bắt buộc) | Worker pool sau khi áp dụng count.<br><br>count strict integer 1–10; 409 worker cần dừng còn bận hoặc controller từ chối. Đây là trạng thái toàn hệ thống, không pool riêng cho từng tài khoản. | 200, 422 validation |
+| `GET` | `/api/worker-pool`<br>Giới hạn worker toàn hệ thống | Bearer; admin | Không có tham số/body. | JSON: enabled=true, mode=logical, runningCount (runner kết nối), activeCount (job hoặc reservation), desiredCount, phase, workers. Container do deployment quản lý. | 200 |
+| `PUT` | `/api/worker-pool`<br>Thay giới hạn worker nhận việc | Bearer; admin | body `application/json` → `WorkerCount` (bắt buộc) | Worker pool sau khi áp dụng count.<br><br>count strict integer 1–10; 409 nếu job/reservation đang chạy không phù hợp giới hạn mới. Không dừng container hoặc hủy job. Giới hạn toàn hệ thống, ngoài giới hạn riêng của từng queue. | 200, 422 validation |
 
 ### 5.8 Filter profiles và preview
 
@@ -415,21 +416,13 @@ Không có API để lấy token giải tự động. REST `GET /api/run-schedul
 | `captcha:submit` | `{jobId, captchaId, value}`; forward mã do operator gửi tới tab đang chờ. |
 | `captcha:refresh` | `{jobId, captchaId}`; gọi refresh chính thức trên trang. |
 
-## 8. API nội bộ worker/controller
+## 8. API nội bộ worker
 
 Các địa chỉ sau nằm trong mạng nội bộ Docker và không thuộc `/api` FastAPI công khai.
 
-### 8.1. Worker controller (cổng 3002)
+Worker controller và cổng 3002 đã được loại bỏ. Giới hạn cấp việc nằm trong PostgreSQL, được dùng chung cho job trực tiếp, queue và reservation preflight/filter options.
 
-| Method | Path | Auth | Kết quả / lỗi |
-| --- | --- | --- | --- |
-| `GET` | `/health` | Không | `200 {"status":"ok"}` khi Docker Engine trả `/version`; nếu không `503 {"error":"Docker engine unavailable."}`. |
-| `GET` | `/workers` | `X-Worker-Control-Token` | `200 {runningCount, workers:[{number,service,running}]}`; lỗi Docker `503`; thiếu token `401`. |
-| `POST` | `/workers` | `X-Worker-Control-Token` | JSON `{count:1..10}`; điều chỉnh containers thuộc Compose project này, chờ health tối đa 60 giây. `409` input/busy/missing container; `401` auth; `503` Docker. |
-
-Controller kiểm tra cả nhóm worker cần dừng trước khi dừng bất kỳ container nào; không dừng runner đang có job hoặc chưa xác định được trạng thái. Header dùng chung secret với runner token đã cấu hình, nhưng tên header riêng.
-
-### 8.2. Browser runner (cổng 3001)
+### 8.1. Browser runner (cổng 3001)
 
 Runner chỉ có `GET /health` cho diagnostics nội bộ: `{connected, browserReady, activeJobId, optionsBusy}`. Đây không phải API điều khiển job qua HTTP; việc giao job và đọc options dùng Socket.IO. Không mở endpoint nội bộ này qua Internet.
 

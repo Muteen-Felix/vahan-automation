@@ -16,16 +16,21 @@ import {uiSocket} from './services/socket-client';
 import {NetworkNotice, useNetworkStatus} from './components/NetworkNotice';
 import {useRunSchedules} from './services/use-run-schedules';
 
-type AppSection = 'reports' | 'filters' | 'settings';
+type AppSection = 'reports' | 'filters' | 'settings' | 'forbidden';
 
 function sectionFromHash(): AppSection {
-  const [hash, query] = window.location.hash.slice(1).split('?');
+  const route = window.location.hash.slice(1) || window.location.pathname.replace(/^\/+|\/+$/g, '');
+  const [hash, query] = route.split('?');
   if (['settings', 'settings-ui-health', 'health'].includes(hash)
     || (hash === 'configure' && new URLSearchParams(query).has('scheduled'))) return 'settings';
-  return hash === 'filters' ? 'filters' : 'reports';
+  if (hash === 'configure') return 'settings';
+  return hash === 'filters' ? 'filters' : !hash || hash === 'reports' ? 'reports' : 'forbidden';
 }
 
 export default function App() {
+  const [role, setRole] = useState<string | null>(null);
+  const isAdmin = role === 'admin';
+  useEffect(() => {void api.currentUser().then(user => setRole(user.role)).catch(reason => setError(reason.message));}, []);
   const [activeSection, setActiveSection] = useState<AppSection>(sectionFromHash);
   const [connection, setConnection] = useState<ConnectionState>('connecting');
   const [runners, setRunners] = useState<Runner[]>([]);
@@ -41,7 +46,7 @@ export default function App() {
   const [healthBlock, setHealthBlock] = useState<string | null>(null);
   const [healthRefresh, setHealthRefresh] = useState(0);
   const [reportsRefresh, setReportsRefresh] = useState(0);
-  const scheduledRuns = useRunSchedules();
+  const scheduledRuns = useRunSchedules(isAdmin);
   const network = useNetworkStatus();
   const scheduledResults = JSON.stringify(scheduledRuns.schedules.map(schedule => [schedule.id,
     schedule.sessionId, schedule.lastSessionId, schedule.done, schedule.withData,
@@ -53,7 +58,7 @@ export default function App() {
     const navigate = () => {
       const section = sectionFromHash();
       if (window.location.hash === '#health') window.history.replaceState(null, '', '#settings-ui-health');
-      else if (!['#reports', '#filters', '#settings', '#settings-ui-health'].includes(window.location.hash)) {
+      else if (section !== 'forbidden' && !['#reports', '#filters', '#settings', '#settings-ui-health'].includes(window.location.hash)) {
         window.history.replaceState(null, '', `#${section}`);
       }
       setActiveSection(section);
@@ -77,19 +82,22 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (!isAdmin) return;
     let live = true;
     void api.filterProfiles().then(values => {
       if (!Array.isArray(values)) throw new Error('Could not load saved filter profiles.');
       if (live) setProfiles(values);
     }).catch(reason => {if (live) setError(reason.message);});
     return () => {live = false;};
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
+    if (!isAdmin) return;
     let live = true;
     let healthSequence = 0;
     let runnerRequest: Promise<void> | null = null;
     const refreshRunners = () => {
+      if (!isAdmin) return Promise.resolve();
       if (runnerRequest) return runnerRequest;
       runnerRequest = api.runners().then(values => {if (live) setRunners(values);})
         .catch(reason => {if (live) setError(reason.message);})
@@ -97,6 +105,7 @@ export default function App() {
       return runnerRequest;
     };
     const refreshHealth = async () => {
+      if (!isAdmin) return;
       const sequence = ++healthSequence;
       try {
         const status = await api.uiHealthStatus();
@@ -159,7 +168,7 @@ export default function App() {
       document.removeEventListener('visibilitychange', onVisibility);
       uiSocket.disconnect();
     };
-  }, []);
+  }, [isAdmin]);
 
   async function signOut() {
     if (signingOut) return;
@@ -169,6 +178,8 @@ export default function App() {
     finally {setSigningOut(false);}
   }
 
+  if (!role) return <main className="auth-shell"><p role={error ? 'alert' : 'status'}>{error || 'Loading permissions…'}</p></main>;
+  const forbidden = activeSection === 'forbidden' || (!isAdmin && activeSection !== 'reports');
   return <div className="app-shell" data-view={activeSection}>
     <header className="site-header">
       <a className="brand-lockup" href="#reports" aria-label="VAHAN Report Automation">
@@ -180,22 +191,22 @@ export default function App() {
       </a>
       <nav className="main-nav" aria-label="Main navigation">
         <a className={activeSection === 'reports' ? 'active' : undefined} aria-current={activeSection === 'reports' ? 'page' : undefined} href="#reports">Exported Reports</a>
-        <a className={activeSection === 'filters' ? 'active' : undefined} aria-current={activeSection === 'filters' ? 'page' : undefined} href="#filters">Filters</a>
-        <a className={activeSection === 'settings' ? 'active' : undefined} aria-current={activeSection === 'settings' ? 'page' : undefined} href="#settings">Settings</a>
+        {isAdmin && <><a className={activeSection === 'filters' ? 'active' : undefined} aria-current={activeSection === 'filters' ? 'page' : undefined} href="#filters">Filters</a>
+        <a className={activeSection === 'settings' ? 'active' : undefined} aria-current={activeSection === 'settings' ? 'page' : undefined} href="#settings">Settings</a></>}
       </nav>
-      <div className="header-actions"><ConnectionBanner backend={connection} runners={runners.length} /></div>
+      <div className="header-actions">{isAdmin ? <ConnectionBanner backend={connection} runners={runners.length} /> : <AccountSettings signingOut={signingOut} onSignOut={signOut}/>}</div>
     </header>
     <div className="app-layout"><div className="app-main">
       <NetworkNotice network={network}/>
       <StateSyncStatus />
       {error && <div className="global-error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></div>}
-      {healthBlock && activeSection !== 'settings' && <div className="ui-health-block" role="alert">
+      {isAdmin && healthBlock && activeSection !== 'settings' && <div className="ui-health-block" role="alert">
         <strong>UI Health blocked — new crawl work cannot start.</strong>
         <p>Review the website change alert in Settings and copy the diagnostic error for dev.</p>
         <a href="#settings-ui-health">Open UI Health in Settings</a>
         <button type="button" onClick={() => void navigator.clipboard.writeText(healthBlock).catch(() => setError('Could not copy the diagnostic error.'))}>Copy error</button>
       </div>}
-      {activeSection === 'filters' ? <FilterProfiles profiles={profiles} runners={runners} knownPlan={knownPlan}
+      {forbidden ? <main className="page-content"><h2>Bạn không có quyền truy cập trang này.</h2><a href="#reports">Về Exported Reports</a></main> : activeSection === 'filters' ? <FilterProfiles profiles={profiles} runners={runners} knownPlan={knownPlan}
         busy={network.offline || scheduledRuns.schedules.some(schedule => Boolean(schedule.sessionId) && ['PREPARING', 'RUNNING', 'PAUSING', 'RESUMING'].includes(schedule.status))}
         onSaved={refreshProfiles} onSelect={(id, plan) => {
           setSelectedProfileId(id); persistentState.setItem(FILTER_PROFILE_STORAGE_KEY, JSON.stringify(id));
@@ -211,7 +222,7 @@ export default function App() {
             loading={scheduledRuns.loading} loadError={scheduledRuns.error}
             onUpsert={scheduledRuns.upsert} onDelete={scheduledRuns.remove} />
         </main> : <main className="page-content exported-reports-page" id="reports">
-          <AnnualReports refreshTrigger={reportsRefresh} coveragePlan={knownPlan} />
+          <AnnualReports refreshTrigger={reportsRefresh} coveragePlan={isAdmin ? knownPlan : null} />
         </main>}
     </div></div>
   </div>;

@@ -38,14 +38,14 @@ Hai script gọi chung `scripts/run-docker.py`: tạo `.docker.env` nếu chưa 
 
 ## Build và phát hành image
 
-Compose build bốn image được đặt tag theo `VAHAN_IMAGE_NAMESPACE` và `VAHAN_IMAGE_TAG` trong `.docker.env`. Mặc định là `vahan-automation/{api,runner,web,worker-control}:local`. Tất cả runner dùng chung một image. Không cần mount mã nguồn hoặc đường dẫn máy host vào container; mã OCR cần thiết đã nằm trong API image.
+Compose build ba image được đặt tag theo `VAHAN_IMAGE_NAMESPACE` và `VAHAN_IMAGE_TAG` trong `.docker.env`. Mặc định là `vahan-automation/{api,runner,web}:local`. Tất cả runner dùng chung một image. Không cần mount mã nguồn hoặc đường dẫn máy host vào container; mã OCR cần thiết đã nằm trong API image.
 
 Để tạo bản có tag phát hành và đẩy tới registry của bạn, đặt namespace đầy đủ, ví dụ `registry.example.com/team/vahan`, và tag, ví dụ `2026.10.08`, trong `.docker.env`; sau đó:
 
 ```bash
 docker login registry.example.com
 docker compose --env-file .docker.env build
-docker compose --env-file .docker.env push api runner web worker-control
+docker compose --env-file .docker.env push api runner web
 ```
 
 Trên production, đặt cùng namespace/tag, đăng nhập registry rồi chạy:
@@ -64,7 +64,7 @@ Build trên Linux production hoặc CI cùng kiến trúc CPU với máy đích.
 - Dùng tên miền HTTPS, VPN hoặc firewall để giới hạn người truy cập dashboard. Không công khai Docker socket, PostgreSQL hoặc cổng worker.
 - Giữ volume `postgres_data`, sao lưu thường xuyên bằng `python3 scripts/backup-docker.py`. Bản backup chứa database và `.docker.env`, do đó chỉ tài khoản vận hành được đọc.
 - Giữ `.docker.env`, backup, signing key và browser-state key ngoài Git. Sao lưu các khóa cùng database để có thể khôi phục cookie mã hóa và phiên đăng nhập.
-- `worker-control` cần Docker socket để điều chỉnh số runner. Chỉ triển khai trên host chuyên dụng, giữ API/controller trong mạng Compose nội bộ và giới hạn quyền quản trị Docker trên host.
+- Pool gồm 10 runner khởi động sẵn; backend giới hạn số worker được cấp việc bằng khóa PostgreSQL. Không mount Docker socket vào container. Giảm giới hạn yêu cầu job và lượt kiểm tra/filter options ngoài giới hạn mới hoàn tất trước; các container nhàn rỗi vẫn dùng tài nguyên host.
 
 Stack hiện cung cấp một API process và một PostgreSQL primary, không phải dịch vụ HA. Khi cập nhật API/runner trên host đang xử lý job, chờ batch về trạng thái cuối trước khi triển khai image mới. Lệnh `docker compose down -v` xóa database volume; không dùng cho cập nhật thông thường.
 
@@ -75,3 +75,11 @@ Stack hiện cung cấp một API process và một PostgreSQL primary, không p
 Local `--config-only` kiểm tra được Compose và file cấu hình; nó không thay thế việc chạy workflow trên từng hosted OS. Sau khi workflow được kích hoạt cho branch/PR, tab Actions ghi kết quả Windows, Ubuntu và macOS theo từng run.
 
 Network recovery uses the existing SQL app_settings table (network-connectivity); no schema migration is needed. The API polls VAHAN connectivity every five seconds and requires two successful checks before automatic continuation. Only schedules carrying networkPaused resume automatically; manual pauses and deletions remain authoritative. Deploy API, web and browser-runner together for transport-error reports and bounded browser cancellation.
+
+## Giới hạn phiên đăng nhập
+
+Phiên UI hết hạn sau 12 giờ kể từ lúc đăng nhập hoặc 60 phút không có thao tác. Backend kiểm tra thời hạn cho HTTP và Socket.IO; polling, heartbeat và lưu user-state nền không kéo dài idle timeout. UI báo hoạt động qua `POST /api/auth/activity`, không cấp token mới hoặc thay đổi mốc 12 giờ. Endpoint `/api/auth/renew` đã được bỏ.
+
+Migration `0012_auth_session_limits` thu hồi các phiên cũ không có thời hạn, vì vậy người dùng cần đăng nhập lại sau triển khai. Logout/hết phiên chỉ kết thúc quyền truy cập UI; scheduler và job đã tiếp nhận vẫn chạy bằng xác thực riêng của runner. Job cần CAPTCHA thủ công có thể phải chờ đăng nhập lại. Khóa tài khoản chủ sở hữu vẫn dừng lịch chạy theo chính sách hiện có.
+
+Khi nâng cấp, chờ công việc đang chạy hoàn tất rồi dùng launcher với `--no-build` hoặc build image mới. Launcher dùng `--remove-orphans` để gỡ container controller cũ cùng mount Docker socket. Không dùng `down -v`; giữ nguyên volume dữ liệu.

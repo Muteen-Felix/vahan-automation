@@ -109,17 +109,19 @@ class ContractTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):await ui_contract.require_gate('other',[self.runner],result['preflightId'],fresh=True)
         with patch('app.api.ui_health.sio.call',return_value={'ok':True,'validation':{'allowed':True}}):
             with self.assertRaises(HTTPException):await preflight(PreflightInput(runnerIds=[self.runner]),request)
-        with self.assertRaises(ValueError):
-            await ui_contract.require_gate(self.owner,[self.runner],result['preflightId'],fresh=True)
+        # Missing transport/evidence is availability, not a website change;
+        # it must not revoke previously validated DOM evidence.
+        self.assertEqual(await ui_contract.require_gate(self.owner,[self.runner],result['preflightId'],fresh=True),result['preflightId'])
 
-    async def test_sql_preflight_retries_once_and_persists_missing_worker(self):
+    async def test_sql_preflight_retries_dom_once_and_persists_missing_worker_as_waiting(self):
         request=Request({'type':'http','headers':[]});request.state.authenticated_user=self.owner
         attempts=0
         async def checked(event,payload,**kwargs):
             nonlocal attempts
             attempts+=1
-            if attempts==1:raise TimeoutError('fixture timeout')
             check=observation();check.update(checkId=payload['requestId'],trigger='preflight')
+            if attempts==1:
+                next(control for control in check['observedControls'] if control['field']=='makers')['found']=False
             check['contractValidation']=await ui_contract.evaluate(check,self.runner)
             return await services.ui_health_logs.append(check)
         with patch('app.api.ui_health.sio.call',side_effect=checked):
@@ -130,7 +132,7 @@ class ContractTests(unittest.IsolatedAsyncioTestCase):
             await preflight(PreflightInput(runnerIds=['missing-worker']),request)
         async with engine.connect() as c:
             row=(await c.execute(select(db.ui_preflight_checks).where(db.ui_preflight_checks.c.id==error.exception.detail['diagnostics']['preflightId']))).mappings().one()
-        self.assertEqual(row['status'],'BLOCKED')
+        self.assertEqual(row['status'],'WAITING')
         self.assertEqual(row['reports'][0]['reports'][0]['code'],'WORKER_NOT_REGISTERED')
 
     async def test_preview_gate_uses_owner_and_blocks_options_before_maker_loading(self):
