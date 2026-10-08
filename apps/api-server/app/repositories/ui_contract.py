@@ -2,7 +2,7 @@
 import hashlib,json,re
 from uuid import uuid4
 from datetime import timedelta
-from sqlalchemy import select,insert,text,func,or_,cast
+from sqlalchemy import select,insert,text,func,or_,cast,update
 from sqlalchemy.dialects.postgresql import insert as pg_insert,JSONB
 from app.db import engine,schema as db
 from app.repositories.postgres import now
@@ -86,7 +86,45 @@ async def evaluate(observation,runner_id):
         await c.execute(pg_insert(db.app_settings).values(key=ACTIVE_KEY,value=value).on_conflict_do_update(index_elements=['key'],set_={'value':value}))
         return details
 
+LEGACY_PREFLIGHT_AVAILABILITY_MESSAGES={
+    'Choose an online, idle worker to load filter options.',
+    'This worker is preparing another filter preview. Try another idle worker.',
+    'Worker is busy.',
+}
+
+def _legacy_availability_only(reports):
+    if not isinstance(reports,list) or not reports:
+        return False
+    found_availability=False
+    for report in reports:
+        if not isinstance(report,dict):
+            return False
+        if report.get('allowed') is True:
+            continue
+        issues=report.get('reports')
+        if not isinstance(issues,list) or not issues:
+            return False
+        if all(isinstance(issue,dict) and issue.get('code')=='PREFLIGHT_FAILED'
+                and issue.get('title') in LEGACY_PREFLIGHT_AVAILABILITY_MESSAGES for issue in issues):
+            found_availability=True
+            continue
+        return False
+    return found_availability
+
+async def reclassify_legacy_availability_preflights():
+    """Keep historical worker-busy reports from masquerading as website drift."""
+    async with engine.begin() as c:
+        rows=(await c.execute(select(db.ui_preflight_checks.c.id,db.ui_preflight_checks.c.reports)
+            .where(db.ui_preflight_checks.c.status=='BLOCKED')
+            .order_by(db.ui_preflight_checks.c.created_at.desc()).limit(200))).mappings().all()
+        ids=[row['id'] for row in rows if _legacy_availability_only(row['reports'])]
+        if ids:
+            await c.execute(update(db.ui_preflight_checks).where(db.ui_preflight_checks.c.id.in_(ids))
+                .values(status='WAITING'))
+        return len(ids)
+
 async def require_gate(owner,runner_ids,gate_id=None,fresh=False,session_id=None,bound=False):
+    await reclassify_legacy_availability_preflights()
     async with engine.connect() as c:
         state=await c.scalar(select(db.app_settings.c.value).where(db.app_settings.c.key==ACTIVE_KEY)) or {}
         if state.get('blocked') or not state.get('versionId'):raise ValueError('UI_HEALTH_BLOCKED: UI contract requires a successful check. Open UI Health and copy the diagnostic error for dev.')

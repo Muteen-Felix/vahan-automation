@@ -8,6 +8,7 @@ from app.db import engine, schema as db
 from app.models.job import Job, JobStatus
 from app.models.run_schedule import RunScheduleCreate, RunScheduleToggle, RunScheduleResume
 from app.repositories.run_schedules import RunScheduleRepository, public_schedule
+from app.scheduler_wakeup import wake_scheduler
 
 router = APIRouter(prefix='/run-schedules', tags=['run-schedules'])
 repository = RunScheduleRepository()
@@ -44,12 +45,16 @@ async def current_captchas(request: Request):
 
 @router.post('', status_code=201)
 async def create_schedule(command: RunScheduleCreate, request: Request):
-    return public_schedule(await call(repository.create(request.state.authenticated_user, command)))
+    value = await call(repository.create(request.state.authenticated_user, command))
+    wake_scheduler()
+    return public_schedule(value)
 
 
 @router.patch('/{schedule_id}')
 async def toggle_schedule(schedule_id: UUID, command: RunScheduleToggle, request: Request):
-    return public_schedule(await call(repository.toggle(schedule_id, request.state.authenticated_user, command.enabled)))
+    value = await call(repository.toggle(schedule_id, request.state.authenticated_user, command.enabled))
+    wake_scheduler()
+    return public_schedule(value)
 
 
 @router.post('/{schedule_id}/stop')
@@ -57,20 +62,26 @@ async def stop_schedule(schedule_id: UUID, request: Request):
     from app.run_scheduler import stop_scheduled_run
     value = await call(repository.get(schedule_id, request.state.authenticated_user))
     await stop_scheduled_run(value)
+    wake_scheduler()
     return public_schedule(await repository.get(schedule_id, request.state.authenticated_user))
 
 
 @router.post('/{schedule_id}/pause')
 async def pause_schedule(schedule_id: UUID, request: Request):
-    return public_schedule(await call(repository.pause(schedule_id, request.state.authenticated_user)))
+    value = await call(repository.pause(schedule_id, request.state.authenticated_user))
+    wake_scheduler()
+    return public_schedule(value)
 
 
 @router.post('/{schedule_id}/resume')
 async def resume_schedule(schedule_id: UUID, command: RunScheduleResume, request: Request):
-    return public_schedule(await call(repository.resume(schedule_id, request.state.authenticated_user, command.worker_count)))
+    value = await call(repository.resume(schedule_id, request.state.authenticated_user, command.worker_count))
+    wake_scheduler()
+    return public_schedule(value)
 
 
 @router.delete('/{schedule_id}')
 async def delete_schedule(schedule_id: UUID, request: Request):
     await call(repository.delete(schedule_id, request.state.authenticated_user))
+    wake_scheduler()
     return {'ok': True}

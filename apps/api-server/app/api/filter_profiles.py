@@ -11,7 +11,7 @@ from socketio.exceptions import TimeoutError as SocketTimeout
 from app.filter_planner import FilterPlanner, clean_options
 from app.models.filter_profile import ProfileWrite, ProfileDefinition, StrictModel, FIELD_ORDER
 from app.realtime.server import sio
-from app.repositories.filter_profiles import FilterProfileRepository, reserve_options_runner, renew_lease
+from app.repositories.filter_profiles import FilterProfileRepository, PreflightUnavailable, reserve_options_runner, renew_lease
 
 router = APIRouter(prefix='/filter-profiles', tags=['filter-profiles'])
 profiles = FilterProfileRepository()
@@ -57,6 +57,9 @@ async def command(socket_id, request, token):
     if not isinstance(response, dict):
         raise ValueError('VAHAN returned an invalid options acknowledgement.')
     if not response.get('ok'):
+        if response.get('code') == 'RUNNER_BUSY':
+            raise PreflightUnavailable(None,'WORKER_BUSY',
+                'The selected worker is finishing another operation. Filter options will retry when it is idle.')
         raise ValueError(response.get('error', 'Could not load live VAHAN options.'))
     options = response.get('options')
     if not isinstance(options, (dict, list)):
@@ -71,6 +74,10 @@ def base_filters(year):
 
 
 def http_error(error):
+    if isinstance(error,PreflightUnavailable):
+        return HTTPException(409,{'code':'PREFLIGHT_WAITING','message':str(error),'retryAfterMs':5000})
+    if isinstance(error,ValueError) and str(error).startswith('NETWORK_PAUSED:'):
+        return HTTPException(409,{'code':'PREFLIGHT_WAITING','message':str(error),'retryAfterMs':5000})
     return HTTPException(404 if isinstance(error, LookupError) else 409, str(error))
 
 

@@ -154,6 +154,8 @@ async def cancel_job(job_id: UUID, request: Request) -> Job:
     if updated is None:
         raise HTTPException(status_code=409, detail="Job is already in a terminal state.")
     await services.runners.release_job(job.runner_id, str(job.id))
+    from app.scheduler_wakeup import wake_scheduler
+    wake_scheduler()
     await sio.emit(
         "job:cancelled",
         {"jobId": str(job_id)},

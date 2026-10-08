@@ -4,6 +4,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 from uuid import UUID
+from fastapi import HTTPException
 
 from sqlalchemy import select, text
 from app.db import engine, schema as db
@@ -15,11 +16,17 @@ from app.repositories.run_schedules import RunScheduleRepository, now, active_el
 from app.realtime.server import sio
 from app.services import services
 from app.worker_pool import apply_pool, PoolError
+from app.scheduler_wakeup import wait_for_scheduler_wakeup, wake_scheduler
 
 logger = logging.getLogger(__name__)
 repository = RunScheduleRepository()
 queue = BatchQueueRepository()
 LEADER_LOCK = 846_217_035
+
+
+def preflight_waiting(error):
+    detail=getattr(error,'detail',None)
+    return isinstance(error,HTTPException) and isinstance(detail,dict) and detail.get('code')=='PREFLIGHT_WAITING'
 
 
 def worker_number(runner):
@@ -156,7 +163,7 @@ async def prepare_run(value):
             return
         ready = sorted([runner for runner in await services.runners.list()
             if worker_number(runner) <= value['workerCount'] and runner.source.value == 'new'
-            and runner.status != RunnerStatus.RECONNECTING and not runner.current_job_id], key=worker_number)
+            and runner.status == RunnerStatus.ONLINE and not runner.current_job_id], key=worker_number)
         if len(ready) < value['workerCount']:
             await checkpoint(value, {'stage': 'Worker connection', 'message': f"Waiting for {value['workerCount']} connected, idle workers."})
             return
@@ -208,11 +215,18 @@ async def prepare_run(value):
         if updated is None:
             # A pause or stop raced with queue creation/resume. Fence the queue too.
             await queue.set_status(UUID(session_id), value['owner'], 'PAUSED')
+        else:
+            wake_scheduler()
     except PoolError as error:
         await checkpoint(value, {'operationError': str(error), 'message': str(error), 'retryAfter': (now() + timedelta(seconds=30)).isoformat()})
     except asyncio.CancelledError:
         raise
     except Exception as error:
+        if preflight_waiting(error):
+            await checkpoint(value, {'stage':'UI Health preflight','operationError':None,
+                'message':'Waiting for all selected workers to become online and idle before checking the website.',
+                'retryAfter':(now()+timedelta(seconds=5)).isoformat()})
+            return
         attempts = value.get('preparationAttempts', 0) + 1
         changes = {'operationError': str(error), 'message': f'Could not prepare scheduled reports: {error}', 'preparationAttempts': attempts,
             'retryAfter': (now() + timedelta(seconds=60)).isoformat()}
@@ -276,6 +290,11 @@ async def dispatch_run(value):
                 return
             await bind_gate(session_id, gate)
         except Exception as check_error:
+            if preflight_waiting(check_error):
+                await checkpoint(value, {'stage':'Waiting for workers','operationError':None,
+                    'message':'Waiting for all selected workers to become idle before checking the website.',
+                    'retryAfter':(now()+timedelta(seconds=5)).isoformat()})
+                return
             await checkpoint(value, {'stage': 'UI Health gate', 'operationError': str(check_error), 'message': f'Waiting for a successful UI health check: {check_error}'})
             return
     for runner in sorted(await services.runners.list(), key=worker_number):
@@ -318,6 +337,7 @@ async def scheduler_tick():
         if value.get('networkPaused') and value['status'] == 'PAUSED':
             if connected:
                 await repository.resume(value['id'], value['owner'], value['workerCount'])
+                wake_scheduler()
             continue
         if not connected and value['status'] != 'PAUSING':
             continue
@@ -347,6 +367,7 @@ async def scheduler_tick():
             await repository.patch(value['id'], {'enabled': False, 'status': 'ERROR', 'message': 'The schedule owner account is inactive.'})
             continue
         if await repository.begin_run(value['id']):
+            wake_scheduler()
             break
 
 
@@ -372,7 +393,7 @@ async def run_scheduler():
                                 await connection.rollback()
                                 if connection.invalidated:
                                     break
-                            await asyncio.sleep(5)
+                            await wait_for_scheduler_wakeup()
                 finally:
                     if leader and not connection.invalidated:
                         await connection.execute(text('SELECT pg_advisory_unlock(:key)'), {'key': LEADER_LOCK})

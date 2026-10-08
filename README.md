@@ -1,6 +1,6 @@
 # VAHAN Automation — Chromium / Playwright / PostgreSQL
 
-Dashboard điều phối báo cáo VAHAN; Playwright điều khiển Chromium trong Docker.
+Dashboard điều phối báo cáo VAHAN; Playwright điều khiển Chromium trong Docker. Xem [đánh giá nhanh chức năng](docs/system-status.md) và [tài liệu API toàn hệ thống](docs/api-reference.md).
 
 ## Khởi chạy
 

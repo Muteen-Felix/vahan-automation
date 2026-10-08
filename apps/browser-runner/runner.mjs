@@ -499,7 +499,10 @@ async function healthCheck(request = {}) {
   return saved;
 }
 socket.on('ui-health:preflight',async(request,respond)=>{
-  if(active||optionsBusy){respond({ok:false,error:'Worker is busy.'});return;}
+  // SQL can release a committed job just before the worker finishes its final
+  // acknowledgement. Let that bounded cleanup finish before checking the page.
+  if(active?.finishing)await active.finishPromise;
+  if(active||optionsBusy){respond({ok:false,error:'Worker is busy.',code:'RUNNER_BUSY',retryAfterMs:1000});return;}
   optionsBusy=true;
   try{const result=await healthCheck(request);respond({ok:true,...result});}
   catch(error){respond({ok:false,error:error.message});}

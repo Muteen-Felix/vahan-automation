@@ -4,11 +4,16 @@ from sqlalchemy import select
 from app.db import engine, schema as db
 from app.repositories.annual_reports import saved_report_summary
 from app.realtime.server import sio
+from app.scheduler_wakeup import wake_scheduler
 
 logger = logging.getLogger(__name__)
 
 
 async def notify_report_saved(job):
+    # The report transaction is already committed. Let the scheduler settle this
+    # queue item and refill the freed worker immediately.
+    if job.session_id:
+        wake_scheduler()
     try:
         await sio.emit('job:status', job.model_dump(mode='json', by_alias=True),
                        room=f'job:{job.id}', namespace='/ui')

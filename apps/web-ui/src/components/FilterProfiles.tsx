@@ -7,6 +7,14 @@ import {cachedFilterOptions,saveFilterOptions} from '../filter-options-cache';
 import {defaultProfile, parentContext, previewFilterProfile, PROFILE_FIELDS,
   type FilterProfile, type FilterPolicy, type ProfileDefinition, type ProfileField, type ProfileOptions, type CombinationRule} from '../filter-profiles';
 
+function isWorkerWaiting(reason:unknown):boolean {
+  if(!(reason instanceof Error))return false;
+  try {
+    const detail=JSON.parse(reason.message) as {code?:string};
+    return ['PREFLIGHT_WAITING','WORKER_BUSY','WORKER_OFFLINE','WORKER_RESERVATION_EXPIRED'].includes(detail.code||'');
+  } catch { return false; }
+}
+
 function ValuePicker({label,values,options,disabled,one,required,onChange,onSearch,policy,onPolicy}: {
   label:string;values:string[];options:string[];disabled:boolean;one?:boolean;required?:boolean;
   onChange:(values:string[])=>void;onSearch?:(search:string)=>Promise<void>;
@@ -100,6 +108,7 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
   const [error,setError]=useState(''),[message,setMessage]=useState('');
   const [preview,setPreview]=useState<MatrixPlan|null>(null);
   const [refresh,setRefresh]=useState(0);
+  const [retrySequence,setRetrySequence]=useState(0);
   const [rulesOpen,setRulesOpen]=useState(false);
   const rulesDialog=useRef<HTMLDialogElement>(null);
   useEffect(()=>{
@@ -107,14 +116,16 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
     if(!rulesOpen&&rulesDialog.current?.open)rulesDialog.current.close();
   },[rulesOpen]);
   const mounted=useRef(true),optionsPending=useRef(false),wantedContext=useRef(''),loadedContext=useRef('');
+  const retryTimer=useRef<number|undefined>(undefined),optionsAllowed=useRef(false);
   const optionsPreflight=useRef<{runner:string;at:number}|null>(null);
   const previewAbort=useRef<AbortController|null>(null);
   const parents=parentContext(definition);
   if(definition.fields.states.mode==='iterate')parents.states=definition.fields.states.include.filter(state=>!definition.fields.states.exclude.includes(state));
   const contextKey=JSON.stringify([runnerId,year,parents,refresh]);
   const runnerAvailable=Boolean(runners.find(runner=>runner.id===runnerId&&runner.status==='ONLINE'&&!runner.currentJobId));
-  const optionsWaiting=Boolean(runnerAvailable&&!error&&loadedContext.current!==contextKey);
+  const optionsWaiting=Boolean(!busy&&runnerAvailable&&!error&&loadedContext.current!==contextKey);
   const disabled=working;
+  optionsAllowed.current=Boolean(!busy&&!disabled&&runnerAvailable);
 
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;previewAbort.current?.abort();};},[]);
   useEffect(()=>{
@@ -124,27 +135,34 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
   useEffect(()=>{setOptions(cachedFilterOptions(year,parents,knownPlan));},[contextKey,knownPlan]);
   useEffect(()=>{
     wantedContext.current=contextKey;
-    if(!runnerAvailable||disabled)return;
+    window.clearTimeout(retryTimer.current);
+    if(!runnerAvailable||busy||disabled)return;
     const timer=window.setTimeout(async()=>{
       if(optionsPending.current)return;
       optionsPending.current=true;setLoading(true);setError('');
       try {
-        while(mounted.current&&loadedContext.current!==wantedContext.current){
+        while(mounted.current&&optionsAllowed.current&&loadedContext.current!==wantedContext.current){
           const key=wantedContext.current;const [runner,selectedYear,context]=JSON.parse(key);
           if(!optionsPreflight.current||optionsPreflight.current.runner!==runner||Date.now()-optionsPreflight.current.at>240000){
             const checked=await api.uiPreflight([runner]);
             if(!checked.allowed)throw new Error('UI_HEALTH_BLOCKED: open UI Health and copy the diagnostic error.');
             optionsPreflight.current={runner,at:Date.now()};
           }
+          if(!optionsAllowed.current)break;
           const loaded=await api.filterOptions(runner,selectedYear,context);
           saveFilterOptions(selectedYear,context,loaded);
           if(mounted.current&&wantedContext.current===key){setOptions(loaded);loadedContext.current=key;}
         }
-      }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:'Could not load filter options.');}
+      }catch(reason){
+        if(mounted.current&&isWorkerWaiting(reason)){
+          setError('');setMessage('Waiting for an idle worker. Filter options will retry automatically.');
+          retryTimer.current=window.setTimeout(()=>{if(mounted.current)setRetrySequence(value=>value+1);},5000);
+        }else if(mounted.current)setError(reason instanceof Error?reason.message:'Could not load filter options.');
+      }
       finally{optionsPending.current=false;if(mounted.current)setLoading(false);}
     },450);
-    return()=>window.clearTimeout(timer);
-  },[contextKey,runnerId,runnerAvailable,disabled]);
+    return()=>{window.clearTimeout(timer);window.clearTimeout(retryTimer.current);};
+  },[contextKey,runnerId,runnerAvailable,disabled,busy,retrySequence]);
 
   function changeField(field:ProfileField,patch:Partial<FilterPolicy>){
     setPreview(null);setMessage('');
@@ -180,6 +198,7 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
     finally{if(mounted.current)setWorking(false);previewAbort.current=null;}
   }
   const searchMakers=async(search:string)=>{
+    if(busy)throw new Error('Maker search is paused while a report run is active. It will be available when the run is idle.');
     if(!runnerId)throw new Error('Select a browser worker.');
     await api.uiPreflight([runnerId]);
     const values=await api.filterMakers(runnerId,year,search);setOptions(current=>({...current,makers:values}));
@@ -201,7 +220,7 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
           <label>Year Type<input value="CALENDAR YEAR" readOnly /></label><label>From<select aria-label="Report from year" value={year} disabled={disabled} onChange={event=>changeYear(Number(event.target.value))}>{years.map(value=><option key={value}>{value}</option>)}</select></label><label>To<select aria-label="Report to year" value={year} disabled={disabled} onChange={event=>changeYear(Number(event.target.value))}>{years.map(value=><option key={value}>{value}</option>)}</select></label>
           <label>Y-Axis<input value="Maker" readOnly /></label><label>X-Axis<input value="Month Wise" readOnly /></label>
         </div>
-        <div className="profile-options-status" data-error={Boolean(error)} role={error?'alert':'status'}>{error|| (loading||optionsWaiting?'Loading live VAHAN options for the selected parent filters…':options.states?.length?(loadedContext.current===contextKey?'Live options loaded':'Saved options ready'):!runnerAvailable?'Waiting for an idle worker to load options.':'')}</div>
+        <div className="profile-options-status" data-error={Boolean(error)} role={error?'alert':'status'}>{error|| (busy?'Live option refresh waits until the report run is idle.':loading||optionsWaiting?'Loading live VAHAN options for the selected parent filters…':options.states?.length?(loadedContext.current===contextKey?'Live options loaded':'Saved options ready'):!runnerAvailable?'Waiting for an idle worker to load options.':'')}</div>
         <div className="profile-rules"><span>Combination rules · {definition.rules.length}</span><button type="button" onClick={()=>setRulesOpen(true)}>Edit rules</button></div>
         {createPortal(<dialog ref={rulesDialog} className="profile-picker-dialog profile-rules-dialog" aria-label="Combination rules"
           onCancel={event=>{if(event.target===event.currentTarget){event.preventDefault();setRulesOpen(false);}}} onClose={event=>{if(event.target===event.currentTarget)setRulesOpen(false);}}>

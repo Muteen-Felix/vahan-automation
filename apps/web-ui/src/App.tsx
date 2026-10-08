@@ -135,6 +135,7 @@ export default function App() {
     uiSocket.on('runner:online', refreshRunners);
     uiSocket.on('runner:offline', refreshRunners);
     uiSocket.on('ui-health:blocked', onHealthBlocked);
+    uiSocket.on('ui-health:waiting', onHealthUpdate);
     uiSocket.on('ui-health:verified', onHealthUpdate);
     uiSocket.on('ui-health:log-received', onHealthUpdate);
     void refreshRunners(); void refreshHealth();
@@ -150,6 +151,7 @@ export default function App() {
       uiSocket.off('runner:online', refreshRunners);
       uiSocket.off('runner:offline', refreshRunners);
       uiSocket.off('ui-health:blocked', onHealthBlocked);
+      uiSocket.off('ui-health:waiting', onHealthUpdate);
       uiSocket.off('ui-health:verified', onHealthUpdate);
       uiSocket.off('ui-health:log-received', onHealthUpdate);
       window.removeEventListener('online', ensureConnection);

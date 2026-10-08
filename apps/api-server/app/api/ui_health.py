@@ -5,7 +5,7 @@ from sqlalchemy import insert,select
 from app.db import engine,schema as db
 from app.repositories.postgres import now
 from app.repositories import ui_contract
-from app.repositories.filter_profiles import reserve_options_runner
+from app.repositories.filter_profiles import PreflightUnavailable, reserve_preflight_runners
 from app.models.filter_profile import StrictModel
 from pydantic import Field
 
@@ -198,6 +198,7 @@ async def current_contract():
 
 @router.get('/status')
 async def contract_status():
+    await ui_contract.reclassify_legacy_availability_preflights()
     state=await ui_contract.current()
     async with engine.connect() as c:
         latest=(await c.execute(select(db.ui_preflight_checks).order_by(db.ui_preflight_checks.c.created_at.desc()).limit(1))).mappings().first()
@@ -208,40 +209,65 @@ async def contract_status():
 async def preflight(command:PreflightInput,request:Request):
     ids=list(dict.fromkeys(command.runner_ids))
     if len(ids)!=len(command.runner_ids):raise HTTPException(400,'Worker IDs must be unique.')
-    known={runner.id for runner in await services.runners.list()}
     check_id=str(uuid4());semaphore=asyncio.Semaphore(2)
-    async def check(runner_id):
+    waiting=False
+
+    def deferred(runner_id,code,title):
+        return {'allowed':False,'waiting':True,'runnerId':runner_id,'reports':[{'code':code,'title':title}]}
+
+    async def check(runner_id,reservations):
         async with semaphore:
-            if runner_id not in known:
-                return {'allowed':False,'runnerId':runner_id,'reports':[{'code':'WORKER_NOT_REGISTERED','title':'The selected worker is not registered; retry after it is connected.'}]}
-            try:
-                async with reserve_options_runner(runner_id,request.state.authenticated_user) as (socket_id,token):
-                    last=None
-                    for attempt in range(2):
-                        request_id=str(uuid4())
-                        try:
-                            result=await sio.call('ui-health:preflight',{'requestId':request_id,'trigger':'preflight'},to=socket_id,namespace='/runner',timeout=55)
-                            async with engine.connect() as c:
-                                evidence=await c.scalar(select(db.ui_health_checks.c.payload).where(db.ui_health_checks.c.id==request_id))
-                            last=((evidence or {}).get('healthCheck') or {}).get('contractValidation')
-                            if not isinstance(result,dict) or not result.get('ok') or not last or last.get('runnerId')!=runner_id:
-                                last={'allowed':False,'runnerId':runner_id,'reports':[{'code':'PREFLIGHT_NO_ACK','title':'Worker did not return SQL-validated health evidence.'}]}
-                            if last.get('allowed'):return {**last,'attempts':attempt+1}
-                        except Exception as error:
-                            last={'allowed':False,'runnerId':runner_id,'reports':[{'code':'PREFLIGHT_FAILED','title':str(error) or type(error).__name__}]}
-                    return {**last,'attempts':2}
-            except Exception as error:
-                return {'allowed':False,'runnerId':runner_id,'reports':[{'code':'PREFLIGHT_FAILED','title':str(error)}]}
-    reports=await asyncio.gather(*(check(runner) for runner in ids))
+            socket_id,_token=reservations[runner_id]
+            last=None
+            for attempt in range(2):
+                request_id=str(uuid4())
+                try:
+                    result=await sio.call('ui-health:preflight',{'requestId':request_id,'trigger':'preflight'},to=socket_id,namespace='/runner',timeout=55)
+                except Exception as error:
+                    return deferred(runner_id,'WORKER_NO_RESPONSE',
+                        f'{runner_id} did not answer the website check. The check will retry automatically.')
+                if isinstance(result,dict) and result.get('code') in {'RUNNER_BUSY','WORKER_OFFLINE'}:
+                    return deferred(runner_id,result.get('code'),'The worker is finishing another operation. The check will retry automatically.')
+                if not isinstance(result,dict) or not result.get('ok'):
+                    return deferred(runner_id,'PREFLIGHT_NO_ACK',
+                        f'{runner_id} did not return a completed SQL-backed website check. The check will retry automatically.')
+                try:
+                    async with engine.connect() as c:
+                        evidence=await c.scalar(select(db.ui_health_checks.c.payload).where(db.ui_health_checks.c.id==request_id))
+                except Exception:
+                    return deferred(runner_id,'PREFLIGHT_SQL_UNAVAILABLE',
+                        'The SQL evidence could not be read. The website check will retry automatically.')
+                last=((evidence or {}).get('healthCheck') or {}).get('contractValidation')
+                if not isinstance(last,dict) or last.get('runnerId')!=runner_id:
+                    return deferred(runner_id,'PREFLIGHT_NO_SQL_EVIDENCE',
+                        f'{runner_id} did not provide matching SQL-validated website evidence. The check will retry automatically.')
+                if last.get('allowed'):
+                    return {**last,'attempts':attempt+1}
+            return {**last,'attempts':2}
+
+    try:
+        async with reserve_preflight_runners(ids,request.state.authenticated_user) as reservations:
+            reports=await asyncio.gather(*(check(runner,reservations) for runner in ids))
+    except PreflightUnavailable as error:
+        waiting=True
+        reports=[deferred(runner,error.code,str(error)) if runner==error.runner_id else
+            deferred(runner,'PREFLIGHT_NOT_RUN','Waiting for all selected workers to be idle before checking the website.')
+            for runner in ids]
     state=await ui_contract.current()
     for report in reports:
         if report.get('allowed') and report.get('versionId')!=state['versionId']:
             report.update(allowed=False,reports=[{'code':'SQL_CONTRACT_VERSION_CHANGED','title':'Workers observed different DOM versions. Recheck all selected workers before loading Maker data.'}])
-    allowed=not state['blocked'] and all(report.get('allowed') and report.get('versionId')==state['versionId'] for report in reports)
+    waiting=waiting or any(report.get('waiting') for report in reports)
+    allowed=not waiting and not state['blocked'] and all(report.get('allowed') and report.get('versionId')==state['versionId'] for report in reports)
+    status_value='PASS' if allowed else 'WAITING' if waiting and not state['blocked'] and not any(not report.get('allowed') and not report.get('waiting') for report in reports) else 'BLOCKED'
     async with engine.begin() as c:
         await c.execute(insert(db.ui_preflight_checks).values(id=check_id,owner_username=request.state.authenticated_user,
-            runner_ids=ids,version_id=state['versionId'],status='PASS' if allowed else 'BLOCKED',reports=reports,created_at=now()))
+            runner_ids=ids,version_id=state['versionId'],status=status_value,reports=reports,created_at=now()))
     response={'allowed':allowed,'preflightId':check_id,'revision':state['revision'],'versionId':state['versionId'],'reports':reports}
+    if status_value=='WAITING':
+        response.update(status='WAITING',retryAfterMs=5000)
+        await sio.emit('ui-health:waiting',response,namespace='/ui')
+        raise HTTPException(409,{'code':'PREFLIGHT_WAITING','message':'Waiting for all selected workers to be online and idle. No website change was recorded; the check will retry automatically.','retryAfterMs':5000,'diagnostics':response})
     if not allowed:
         await sio.emit('ui-health:blocked',response,namespace='/ui')
         raise HTTPException(409,{'code':'UI_HEALTH_BLOCKED','message':'Preflight failed; no Maker data or tasks were loaded. Open UI Health and copy the error for dev.','diagnostics':response})

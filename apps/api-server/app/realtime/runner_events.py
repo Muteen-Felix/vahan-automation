@@ -12,6 +12,7 @@ from app.models.job import JobStatus, ReportSource, can_transition
 from app.models.filter_execution import FilterExecution
 from app.realtime.server import sio
 from app.services import services
+from app.scheduler_wakeup import wake_scheduler
 
 
 _disconnect_tasks: dict[str, asyncio.Task] = {}
@@ -29,6 +30,7 @@ async def _expire_disconnected_runner(runner_id: str, socket_id: str) -> None:
             if job and can_transition(job.status, JobStatus.FAILED):
                 job = await services.jobs.update_status(job.id, JobStatus.FAILED, error="Runner disconnected.")
                 await sio.emit("job:status", job.model_dump(mode="json", by_alias=True), room=f"job:{job.id}", namespace="/ui")
+        wake_scheduler()
         await sio.emit("runner:offline", {"runnerId": runner.id}, namespace="/ui")
     finally:
         _disconnect_tasks.pop(runner_id, None)
@@ -71,6 +73,7 @@ async def connect(sid: str, _environ: dict, auth: dict | None) -> bool:
         runner.model_dump(mode="json", by_alias=True),
         namespace="/ui",
     )
+    wake_scheduler()
     return True
 
 
@@ -79,6 +82,7 @@ async def disconnect(sid: str) -> None:
     runner = await services.runners.mark_reconnecting(sid)
     if not runner:
         return
+    wake_scheduler()
     _disconnect_tasks[runner.id] = asyncio.create_task(_expire_disconnected_runner(runner.id, sid))
 
 
@@ -124,6 +128,7 @@ async def job_status(sid: str, payload: dict) -> dict:
         return {"ok": False, "error": "Job status changed before this result was saved."}
     if status in {JobStatus.COMPLETED, JobStatus.NO_DATA, JobStatus.FAILED, JobStatus.CANCELLED}:
         await services.runners.release_job(runner.id, str(job_id))
+        wake_scheduler()
     await sio.emit(
         "job:status",
         updated.model_dump(mode="json", by_alias=True),
