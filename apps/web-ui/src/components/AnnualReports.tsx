@@ -156,10 +156,9 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
         <section className="annual-summary"><h3>{year} overview</h3>
           <div className="annual-summary-grid"><div><strong>{shownData?.summary.makers.toLocaleString() ?? '—'}</strong><span>Manufacturers</span></div>
             <div><strong>{shownData?.summary.offices.toLocaleString() ?? '—'}</strong><span>RTO offices</span></div></div>
-          <p className="annual-summary-label">Months with source data</p>
+          <p className="annual-summary-label">Months with data</p>
           <div className="annual-month-coverage">{MONTHS.map((month, i) => <span key={month} className={shownData?.coverage.includes(i + 1) ? 'available' : ''}>{month}</span>)}</div>
-          <p className="annual-summary-label">Last data added · GMT+7</p><time>{dateTime(shownData?.summary.updatedAt ?? null)}</time>
-          <p className="annual-policy">Each completed crawl saves immediately. Newer confirmed values update the table, with previous values retained in history.</p>
+          <p className="annual-summary-label">Last updated · GMT+7</p><time>{dateTime(shownData?.summary.updatedAt ?? null)}</time>
         </section>
         {coveragePlan && <ReportCoverage context={{year, dataset: shownData?.datasetId || dataset, state: search.state, rto: search.rto}}
           plan={coveragePlan} refreshTrigger={(refreshTrigger ?? 0) + refresh} />}
