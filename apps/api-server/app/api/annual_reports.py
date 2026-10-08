@@ -53,7 +53,8 @@ async def annual_reports(request: Request, year: int = Query(2026, ge=1900, le=9
     async with engine.connect() as connection:
         selected, datasets = await select_scope(connection, request, dataset)
         years = list(await connection.scalars(select(records.c.year)
-            .where(records.c.year >= 1900).distinct().order_by(records.c.year)))
+            .where(records.c.scope_key == selected, records.c.year >= 1900)
+            .distinct().order_by(records.c.year.desc())))
         conditions = report_conditions(request, selected, year, state, rto)
         aggregates = (await connection.execute(select(func.count().label('rows'),
             func.count(func.distinct(records.c.maker)).label('makers'),
@@ -80,7 +81,7 @@ async def annual_reports(request: Request, year: int = Query(2026, ge=1900, le=9
         latest = (await connection.execute(select(ledger).where(*saved_conditions)
             .order_by(ledger.c.imported_at.desc(), ledger.c.source_key).limit(1))).mappings().first()
     return {'year': year, 'datasetId': selected, 'datasets': [dict(d) for d in datasets],
-            'years': years or [year], 'states': states, 'rtos': rtos, 'summary': dict(summary),
+            'years': years, 'states': states, 'rtos': rtos, 'summary': dict(summary),
             'coverage': [i for i, m in enumerate(db.MONTH_COLUMNS, 1) if aggregates[m]],
             'lastSaved': saved_report_summary(latest) if latest else None,
             'offset': offset, 'limit': limit, 'rows': [{k: r[k] for k in

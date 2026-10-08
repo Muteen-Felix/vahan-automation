@@ -4,7 +4,7 @@ import { uiSocket } from '../services/socket-client';
 import {UpdateHistory} from './UpdateHistory';
 import { ReportCoverage } from './ReportCoverage';
 import { useLiveQuery } from '../hooks/use-live-query';
-import {currentReportYear, MIN_REPORT_YEAR} from '../matrix-plan';
+import {currentReportYear} from '../matrix-plan';
 import type {MatrixPlan} from '../matrix-plan';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -61,6 +61,9 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
     if (dataset && !data.datasets.some(item => item.id === dataset)) {
         setDataset(''); setOffset(0); return;
     }
+    if (data.years.length && !data.years.includes(year)) {
+      setYear(data.years[0]); setOffset(0);
+    }
     if (offset > 0 && offset >= data.summary.rows) setOffset(0);
   }, [data, dataset, year, offset]);
   useEffect(() => {refreshData();}, [refreshTrigger, refreshData]);
@@ -80,11 +83,13 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
   };
   return <>
     <div className="annual-toolbar">
-      <label className="annual-year">Year<select aria-label="Year" value={year} onChange={event => {
+      <label className="annual-year">Year<select aria-label="Year"
+        value={data?.years.includes(year) ? year : data?.years[0] ?? ''}
+        disabled={!data?.years.length}
+        onChange={event => {
         setYear(Number(event.target.value)); setOffset(0);
-      }}>{[...new Set([year, ...(data?.years || []), ...Array.from({length: currentReportYear() - MIN_REPORT_YEAR + 1},
-        (_, index) => currentReportYear() - index)])].sort((a, b) => b - a)
-        .map(value => <option key={value}>{value}</option>)}</select></label>
+      }}>{data?.years.length ? data.years.map(value => <option key={value} value={value}>{value}</option>)
+        : <option value="">{data ? 'No years with data' : 'Loading years…'}</option>}</select></label>
       <label>Search State<input type="search" list="annual-states" value={state} placeholder="All states"
         onChange={event => setState(event.target.value)} /></label>
       <datalist id="annual-states">{data?.states.map(value => <option key={value} value={value} />)}</datalist>
