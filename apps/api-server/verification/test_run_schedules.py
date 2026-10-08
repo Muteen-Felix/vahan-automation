@@ -27,7 +27,7 @@ from app.models.job import Job, JobStatus
 from app.models.run_schedule import RunScheduleCreate, RunScheduleResume
 from app.repositories.filter_profiles import FilterProfileRepository
 from app.repositories.postgres import job_document, release_runner
-from app.repositories.run_schedules import RunScheduleRepository, next_daily_run, now
+from app.repositories.run_schedules import RunScheduleRepository, next_daily_run, next_monthly_run, now
 from app.repositories import ui_contract
 from app.run_scheduler import automatic_preflight, scheduler_tick, stop_scheduled_run, still_current, checkpoint, queue, LEADER_LOCK
 from app.services import services
@@ -236,17 +236,43 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(await self.jobs()), 2)
         self.assertTrue(all(job.status == JobStatus.ASSIGNED for job in await self.jobs()))
 
-    async def test_dates_validation_and_daily_time_zone(self):
+    async def test_dates_validation_and_daily_and_monthly_time_zones(self):
         future = now()+timedelta(days=1)
         command = RunScheduleCreate(profileId=self.profile['id'], startsAt=future,
             workerCount=8, year=now().year)
         self.assertEqual(command.starts_at.utcoffset(), timedelta(0))
+        monthly = RunScheduleCreate(profileId=self.profile['id'], startsAt=future,
+            workerCount=8, year=now().year, repeat='monthly')
+        self.assertEqual(monthly.repeat, 'monthly')
         for starts_at, workers in [(future.replace(tzinfo=None), 8), (now()-timedelta(minutes=1), 8),
             (future, 0), (future, 11), (future, True)]:
             with self.assertRaises(ValidationError):
                 RunScheduleCreate(profileId=self.profile['id'], startsAt=starts_at, workerCount=workers, year=now().year)
         next_run = next_daily_run('2026-10-07T09:30:00+07:00', datetime.fromisoformat('2026-10-10T18:00:00+07:00'))
         self.assertEqual(next_run, '2026-10-11T02:30:00+00:00')
+        february = next_monthly_run('2026-01-31T09:30:00+07:00', datetime.fromisoformat('2026-02-01T09:00:00+07:00'))
+        self.assertEqual(february, '2026-02-28T02:30:00+00:00')
+        march = next_monthly_run('2026-01-31T09:30:00+07:00', datetime.fromisoformat('2026-02-28T10:00:00+07:00'))
+        self.assertEqual(march, '2026-03-31T02:30:00+00:00')
+        leap_february = next_monthly_run('2024-01-31T09:30:00+07:00', datetime.fromisoformat('2024-02-01T09:00:00+07:00'))
+        self.assertEqual(leap_february, '2024-02-29T02:30:00+00:00')
+
+    async def test_monthly_schedule_repeats_after_completion_and_reenable(self):
+        from zoneinfo import ZoneInfo
+        saved = await self.schedule(repeat='monthly')
+        anchor = now().astimezone(ZoneInfo('Asia/Ho_Chi_Minh')).replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0)
+        saved = await self.repo.patch(saved['id'], {'startsAt': anchor.isoformat()})
+        claimed = await self.repo.begin_run(saved['id'])
+        self.assertIsNotNone(claimed)
+        final = await self.repo.complete(claimed, {'total': 3, 'done': 3, 'withData': 3, 'noData': 0, 'failed': 0})
+        expected = next_monthly_run(anchor.isoformat(), datetime.fromisoformat(final['lastFinishedAt']))
+        self.assertEqual(final['repeat'], 'monthly')
+        self.assertEqual(final['nextRunAt'], expected)
+        self.assertTrue(final['enabled'])
+        await self.repo.toggle(saved['id'], 'schedule-test', False)
+        reenabled = await self.repo.toggle(saved['id'], 'schedule-test', True)
+        self.assertEqual(reenabled['nextRunAt'], next_monthly_run(anchor.isoformat(), now()))
 
     async def test_ownership_profile_snapshot_and_atomic_claim(self):
         saved = await self.schedule()

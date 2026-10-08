@@ -7,7 +7,7 @@ export interface RunSchedule {
   workerCount: number;
   startsAt: string;
   nextRunAt: string | null;
-  repeat: 'once' | 'daily';
+  repeat: 'once' | 'daily' | 'monthly';
   timeZone: string;
   enabled: boolean;
   status: 'WAITING' | 'PREPARING' | 'RUNNING' | 'PAUSING' | 'PAUSED' | 'RESUMING' | 'COMPLETED' | 'COMPLETED_WITH_ERRORS' | 'ERROR' | 'STOPPED';
@@ -46,7 +46,7 @@ export interface RunScheduleInput {
   year: number;
   workerCount: number;
   startsAt: string;
-  repeat: 'once' | 'daily';
+  repeat: 'once' | 'daily' | 'monthly';
 }
 
 export interface CurrentCaptcha {
@@ -70,4 +70,8 @@ export function formatScheduledTime(value: string | null) {
   if (!value) return '—';
   return new Intl.DateTimeFormat('en-GB', {timeZone: RUN_TIME_ZONE, day: '2-digit', month: 'short',
     year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).format(new Date(value));
+}
+
+export function vietnamDayOfMonth(value: string) {
+  return Number(new Intl.DateTimeFormat('en-US', {timeZone: RUN_TIME_ZONE, day: 'numeric'}).format(new Date(value)));
 }

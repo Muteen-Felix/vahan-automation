@@ -32,6 +32,7 @@ export default function App() {
   const isAdmin = role === 'admin';
   useEffect(() => {void api.currentUser().then(user => setRole(user.role)).catch(reason => setError(reason.message));}, []);
   const [activeSection, setActiveSection] = useState<AppSection>(sectionFromHash);
+  const [routeHash, setRouteHash] = useState(() => window.location.hash);
   const [connection, setConnection] = useState<ConnectionState>('connecting');
   const [runners, setRunners] = useState<Runner[]>([]);
   const [profiles, setProfiles] = useState<FilterProfile[]>([]);
@@ -62,6 +63,7 @@ export default function App() {
         window.history.replaceState(null, '', `#${section}`);
       }
       setActiveSection(section);
+      setRouteHash(window.location.hash);
     };
     navigate();
     window.addEventListener('hashchange', navigate);
@@ -70,10 +72,7 @@ export default function App() {
 
   useEffect(() => {
     document.title = `VAHAN · ${activeSection === 'reports' ? 'Exported Reports' : activeSection === 'filters' ? 'Filters' : 'Settings'}`;
-    if (window.location.hash === '#settings-ui-health') {
-      window.requestAnimationFrame(() => document.getElementById('settings-ui-health')?.scrollIntoView({block: 'start'}));
-    }
-  }, [activeSection, healthRefresh]);
+  }, [activeSection]);
 
   async function refreshProfiles() {
     const values = await api.filterProfiles();
@@ -216,7 +215,7 @@ export default function App() {
           <div className="section-intro settings-intro"><div><h2>Settings</h2><p>Schedules, activity and account.</p></div>
             <AccountSettings signingOut={signingOut} onSignOut={signOut}/>
           </div>
-          <UiHealthContract refreshToken={healthRefresh} />
+          <UiHealthContract refreshToken={healthRefresh} scrollIntoView={routeHash === '#settings-ui-health'} />
           <AutomaticRunSettings profiles={profiles} selectedProfileId={selectedProfileId}
             workerCount={runDefaults.workerCount} year={runDefaults.year} schedules={scheduledRuns.schedules}
             loading={scheduledRuns.loading} loadError={scheduledRuns.error}

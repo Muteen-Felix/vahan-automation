@@ -1,4 +1,5 @@
 """Durable run schedules stored as versioned PostgreSQL application settings."""
+import calendar
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -24,6 +25,26 @@ def next_daily_run(starts_at, current):
     if candidate <= current:
         candidate += timedelta(days=1)
     return max(candidate, anchor).astimezone(timezone.utc).isoformat()
+
+
+def next_monthly_run(starts_at, current):
+    """Keep the original Vietnam day and wall-clock time; clamp short months to month end."""
+    anchor = datetime.fromisoformat(starts_at).astimezone(ZoneInfo(TIME_ZONE))
+    current = current.astimezone(ZoneInfo(TIME_ZONE))
+    anchor_month = anchor.year * 12 + anchor.month - 1
+    current_month = current.year * 12 + current.month - 1
+
+    def in_month(index):
+        year, month = divmod(index, 12)
+        month += 1
+        day = min(anchor.day, calendar.monthrange(year, month)[1])
+        return anchor.replace(year=year, month=month, day=day)
+
+    month = max(anchor_month, current_month)
+    candidate = in_month(month)
+    if candidate <= current:
+        candidate = in_month(month + 1)
+    return candidate.astimezone(timezone.utc).isoformat()
 
 
 def public_schedule(value):
@@ -201,7 +222,8 @@ class RunScheduleRepository:
             if not current or current.get('sessionId') != value['sessionId'] or current.get('executionEpoch', 0) != value.get('executionEpoch', 0):
                 return None
             finished = now()
-            next_run = next_daily_run(current['startsAt'], finished) if current['repeat'] == 'daily' else None
+            next_run = (next_daily_run(current['startsAt'], finished) if current['repeat'] == 'daily'
+                else next_monthly_run(current['startsAt'], finished) if current['repeat'] == 'monthly' else None)
             current = {**current, **counts, 'status': 'COMPLETED_WITH_ERRORS' if counts['failed'] else 'COMPLETED',
                 'message': f"Finished {counts['done']}/{counts['total']} cases. {counts['failed']} failed.",
                 'sessionId': None, 'lastSessionId': value['sessionId'], 'lastFinishedAt': finished.isoformat(),
@@ -226,6 +248,8 @@ class RunScheduleRepository:
                     changes.update(status='WAITING', preparationAttempts=0, retryAfter=None)
                 if value['repeat'] == 'daily':
                     changes['nextRunAt'] = next_daily_run(value['startsAt'], now())
+                elif value['repeat'] == 'monthly':
+                    changes['nextRunAt'] = next_monthly_run(value['startsAt'], now())
             stamp = now().isoformat()
             if 'operation' not in changes and ('stage' in changes or value.get('operation')):
                 changes = dict(changes)

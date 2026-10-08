@@ -28,7 +28,7 @@ try {
  assert.equal(await page.getByRole('heading',{name:'User accounts',exact:true}).count(),0);
  assert.equal(await page.getByRole('button',{name:'Log out',exact:true}).count(),0);
  await page.getByRole('button',{name:'Account',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Account settings'});
- await dialog.getByText('admin-fixture',{exact:true}).waitFor();
+ await dialog.locator('.account-identity strong').waitFor();assert.equal(await dialog.locator('.account-identity strong').innerText(),'admin-fixture');
  await dialog.getByLabel('Current password',{exact:true}).fill('Wrong password fixture');
  await dialog.getByLabel('New password',{exact:true}).fill('New password fixture');
  await dialog.getByLabel('Confirm new password',{exact:true}).fill('Mismatch password fixture');

@@ -8,7 +8,7 @@ function checkedTime(value: unknown) {
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('en-GB',{timeZone:'Asia/Ho_Chi_Minh',hour12:false});
 }
 
-export function UiHealthContract({refreshToken=0}:{refreshToken?:number}) {
+export function UiHealthContract({refreshToken=0,scrollIntoView=false}:{refreshToken?:number;scrollIntoView?:boolean}) {
   const [status,setStatus] = useState<Record<string,unknown>|null>(null);
   const [error,setError] = useState('');
   const [copied,setCopied] = useState<string|null>(null);
@@ -26,6 +26,11 @@ export function UiHealthContract({refreshToken=0}:{refreshToken?:number}) {
   },[refreshToken]);
   const alerts=status?websiteCheckAlerts(status):[];
   const blocked=status?websiteCheckBlocked(status):false;
+  useEffect(()=>{
+    if(!scrollIntoView||(!blocked&&!error))return;
+    const frame=window.requestAnimationFrame(()=>document.getElementById('settings-ui-health')?.scrollIntoView({block:'start'}));
+    return()=>window.cancelAnimationFrame(frame);
+  },[scrollIntoView,blocked,error]);
   async function copy(id:string,text:string) {
     setCopied(null);
     try {await navigator.clipboard.writeText(text);setCopied(id);setError('');}

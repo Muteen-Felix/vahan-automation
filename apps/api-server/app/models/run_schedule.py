@@ -11,7 +11,7 @@ class RunScheduleCreate(StrictModel):
     starts_at: datetime = Field(alias='startsAt')
     worker_count: int = Field(alias='workerCount', ge=1, le=10, strict=True)
     year: int = Field(ge=1900, strict=True)
-    repeat: Literal['once', 'daily'] = 'once'
+    repeat: Literal['once', 'daily', 'monthly'] = 'once'
 
     @field_validator('starts_at')
     @classmethod

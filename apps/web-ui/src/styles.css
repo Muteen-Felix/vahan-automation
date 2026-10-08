@@ -997,7 +997,7 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .profile-value-popover .profile-picker-options label span { min-width:0; overflow-wrap:anywhere; }
 @media(max-width:1000px) { .filter-profiles-page .profile-fields { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:650px) { .filter-profiles-page .profile-editor-toolbar { grid-template-columns:minmax(0,1fr); } .filter-profiles-page .profile-fields { grid-template-columns:minmax(0,1fr); } .filter-profiles-page .profile-list > button { flex:1 1 140px; } }
-.filter-profiles-page .profile-fields { grid-template-columns:repeat(3,minmax(0,360px)); justify-content:start; }
+.filter-profiles-page .profile-fields { grid-template-columns:repeat(3,minmax(0,1fr)); }
 .filter-profiles-page .profile-report-context { grid-template-columns:240px 90px 90px 140px 160px; justify-content:start; }
 .filter-profiles-page .profile-rules { width:fit-content; max-width:100%; justify-content:flex-start; gap:14px; }
 .filter-profiles-page .profile-list > button strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -1341,3 +1341,18 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .network-notice p { margin:4px 0 0; font-size:11px; line-height:1.5; }
 .network-notice-status { margin-left:auto; white-space:nowrap; font-size:10px; }
 @media(max-width:600px) { .network-notice { margin:10px 14px 0; align-items:flex-start; flex-wrap:wrap; } .network-notice > div { flex:1; min-width:200px; } }
+
+/* Keep Settings controls anchored to the page heading and health reports close to schedules. */
+.settings-intro { min-width:0; gap:16px; }
+.settings-intro > div { min-width:0; }
+.settings-intro .settings-account-button { flex:0 0 auto; white-space:nowrap; }
+.settings-ui-health { margin-bottom:0; }
+.website-alert-heading { align-items:center; }
+.website-alert-heading > div { min-width:0; flex:1 1 240px; }
+.website-alert-heading h2 { margin:0; color:#354e3e; font-size:16px; line-height:1.4; }
+.website-alert-heading p { margin:4px 0 0; }
+@media(max-width:420px) {
+  .settings-intro { flex-wrap:wrap; align-items:center; gap:10px; }
+  .settings-intro > div { flex:1 1 170px; }
+  .settings-intro .settings-account-button { margin-left:auto!important; }
+}

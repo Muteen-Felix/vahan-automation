@@ -102,11 +102,15 @@ try {
   await page.getByLabel('Start date',{exact:true}).fill(future.toISOString().slice(0,10));
   await page.getByLabel('Start time',{exact:true}).fill('09:30');
   await page.getByLabel('Repeat',{exact:true}).selectOption('daily');
+  await page.getByLabel('Repeat',{exact:true}).selectOption('monthly');
+  await page.getByText(/Runs on day \d+ each month; shorter months use their last day\./).waitFor();
   await page.getByRole('button',{name:'Add schedule',exact:true}).click();
   await page.getByText(/Schedule saved for/).waitFor();
-  assert.equal(posted.workerCount,8);assert.equal(posted.year,2024);assert.equal(posted.repeat,'daily');
+  assert.equal(posted.workerCount,8);assert.equal(posted.year,2024);assert.equal(posted.repeat,'monthly');
   assert.equal(posted.profileId,profile.id);assert.ok(posted.startsAt.endsWith('T09:30:00+07:00'));
   const card=page.locator('.run-schedule-card').first();
+  const monthlyDay=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Ho_Chi_Minh',day:'numeric'}).format(new Date(posted.startsAt));
+  await card.getByText(`Day ${monthlyDay} · month-end if needed`,{exact:true}).waitFor();
   assert.equal(await page.getByRole('link',{name:/Create Report/}).count(),0);
   assert.equal(await card.locator('.run-schedule-actions > *').count(),3);
   const bounds=()=>page.locator('.automatic-run-settings').evaluate(root=>{

@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState, type FormEvent} from 'react';
 import type {FilterProfile} from '../filter-profiles';
 import {api} from '../services/api-client';
-import {canResumeSchedule, formatScheduledTime, vietnamDateTime, type RunSchedule} from '../run-schedules';
+import {canResumeSchedule, formatScheduledTime, vietnamDateTime, vietnamDayOfMonth, type RunSchedule} from '../run-schedules';
 import {RunScheduleProgress} from './RunScheduleProgress';
 import {BatchRetryStatus} from './BatchRetryStatus';
 import {RunDiagnostics} from './RunDiagnostics';
@@ -32,7 +32,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
   const [time, setTime] = useState(initial.time);
   const [workers, setWorkers] = useState(workerCount);
   const [reportYear, setReportYear] = useState(year);
-  const [repeat, setRepeat] = useState<'once' | 'daily'>('once');
+  const [repeat, setRepeat] = useState<'once' | 'daily' | 'monthly'>('once');
   const [saving, setSaving] = useState(false);
   const [actionId, setActionId] = useState('');
   const [workerChoices, setWorkerChoices] = useState<Record<string, number>>({});
@@ -117,8 +117,8 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
         </select></label>
         <label>Start date<input aria-label="Start date" type="date" value={date} onChange={event => setDate(event.target.value)} required disabled={saving} /></label>
         <label>Start time<input aria-label="Start time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={saving} /></label>
-        <label>Repeat<select aria-label="Repeat" value={repeat} onChange={event => setRepeat(event.target.value as 'once' | 'daily')} disabled={saving}>
-          <option value="once">Once</option><option value="daily">Every day</option>
+        <label>Repeat<select aria-label="Repeat" value={repeat} onChange={event => setRepeat(event.target.value as 'once' | 'daily' | 'monthly')} disabled={saving}>
+          <option value="once">Once</option><option value="daily">Every day</option><option value="monthly">Every month</option>
         </select></label>
         <label>Report year<input aria-label="Report year" type="number" min="1900" max={new Date().getFullYear()} value={selectedYear}
           onChange={event => setReportYear(Number(event.target.value))} required disabled={saving || Boolean(profile?.definition.report)} /></label>
@@ -126,7 +126,9 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
           <button className="primary-button" type="submit" disabled={saving || loading || !profile}>{saving ? 'Saving…' : 'Add schedule'}</button>
         </div>
       </form>
-      <div className="schedule-help-slot"><p className="schedule-help">{!profiles.length
+      <div className="schedule-help-slot"><p className="schedule-help">{repeat === 'monthly'
+        ? `Runs on day ${Number(date.slice(-2))} each month; shorter months use their last day.`
+        : !profiles.length
         ? <>Create a <a href="#filters">filter profile</a> to select a report.</>
         : 'Saved schedules keep the selected profile. View collected data in Exported Reports.'}</p></div>
       </div>
@@ -147,7 +149,8 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
               </span></div>
             <dl className="run-schedule-details">
               <div className="run-schedule-start"><dt>{schedule.nextRunAt ? 'Next start' : 'Scheduled start'}</dt><dd title={formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt)}>{formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt)}</dd><small>Vietnam time · UTC+07:00</small></div>
-              <div><dt>Repeat</dt><dd>{schedule.repeat === 'daily' ? 'Every day' : 'Once'}</dd><small>{schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
+              <div><dt>Repeat</dt><dd>{schedule.repeat === 'monthly' ? 'Every month' : schedule.repeat === 'daily' ? 'Every day' : 'Once'}</dd>
+                <small>{schedule.repeat === 'monthly' ? `Day ${vietnamDayOfMonth(schedule.startsAt)} · month-end if needed` : schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
               <div className="schedule-worker-setting"><dt>Workers</dt><dd>
                 <select aria-label={`Workers for ${schedule.profileName}`} value={workerChoices[schedule.id] ?? schedule.workerCount}
                   disabled={Boolean(actionId) || !canResumeSchedule(schedule)}
