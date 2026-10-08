@@ -419,17 +419,18 @@ socket.on('captcha:refresh', async (payload, respond) => {
   respond(await refreshCaptchaInternal(job, payload.captchaId));
 });
 socket.on('job:cancelled', async ({jobId}) => {
-  if (active?.jobId === jobId) { const cancelled = active; cancelled.cancelled = true; await page?.close().catch(() => {}); if (active === cancelled) active = null; }
+  if (active?.jobId === jobId) { const cancelled = active; cancelled.cancelled = true; pageNeedsReset = true; await retireReportPage(page); if (active === cancelled) active = null; }
 });
 async function runnerOptions(request, respond) {
   if (active?.finishing) await active.finishPromise;
   if (active || optionsBusy) { respond({ok: false, error: 'Worker is busy.', code: 'RUNNER_BUSY', retryAfterMs: 1000}); return; }
   optionsBusy = true;
-  let timer, expired = false;
+  let timer, expired = false, rejectCancellation;
+  const cancelled = new Promise((_, reject) => {rejectCancellation = reject;});
   let finished;
   const completion = new Promise(resolve => {finished = resolve;});
   const cancellation = optionsCancellation = {requestId: request.requestId || null, cancel: async () => {
-    expired = true; await page?.close().catch(() => {}); await completion;
+    expired = true; rejectCancellation(new Error('VAHAN_OPTIONS_CANCELLED: options loading was cancelled.')); await completion;
   }};
   const work = async () => {
     await ensurePage(() => expired);
@@ -448,12 +449,13 @@ async function runnerOptions(request, respond) {
         reject(new Error(`VAHAN_OPTIONS_TIMEOUT: ${request.type} did not finish within ${OPTIONS_TIMEOUT / 1000} seconds. Please retry.`));
       }, OPTIONS_TIMEOUT);
     });
-    const options = await Promise.race([work(), deadline]);
+    const options = await Promise.race([work(), deadline, cancelled]);
     respond({ok: true, options});
   } catch (error) {
     // Closing the page also aborts page.evaluate/fetch; a Promise timeout alone
     // would leave the old request running and every retry would see busy.
-    await page?.close().catch(() => {});
+    pageNeedsReset = true;
+    await retireReportPage(page);
     respond({ok: false, error: error.message});
   } finally { clearTimeout(timer); optionsBusy = false; if (optionsCancellation === cancellation) optionsCancellation = null; finished(); }
 }

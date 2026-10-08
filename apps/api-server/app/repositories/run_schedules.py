@@ -59,7 +59,7 @@ class RunScheduleRepository:
                 'message': 'Preparing the scheduled report profile.', 'total': 0, 'done': 0, 'withData': 0,
                 'noData': 0, 'failed': 0, 'preparationAttempts': 0, 'retryAfter': None, 'updatedAt': now().isoformat(),
                 'activeElapsedMs': 0, 'activeSegmentStartedAt': None, 'pausedAt': None,
-                'lastRunAt': None, 'lastFinishedAt': None, 'retryProgress': None, 'operation': None,
+                'lastRunAt': None, 'lastFinishedAt': None, 'retryProgress': None, 'operation': None, 'networkPaused': False,
                 'executionEpoch': value.get('executionEpoch', 0) + 1}
             await connection.execute(update(db.app_settings).where(db.app_settings.c.key == key).values(value=value))
         return value
@@ -160,7 +160,13 @@ class RunScheduleRepository:
                     db.batch_queue_tasks.c.session_id == session_id,
                     db.batch_queue_tasks.c.status.in_(['PENDING', 'PROCESSING'])).limit(1))
                 if unfinished is None:
-                    raise ValueError('All saved cases have finished. Create a new schedule to run again.')
+                    policy = await connection.scalar(select(db.app_settings.c.value).where(
+                        db.app_settings.c.key == 'batch-retry-policy:' + session_id))
+                    eligible = policy and not policy.get('finalPassStarted') and await connection.scalar(
+                        select(db.batch_queue_tasks.c.position).where(db.batch_queue_tasks.c.session_id == session_id,
+                            db.batch_queue_tasks.c.status == 'FAILED').limit(1)) is not None
+                    if not eligible:
+                        raise ValueError('All saved cases have finished. Create a new schedule to run again.')
             elif value['status'] == 'STOPPED':
                 raise ValueError('The stopped schedule has no saved queue to continue.')
             elapsed = active_elapsed_ms(value)
@@ -201,7 +207,7 @@ class RunScheduleRepository:
                 'sessionId': None, 'lastSessionId': value['sessionId'], 'lastFinishedAt': finished.isoformat(),
                 'nextRunAt': next_run, 'enabled': current['enabled'] and next_run is not None,
                 'activeElapsedMs': active_elapsed_ms(current, finished), 'activeSegmentStartedAt': None,
-                'pausedAt': None, 'preparationAttempts': 0, 'retryAfter': None, 'updatedAt': finished.isoformat()}
+                'pausedAt': None, 'networkPaused': False, 'preparationAttempts': 0, 'retryAfter': None, 'updatedAt': finished.isoformat()}
             await connection.execute(update(db.app_settings).where(db.app_settings.c.key == key).values(value=current))
         return current
 

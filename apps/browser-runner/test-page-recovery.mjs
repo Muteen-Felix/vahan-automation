@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {chromium} from 'playwright';
-import {retireReportPage, stableDocumentRead} from './page-recovery.mjs';
+import {retireReportPage, stableDocumentRead, isConnectionError} from './page-recovery.mjs';
 
 // Closing an unresponsive old document must not leave the worker locked.
 let closed = 0;
@@ -60,3 +60,19 @@ finishSnapshot();await Promise.all([failing,next]);
 assert.equal(context.active.jobId,'new');assert.ok(calls.indexOf('retired')<calls.indexOf('ready'));
 assert.deepEqual(calls,['retired','FAILED','saved','OPENING_VAHAN','ready','FILLING_FILTERS','handoff']);
 console.log('Page recovery passed: damaged page retired, fresh hidden State loaded, bounded close, navigation reads, SQL gate and assignment race.');
+
+assert.equal(isConnectionError(new Error('page.goto: net::ERR_INTERNET_DISCONNECTED')),true);
+assert.equal(isConnectionError(new Error('fetch failed')),true);
+assert.equal(isConnectionError(new Error('API 500: report parser failed')),false);
+assert.equal(isConnectionError(new Error('FILTER_VERIFICATION_FAILED')),false);
+console.log('Only transport failures trigger connectivity rechecks; report/parser/selector errors remain distinct.');
+
+const lostJob={jobId:'network-interruption',cancelled:false};let reported=0;
+const lostContext={active:lostJob,isConnectionError,
+  ack:async event=>{assert.equal(event,'network:problem');reported++;lostJob.cancelled=true;lostContext.active=null;},
+  status:async()=>{throw new Error('Network cancellation must not be reported as a failed case.');},
+};
+const lost=runInNewContext(`${slice('fail','execute')}\nfail`,lostContext);
+await lost(new Error('page.goto: net::ERR_INTERNET_DISCONNECTED'),lostJob);
+assert.equal(reported,1);
+console.log('A transport outage acknowledged as cancellation does not consume a case failure.');

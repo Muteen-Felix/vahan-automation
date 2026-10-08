@@ -14,6 +14,7 @@
     "test:update-history-ui": "node scripts/test-update-history-ui.mjs",
     "test:health-ui": "node scripts/test-health-page-ui.mjs",
     "test:schedules-ui": "node scripts/test-run-schedules-ui.mjs",
+    "test:network-ui": "node scripts/test-network-ui.mjs",
     "test:account-ui": "node scripts/test-account-settings-ui.mjs",
     "test:navigation-ui": "node scripts/test-navigation-ui.mjs",
     "test:platform": "node scripts/test-platform.mjs"

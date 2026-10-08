@@ -11,6 +11,7 @@ function fixture() {
   const timers = new Map(), replies = [], calls = [];
   let rejectEvaluation;
   const context = {
+    retireReportPage:async p=>p?.close(), pageNeedsReset:false,
     active: null, optionsBusy: false, OPTIONS_TIMEOUT: 110_000,
     VAHAN_OPTION_SELECTORS: {states: {selector: '#stateName'}},
     approvedSelectors: {states: {selector: '#stateName'}},

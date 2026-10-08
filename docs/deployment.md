@@ -73,3 +73,5 @@ Stack hiện cung cấp một API process và một PostgreSQL primary, không p
 `.github/workflows/platform.yml` chạy Python, Playwright/Chromium, kiểm tra TypeScript/build và kiểm thử giao diện trên runner Ubuntu, Windows và macOS. Một job Ubuntu riêng kiểm tra Compose và build các Linux images. Các kiểm thử database chạy trong PostgreSQL tạm của CI, tách khỏi database người dùng.
 
 Local `--config-only` kiểm tra được Compose và file cấu hình; nó không thay thế việc chạy workflow trên từng hosted OS. Sau khi workflow được kích hoạt cho branch/PR, tab Actions ghi kết quả Windows, Ubuntu và macOS theo từng run.
+
+Network recovery uses the existing SQL app_settings table (network-connectivity); no schema migration is needed. The API polls VAHAN connectivity every five seconds and requires two successful checks before automatic continuation. Only schedules carrying networkPaused resume automatically; manual pauses and deletions remain authoritative. Deploy API, web and browser-runner together for transport-error reports and bounded browser cancellation.

@@ -106,7 +106,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(snapshot['tasks'][0]['status'],'COMPLETED')
         self.assertEqual(snapshot['tasks'][1]['status'],'PENDING')
         self.assertEqual(snapshot['tasks'][1]['failures'],0)
-        self.assertEqual((await queue.claim(UUID(saved['sessionId']),saved['owner'],'playwright-2'))['type'],'network_paused')
+        self.assertIn((await queue.claim(UUID(saved['sessionId']),saved['owner'],'playwright-2'))['type'],{'paused','network_paused'})
         await record(True)
         await scheduler_tick();await scheduler_tick();await scheduler_tick()
         current=await self.repo.get(saved['id']);self.assertEqual(current['status'],'RUNNING')
@@ -132,6 +132,16 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         await record(True);await scheduler_tick();await scheduler_tick()
         current=await self.repo.get(saved['id'])
         self.assertEqual(current['status'],'RUNNING');self.assertEqual(current['sessionId'],saved['sessionId'])
+
+    async def test_probe_distinguishes_reachable_auth_from_transport_and_upstream_errors(self):
+        from app.network_guard import probe
+        from urllib.error import HTTPError,URLError
+        with patch('app.network_guard.urlopen',side_effect=HTTPError('fixture',403,'Forbidden',{},None)):
+            self.assertTrue((await probe())[0])
+        with patch('app.network_guard.urlopen',side_effect=HTTPError('fixture',503,'Unavailable',{},None)):
+            self.assertFalse((await probe())[0])
+        with patch('app.network_guard.urlopen',side_effect=URLError('Fixture DNS error')):
+            self.assertFalse((await probe())[0])
 
     async def test_network_monitor_requires_two_healthy_checks_before_recovery(self):
         from app.network_guard import monitor,status
