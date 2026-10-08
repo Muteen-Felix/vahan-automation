@@ -63,6 +63,25 @@ async def create_user(command: UserCreate, request: Request):
         raise HTTPException(409, 'Username already exists.') from error
     return {'username': command.username, 'role': command.role, 'profile': command.profile}
 
+class ResetPasswordRequest(BaseModel):
+    password: str = Field(min_length=12, max_length=1024)
+
+
+@router.post('/users/{username}/password')
+async def reset_password(username: str, command: ResetPasswordRequest, request: Request):
+    require_admin(request)
+    if username == request.state.authenticated_user:
+        raise HTTPException(409, 'Use Change password for your own account.')
+    try:
+        await services.users.change_password(username, command.password)
+    except LookupError as error:
+        raise HTTPException(404, str(error)) from error
+    from app.realtime.ui_events import invalidate_user
+    await invalidate_user(username)
+    await audit(request.state.authenticated_user, 'user.password_reset', {'username': username})
+    return {'ok': True}
+
+
 @router.patch('/users/{username}')
 async def update_user(username: str, command: UserUpdate, request: Request):
     require_admin(request)

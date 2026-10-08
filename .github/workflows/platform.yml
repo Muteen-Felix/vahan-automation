@@ -1,0 +1,188 @@
+name: Platform verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-tests:
+    name: Source and browser tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Validate PowerShell launchers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          foreach ($file in @('run-vahan-rpa.ps1', 'backup-vahan-rpa.ps1')) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file), [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors) { $parseErrors | ForEach-Object { Write-Error $_ }; exit 1 }
+          }
+
+      - name: Validate host secret setup
+        run: python scripts/setup-docker.py
+
+      - name: Install and test API
+        run: |
+          python -m pip install -e "apps/api-server[dev]"
+          python -m pytest apps/api-server/verification/test_ocr_platform.py apps/api-server/verification/test_captcha_ephemeral.py apps/api-server/verification/test_captcha_refresh_race.py
+
+      - name: Install runner dependencies
+        working-directory: apps/browser-runner
+        run: npm ci
+
+      - name: Install Chromium and Linux libraries
+        if: runner.os == 'Linux'
+        working-directory: apps/browser-runner
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium
+        if: runner.os != 'Linux'
+        working-directory: apps/browser-runner
+        run: npx playwright install chromium
+
+      - name: Test browser runner
+        working-directory: apps/browser-runner
+        run: |
+          npm run check
+          npm run test:ui-health
+          npm run test:results
+          npm run test:lifecycle
+          npm run test:filters
+          npm run test:options
+          npm run test:navigation
+          npm run test:image-pipe
+          npm run test:profile-options
+          npm run test:main-report-save
+
+      - name: Install dashboard dependencies
+        working-directory: apps/web-ui
+        run: npm ci
+
+      - name: Build and test dashboard
+        working-directory: apps/web-ui
+        run: |
+          npm run check
+          npm run build
+          npm run test:platform
+
+  database-integration:
+    name: PostgreSQL verification (Ubuntu)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.7-bookworm
+        env:
+          POSTGRES_USER: vahan
+          POSTGRES_PASSWORD: platform-test-password
+          POSTGRES_DB: vahan
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vahan -d vahan"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql+asyncpg://vahan:platform-test-password@127.0.0.1:5432/vahan_api_test
+      VAHAN_ALLOW_DATABASE_CLEAR: test-only
+      VAHAN_API_RUNNER_TOKEN: platform-test-runner-token-0123456789
+      VAHAN_UI_AUTH_TOKEN_SECRET: platform-test-signing-secret-0123456789-abcdefghijklmnopqrstuvwxyz
+      VAHAN_BROWSER_STATE_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install API dependencies
+        run: python -m pip install -e "apps/api-server[dev]"
+      - name: Create isolated verification databases
+        working-directory: apps/api-server
+        run: |
+          python - <<'PY'
+          import asyncio
+          import asyncpg
+
+          names = [
+              'vahan_api_test',
+              'vahan_results_platform_report_test',
+              'vahan_results_platform_annual_test',
+              'vahan_results_platform_profiles_test',
+              'vahan_results_platform_contract_test',
+              'vahan_results_platform_controls_test',
+              'vahan_results_platform_update_test',
+              'vahan_results_platform_pool_test',
+              'vahan_retry_platform_test',
+              'vahan_coverage_platform_test',
+              'vahan_schedule_platform_test',
+              'vahan_queue_platform_test',
+              'vahan_shared_batch_platform_test',
+          ]
+
+          async def main():
+              connection = await asyncpg.connect(
+                  'postgresql://vahan:platform-test-password@127.0.0.1:5432/vahan'
+              )
+              try:
+                  for name in names:
+                      await connection.execute(f'CREATE DATABASE "{name}"')
+              finally:
+                  await connection.close()
+
+          asyncio.run(main())
+          PY
+
+      - name: Run schema migrations
+        working-directory: apps/api-server
+        run: python -m app.migrate
+
+      - name: Run database-backed verification in isolated processes
+        working-directory: apps/api-server
+        shell: bash
+        run: |
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_report_test python -m pytest verification/test_report_results.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_annual_test python -m pytest verification/test_annual_reports.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_profiles_test python -m pytest verification/test_filter_profiles.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_contract_test python -m pytest verification/test_ui_contract.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_controls_test python -m pytest verification/test_run_controls.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_update_test python -m pytest verification/test_update_status.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_pool_test python -m pytest verification/test_worker_pool.py
+          VAHAN_RETRY_TEST_DATABASE=vahan_retry_platform_test python -m pytest verification/test_retry_sessions.py
+          VAHAN_COVERAGE_TEST_DATABASE=vahan_coverage_platform_test python -m pytest verification/test_report_coverage.py
+          VAHAN_SCHEDULE_TEST_DATABASE=vahan_schedule_platform_test python -m pytest verification/test_run_schedules.py
+          VAHAN_QUEUE_TEST_DATABASE=vahan_queue_platform_test python -m pytest verification/test_queue_retry_checkpoints.py
+          PYTHONPATH=. DATABASE_URL=postgresql+asyncpg://vahan:platform-test-password@127.0.0.1:5432/vahan_shared_batch_platform_test python verification/test_shared_batch_queue.py
+
+  container-build:
+    name: Linux container packaging (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Create isolated build settings
+        run: python scripts/setup-docker.py
+      - name: Validate Compose package
+        run: docker compose --env-file .docker.env config --quiet
+      - name: Build all Linux images
+        run: docker compose --env-file .docker.env build

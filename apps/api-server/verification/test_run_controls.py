@@ -80,12 +80,22 @@ class RunControlsTest(unittest.IsolatedAsyncioTestCase):
         first = await self.queue.claim(session, self.owner, self.runners[0])
         await self.finish(first['jobId'], JobStatus.FAILED)
         await self.queue.settle(session, self.owner, 0)
+
+        # The retry waits for the current 10-case checkpoint to finish before
+        # the queue advances to that group's retry phase.
+        for position in range(1, 10):
+            item = await self.queue.claim(session, self.owner, self.runners[0])
+            self.assertEqual(item['task']['position'], position)
+            await self.finish(item['jobId'])
+            await self.queue.settle(session, self.owner, position)
+
         retry = await self.queue.claim(session, self.owner, self.runners[0])
         self.assertEqual(retry['type'], 'assigned')
+        self.assertEqual(retry['task']['position'], 0)
         self.assertEqual(retry['task']['attempts'], 2)
         await self.finish(retry['jobId'], JobStatus.NO_DATA)
         await self.queue.settle(session, self.owner, 0)
-        self.assertEqual((await self.queue.claim(session, self.owner, self.runners[0]))['task']['position'], 1)
+        self.assertEqual((await self.queue.claim(session, self.owner, self.runners[0]))['task']['position'], 10)
 
     async def test_historical_workbook_is_saved_and_read_in_its_own_year(self):
         job = await services.jobs.create(Job(runnerId=self.runners[0], ownerUsername=self.owner,

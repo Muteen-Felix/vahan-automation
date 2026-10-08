@@ -9,6 +9,7 @@ import subprocess
 import sys
 import unittest
 from io import BytesIO
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -49,9 +50,15 @@ class RetrySessionsTest(unittest.IsolatedAsyncioTestCase):
         self.request.state.authenticated_role = 'user'
         self.emit = patch('app.api.jobs.sio.emit', new=AsyncMock())
         self.emit.start()
+        # These tests insert the original job directly; gate lifecycle is
+        # exercised separately by the UI contract verification suite.
+        self.gate = patch('app.repositories.ui_contract.require_gate', new=AsyncMock(return_value={'fixture': True}))
+        self.bind = patch('app.repositories.ui_contract.bind_gate', new=AsyncMock())
+        self.gate.start(); self.bind.start()
 
     async def asyncTearDown(self):
         self.emit.stop()
+        self.gate.stop(); self.bind.stop()
         await engine.dispose()
 
     async def original(self, status=JobStatus.FAILED, office='PUNE-MH12', legacy=False):
@@ -81,16 +88,20 @@ class RetrySessionsTest(unittest.IsolatedAsyncioTestCase):
         for status in [JobStatus.OPENING_VAHAN, JobStatus.FILLING_FILTERS, JobStatus.SUBMITTING, JobStatus.WAITING_RESULT]:
             self.assertIsNotNone(await services.jobs.update_status(job.id, status))
         if data and workbook:
-            document = Workbook()
-            document.active.append(['Maker', 'JAN', 'Total'])
-            document.active.append(['Fixture maker', 1, 1])
-            buffer = BytesIO()
-            document.save(buffer)
-            await services.files.commit_excel(job.id, 'fixture.xlsx', buffer.getvalue())
+            await self.commit_workbook(job)
         command = ReportResultRequest.model_validate(dict(result='DATA' if data else 'NO_RECORD',
             message='Data found' if data else 'No record found', observedAt='2026-10-02T17:00:00+07:00',
             pageUrl='http://fixture.test/report', tables=[{'rows': [{'section': 'body', 'cells': ['Fixture maker', '1']}]}] if data else []))
         return await commit_report_result(job.id, self.runner_id, command)
+
+    async def commit_workbook(self, job):
+        document = Workbook()
+        document.active.append(['Maker', 'JAN', 'Total'])
+        document.active.append(['Fixture maker', 1, 1])
+        buffer = BytesIO()
+        document.save(buffer)
+        return await services.files.commit_excel(job.id, 'fixture.xlsx', buffer.getvalue(),
+            observed_at=datetime(2026, 10, 2, 10, tzinfo=timezone.utc), runner_id=self.runner_id)
 
     async def test_retry_replaces_failure_counts_and_download_without_new_case(self):
         failed = await self.original(legacy=True)
@@ -103,23 +114,28 @@ class RetrySessionsTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((active['jobCount'], active['failedCount'], active['activeCount']), (2, 0, 1))
         await self.finish(retry)
         after = await self.summary()
-        self.assertEqual((after['jobCount'], after['failedCount'], after['completedCount'], after['fileCount']), (2, 0, 2, 1))
+        self.assertEqual((after['jobCount'], after['failedCount'], after['completedCount'], after['fileCount']), (2, 0, 2, 0))
         self.assertEqual(after['startedAt'], before['startedAt'])
         self.assertGreater(after['updatedAt'], before['updatedAt'])
         self.assertEqual(after['jobs'][0]['jobId'], str(retry.id))
         self.assertEqual(after['jobs'][0]['createdAt'], failed.created_at.isoformat())
         self.assertIsNone(after['jobs'][0]['error'])
-        file = await download_job_file(retry.id, 'excel', self.request)
-        self.assertTrue(file.body.startswith(b'PK'))
+        self.assertIsNone(after['jobs'][0]['downloadUrl'])
+        self.assertIsNone(await services.files.for_job(retry.id, 'excel'))
+        with self.assertRaises(HTTPException) as raised:
+            await download_job_file(retry.id, 'excel', self.request)
+        self.assertEqual(raised.exception.status_code, 404)
         self.assertEqual((await services.jobs.get(failed.id)).status, JobStatus.FAILED, 'retain the original attempt for audit')
 
     async def test_no_data_retry_updates_no_data_and_txt(self):
         retry = await self.retry(await self.original())
         await self.finish(retry, data=False)
         summary = await self.summary()
-        self.assertEqual((summary['jobCount'], summary['failedCount'], summary['noDataCount'], summary['fileCount']), (1, 0, 1, 1))
-        self.assertEqual(summary['jobs'][0]['fileType'], 'text')
-        self.assertIn(b'No record found', (await download_job_file(retry.id, 'no-data', self.request)).body)
+        self.assertEqual((summary['jobCount'], summary['failedCount'], summary['noDataCount'], summary['fileCount']), (1, 0, 1, 0))
+        self.assertIsNone(summary['jobs'][0]['fileType'])
+        with self.assertRaises(HTTPException) as raised:
+            await download_job_file(retry.id, 'no-data', self.request)
+        self.assertEqual(raised.exception.status_code, 404)
 
     async def test_failed_retry_chain_keeps_one_failure_until_recovered(self):
         failed = await self.original()
@@ -128,7 +144,10 @@ class RetrySessionsTest(unittest.IsolatedAsyncioTestCase):
         summary = await self.summary()
         self.assertEqual((summary['jobCount'], summary['failedCount']), (1, 1))
         second_retry = await self.retry(retry)
-        await self.finish(second_retry, workbook=False)
+        with self.assertRaisesRegex(ValueError, 'Full workbook must be saved'):
+            await self.finish(second_retry, workbook=False)
+        self.assertEqual((await services.jobs.get(second_retry.id)).status, JobStatus.WAITING_RESULT)
+        await self.commit_workbook(second_retry)
         summary = await self.summary()
         self.assertEqual((summary['jobCount'], summary['failedCount'], summary['completedCount']), (1, 0, 1))
         self.assertEqual(second_retry.case_id, failed.id)
@@ -196,8 +215,10 @@ class RetrySessionsTest(unittest.IsolatedAsyncioTestCase):
         await self.finish(retry)
         before = await self.summary()
         original_file = await services.files.for_job(retry.id, 'excel')
+        self.assertIsNone(original_file)
         async with engine.connect() as connection:
-            cells_before = await connection.scalar(select(func.count()).select_from(db.annual_cells))
+            reports_before = await connection.scalar(select(func.count()).select_from(db.main_reports))
+            history_before = await connection.scalar(select(func.count()).select_from(db.report_update_history))
         await delete_report_session(self.session_id, self.request)
         await delete_report_session(self.session_id, self.request)  # Safe duplicate request.
         visible = await list_exported_report_sessions(self.request)
@@ -206,10 +227,13 @@ class RetrySessionsTest(unittest.IsolatedAsyncioTestCase):
         archived = next(session for session in deleted if session['sessionId'] == str(self.session_id))
         self.assertIsNotNone(archived['deletedAt'])
         self.assertEqual(archived['jobCount'], before['jobCount'])
-        self.assertEqual((await services.files.for_job(retry.id, 'excel'))['sha256'], original_file['sha256'])
-        self.assertTrue((await download_job_file(retry.id, 'excel', self.request)).body.startswith(b'PK'))
+        self.assertIsNone(await services.files.for_job(retry.id, 'excel'))
+        with self.assertRaises(HTTPException) as raised:
+            await download_job_file(retry.id, 'excel', self.request)
+        self.assertEqual(raised.exception.status_code, 404)
         async with engine.connect() as connection:
-            self.assertEqual(await connection.scalar(select(func.count()).select_from(db.annual_cells)), cells_before)
+            self.assertEqual(await connection.scalar(select(func.count()).select_from(db.main_reports)), reports_before)
+            self.assertEqual(await connection.scalar(select(func.count()).select_from(db.report_update_history)), history_before)
         await restore_report_session(self.session_id, self.request)
         after = await self.summary()
         self.assertEqual(after, before)

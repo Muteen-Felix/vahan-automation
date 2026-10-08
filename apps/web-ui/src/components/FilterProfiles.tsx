@@ -107,6 +107,7 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
     if(!rulesOpen&&rulesDialog.current?.open)rulesDialog.current.close();
   },[rulesOpen]);
   const mounted=useRef(true),optionsPending=useRef(false),wantedContext=useRef(''),loadedContext=useRef('');
+  const optionsPreflight=useRef<{runner:string;at:number}|null>(null);
   const previewAbort=useRef<AbortController|null>(null);
   const parents=parentContext(definition);
   if(definition.fields.states.mode==='iterate')parents.states=definition.fields.states.include.filter(state=>!definition.fields.states.exclude.includes(state));
@@ -130,6 +131,11 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
       try {
         while(mounted.current&&loadedContext.current!==wantedContext.current){
           const key=wantedContext.current;const [runner,selectedYear,context]=JSON.parse(key);
+          if(!optionsPreflight.current||optionsPreflight.current.runner!==runner||Date.now()-optionsPreflight.current.at>240000){
+            const checked=await api.uiPreflight([runner]);
+            if(!checked.allowed)throw new Error('UI_HEALTH_BLOCKED: open UI Health and copy the diagnostic error.');
+            optionsPreflight.current={runner,at:Date.now()};
+          }
           const loaded=await api.filterOptions(runner,selectedYear,context);
           saveFilterOptions(selectedYear,context,loaded);
           if(mounted.current&&wantedContext.current===key){setOptions(loaded);loadedContext.current=key;}
@@ -166,6 +172,7 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
       setId(saved.id);setRevision(saved.revision);await onSaved();setMessage('Saved to SQL.');
       if(showPreview){if(!runnerId)throw new Error('Select an idle browser worker.');
         const controller=new AbortController();previewAbort.current=controller;
+        await api.uiPreflight([runnerId]);
         const plan=await previewFilterProfile(saved.id,runnerId,year,setMessage,controller.signal);
         if(mounted.current){setPreview(plan);setMessage(`${plan.scenarios.length.toLocaleString()} valid cases · ${plan.skippedBranches||0} branches excluded by dependencies or rules`);}
       }
@@ -174,6 +181,7 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
   }
   const searchMakers=async(search:string)=>{
     if(!runnerId)throw new Error('Select a browser worker.');
+    await api.uiPreflight([runnerId]);
     const values=await api.filterMakers(runnerId,year,search);setOptions(current=>({...current,makers:values}));
   };
   const setRule=(index:number,patch:Partial<CombinationRule>)=>{setPreview(null);setDefinition(current=>({...current,rules:current.rules.map((rule,position)=>position===index?{...rule,...patch}:rule)}));};
@@ -230,7 +238,7 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
               policy={policy} onPolicy={patch=>changeField(field.id,patch)} disabled={disabled||((loading||optionsWaiting)&&!(options[field.id]?.length))} onChange={values=>changeField(field.id,{values})} onSearch={field.id==='makers'?searchMakers:undefined} /></div></div>;
         })}</div>
         {message&&<p className="profile-message" role="status">{message}</p>}
-        {preview&&<section className="profile-preview"><div><h3>{preview.scenarios.length.toLocaleString()} cases · {preview.states.length} States</h3><button type="button" disabled={disabled||busy} onClick={()=>onSelect(id,preview)}>Use on home page</button></div>
+        {preview&&<section className="profile-preview"><div><h3>{preview.scenarios.length.toLocaleString()} cases · {preview.states.length} States</h3><button type="button" disabled={disabled||busy} onClick={()=>onSelect(id,preview)}>Use in Settings</button></div>
           <p>Preview only. Starting a run rechecks the saved profile and live VAHAN options.</p>
           <ol>{preview.scenarios.slice(0,10).map((scenario,index)=><li key={scenario.caseKey}>{index+1}. {scenario.filters.states[0]} · {scenario.filters.rtos[0]}<small>{PROFILE_FIELDS.filter(field=>!['states','rtos','delhiNcr'].includes(field.id)).flatMap(field=>{
             const values=scenario.filters[field.id as keyof typeof scenario.filters];return Array.isArray(values)&&values.length?[`${field.label}: ${values.join(', ')}`]:[];

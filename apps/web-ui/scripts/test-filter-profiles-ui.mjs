@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {testArtifactPath} from './test-artifact-path.mjs';
 import {chromium} from '../../browser-runner/node_modules/playwright/index.mjs';
 const browser=await chromium.launch({headless:true});
 let forceBusy=false;
@@ -25,9 +26,11 @@ try{
     else if(path==='/api/auth/renew')body={accessToken:'fixture-token'};
     else if(path==='/api/user-state')body=state;
     else if(path.startsWith('/api/user-state/'))state[decodeURIComponent(path.slice('/api/user-state/'.length))]=request.postDataJSON().value;
+    else if(path==='/api/run-schedules'||path==='/api/users')body=[];
     else if(path==='/api/runners')body=forceBusy?runners.map(runner=>({...runner,status:'BUSY',currentJobId:'busy-fixture'})):runners;
     else if(path==='/api/worker-pool')body={enabled:true,desiredCount:2,runningCount:2,phase:'ready',workers:[]};
-    else if(path==='/api/maker-updates'||path==='/api/jobs')body=[];
+    else if(path==='/api/maker-updates'||path==='/api/jobs'||path==='/api/run-schedules')body=[];
+    else if(path==='/api/ui-health/preflight')body={allowed:true,preflightId:'22222222-2222-4222-8222-222222222222',revision:1,reports:[]};
     else if(path==='/api/filter-profiles'&&request.method()==='GET')body=profiles;
     else if((path==='/api/filter-profiles'||path===`/api/filter-profiles/${id}`)&&['POST','PUT'].includes(request.method())){
       const input=request.postDataJSON();body={id,name:input.name,definition:input.definition,revision:(profiles[0]?.revision||0)+1,updatedAt:new Date().toISOString()};profiles=[body];
@@ -90,7 +93,7 @@ try{
   assert.deepEqual(await groupDialog.locator('.profile-picker-options label').allTextContents(),originalOrder,
     'selecting a value keeps the original order instead of moving it to the top');
   assert.deepEqual(await boxes(),before,'opening the value dialog and selecting values does not move editor rows');
-  await page.screenshot({path:'/tmp/vahan-filter-picker-overlay.png'});
+  await page.screenshot({path:testArtifactPath('vahan-filter-picker-overlay.png')});
   await groupDialog.getByRole('button',{name:'Done',exact:true}).click();
   const sub=page.locator('.profile-field-row').filter({has:page.getByText('Sub-Category',{exact:true})});
   await sub.getByRole('button',{name:/^Sub-Category/}).click();
@@ -131,20 +134,19 @@ try{
   assert.deepEqual(profiles[0].definition.fields.states.include,['State A']);
   assert.deepEqual(profiles[0].definition.fields.states.exclude,['State B']);
   await page.getByRole('button',{name:'Save & preview',exact:true}).click();
-  await page.getByRole('button',{name:'Use on home page'}).waitFor();
+  await page.getByRole('button',{name:'Use in Settings'}).waitFor();
   assert.equal(previewCalls,1);
   await page.evaluate(()=>window.scrollTo(0,0));
-  await page.screenshot({path:'/tmp/vahan-filter-profiles-desktop.png',fullPage:true});
-  await page.getByRole('button',{name:'Use on home page'}).click();
-  assert.equal(await page.getByLabel('Filter profile',{exact:true}).inputValue(),id);
-  await page.getByRole('button',{name:'Run all · 2 workers',exact:true}).click();
-  await page.waitForFunction(()=>document.body.textContent.includes('Continue · 2 workers'));
-  assert.equal(previewCalls,2,'starting a run must recheck live options and the saved revision');
-  assert.equal(queueBody.tasks.length,2);assert.deepEqual(queueBody.tasks.map(task=>task.filters.fuels[0]),['ELECTRIC(BOV)','PURE EV']);
-  assert.ok(queueBody.tasks.every(task=>task.filters.categoryGroups[0]==='Three Wheeler'&&task.filters.fromYear==='2023'));
-  assert.equal(await page.getByLabel('Crawl year',{exact:true}).count(),0,'home has no separate year selector');
-  await page.reload();await page.getByLabel('Filter profile',{exact:true}).waitFor();
-  assert.equal(await page.getByLabel('Filter profile',{exact:true}).inputValue(),id,'profile choice persists through reload');
+  await page.screenshot({path:testArtifactPath('vahan-filter-profiles-desktop.png'),fullPage:true});
+  await page.getByRole('button',{name:'Use in Settings'}).click();
+  await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
+  assert.equal(await page.getByLabel('Report / filter profile',{exact:true}).inputValue(),id);
+  assert.equal(await page.getByLabel('Report year',{exact:true}).inputValue(),'2023');
+  assert.equal(previewCalls,1,'Selecting a schedule profile must not start another preview or manual run');
+  assert.equal(queueBody,undefined,'The dashboard never publishes a manual queue');
+  await page.reload();await page.getByLabel('Report / filter profile',{exact:true}).waitFor();
+  await page.waitForFunction(id=>document.querySelector('select[aria-label="Report / filter profile"]')?.value===id,id);
+  assert.equal(await page.getByLabel('Report / filter profile',{exact:true}).inputValue(),id,'profile choice persists through reload');
   await page.getByRole('link',{name:'Filters',exact:true}).click();await page.setViewportSize({width:390,height:844});
   await page.getByRole('heading',{name:'Filters',exact:true}).waitFor();
   await page.locator('.profile-list').getByRole('button',{name:/Customer filters/}).click();
@@ -154,10 +156,10 @@ try{
   const mobileDialog=page.getByRole('dialog',{name:'Active / Archive Type',exact:true});await mobileDialog.waitFor();
   assert.deepEqual(await boxes(),mobileBefore,'mobile overlay keeps rows fixed');
   const modalBox=await mobileDialog.boundingBox();assert.ok(modalBox.x>=0&&modalBox.x+modalBox.width<=390);
-  await page.screenshot({path:'/tmp/vahan-filter-picker-mobile.png'});
+  await page.screenshot({path:testArtifactPath('vahan-filter-picker-mobile.png')});
   await mobileDialog.getByRole('button',{name:'Done',exact:true}).click();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'filter editor fits mobile width');
-  await page.screenshot({path:'/tmp/vahan-filter-profiles-mobile.png',fullPage:true});
+  await page.screenshot({path:testArtifactPath('vahan-filter-profiles-mobile.png'),fullPage:true});
   assert.ok(Array.isArray(state.vahanFilterOptionsV1),'live option snapshots persist in the SQL-backed user state');
   forceBusy=true;await page.reload();await page.getByRole('heading',{name:'Filters',exact:true}).waitFor();
   await page.locator('.profile-list').getByRole('button',{name:/Customer filters/}).click();
@@ -179,5 +181,5 @@ try{
   await page.locator('.profile-field-row').filter({has:page.getByText('RTO',{exact:true})}).getByRole('button',{name:'RTO',exact:true}).click();
   await page.getByRole('dialog',{name:'RTO',exact:true}).getByRole('checkbox',{name:'Recorded Office',exact:true}).waitFor();
   await page.keyboard.press('Escape');
-  assert.deepEqual(errors,[]);console.log('Filters UI: dependent selections, SQL saves, live preview, home choice, two scopes at one RTO, year and reload passed.');
+  assert.deepEqual(errors,[]);console.log('Filters UI: dependent selections, SQL saves, live preview, Settings selection, two scopes at one RTO, year and reload passed.');
 }finally{await browser.close();}

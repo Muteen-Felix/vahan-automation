@@ -15,7 +15,7 @@ function fixture(type = 'DATA_READY', downloadReady = true) {
     delete:async()=>calls.push('delete-temporary-export')};
   const context = {active:job,optionsBusy:false,authRequired:false,RESULT_TIMEOUT:5000,FormData,Blob,URL,target:new URL('https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en'),
     page:{url:()=> 'https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en',
-      waitForEvent:async()=>download,evaluate:async fn=>{
+      waitForLoadState:async()=>{},waitForEvent:async()=>download,evaluate:async fn=>{
       const code=fn.toString();
       if(code.includes('vahanDriver.result')) return {type,downloadReady,report:{observedAt:'2026-10-02T14:35:42+07:00',pageUrl:'https://fixture/report'}};
       if(code.includes('clickExcel')) calls.push('download');

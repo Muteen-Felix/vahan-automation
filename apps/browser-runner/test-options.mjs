@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
+import {retireReportPage, stableDocumentRead} from './page-recovery.mjs';
 import {chromium} from 'playwright';
 
 const source = readFileSync(new URL('./runner.mjs', import.meta.url), 'utf8');
@@ -12,6 +13,7 @@ function fixture() {
   const context = {
     active: null, optionsBusy: false, OPTIONS_TIMEOUT: 110_000,
     VAHAN_OPTION_SELECTORS: {states: {selector: '#stateName'}},
+    approvedSelectors: {states: {selector: '#stateName'}},
     ensurePage: async () => calls.push('ready'),
     page: {
       evaluate: async () => new Promise((_, reject) => {rejectEvaluation = reject;}),
@@ -91,7 +93,10 @@ try {
   const openingStart = source.indexOf('async function ensurePage(');
   const openingEnd = source.indexOf('async function saveState(', openingStart);
   const ensure = runInNewContext(`${source.slice(openingStart, openingEnd)}\nensurePage`, {
+    pageNeedsReset:false, retireReportPage, stableDocumentRead,
     globalThis: {URL}, URL: url, target: new URL(url), page,
+    http:async()=>({blocked:false,versionId:'fixture',revision:1,controls:[]}),
+    VAHAN_OPTION_SELECTORS:{states:{selector:'#stateName'}},selectorOverrides:()=>({}),approvedSelectors:{},contractRevision:0,
     launch: async () => {}, newPage: async () => {}, authRequired: false,
   });
   await ensure();

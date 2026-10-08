@@ -2,7 +2,7 @@
 
 **Ngày đối chiếu:** 07/10/2026, múi giờ Asia/Ho_Chi_Minh (GMT+7).
 
-**Mã nguồn:** `feat/filter`, commit `d641a9f`.
+**Mã nguồn:** `feat/filter`; baseline chức năng ở commit `d641a9f`, có bổ sung trang UI Health trong working tree ngày 07/10/2026.
 
 **Mục đích:** cung cấp một đầu vào đầy đủ cho việc phân tích phạm vi, chia công việc, lập timeline và nghiệm thu hệ thống. Tài liệu mô tả phiên bản hiện tại; không coi mọi đề xuất trong các báo cáo kiến trúc cũ là chức năng đã triển khai.
 
@@ -69,23 +69,20 @@ flowchart LR
 | AUTH-04 | Trạng thái kết nối | Hiển thị backend và các runner online/reconnecting. | Online không đồng nghĩa worker rảnh; cần kiểm tra current job. |
 | AUTH-05 | Đồng bộ trạng thái | Lưu lựa chọn profile, năm/worker settings, kế hoạch và dữ liệu khôi phục vào `user_state`. | Có thông báo khi trạng thái chưa đồng bộ thành công. |
 
-### 3.2. Create Report — cấu hình và thực thi
+### 3.2. Điều hướng và chạy báo cáo theo lịch
+
+Giao diện hiện chỉ có **Exported Reports → Filters → Settings**. Exported Reports là trang mặc định; **Log out** nằm ở đầu trang Settings. Trang chạy thủ công và màn hình theo dõi worker riêng đã được gỡ.
 
 | ID | Chức năng | Hoạt động và đầu ra | Ranh giới |
 | --- | --- | --- | --- |
-| RUN-01 | Chọn profile đã lưu | Chọn bộ filter từ SQL; dùng năm và cấu hình của profile để tạo lượt mới. | Profile cũ thiếu thông tin năm cần mở và lưu lại trước khi chạy. |
-| RUN-02 | Chọn số worker | Chọn 1–10 worker; số lượng được lưu và áp dụng lên Docker. | Giảm worker không được cưỡng chế dừng browser đang có job; API có kiểm tra an toàn. |
-| RUN-03 | Load cases | Dò các tổ hợp hợp lệ từ VAHAN và tạo danh sách case thực tế. | Cần runner phù hợp để đọc các lựa chọn trực tiếp; preview không tạo dữ liệu báo cáo. |
-| RUN-04 | Run all | Tạo queue chung và xử lý toàn bộ case của kế hoạch. | Không chia cứng danh sách thành các đoạn cố định cho từng worker. |
-| RUN-05 | Run one | Chạy case/văn phòng được chọn. | Phải giữ đúng toàn bộ filter của case. |
-| RUN-06 | Run from here | Chạy từ vị trí được chọn trong kế hoạch. | Không đồng nghĩa làm mới toàn bộ dataset. |
-| RUN-07 | Stop/Continue | Dừng điều phối, giữ trạng thái; tiếp tục theo kế hoạch đã lưu. | Continue giữ filter và năm của lượt cũ. |
-| RUN-08 | Restart | Tạo lại kế hoạch và chạy lại theo profile được chọn cho lượt mới. | Phân biệt với Continue; không trộn hai cấu hình giữa chừng. |
-| RUN-09 | Retry | Tự thử lại có giới hạn và hỗ trợ retry các lỗi còn lại. | Không retry kết quả No data đã được xác nhận là hợp lệ. |
-| RUN-10 | Theo dõi tổng | Done/Total, Remaining, With data, No data, Failed, Retry, cases/min và ETA. | Số case hoàn thành và attempt/retry không được đánh đồng. |
-| RUN-11 | Theo dõi từng worker | Runner ID, trạng thái, case đang xử lý, thời gian, số claim/settled, kết quả và lỗi. | Các worker chạy độc lập nhưng chia sẻ queue và giới hạn đồng thời. |
-| RUN-12 | Activity và Copy errors | Hiển thị hoạt động; nhóm lỗi trùng thông điệp và sao chép lỗi để kiểm tra. | Giữ phân biệt lỗi điều khiển, CAPTCHA, VAHAN, tải tệp và nhập SQL. |
-| RUN-13 | CAPTCHA assistance | Hiển thị challenge đúng job/worker; hỗ trợ refresh và thao tác thủ công. | Chỉ hiện ở trang chạy, không chen vào Exported Reports. |
+| RUN-01 | Chọn profile | Chọn filter đã lưu trong Settings, giữ năm và revision cho lịch chạy. | Sửa profile không tự đổi lịch đã lưu. |
+| RUN-02 | Đặt lịch | Chọn giờ Việt Nam, 1–10 worker, chạy một lần hoặc hàng ngày. Backend chuẩn bị case và điều phối queue. | Không cần mở trình duyệt dashboard. |
+| RUN-03 | Tiến độ | Card trong Settings hiển thị done/total, cases/min và thanh tiến độ. | Mở hoặc tải lại trang không tạo một queue mới. |
+| RUN-04 | Pause/Continue | Tạm dừng nhận case mới, đợi case đang chạy lưu; đổi worker và tiếp tục cùng phiên. | Không chạy lại dữ liệu/no-data đã lưu. |
+| RUN-05 | Dữ liệu báo cáo | Dữ liệu đã thu thập hiển thị trong Exported Reports, hỗ trợ tìm kiếm và xuất Excel. | Dữ liệu lịch sử được giữ lại. |
+| RUN-06 | UI Health | Kiểm tra trước phiên chạy; Settings chỉ hiển thị khi có lỗi. | Lỗi contract chặn công việc mới. |
+
+Chi tiết hành vi và API: [run-schedules.md](../run-schedules.md).
 
 ### 3.3. Filters — tạo và quản lý cấu hình
 
@@ -104,7 +101,7 @@ flowchart LR
 | FIL-11 | Làm việc khi worker BUSY | Cho phép chọn từ dữ liệu đã ghi nhận; khi có worker rảnh thì làm mới danh sách. Không tự thao tác trên browser đang xử lý job. |
 | FIL-12 | Tìm Maker | Tra cứu lựa chọn Maker bằng tìm kiếm trên VAHAN khi có điều kiện truy cập phù hợp. |
 | FIL-13 | Save & preview | Lưu profile rồi kiểm tra tổ hợp; hiển thị số case hợp lệ và nhánh bị loại. |
-| FIL-14 | Use on home page | Đưa profile/kế hoạch đã preview sang trang chạy. Lượt Run mới vẫn kiểm tra lại. |
+| FIL-14 | Use in Settings | Chọn profile đã preview trong Settings để đặt lịch. Backend vẫn kiểm tra lại khi lịch bắt đầu. |
 | FIL-15 | Giao diện chọn giá trị | Bảng thả xuống bám dưới ô, có Mode, tìm kiếm, Include/Exclude, Clear/Done; đóng bằng Esc hoặc bấm ngoài. |
 
 **15 nhóm filter:** Active / Archive Type, State, RTO, Emission, Maker, Category Group, Sub-Category, Class, Fuel, EV Type, Status, Owner Type, Type, Delhi NCR?, Fitness Valid as On Date?. Active/Archive gồm các cờ Active Compliant, Active Non-Compliant, Permanent Archive và Temporary Archive.
@@ -133,16 +130,22 @@ Mục phụ “RTO options for State” đã được bỏ. State/RTO dùng tr�
 
 Ví dụ: ngày trước đã lưu 1.676/1.676 case, hôm nay mới làm mới 800 case thì **coverage của hôm nay là 800/1.676**, còn 876 case chưa refresh hôm nay. Các giá trị từ ngày trước có thể vẫn còn trong SQL; “chưa refresh hôm nay” không đồng nghĩa “không có dữ liệu”. Do worker chạy song song, phần được cập nhật có thể có các khoảng trống, không nhất thiết là một đoạn liên tục.
 
-### 3.5. Settings và kiểm tra giao diện
+### 3.5. Settings và trang UI Health
 
 | ID | Chức năng | Hoạt động và đầu ra | Quyền/giới hạn |
 | --- | --- | --- | --- |
 | SET-01 | Quản lý tài khoản | Liệt kê, tạo tài khoản, bật/tắt quyền đăng nhập. | Admin; mật khẩu tạo mới tối thiểu 12 ký tự. |
-| SET-02 | Lịch UI health | Cấu hình khoảng cách 1–365 ngày; mặc định model là 3 ngày. | Admin đổi lịch; không phải lịch crawl dữ liệu. |
+| SET-02 | Lịch UI health — trang UI Health | Cấu hình khoảng cách 1–365 ngày; mặc định model là 3 ngày. | Admin đổi lịch; không phải lịch crawl dữ liệu. |
 | SET-03 | Check now | Gửi yêu cầu kiểm tra ngay tới runner phù hợp. | Trang kiểm tra tách riêng và chỉ đọc giao diện. |
-| SET-04 | Lịch sử UI health | Chọn ngày, xem log, thống kê Healthy/Data changed/UI drift/Check error. | Kiểm tra lỗi có thông tin chẩn đoán. |
+| SET-04 | Lịch sử UI health — trang UI Health | Chọn ngày, xem log, thống kê Healthy/Data changed/UI drift/Check error. | Kiểm tra lỗi có thông tin chẩn đoán. |
 | SET-05 | Download CSV | Tải log kiểm tra từ backend. | Thời gian lưu log/tệp theo cấu hình và chính sách retention hiện tại. |
 | SET-06 | Bố cục thống nhất | Nền sáng, thẻ gọn, nút chữ nhật; header Filters/Settings căn hai mép giống các trang còn lại. | Responsive; danh sách/tables cuộn riêng khi cần. |
+| SET-07 | DOM và phiên bản trong SQL | Lưu định nghĩa control, quan sát, hash options và phiên bản DOM đã xác minh; crawler dùng selector được SQL phê duyệt. | ID đổi chỉ tự ánh xạ khi tên/nhãn khớp duy nhất và kiểu control còn phù hợp. |
+| SET-08 | Kiểm tra trước lượt crawl | Kiểm tra tất cả worker được chọn trước tải Maker, preview filter và tạo queue; lưu kết quả theo user và gắn với session. | Lỗi chặn việc mới, retry tối đa một lần và có Copy error gửi dev; worker ngoài pool không chặn pool nhỏ hơn. |
+
+Hai khối **UI health check schedule** và **Daily UI health reports** nằm trên trang riêng `#health`, truy cập bằng nút **UI Health** trên thanh điều hướng. Settings tập trung vào quản lý tài khoản; thao tác Check now và xem log được thực hiện trên UI Health.
+
+Chi tiết về phạm vi control, quy tắc cập nhật DOM, bảng SQL và khôi phục khi lỗi: [UI Health với SQL](../ui-health-sql.md). Kiểm tra form không thay thế đối soát filter, dữ liệu tải xuống và xác thực khi nhập SQL.
 
 Ngoài các chức năng thấy trên UI, API còn có audit/log runner, lưu trạng thái browser được mã hóa, quản lý artifact và các endpoint session báo cáo cũ. Sự tồn tại của API tương thích không đồng nghĩa có một màn hình quản trị đầy đủ cho mọi endpoint.
 

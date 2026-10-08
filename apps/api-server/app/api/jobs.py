@@ -9,6 +9,8 @@ from app.realtime.server import sio
 from app.services import services
 from app.models.report_result import ReportResultRequest
 from app.repositories.report_results import commit_report_result, get_report_result
+from app.db import engine,schema as db
+from sqlalchemy import select
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -49,6 +51,9 @@ async def read_report_result(job_id: UUID, request: Request,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_job(command: CreateJobRequest, request: Request) -> Job:
+    from app.network_guard import require_connection
+    try: await require_connection()
+    except ValueError as error: raise HTTPException(503, str(error)) from error
     if command.source != ReportSource.NEW:
         raise HTTPException(status_code=410, detail="The legacy VAHAN report source is no longer supported.")
     runner = await services.runners.get(command.runner_id)
@@ -81,6 +86,16 @@ async def create_job(command: CreateJobRequest, request: Request) -> Job:
             raise HTTPException(409, "Retry must preserve the Maker update task.")
         session_id = retry_of.session_id
 
+    from app.repositories.ui_contract import require_gate, bind_gate
+    try:
+        async with engine.connect() as connection:
+            existing = await connection.scalar(select(db.jobs.c.id)
+                .where(db.jobs.c.session_id == str(session_id)).limit(1))
+        gate = await require_gate(request.state.authenticated_user, [command.runner_id],
+            fresh=existing is None, session_id=session_id)
+    except ValueError as error:
+        raise HTTPException(409, str(error)) from error
+
     job = Job(
         runnerId=command.runner_id,
         sessionId=session_id,
@@ -102,6 +117,7 @@ async def create_job(command: CreateJobRequest, request: Request) -> Job:
     if job is None:
         raise HTTPException(status_code=409, detail="Runner was assigned another job or disconnected.")
 
+    await bind_gate(job.session_id,gate)
     await sio.emit(
         "job:assigned",
         {

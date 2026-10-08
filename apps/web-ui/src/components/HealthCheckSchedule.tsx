@@ -150,7 +150,7 @@ export function HealthCheckSchedule({
       <p className="security-note health-schedule-note">
         The browser worker will receive the updated schedule and reset its automatic check. Health checks
         open an isolated page at the official VAHAN URL. They only
-        read the interface and never enter CAPTCHA or click Apply.
+        read the interface without submitting a report.
       </p>
     </section>
   );

@@ -217,7 +217,6 @@ export interface ExportedReportSession {
 export interface CaptchaChallenge {
   jobId: string;
   captchaId: string;
-  imageDataUrl: string;
   invalid?: boolean;
   refreshed?: boolean;
 }

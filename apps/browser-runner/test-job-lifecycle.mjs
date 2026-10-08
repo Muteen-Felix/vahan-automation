@@ -15,6 +15,7 @@ function fixture(backendState = 'WAITING_CAPTCHA', rejectSubmitting = false, rej
   const job = {jobId: 'fixture-job', status: 'WAITING_CAPTCHA', filters: {rtos: ['Port Blair DTO - AN1']}};
   const context = {
     RESULT_TIMEOUT: 5000,
+    approvedApplySelector: '#applyTrigger',
     randomUUID: () => 'click-id',
     normalizeJobFilters: value => value,
     page: {
@@ -71,6 +72,13 @@ assert.equal(duplicate.calls.filter(call => call === 'click').length, 1);
 const mismatch = fixture('WAITING_CAPTCHA', false, true);
 assert.equal((await mismatch.submit(mismatch.job, 'operator-challenge', 'ABC123')).ok, false);
 assert.ok(!mismatch.calls.includes('click'));
+const renamedApply = fixture();renamedApply.context.approvedApplySelector='#verifiedApply';
+const originalLocator=renamedApply.context.page.locator;
+renamedApply.context.page.locator=selector=>{
+  if(selector!=='#externalCaptcha')assert.equal(selector,'#verifiedApply','Apply uses the SQL-approved renamed control');
+  return originalLocator(selector);
+};
+assert.equal((await renamedApply.submit(renamedApply.job,'operator-challenge','ABC123')).ok,true);
 console.log('6 worker lifecycle checks passed: submission state, UI state, cancellation, stale challenge, duplicate submission and mismatched filters.');
 
 const resultStart = source.indexOf('async function waitForResult(');
@@ -108,9 +116,14 @@ function openingFixture({initial = 'about:blank', gotoError, responseStatus = 20
   let current = initial;
   const calls = [];
   const context = {
+    pageNeedsReset:false, retireReportPage:async()=>{}, stableDocumentRead:async(_page,read)=>read(),
     globalThis: {URL}, URL: official, target: new URL(official), authRequired: false,
+    http: async () => ({blocked:false,versionId:'fixture-contract',revision:1,controls:[]}),
+    VAHAN_OPTION_SELECTORS: {states:{selector:'#stateName'}},
+    selectorOverrides: () => ({}), approvedSelectors: {}, contractRevision:0,
     launch: async () => {}, newPage: async () => {},
     page: {isClosed: () => false, url: () => current,
+      evaluate: async () => {},
       goto: async (url, options) => {
         calls.push('navigate'); assert.equal(url, official); assert.equal(options.waitUntil, 'commit');
         current = redirect || official;
@@ -156,9 +169,8 @@ function refreshFixture(ackFailures = 0) {
       await new Promise(resolve => { releasePage = resolve; });
       return {captchaId: 'new-captcha', imageDataUrl: 'data:image/png;base64,AA=='};
     }},
-    saveCaptchaImage: async () => calls.push('save-image'),
-    ack: async () => {calls.push('ack'); if (ackFailures-- > 0) throw new Error('operation has timed out'); return {ok: true};},
-    autoSolveCaptcha: async () => calls.push('solve-next'),
+    ack: async (_event,payload) => {assert.equal('imageDataUrl' in payload,false);calls.push('ack'); if (ackFailures-- > 0) throw new Error('operation has timed out'); return {ok: true};},
+    autoSolveCaptcha: async (_job,id,dataUrl) => {assert.equal(id,'new-captcha');assert.equal(dataUrl,'data:image/png;base64,AA==');calls.push('solve-next');},
     fail: async () => calls.push('failed-job'),
     console: {error: () => calls.push('refresh-error')},
   };
@@ -170,7 +182,7 @@ const firstRefresh = refreshOnce.refresh(refreshOnce.job, 'old-captcha');
 assert.equal((await refreshOnce.refresh(refreshOnce.job, 'old-captcha')).ok, false);
 refreshOnce.releasePage();
 assert.equal((await firstRefresh).ok, true);
-assert.deepEqual(refreshOnce.calls, ['refresh-page', 'save-image', 'ack', 'solve-next']);
+assert.deepEqual(refreshOnce.calls, ['refresh-page', 'ack', 'solve-next']);
 assert.equal(refreshOnce.job.captchaId, 'new-captcha');
 const staleRefresh = refreshFixture();
 const staleAttempt = staleRefresh.refresh(staleRefresh.job, 'old-captcha');
@@ -182,12 +194,12 @@ const lostAck = refreshFixture(1);
 const recoveredAck = lostAck.refresh(lostAck.job, 'old-captcha');
 lostAck.releasePage();
 assert.equal((await recoveredAck).ok, true);
-assert.deepEqual(lostAck.calls, ['refresh-page', 'save-image', 'ack', 'ack', 'solve-next']);
+assert.deepEqual(lostAck.calls, ['refresh-page', 'ack', 'ack', 'solve-next']);
 const exhaustedAck = refreshFixture(2);
 const failedRefresh = exhaustedAck.refresh(exhaustedAck.job, 'old-captcha');
 exhaustedAck.releasePage();
 assert.equal((await failedRefresh).ok, false);
-assert.deepEqual(exhaustedAck.calls, ['refresh-page', 'save-image', 'ack', 'ack', 'refresh-error', 'failed-job']);
+assert.deepEqual(exhaustedAck.calls, ['refresh-page', 'ack', 'ack', 'refresh-error', 'failed-job']);
 console.log('CAPTCHA refresh stays single-flight, retries a lost ACK and fails a stalled job.');
 
 const failStart = source.indexOf('async function fail(');
@@ -195,7 +207,9 @@ const failEnd = source.indexOf('async function execute(', failStart);
 const failedJob = {jobId: 'unreported-job', cancelled: false};
 const recoveryCalls = [];
 const failContext = {
-  active: failedJob, stopping: false,
+  isConnectionError:()=>false,
+  active: failedJob, stopping: false, page:{}, pageNeedsReset:false,
+  retireReportPage:async()=>recoveryCalls.push('retire-page'),
   snapshot: async () => recoveryCalls.push('snapshot'),
   status: async () => {throw new Error('status ACK lost');},
   saveState: async () => recoveryCalls.push('save-state'),
@@ -204,7 +218,7 @@ const failContext = {
 };
 const reportFailure = runInNewContext(`${source.slice(failStart, failEnd)}\nfail`, failContext);
 await reportFailure(new Error('CAPTCHA_REFRESH_FAILED'), failedJob);
-assert.deepEqual(recoveryCalls, ['snapshot', 'status-error', 'save-state', 'disconnect', 'reconnect']);
+assert.deepEqual(recoveryCalls, ['snapshot', 'retire-page', 'status-error', 'save-state', 'disconnect', 'reconnect']);
 console.log('A lost failure ACK reconnects the runner for server-side reconciliation.');
 
 const executeStart = source.indexOf('async function execute(');

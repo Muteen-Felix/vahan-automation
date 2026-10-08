@@ -28,11 +28,18 @@ async def lifespan(_app: FastAPI):
     from app.worker_pool import initialize_pool, reconcile_pool
     await initialize_pool(reset_phase=True)
     pool_task = asyncio.create_task(reconcile_pool())
-    yield
-    pool_task.cancel()
-    try: await pool_task
-    except asyncio.CancelledError: pass
-    await engine.dispose()
+    from app.run_scheduler import run_scheduler
+    scheduler_task = asyncio.create_task(run_scheduler())
+    from app.network_guard import monitor
+    network_task = asyncio.create_task(monitor())
+    try:
+        yield
+    finally:
+        network_task.cancel()
+        scheduler_task.cancel()
+        pool_task.cancel()
+        await asyncio.gather(scheduler_task, pool_task, network_task, return_exceptions=True)
+        await engine.dispose()
 
 
 fastapi_app = FastAPI(
@@ -55,7 +62,7 @@ def _runner_auth_is_allowed(request: Request) -> bool:
     path = request.url.path
     method = request.method.upper()
     allowed_path = (
-        (method == "GET" and path == "/api/ui-health/schedule")
+        (method == "GET" and path in {"/api/ui-health/schedule","/api/ui-health/contract"})
         or (method == "POST" and path == "/api/ui-health/logs")
         or (method == "POST" and path.startswith("/api/jobs/") and (path.endswith("/upload-excel") or path.endswith("/main-report")))
         or (method == "POST" and path.startswith("/api/jobs/") and path.endswith("/report-result"))

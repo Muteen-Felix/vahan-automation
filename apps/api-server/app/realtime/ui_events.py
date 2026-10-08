@@ -113,11 +113,10 @@ async def subscribe_job(sid: str, payload: dict) -> dict:
         "ok": True,
         "job": job.model_dump(mode="json", by_alias=True),
     }
-    if job.status == JobStatus.WAITING_CAPTCHA and job.captcha_id and job.captcha_image_data_url:
+    if job.status == JobStatus.WAITING_CAPTCHA and job.captcha_id:
         response["captcha"] = {
             "jobId": str(job.id),
             "captchaId": job.captcha_id,
-            "imageDataUrl": job.captcha_image_data_url,
         }
     return response
 
@@ -139,6 +138,11 @@ async def runner_options(_sid: str, payload: dict) -> dict:
     runner = await services.runners.get(runner_id)
     if not runner:
         return {"ok": False, "error": "Runner is offline."}
+    from app.repositories.ui_contract import require_gate
+    try:
+        await require_gate(user['username'], [runner_id], fresh=True)
+    except ValueError as error:
+        return {'ok': False, 'error': str(error), 'code': 'UI_PREFLIGHT_REQUIRED'}
     from app.db import engine, schema as db
     from sqlalchemy import select
     from app.repositories.postgres import now
@@ -251,14 +255,13 @@ async def refresh_captcha(_sid: str, payload: dict) -> dict:
     refreshed = await services.jobs.get(job_id)
     if not refreshed or refreshed.status != JobStatus.WAITING_CAPTCHA:
         return {"ok": False, "error": "CAPTCHA refresh did not complete."}
-    if not refreshed.captcha_id or not refreshed.captcha_image_data_url:
-        return {"ok": False, "error": "VAHAN did not return a CAPTCHA image."}
+    if not refreshed.captcha_id:
+        return {"ok": False, "error": "VAHAN did not return a CAPTCHA ID."}
     return {
         "ok": True,
         "captcha": {
             "jobId": str(job_id),
             "captchaId": refreshed.captcha_id,
-            "imageDataUrl": refreshed.captcha_image_data_url,
         },
     }
 
@@ -278,11 +281,11 @@ async def invalidate_session(session_id):
         if stored_id == session_id:
             await sio.disconnect(sid, namespace="/ui")
 
-async def invalidate_user(username):
+async def invalidate_user(username, except_session=None):
     for sid in list(_ui_sessions):
         try:
             session = await sio.get_session(sid, namespace='/ui')
-            if session.get('username') == username:
+            if session.get('username') == username and (except_session is None or _ui_sessions.get(sid) != except_session):
                 await sio.disconnect(sid, namespace='/ui')
         except KeyError:
             continue

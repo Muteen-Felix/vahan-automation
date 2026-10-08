@@ -1,5 +1,6 @@
 name: vahan-automation
 x-extra-runner: &extra-runner
+  image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/runner:${VAHAN_IMAGE_TAG:-local}
   build:
     context: .
     dockerfile: apps/browser-runner/Dockerfile
@@ -10,9 +11,6 @@ x-extra-runner: &extra-runner
     VAHAN_API_URL: http://api:8000
     VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token in .docker.env}
     VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
-  volumes:
-    - ./apps/api-server/runtime/images1:/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1
-    - ./apps/api-server/app/ocr:/Users/mac/Desktop/vahan-automation/apps/api-server/app/ocr
   depends_on:
     api: {condition: service_healthy}
   healthcheck:
@@ -23,6 +21,7 @@ x-extra-runner: &extra-runner
   restart: unless-stopped
 services:
   worker-control:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/worker-control:${VAHAN_IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: apps/worker-control/Dockerfile
@@ -52,6 +51,7 @@ services:
       retries: 20
     restart: unless-stopped
   api:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/api:${VAHAN_IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: apps/api-server/Dockerfile
@@ -63,9 +63,8 @@ services:
       VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token}
       VAHAN_WORKER_CONTROLLER_URL: http://worker-control:3002
       VAHAN_BROWSER_STATE_KEY: ${VAHAN_BROWSER_STATE_KEY:?Configure encryption key}
-      VAHAN_CAPTCHA_IMAGE_PATH_TEMPLATE: "{job_id}/ảnh1"
       VAHAN_API_CORS_ORIGINS: http://localhost:${WEB_PORT:-5173},http://127.0.0.1:${WEB_PORT:-5173}
-    ports: ["127.0.0.1:${API_PORT:-8000}:8000"]
+    ports: ["${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8000}:8000"]
     depends_on:
       postgres: {condition: service_healthy}
       worker-control: {condition: service_healthy}
@@ -76,6 +75,7 @@ services:
       retries: 20
     restart: unless-stopped
   runner:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/runner:${VAHAN_IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: apps/browser-runner/Dockerfile
@@ -88,9 +88,6 @@ services:
       VAHAN_RUNNER_ID: playwright-1
       VAHAN_RUNNER_NAME: Chromium Playwright 1
       VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
-    volumes:
-      - ./apps/api-server/runtime/images1:/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1
-      - ./apps/api-server/app/ocr:/Users/mac/Desktop/vahan-automation/apps/api-server/app/ocr
     depends_on:
       api: {condition: service_healthy}
     healthcheck:
@@ -100,6 +97,7 @@ services:
       retries: 12
     restart: unless-stopped
   runner-2:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/runner:${VAHAN_IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: apps/browser-runner/Dockerfile
@@ -112,9 +110,6 @@ services:
       VAHAN_RUNNER_ID: playwright-2
       VAHAN_RUNNER_NAME: Chromium Playwright 2
       VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
-    volumes:
-      - ./apps/api-server/runtime/images1:/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1
-      - ./apps/api-server/app/ocr:/Users/mac/Desktop/vahan-automation/apps/api-server/app/ocr
     depends_on:
       api: {condition: service_healthy}
     healthcheck:
@@ -124,10 +119,11 @@ services:
       retries: 12
     restart: unless-stopped
   web:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/web:${VAHAN_IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: apps/web-ui/Dockerfile
-    ports: ["127.0.0.1:${WEB_PORT:-5173}:80"]
+    ports: ["${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-5173}:80"]
     depends_on:
       api: {condition: service_healthy}
     healthcheck:

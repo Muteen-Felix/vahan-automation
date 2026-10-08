@@ -29,16 +29,21 @@ async def login(command: LoginRequest, response: Response) -> dict[str, str | in
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication is not configured on the API server.",
         )
-    if not await services.users.authenticate(command.username, command.password):
+    user = await services.users.authenticate(command.username, command.password)
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="The username or password is incorrect.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    try:
+        session = await services.users.create_session(command.username, expected_password_hash=user['password_hash'])
+    except ValueError as error:
+        raise HTTPException(401, 'Credentials changed. Please sign in again.') from error
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
     return {
-        "accessToken": issue_access_token(command.username, await services.users.create_session(command.username)),
+        "accessToken": issue_access_token(command.username, session),
         "tokenType": "Bearer",
         "expiresIn": None,
         "username": command.username,
@@ -79,3 +84,26 @@ async def logout(request: Request):
     await services.users.revoke(request.state.token_session)
     await invalidate_session(request.state.token_session)
     return {"ok": True}
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(alias='currentPassword', min_length=1, max_length=1024)
+    new_password: str = Field(alias='newPassword', min_length=12, max_length=1024)
+
+
+@router.post('/password')
+async def change_password(command: ChangePasswordRequest, request: Request):
+    if command.current_password == command.new_password:
+        raise HTTPException(409, 'Choose a different new password.')
+    try:
+        await services.users.change_password(request.state.authenticated_user, command.new_password,
+            current_password=command.current_password, keep_session=request.state.token_session)
+    except ValueError as error:
+        raise HTTPException(409, str(error)) from error
+    except LookupError as error:
+        raise HTTPException(404, str(error)) from error
+    from app.realtime.ui_events import invalidate_user
+    from app.repositories.postgres import audit
+    await invalidate_user(request.state.authenticated_user, except_session=request.state.token_session)
+    await audit(request.state.authenticated_user, 'user.password_changed', {'username': request.state.authenticated_user})
+    return {'ok': True}

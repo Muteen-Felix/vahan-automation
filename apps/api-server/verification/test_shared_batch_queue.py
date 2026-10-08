@@ -57,17 +57,22 @@ async def main():
     await finish(first[0]['jobId'], JobStatus.COMPLETED)
     settled = await queue.settle(session, 'queue-test', first[0]['task']['position'])
     assert settled['status'] == 'COMPLETED'
-    next_task = await queue.claim(session, 'queue-test', 'queue-runner-0')
-    assert next_task['task']['position'] == 10, 'A free worker must take the next common-queue task.'
+    assert (await queue.claim(session, 'queue-test', 'queue-runner-0'))['type'] == 'waiting', \
+        'A checkpoint must finish before workers advance to the next group.'
 
     await finish(first[1]['jobId'], JobStatus.FAILED)
     failed = await queue.settle(session, 'queue-test', first[1]['task']['position'])
     assert failed['status'] == 'PENDING' and failed['failures'] == 1
     same_worker_claim = await queue.claim(session, 'queue-test', 'queue-runner-1')
-    assert same_worker_claim['task']['position'] == 11, \
-        'A worker must not immediately consume its own retry while other workers are busy.'
-    await finish(next_task['jobId'], JobStatus.COMPLETED)
-    assert (await queue.settle(session, 'queue-test', next_task['task']['position']))['status'] == 'COMPLETED'
+    assert same_worker_claim['type'] == 'waiting', \
+        'Failed checkpoint cases must wait until the other original cases finish.'
+    await finish(first[2]['jobId'], JobStatus.NO_DATA)
+    empty = await queue.settle(session, 'queue-test', first[2]['task']['position'])
+    assert empty['status'] == 'NO_DATA' and empty['failures'] == 0, \
+        'A confirmed no-data case is complete and must never enter the retry queue.'
+    for original in first[3:]:
+        await finish(original['jobId'], JobStatus.COMPLETED)
+        assert (await queue.settle(session, 'queue-test', original['task']['position']))['status'] == 'COMPLETED'
     retry = await queue.claim(session, 'queue-test', 'queue-runner-0')
     assert retry['task']['position'] == first[1]['task']['position']
     assert retry['task']['attempts'] == 2
@@ -90,10 +95,6 @@ async def main():
     recovered_task = (await queue.snapshot(session, 'queue-test'))['tasks'][retry['task']['position']]
     assert recovered_task['status'] == 'COMPLETED' and recovered_task['jobId'] == str(manual_retry.id)
     assert recovered_task['attempts'] == 3 and recovered_task['failures'] == 2
-    await finish(first[2]['jobId'], JobStatus.NO_DATA)
-    empty = await queue.settle(session, 'queue-test', first[2]['task']['position'])
-    assert empty['status'] == 'NO_DATA' and empty['failures'] == 0, \
-        'A confirmed no-data case is complete and must never enter the retry queue.'
     orphan_session = uuid4()
     await queue.start(orphan_session, 'queue-test', [QueueTaskInput(name='Orphan case',
         filters={'states': ['Other State'], 'rtos': ['RTO']})])
@@ -139,8 +140,8 @@ async def main():
     assert len(claimed_positions) == 1600
     large_snapshot = await queue.snapshot(large_session, 'queue-test')
     assert all(item['status'] == 'COMPLETED' and item['attempts'] == 1 for item in large_snapshot['tasks'])
-    assert counts[9] < max(counts[:9]), 'A slower worker must receive fewer tasks from the shared queue.'
-    print('Shared queue: 1,600 unique tasks, ten workers, dynamic load balance and complete SQL state passed '
+    assert max(counts) - min(counts) <= 1, 'Checkpoint groups must distribute cases evenly across workers.'
+    print('Shared queue: 1,600 unique tasks, ten workers, checkpoint ordering and complete SQL state passed '
           f'in {time.monotonic() - started:.1f}s; claims per worker: {counts}.')
     await engine.dispose()
 

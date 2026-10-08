@@ -1,15 +1,13 @@
 import type {
   ExportedReportItem,
   ExportedReportSession,
-  Job,
-  MakerUpdateRun,
   Runner,
   UiHealthCheckNowResponse,
   UiHealthReportsResponse,
   UiHealthSchedule,
-  VahanFilters,
 } from "../contracts";
 import type {FilterProfile, ProfileDefinition, ProfileOptions} from '../filter-profiles';
+import type {CurrentCaptcha, RunSchedule, RunScheduleInput} from '../run-schedules';
 
 export const API_URL = (import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
 export const ACCESS_TOKEN_STORAGE_KEY = "vahanUiAccessToken";
@@ -28,40 +26,16 @@ export interface LoginResponse {
   username: string;
 }
 
-export interface BatchQueueTask {
-  position: number;
-  name: string;
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "NO_DATA" | "FAILED";
-  attempts: number;
-  failures: number;
-  runnerId: string | null;
-  jobId: string | null;
-  error: string | null;
+export interface BatchRetryProgress {
+  phase: 'PRIMARY' | 'CHECKPOINT' | 'FINAL' | 'DONE';
+  checkpointStart: number;
+  checkpointEnd: number;
+  lastCheckpoint: number;
+  finalPassStarted: boolean;
+  failedRemaining: number;
+  pendingRetries: number;
+  complete: boolean;
 }
-
-export interface BatchQueueSnapshot {
-  sessionId: string;
-  status: "RUNNING" | "PAUSED";
-  tasks: BatchQueueTask[];
-  maxWorkers?: number;
-}
-
-export interface WorkerPoolState {
-  enabled: boolean;
-  desiredCount: number | null;
-  runningCount: number | null;
-  phase: 'ready' | 'applying';
-  workers: {number: number; service: string; running: boolean}[];
-}
-
-export type BatchQueueClaim =
-  | {type: "assigned"; task: BatchQueueTask; jobId: string; recovered: boolean}
-  | {type: "waiting"}
-  | {type: "done"}
-  | {type: "paused"}
-  | {type: "runner_unavailable"}
-  | {type: "pool_updating"}
-  | {type: "worker_disabled"; workerCount: number};
 
 export function getAccessToken(): string | null {
   try {
@@ -125,7 +99,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const body = await response.json().catch(() => ({}));
     if (response.status === 401 && path !== "/api/auth/login") notifyAuthenticationRequired();
     const detail=Array.isArray(body.detail)?body.detail.map((item:{msg?:string})=>item.msg||'Invalid input').join('; '):body.detail;
-    throw new ApiError(response.status, detail || `Request failed (${response.status}).`);
+    throw new ApiError(response.status, (typeof detail==='object'&&detail!==null?JSON.stringify(detail):detail) || `Request failed (${response.status}).`);
   }
   return response.json() as Promise<T>;
 }
@@ -153,6 +127,18 @@ async function downloadFile(path: string, fileName?: string): Promise<void> {
 }
 
 export const api = {
+  runSchedules: () => request<RunSchedule[]>('/api/run-schedules'),
+  createRunSchedule: (input: RunScheduleInput) => request<RunSchedule>('/api/run-schedules', {
+    method: 'POST', body: JSON.stringify(input),
+  }),
+  toggleRunSchedule: (id: string, enabled: boolean) => request<RunSchedule>(`/api/run-schedules/${id}`, {
+    method: 'PATCH', body: JSON.stringify({enabled}),
+  }),
+  stopRunSchedule: (id: string) => request<RunSchedule>(`/api/run-schedules/${id}/stop`, {method: 'POST'}),
+  pauseRunSchedule: (id: string) => request<RunSchedule>(`/api/run-schedules/${id}/pause`, {method: 'POST'}),
+  resumeRunSchedule: (id: string, workerCount: number) => request<RunSchedule>(`/api/run-schedules/${id}/resume`, {method: 'POST', body: JSON.stringify({workerCount})}),
+  deleteRunSchedule: (id: string) => request(`/api/run-schedules/${id}`, {method: 'DELETE'}),
+  currentCaptchas: () => request<CurrentCaptcha[]>('/api/run-schedules/captchas'),
   filterProfiles:()=>request<FilterProfile[]>('/api/filter-profiles'),
   saveFilterProfile:(name:string,definition:ProfileDefinition,id?:string,revision?:number)=>request<FilterProfile>(
     `/api/filter-profiles${id?`/${id}`:''}`,{method:id?'PUT':'POST',body:JSON.stringify({name,definition,revision})}),
@@ -180,11 +166,8 @@ export const api = {
   logout,
   downloadFile,
   runners: () => request<Runner[]>("/api/runners"),
-  workerPool: () => request<WorkerPoolState>('/api/worker-pool'),
-  setWorkerPool: (count: number) => request<WorkerPoolState>('/api/worker-pool', {
-    method: 'PUT', body: JSON.stringify({count}),
-  }),
-  jobs: () => request<Job[]>("/api/jobs"),
+  uiHealthStatus: () => request<Record<string,unknown>>('/api/ui-health/status'),
+  uiPreflight: (runnerIds:string[]) => request<{allowed:boolean;preflightId:string;revision:number;reports:unknown[]}>('/api/ui-health/preflight',{method:'POST',body:JSON.stringify({runnerIds})}),
   uiHealthSchedule: () => request<UiHealthSchedule>("/api/ui-health/schedule"),
   updateUiHealthSchedule: (intervalDays: number) =>
     request<UiHealthSchedule>("/api/ui-health/schedule", {
@@ -199,31 +182,6 @@ export const api = {
   uiHealthReports: (date?: string) => request<UiHealthReportsResponse>(
     `/api/ui-health/reports${date ? `?date=${encodeURIComponent(date)}` : ""}`,
   ),
-  createJob: (runnerId: string, filters: VahanFilters, scenarioName?: string, sessionId?: string, retryOfJobId?: string,
-    update?: {updateKind: "GLOBAL" | "DISCOVER" | "REFRESH"; updateRunId?: string; updateTaskId?: string}) =>
-    request<Job>("/api/jobs", {
-      method: "POST",
-      body: JSON.stringify({ runnerId, filters, scenarioName, sessionId, retryOfJobId, ...update }),
-    }),
-  startBatchQueue: (sessionId: string, tasks: {name: string; filters: VahanFilters}[], maxWorkers = 10) =>
-    request<BatchQueueSnapshot>('/api/batch-queue/sessions', {
-      method: 'POST', body: JSON.stringify({sessionId, tasks, maxWorkers}),
-    }),
-  batchQueue: (sessionId: string) => request<BatchQueueSnapshot>(`/api/batch-queue/sessions/${sessionId}`),
-  claimBatchTask: (sessionId: string, runnerId: string) =>
-    request<BatchQueueClaim>(`/api/batch-queue/sessions/${sessionId}/claim`, {
-      method: 'POST', body: JSON.stringify({runnerId}),
-    }),
-  settleBatchTask: (sessionId: string, position: number) =>
-    request<BatchQueueTask>(`/api/batch-queue/sessions/${sessionId}/tasks/${position}/settle`, {method: 'POST'}),
-  pauseBatchQueue: (sessionId: string) =>
-    request<{status: string}>(`/api/batch-queue/sessions/${sessionId}/pause`, {method: 'POST'}),
-  resumeBatchQueue: (sessionId: string, maxWorkers?: number) =>
-    request<{status: string}>(`/api/batch-queue/sessions/${sessionId}/resume`, {method: 'POST', body: JSON.stringify({maxWorkers})}),
-  makerUpdates: (year: number) => request<MakerUpdateRun[]>(`/api/maker-updates?year=${year}`),
-  makerUpdate: (id: string) => request<MakerUpdateRun>(`/api/maker-updates/${id}`),
-  getJob: (jobId: string) => request<Job>(`/api/jobs/${jobId}`),
-  cancelJob: (jobId: string) => request<Job>(`/api/jobs/${jobId}/cancel`, { method: "POST" }),
   exportedReports: () => request<ExportedReportItem[]>("/api/jobs/reports"),
   exportedReportSessions: (deleted = false) => request<ExportedReportSession[]>(`/api/jobs/reports/sessions${deleted ? "?deleted=true" : ""}`),
   deleteReportSession: (sessionId: string) => request<{ ok: boolean }>(`/api/jobs/reports/sessions/${sessionId}`, { method: "DELETE" }),

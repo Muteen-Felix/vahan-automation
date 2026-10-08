@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {testArtifactPath} from './test-artifact-path.mjs';
 import { chromium } from '../../browser-runner/node_modules/playwright/index.mjs';
 
 const browser = await chromium.launch({headless: true});
@@ -46,7 +47,7 @@ try {
     else if (url.pathname === '/api/auth/me') body = {username:'shared-reader', role:'user'};
     else if (url.pathname === '/api/auth/renew') body = {accessToken:'fixture-token'};
     else if (url.pathname === '/api/user-state') body={vahanRunSettingsV1:{year:2024,workerCount:5}};
-    else if (url.pathname === '/api/runners') body = [];
+    else if (['/api/runners','/api/filter-profiles','/api/run-schedules'].includes(url.pathname)) body = [];
     else if (url.pathname === '/api/health') body = {status:'ok'};
     else if (url.pathname === '/api/jobs/reports/sessions' || url.pathname === '/api/files') body = [];
     else if (url.pathname === '/api/annual-reports') {
@@ -117,17 +118,13 @@ try {
   }]));
   await page.waitForTimeout(100);
   assert.equal(await page.locator('#captcha-assistance').count(),0,'Exported Reports never shows CAPTCHA');
-  await page.getByRole('link',{name:'Create Report',exact:true}).click();
-  await page.locator('#captcha-assistance').waitFor();
-  await page.getByRole('link',{name:'Exported Reports',exact:true}).click();
-  await page.getByRole('rowheader',{name:'OLA ELECTRIC TECHNOLOGIES PVT LTD',exact:true}).waitFor();
-  assert.equal(await page.locator('#captcha-assistance').count(),0);
+  assert.equal(await page.getByRole('link',{name:'Create Report',exact:true}).count(),0);
   const tableBounds = await page.locator('.annual-table-scroll').boundingBox();
   assert.ok(tableBounds.x >= 0 && tableBounds.x + tableBounds.width <= 1920,
     'the report table stays within the page gutters');
   const desktop = await page.locator('.annual-table-scroll').evaluate(el => ({width:el.clientWidth, scroll:el.scrollWidth}));
   assert.ok(desktop.scroll <= desktop.width + 1, 'all 12 months fit on the 1920px desktop viewport');
-  await page.screenshot({path:'/tmp/vahan-annual-desktop.png', fullPage:true});
+  await page.screenshot({path:testArtifactPath('vahan-annual-desktop.png'), fullPage:true});
   await page.getByRole('button',{name:'Next →',exact:true}).click();
   await page.getByRole('rowheader',{name:'MANUFACTURER 100 LTD',exact:true}).waitFor();
   assert.equal(await page.locator('.annual-table tbody tr').count(),5);
@@ -172,12 +169,12 @@ try {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'page does not overflow on mobile');
   await page.locator('.annual-table-scroll').evaluate(el => {el.scrollLeft = el.scrollWidth;});
   assert.ok(await page.locator('.annual-table-scroll').evaluate(el => el.scrollLeft > 0));
-  await page.screenshot({path:'/tmp/vahan-annual-mobile.png',fullPage:true});
+  await page.screenshot({path:testArtifactPath('vahan-annual-mobile.png'),fullPage:true});
   assert.equal(await page.getByRole('button',{name:'Run history',exact:true}).count(),0);
   assert.equal(await page.getByRole('button',{name:'Files',exact:true}).count(),0);
   assert.equal(await page.getByRole('button',{name:'Download',exact:true}).count(),0);
   assert.equal(await page.getByRole('heading',{name:'Update history',exact:true}).count(),0);
   assert.equal(historyRequests,0,'the removed history panel makes no SQL history requests');
   assert.deepEqual(errors,[]);
-  console.log('Annual reports UI: live committed updates, slow reads under continuous worker updates, CAPTCHA confined to Create Report, search, pagination, exports and responsive layout passed.');
+  console.log('Annual reports UI: live committed updates, slow reads under continuous worker updates, removed workspace absent, search, pagination, exports and responsive layout passed.');
 } finally { await browser.close(); }

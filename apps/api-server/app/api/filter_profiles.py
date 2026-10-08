@@ -74,6 +74,40 @@ def http_error(error):
     return HTTPException(404 if isinstance(error, LookupError) else 409, str(error))
 
 
+async def compile_profile_plan(profile, runner_id, owner, year, progress):
+    """Use the same live validation for previews and unattended scheduled runs."""
+    try:
+        from app.repositories.ui_contract import require_gate
+        await require_gate(owner, [runner_id], fresh=True)
+    except ValueError as error:raise http_error(error) from error
+    definition = ProfileDefinition.model_validate(profile['definition'])
+    year = definition.report.year if definition.report else year
+    async with reserve_options_runner(runner_id, owner) as (socket_id, token):
+        cache = {}
+        async def lookup(field, context, wanted):
+            await renew_lease(runner_id, token)
+            if field == 'rtos':
+                await command(socket_id, {'type': 'GET_STATE_OPTIONS', 'delhiNcr': context['delhiNcr']}, token)
+                await renew_lease(runner_id, token)
+                return await command(socket_id, {'type': 'GET_RTO_OPTIONS', 'stateLabels': context['states'][0]}, token)
+            if field == 'makers':
+                if wanted:
+                    values = []
+                    for value in wanted:
+                        await renew_lease(runner_id, token)
+                        values.extend(await command(socket_id, {'type': 'SEARCH_MAKERS', 'search': value}, token))
+                    return list(dict.fromkeys(values))
+                return await command(socket_id, {'type': 'GET_ALL_MAKERS'}, token)
+            key = json.dumps(context, sort_keys=True)
+            if key not in cache:
+                cache[key] = await command(socket_id, {'type': 'GET_FILTER_CONTEXT',
+                    'filters': {**base_filters(year), **context}}, token)
+            return cache[key].get(field, [])
+        plan = await FilterPlanner(definition, year, lookup, progress).compile()
+        plan.update(profileId=profile['id'], profileRevision=profile['revision'], profileName=profile['name'])
+        return plan
+
+
 @router.get('')
 async def list_profiles(request: Request):
     return await profiles.list(request.state.authenticated_user)
@@ -104,6 +138,8 @@ async def delete_profile(profile_id: UUID, revision: int, request: Request):
 @router.post('/options')
 async def load_options(command_input: OptionsInput, request: Request):
     try:
+        from app.repositories.ui_contract import require_gate
+        await require_gate(request.state.authenticated_user, [command_input.runner_id], fresh=True)
         async with reserve_options_runner(command_input.runner_id, request.state.authenticated_user) as (socket_id, token):
             options = await command(socket_id, {'type': 'GET_FILTER_CONTEXT',
                 'filters': {**base_filters(command_input.year), **command_input.context}}, token)
@@ -121,6 +157,8 @@ async def load_options(command_input: OptionsInput, request: Request):
 @router.post('/makers')
 async def search_makers(command_input: MakerSearchInput, request: Request):
     try:
+        from app.repositories.ui_contract import require_gate
+        await require_gate(request.state.authenticated_user, [command_input.runner_id], fresh=True)
         async with reserve_options_runner(command_input.runner_id, request.state.authenticated_user) as (socket_id, token):
             return await command(socket_id, {'type': 'SEARCH_MAKERS', 'search': command_input.search}, token)
     except ValueError as error:
@@ -143,30 +181,9 @@ async def preview_profile(profile_id: UUID, command_input: OptionsInput, request
             await messages.put({'type': 'progress', 'message': message})
         async def build():
             try:
-                async with reserve_options_runner(command_input.runner_id, request.state.authenticated_user) as (socket_id, token):
-                    cache = {}
-                    async def lookup(field, context, wanted):
-                        await renew_lease(command_input.runner_id, token)
-                        if field == 'rtos':
-                            await command(socket_id, {'type': 'GET_STATE_OPTIONS', 'delhiNcr': context['delhiNcr']}, token)
-                            await renew_lease(command_input.runner_id, token)
-                            return await command(socket_id, {'type': 'GET_RTO_OPTIONS', 'stateLabels': context['states'][0]}, token)
-                        if field == 'makers':
-                            if wanted:
-                                values = []
-                                for value in wanted:
-                                    await renew_lease(command_input.runner_id, token)
-                                    values.extend(await command(socket_id, {'type': 'SEARCH_MAKERS', 'search': value}, token))
-                                return list(dict.fromkeys(values))
-                            return await command(socket_id, {'type': 'GET_ALL_MAKERS'}, token)
-                        key = json.dumps(context, sort_keys=True)
-                        if key not in cache:
-                            cache[key] = await command(socket_id, {'type': 'GET_FILTER_CONTEXT',
-                                'filters': {**base_filters(year), **context}}, token)
-                        return cache[key].get(field, [])
-                    plan = await FilterPlanner(definition, year, lookup, progress).compile()
-                    plan.update(profileId=profile['id'], profileRevision=profile['revision'], profileName=profile['name'])
-                    await messages.put({'type': 'ready', 'plan': plan})
+                plan = await compile_profile_plan(profile, command_input.runner_id,
+                    request.state.authenticated_user, year, progress)
+                await messages.put({'type': 'ready', 'plan': plan})
             except Exception as error:
                 await messages.put({'type': 'error', 'message': str(error)})
         task = asyncio.create_task(build())

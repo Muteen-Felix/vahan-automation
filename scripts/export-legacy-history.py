@@ -2,6 +2,7 @@
 """Snapshot jobs still held in RAM by the pre-PostgreSQL API."""
 import argparse, json, urllib.request
 from pathlib import Path
+from secure_permissions import restrict_permissions
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
@@ -23,5 +24,5 @@ token = call('/api/auth/login', body)['accessToken']
 snapshot = call('/api/jobs/reports/sessions', token=token)
 args.output.parent.mkdir(parents=True, exist_ok=True)
 args.output.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2))
-args.output.chmod(0o600)
+restrict_permissions(args.output)
 print(f'Saved {len(snapshot)} sessions / {sum(len(s["jobs"]) for s in snapshot)} jobs to {args.output}')

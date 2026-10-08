@@ -22,7 +22,7 @@ class CaptchaRefreshRaceTest(unittest.IsolatedAsyncioTestCase):
                                       status=status, captcha_id="old")
                 with patch.object(runner_events.services.runners, "get_by_socket", AsyncMock(return_value=runner)), \
                      patch.object(runner_events.services.jobs, "get", AsyncMock(return_value=job)), \
-                     patch.object(runner_events, "_save_captcha_image", AsyncMock(return_value="stored")), \
+                     patch.object(runner_events.services.captcha_images, "save", AsyncMock(return_value="stored")), \
                      patch.object(runner_events.services.jobs, "update_status", AsyncMock(return_value=None)) as update, \
                      patch.object(runner_events.sio, "emit", AsyncMock()) as emit:
                     result = await handler("socket", payload)
@@ -39,7 +39,7 @@ class CaptchaRefreshRaceTest(unittest.IsolatedAsyncioTestCase):
                    "imageDataUrl": "data:image/png;base64,AA=="}
         with patch.object(runner_events.services.runners, "get_by_socket", AsyncMock(return_value=runner)), \
              patch.object(runner_events.services.jobs, "get", AsyncMock(return_value=job)), \
-             patch.object(runner_events, "_save_captcha_image", AsyncMock()) as save, \
+             patch.object(runner_events.services.captcha_images, "save", AsyncMock()) as save, \
              patch.object(runner_events.services.jobs, "update_status", AsyncMock()) as update:
             result = await runner_events.captcha_refreshed("socket", payload)
         self.assertFalse(result["ok"])
@@ -55,7 +55,7 @@ class CaptchaRefreshRaceTest(unittest.IsolatedAsyncioTestCase):
                    "imageDataUrl": "data:image/png;base64,AA=="}
         with patch.object(runner_events.services.runners, "get_by_socket", AsyncMock(return_value=runner)), \
              patch.object(runner_events.services.jobs, "get", AsyncMock(return_value=job)), \
-             patch.object(runner_events, "_save_captcha_image", AsyncMock(return_value="stored")), \
+             patch.object(runner_events.services.captcha_images, "save", AsyncMock(return_value="stored")), \
              patch.object(runner_events.services.jobs, "update_status", AsyncMock(return_value=None)) as update, \
              patch.object(runner_events.sio, "emit", AsyncMock()) as emit:
             result = await runner_events.captcha_refreshed("socket", payload)

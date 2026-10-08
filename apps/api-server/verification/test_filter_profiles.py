@@ -137,6 +137,16 @@ class ProfileTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(plan['scenarios']),9)
 
     async def test_http_preview_releases_its_worker_before_the_response_finishes(self):
+        from test_ui_contract import observation
+        from app.repositories import ui_contract
+        from sqlalchemy import delete
+        async with engine.begin() as c:
+            await c.execute(delete(db.app_settings).where(db.app_settings.c.key==ui_contract.ACTIVE_KEY))
+        checked=await ui_contract.evaluate(observation(),self.runner)
+        async with engine.begin() as c:
+            from sqlalchemy import insert
+            from app.repositories.postgres import now
+            await c.execute(insert(db.ui_preflight_checks).values(id=str(uuid4()),owner_username=self.owner,runner_ids=[self.runner],version_id=checked['versionId'],status='PASS',reports=[],created_at=now()))
         saved=await self.repo.save(self.owner,ProfileWrite(name='HTTP profile',definition=definition(report={'year':2023})))
         raw_session=await services.users.create_session(self.owner)
         token=issue_access_token(self.owner,raw_session)

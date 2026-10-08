@@ -86,6 +86,7 @@ class UiHealthLogResponse(BaseModel):
     from_date: str = Field(alias="fromDate")
     to_date: str = Field(alias="toDate")
     part: int = Field(ge=1)
+    validation: dict[str, Any] | None = None
 
 
 class UiHealthDaySummary(BaseModel):

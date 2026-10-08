@@ -1,20 +1,17 @@
 import { chromium } from 'playwright';
 import { io } from 'socket.io-client';
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-const execFileAsync = promisify(execFile);
+import {retireReportPage, stableDocumentRead, isConnectionError} from './page-recovery.mjs';
+import {imageBytes, runImageCommand} from './image-pipe.mjs';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import {inspectControls,selectorOverrides} from './ui-health-contract.mjs';
 import { normalizeJobFilters, VAHAN_OPTION_SELECTORS } from './config.mjs';
 
 const API = process.env.VAHAN_API_URL || 'http://api:8000';
 const TOKEN = process.env.VAHAN_API_RUNNER_TOKEN;
 const ID = process.env.VAHAN_RUNNER_ID || 'playwright-1';
-const CAPTCHA_IMAGE_DIR = process.env.VAHAN_CAPTCHA_IMAGE_DIR
-  || '/Users/mac/Desktop/vahan-automation/apps/api-server/runtime/images1';
 const URL = process.env.VAHAN_URL || 'https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en';
 const LOCAL_FIXTURE = process.env.VAHAN_ALLOW_LOCAL_FIXTURE === 'true';
 const DRIVER = fileURLToPath(new globalThis.URL('./page-driver.js', import.meta.url));
@@ -32,6 +29,7 @@ if (!LOCAL_FIXTURE && (target.origin !== 'https://analytics.parivahan.gov.in' ||
 
 let browser, browserPromise, context, page, active, optionsBusy = false, authRequired = false, stopping = false;
 let optionsCancellation = null;
+let pageNeedsReset = false;
 const socket = io(`${API}/runner`, {autoConnect: false, transports: ['websocket'], auth: {
   runnerId: ID, runnerName: process.env.VAHAN_RUNNER_NAME || 'Chromium Playwright', token: TOKEN,
   source: 'new', engine: 'playwright', version: '0.2.0',
@@ -49,24 +47,6 @@ async function ack(event, payload, timeout = 15_000) {
 }
 function assertCurrent(job) {
   if (!job || job !== active || job.cancelled) throw new Error('Job was cancelled.');
-}
-function captchaImagePath() {
-  const match = /^playwright-(\d+)$/.exec(ID);
-  const imageIndex = match ? Number(match[1]) : 0;
-  if (!Number.isInteger(imageIndex) || imageIndex < 1 || imageIndex > 10) {
-    throw new Error(`Runner ID must be playwright-1 through playwright-10 to save CAPTCHA images: ${ID}`);
-  }
-  return join(CAPTCHA_IMAGE_DIR, `ảnh${imageIndex}.png`);
-}
-async function saveCaptchaImage(imageDataUrl) {
-  try {
-    const targetPath = captchaImagePath();
-    await mkdir(dirname(targetPath), { recursive: true });
-    const base64Data = imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
-    await writeFile(targetPath, Buffer.from(base64Data, 'base64'));
-  } catch (error) {
-    console.error('Failed to save captcha image to disk:', error.message);
-  }
 }
 async function submitCaptchaInternal(job, captchaId, value) {
   if (!job || job.status !== 'WAITING_CAPTCHA') return {ok: false, error: 'Stale job.'};
@@ -89,7 +69,7 @@ async function submitCaptchaInternal(job, captchaId, value) {
       {timeout: RESULT_TIMEOUT, rto: job.filters.rtos?.[0] || ''});
     // The click only submits the form. Result/navigation waiting belongs to
     // waitForResult, otherwise a completed click can time out before that stage.
-    await page.locator('#applyTrigger').click({noWaitAfter: true});
+    await page.locator(approvedApplySelector).click({noWaitAfter: true});
     await ack('job:apply-clicked', {jobId: job.jobId, clickId: randomUUID()});
     await status('WAITING_RESULT', undefined, job);
     waitForResult(job).catch(error => fail(error, job));
@@ -109,8 +89,7 @@ async function refreshCaptchaInternal(job, captchaId) {
     const captcha = await page.evaluate(id => globalThis.vahanDriver.refreshCaptcha(id), captchaId);
     if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
         || job.captchaId !== captchaId) return {ok: false, error: 'Stale CAPTCHA or job.'};
-    await saveCaptchaImage(captcha.imageDataUrl);
-    const update = {jobId: job.jobId, captchaId: captcha.captchaId, imageDataUrl: captcha.imageDataUrl};
+    const update = {jobId: job.jobId, captchaId: captcha.captchaId};
     try {
       await ack('captcha:refreshed', update);
     } catch (error) {
@@ -123,7 +102,7 @@ async function refreshCaptchaInternal(job, captchaId) {
       return {ok: false, error: 'Stale CAPTCHA or job.'};
     }
     job.captchaId = captcha.captchaId;
-    autoSolveCaptcha(job, captcha.captchaId).catch(console.error);
+    autoSolveCaptcha(job, captcha.captchaId, captcha.imageDataUrl).catch(console.error);
     return {ok: true};
   } catch (error) {
     console.error('Failed to refresh captcha:', error.message);
@@ -136,13 +115,9 @@ async function refreshCaptchaInternal(job, captchaId) {
   }
 }
 
-async function autoSolveCaptcha(job, captchaId) {
+async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
   try {
-    const targetPath = captchaImagePath();
-    // The runner image already has English Tesseract. A Python wrapper spawns
-    // another Tesseract just to list languages for every image; under ten
-    // workers that extra process frequently hits the 1.9 s deadline.
-    const { stdout } = await execFileAsync('tesseract', [targetPath, 'stdout', '-l', 'eng', '--psm', '6'], {
+    const { stdout } = await runImageCommand('tesseract', ['stdin', 'stdout', '-l', 'eng', '--psm', '6'], imageBytes(imageDataUrl), {
       timeout: 3000, env: {...process.env, OMP_THREAD_LIMIT: '1'},
     });
     if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
@@ -195,11 +170,23 @@ async function newPage() {
 async function ensurePage(isCancelled = () => false) {
   await launch();
   if (isCancelled()) throw new Error('VAHAN_OPTIONS_TIMEOUT: options loading was cancelled.');
-  if (page.isClosed()) await newPage();
+  if (page.isClosed() || pageNeedsReset) {
+    await retireReportPage(page);
+    await newPage();
+    pageNeedsReset = false;
+  }
   if (isCancelled()) {
     await page.close().catch(() => {});
     throw new Error('VAHAN_OPTIONS_TIMEOUT: options loading was cancelled.');
   }
+  const contract=await http('/api/ui-health/contract');
+  if(contract.blocked||!contract.versionId)throw new Error('UI_HEALTH_BLOCKED: a successful SQL preflight is required.');
+  const seeds=[...Object.entries(VAHAN_OPTION_SELECTORS).map(([field,value])=>({field,selector:value.selector})),...['fromYear','toYear','fromDate','toDate'].map(field=>({field,selector:'#'+field})),{field:'apply',selector:'#applyTrigger'}];
+  const overrides=selectorOverrides(contract.controls,seeds);
+  approvedSelectors=Object.fromEntries(Object.entries(VAHAN_OPTION_SELECTORS).map(([field,value])=>[field,{...value,selector:contract.controls.find(control=>control.field===field)?.selector||value.selector}]));
+  approvedApplySelector=contract.controls.find(control=>control.field==='apply')?.selector||'#applyTrigger';
+  if(contractRevision&&contractRevision!==contract.revision)await page.goto('about:blank');
+  contractRevision=contract.revision;
   const isReportPage = () => {
     const current = new globalThis.URL(page.url());
     return current.origin === target.origin && current.pathname === target.pathname;
@@ -220,12 +207,13 @@ async function ensurePage(isCancelled = () => false) {
   try {
     // VAHAN's multiselect plugin hides the native select and renders a proxy.
     // The driver reads native options, so visibility is not page readiness.
-    await page.locator('#stateName option').first().waitFor({state: 'attached', timeout: 60_000});
+    await page.locator(approvedSelectors.states.selector+' option').first().waitFor({state: 'attached', timeout: 60_000});
   } catch (error) {
     if (authRequired) throw new Error('VAHAN_AUTH_REQUIRED: operator authentication is required.');
     if (!isReportPage()) throw new Error('VAHAN_REPORT_NAVIGATED_AWAY: VAHAN redirected away while loading the report controls.');
     throw new Error(`VAHAN_PAGE_NOT_READY: the State control did not become available. ${error.message}`);
   }
+  await stableDocumentRead(page, () => page.evaluate(value=>{globalThis.vahanSelectorOverrides=value;},overrides));
   if (authRequired) throw new Error('VAHAN_AUTH_REQUIRED: operator authentication is required.');
   if (!isReportPage()) throw new Error('VAHAN_REPORT_NAVIGATED_AWAY: VAHAN redirected away before filters could be filled.');
 }
@@ -237,33 +225,44 @@ async function snapshot(label, job = active) {
   if (!job || job !== active || job.cancelled || page?.isClosed()) return;
   try {
     const form = new FormData();
-    form.append('file', new Blob([await page.screenshot({fullPage: true})], {type: 'image/png'}), `${label}.png`);
+    form.append('file', new Blob([await page.screenshot({fullPage: true, timeout: 5000, animations: 'disabled',
+      mask:[page.locator('#captchaImage'),page.locator('#externalCaptcha')],maskColor:'#ffffff'})], {type: 'image/png'}), `${label}.png`);
     await http(`/api/jobs/${job.jobId}/artifacts`, {method: 'POST', body: form});
   } catch (error) { console.error('Snapshot could not be stored:', error.message); }
 }
 async function challenge(event = 'captcha:required', job = active) {
   assertCurrent(job);
   const captcha = await page.evaluate(() => globalThis.vahanDriver.captureCaptcha());
-  await saveCaptchaImage(captcha.imageDataUrl);
   assertCurrent(job); job.captchaId = captcha.captchaId;
-  await ack(event, {jobId: job.jobId, captchaId: captcha.captchaId, imageDataUrl: captcha.imageDataUrl});
+  await ack(event, {jobId: job.jobId, captchaId: captcha.captchaId});
   assertCurrent(job); job.status = 'WAITING_CAPTCHA';
-  autoSolveCaptcha(job, captcha.captchaId).catch(console.error);
+  autoSolveCaptcha(job, captcha.captchaId, captcha.imageDataUrl).catch(console.error);
 }
 async function fail(error, job = active) {
   if (!job || job !== active || job.cancelled) return;
-  await snapshot('failure', job);
-  let statusLost = false;
-  try { await status('FAILED', error.message, job); }
-  catch (failure) { statusLost = true; console.error(failure.message); }
-  if (active === job) active = null;
-  await saveState().catch(error => console.error(error.message));
-  if (statusLost && !stopping) {
-    // Reconciliation on connect marks an unreported job failed and releases
-    // the runner, so one lost status ACK cannot block its whole lane.
-    socket.disconnect();
-    socket.connect();
+  if (isConnectionError(error)) {
+    try {await ack('network:problem', {}, 12000);} catch {}
+    if (job !== active || job.cancelled) return;
   }
+  if (job.finishing) return; // Duplicate error paths must not retire another case's page.
+  job.finishing = true;
+  job.finishPromise = new Promise(resolve => {job.finish = resolve;});
+  let statusLost = false;
+  try {
+    // Capture diagnostics before retiring the damaged document. Keep the
+    // session's cookies; the next case gets a new page in the same context.
+    pageNeedsReset = true;
+    await snapshot('failure', job);
+    await retireReportPage(page);
+    try { await status('FAILED', error.message, job); }
+    catch (failure) { statusLost = true; console.error(failure.message); }
+    if (active === job) active = null;
+    await saveState().catch(error => console.error(error.message));
+    if (statusLost && !stopping) {
+      socket.disconnect();
+      socket.connect();
+    }
+  } finally {job.finish();}
 }
 async function execute(job) {
   if (active?.jobId === job.jobId) return;
@@ -295,7 +294,7 @@ async function finalizeResult(job, operation) {
     job.status = saved.status;
     if (active === job) active = null;
     return saved;
-  } finally { job.finish(); }
+  } finally { job.finishing = false; job.finish(); }
 }
 async function waitForResult(job) {
   assertCurrent(job);
@@ -388,9 +387,6 @@ socket.on('connect', async () => {
       active.cancelled = true; active = null; await page?.close().catch(() => {});
     }
     await launch();
-    const schedule = await http('/api/ui-health/schedule');
-    nextHealthCheck = Date.parse(schedule.nextCheckAt);
-    if (!Number.isFinite(nextHealthCheck)) nextHealthCheck = Date.now() + schedule.intervalDays * 86400_000;
   } catch (error) { console.error('Browser initialization failed:', error.message); }
 });
 socket.on('connect_error', error => console.error('API connection:', error.message));
@@ -438,7 +434,7 @@ async function runnerOptions(request, respond) {
   const work = async () => {
     await ensurePage(() => expired);
     if (expired) throw new Error('VAHAN_OPTIONS_TIMEOUT: options loading was cancelled.');
-    const operations = {GET_ALL_OPTIONS: ['readOptions', VAHAN_OPTION_SELECTORS], GET_STATE_OPTIONS: ['states', request.delhiNcr],
+    const operations = {GET_ALL_OPTIONS: ['readOptions', approvedSelectors], GET_STATE_OPTIONS: ['states', request.delhiNcr],
       GET_RTO_OPTIONS: ['rtos', request.stateLabels], GET_X_AXIS_OPTIONS: ['xAxis', request.yAxis], SEARCH_MAKERS: ['makers', request.search],
       GET_FILTER_CONTEXT: ['filterContext', request.filters], GET_ALL_MAKERS: ['allMakers', null]};
     const operation = operations[request.type];
@@ -468,38 +464,51 @@ socket.on('runner:cancel-options', async (request, respond) => {
   if (!request.requestId || cancellation?.requestId !== request.requestId) {respond({ok:false,error:'Stale options request.'});return;}
   await cancellation.cancel();respond({ok:true});
 });
-let nextHealthCheck = Infinity;
-socket.on('ui-health:schedule-updated', schedule => { nextHealthCheck = Date.parse(schedule.nextCheckAt); });
+let contractRevision=0;
+let approvedSelectors=VAHAN_OPTION_SELECTORS;
+let approvedApplySelector='#applyTrigger';
 async function healthCheck(request = {}) {
-  let result;
+  let result;let isolated;
   try {
     await launch();
-    const healthPage = await context.newPage();
-    try {
-      await healthPage.goto(URL, {waitUntil: 'domcontentloaded', timeout: 30_000});
-      const missing = await healthPage.evaluate(selectors => Object.entries(selectors).filter(([, d]) => !document.querySelector(d.selector)).map(([name]) => name), VAHAN_OPTION_SELECTORS);
-      result = {status: missing.length ? 'UI_DRIFT' : 'PASS', errorCount: missing.length, checkedAt: new Date().toISOString(),
-        error: missing.length ? `Missing controls: ${missing.join(', ')}` : undefined,
-        reports: missing.map(name => ({code: 'CONTROL_MISSING', title: `Missing ${name}`, selector: VAHAN_OPTION_SELECTORS[name].selector})),
-        contract: {version: 'playwright-selectors-v1', path: target.pathname,
-          controls: Object.entries(VAHAN_OPTION_SELECTORS).map(([name, spec]) => ({name, ...spec, tag: 'select'}))}};
-    } finally { await healthPage.close(); }
-  } catch (error) { result = {status: 'CHECK_ERROR', error: error.message, checkedAt: new Date().toISOString()}; }
-  result.trigger = request.trigger || 'scheduled'; result.logId = request.requestId || randomUUID();
-  await http('/api/ui-health/logs', {method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({runnerId: ID, pageUrl: URL, healthCheck: result})});
+    const contract=await http('/api/ui-health/contract');
+    isolated=await browser.newContext({storageState:await context.storageState(),viewport:{width:1440,height:1000}});
+    const healthPage=await isolated.newPage();
+    const response=await healthPage.goto(URL,{waitUntil:'domcontentloaded',timeout:30000});
+    const location=new globalThis.URL(healthPage.url());
+    if(response?.status()===401||location.origin!==target.origin||location.pathname!==target.pathname)throw new Error('Health check did not reach the expected public report page.');
+    // Allow asynchronous controls to settle, including uniquely renamed controls.
+    // This reads option metadata only; Maker requests and report jobs start later.
+    await healthPage.waitForFunction(controls=>controls.every(control=>{
+      try {
+        const direct=document.querySelector(control.selector);
+        const semantic=control.name?[...document.querySelectorAll('select,input,button')].filter(el=>el.getAttribute('name')===control.name):[];
+        const element=direct||(semantic.length===1?semantic[0]:null);
+        // Dependent selects such as RTO and Maker can legitimately be empty.
+        return element && (control.field!=='states'||element.options?.length);
+      }catch{return false;}
+    }),contract.controls,{timeout:10000}).catch(()=>{});
+    const observedControls=await inspectControls(healthPage,contract);
+    result={status:'PASS',observedControls,checkedAt:new Date().toISOString(),contract:{path:target.pathname,revision:contract.revision}};
+  }catch(error){result={status:'CHECK_ERROR',error:error.message,observedControls:[],checkedAt:new Date().toISOString()};}
+  finally{await isolated?.close().catch(()=>{});}
+  result.trigger=request.trigger||'preflight';result.logId=request.requestId||randomUUID();result.checkId=result.logId;
+  const saved=await http('/api/ui-health/logs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runnerId:ID,pageUrl:URL,healthCheck:result})});
+  return saved;
 }
+socket.on('ui-health:preflight',async(request,respond)=>{
+  if(active||optionsBusy){respond({ok:false,error:'Worker is busy.'});return;}
+  optionsBusy=true;
+  try{const result=await healthCheck(request);respond({ok:true,...result});}
+  catch(error){respond({ok:false,error:error.message});}
+  finally{optionsBusy=false;}
+});
 socket.on('ui-health:run-now', request => healthCheck(request).catch(error => console.error(error.message)));
 const timer = setInterval(async () => {
   if (!socket.connected || stopping) return;
   try {
     await ack('runner:heartbeat', {});
     await saveState();
-    if (Date.now() >= nextHealthCheck) {
-      const schedule = await http('/api/ui-health/schedule');
-      nextHealthCheck = Date.now() + schedule.intervalDays * 86400_000;
-      await healthCheck();
-    }
   } catch (error) { console.error('Worker heartbeat:', error.message); }
 }, 15_000);
 createServer((request, response) => {

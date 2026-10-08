@@ -188,3 +188,13 @@ maker_update_tasks = Table('maker_update_tasks', metadata,
     Column('job_id', ForeignKey('jobs.id', ondelete='SET NULL'), nullable=True),
     Column('error', Text, nullable=True),
     Column('updated_at', DateTime(timezone=True), nullable=False))
+
+ui_contract_versions = Table('ui_contract_versions', metadata,
+    Column('id', String(36), primary_key=True), Column('revision', Integer, nullable=False, unique=True),
+    Column('fingerprint', String(64), nullable=False, unique=True), Column('controls', document, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False))
+ui_preflight_checks = Table('ui_preflight_checks', metadata,
+    Column('id', String(36), primary_key=True), Column('owner_username', ForeignKey('users.username'), nullable=False),
+    Column('runner_ids', document, nullable=False), Column('version_id', String(36)),
+    Column('status', String(24), nullable=False), Column('reports', document, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False))

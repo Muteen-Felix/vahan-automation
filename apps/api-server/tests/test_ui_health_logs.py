@@ -167,7 +167,7 @@ async def test_backend_csv_preserves_multiple_ui_drift_reports(tmp_path) -> None
     assert row["status"] == "UI_DRIFT"
     assert row["error_code"] == "UI_DRIFT_REQUIRED_CONTROL"
     assert row["error_count"] == "10"
-    assert row["error"].startswith("Phát hiện 10 lỗi UI.")
+    assert row["error"].startswith("Detected 10 UI errors.")
     assert details["errorCount"] == 10
     assert len(details["errors"]) == 10
     assert report["availableDates"][0]["uiDrift"] == 1

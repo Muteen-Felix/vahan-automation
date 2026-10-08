@@ -78,6 +78,8 @@ async def renew_lease(runner_id, token):
 
 @asynccontextmanager
 async def reserve_options_runner(runner_id, owner):
+    from app.network_guard import require_connection
+    await require_connection()
     token = str(uuid4())
     async with engine.begin() as connection:
         runner = (await connection.execute(select(db.runners).where(db.runners.c.id == runner_id)

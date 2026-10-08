@@ -33,7 +33,6 @@ def require_test_database():
 
 def job_document(job):
     payload = job.model_dump(mode="json")
-    payload["captcha_image_data_url"] = job.captcha_image_data_url
     payload["successful_apply_click_ids"] = job.successful_apply_click_ids
     return payload
 
@@ -395,9 +394,12 @@ class PostgresUsers:
         valid = await asyncio.to_thread(check_password, password, encoded)
         return user if user and user["active"] and valid else None
 
-    async def create_session(self, username):
+    async def create_session(self, username, expected_password_hash=None):
         raw = secrets.token_urlsafe(32)
         async with engine.begin() as connection:
+            user = (await connection.execute(select(db.users).where(db.users.c.username == username).with_for_update())).mappings().first()
+            if not user or not user['active'] or (expected_password_hash is not None and user['password_hash'] != expected_password_hash):
+                raise ValueError('Credentials changed. Please sign in again.')
             await connection.execute(insert(db.auth_sessions).values(id=session_hash(raw), username=username,
                 revoked=False, created_at=now()))
         return raw
@@ -424,6 +426,21 @@ class PostgresUsers:
         async with engine.begin() as connection:
             await connection.execute(insert(db.users).values(username=username, password_hash=hashed,
                 role=role, active=True, profile=profile or {}, created_at=now()))
+
+    async def change_password(self, username, password, current_password=None, keep_session=None):
+        hashed = await asyncio.to_thread(hash_password, password)
+        async with engine.begin() as connection:
+            user = (await connection.execute(select(db.users).where(db.users.c.username == username)
+                .with_for_update())).mappings().first()
+            if not user:
+                raise LookupError('User not found.')
+            if current_password is not None and not await asyncio.to_thread(check_password, current_password, user['password_hash']):
+                raise ValueError('The current password is incorrect.')
+            await connection.execute(update(db.users).where(db.users.c.username == username).values(password_hash=hashed))
+            sessions = update(db.auth_sessions).where(db.auth_sessions.c.username == username)
+            if keep_session:
+                sessions = sessions.where(db.auth_sessions.c.id != session_hash(keep_session))
+            await connection.execute(sessions.values(revoked=True))
 
     async def state(self, username):
         async with engine.connect() as connection:

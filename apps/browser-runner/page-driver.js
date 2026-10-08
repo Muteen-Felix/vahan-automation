@@ -1,5 +1,8 @@
 // DOM driver for VAHAN filters and report results.
 (() => {
+const mappedSelector = selector => String(selector).replace(/#[A-Za-z][A-Za-z0-9_-]*/g, token => globalThis.vahanSelectorOverrides?.[token] || token);
+const query = selector => document.querySelector(mappedSelector(selector));
+const queryAll = selector => document.querySelectorAll(mappedSelector(selector));
 const splitValues = (value) => (Array.isArray(value) ? value : String(value ?? "").split(","))
   .map((item) => String(item ?? "").trim()).filter(Boolean);
 const normalize = (value) => String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase();
@@ -66,7 +69,7 @@ function getOptionMap(select) {
 }
 
 function selectOptionsSignature(selector) {
-  const select = document.querySelector(selector);
+  const select = query(selector);
   if (!select) return "";
   return [...select.options]
     .map((option) => `${option.value}\u0000${normalize(option.label || option.textContent)}`)
@@ -88,7 +91,7 @@ async function waitForSelectOptionsChange(selector, previousSignature, timeout =
 async function waitForOptions(selector, labels, timeout = 15000, previousSignature = null, stableMs = 0) {
   const expected = labels.map(normalize);
   const isReady = () => {
-    const select = document.querySelector(selector);
+    const select = query(selector);
     if (!select || select.disabled) return false;
     const available = getOptionMap(select).map((option) => option.label);
     const optionsChanged = previousSignature === null
@@ -174,8 +177,8 @@ function waitForDomCondition(check, timeout, stableMs, timeoutMessage) {
 }
 
 async function refreshXAxisOptions(yAxisLabel, { resetSelection = false } = {}) {
-  const yAxis = document.querySelector("#yAxis");
-  const xAxis = document.querySelector("#xAxis");
+  const yAxis = query("#yAxis");
+  const xAxis = query("#xAxis");
   if (!yAxis || !xAxis) throw new Error("Could not find #yAxis or #xAxis.");
   const match = getOptionMap(yAxis).find((option) => option.label === normalize(yAxisLabel));
   if (!match) throw new Error(`#yAxis: could not find "${yAxisLabel}".`);
@@ -185,7 +188,7 @@ async function refreshXAxisOptions(yAxisLabel, { resetSelection = false } = {}) 
   // VAHAN restores X-Axis from a hidden field while rebuilding its options.
   // Clear both values during job fills so a previous scenario cannot affect
   // the requested selection. Option lookups keep the page's current choice.
-  const hiddenXAxis = document.querySelector("#xAxis_hidden");
+  const hiddenXAxis = query("#xAxis_hidden");
   if (resetSelection) {
     xAxis.value = "";
     if (hiddenXAxis) hiddenXAxis.value = "";
@@ -207,7 +210,7 @@ async function waitForXAxisOptions(yAxisLabel, labels, timeout = 15000) {
   const expected = labels.map(normalize);
   let available = [];
   const isReady = () => {
-    const xAxis = document.querySelector("#xAxis");
+    const xAxis = query("#xAxis");
     if (xAxis) {
       available = [...xAxis.options]
         .filter((option) => option.value)
@@ -238,7 +241,7 @@ async function waitForXAxisOptions(yAxisLabel, labels, timeout = 15000) {
 async function selectLabels(selector, rawValue) {
   assertFillActive();
   const labels = splitValues(rawValue);
-  const select = document.querySelector(selector);
+  const select = query(selector);
   if (!select) throw new Error(`Could not find ${selector}.`);
   const options = getOptionMap(select);
   if (!labels.length && !select.multiple) return;
@@ -267,7 +270,7 @@ async function selectLabels(selector, rawValue) {
 
 async function clearSelect(selector) {
   assertFillActive();
-  const select = document.querySelector(selector);
+  const select = query(selector);
   if (!select) return;
   if (![...select.options].some((option) => option.selected)) return;
   for (const option of select.options) option.selected = false;
@@ -278,7 +281,7 @@ async function clearSelect(selector) {
 
 async function loadMakerOptions(rawValue) {
   const makers = splitValues(rawValue);
-  const select = document.querySelector("#vehicleMaker");
+  const select = query("#vehicleMaker");
   if (!makers.length || !select) return;
   const missing = [...new Set(makers)].filter(maker => ![...select.options].some(
     option => normalize(option.label || option.textContent) === normalize(maker)));
@@ -288,7 +291,7 @@ async function loadMakerOptions(rawValue) {
       assertFillActive();
       const values = await fetchMakers(missing[cursor++]);
       assertFillActive();
-      const current = document.querySelector('#vehicleMaker');
+      const current = query('#vehicleMaker');
       if (!current) throw new Error('FILTER_CONTROL_MISSING: #vehicleMaker.');
       for (const value of values) {
         if (![...current.options].some(option => option.value === value)) current.add(new Option(value, value));
@@ -302,7 +305,7 @@ async function loadMakerOptions(rawValue) {
 
 function readOptions(selectors) {
   return Object.fromEntries(Object.entries(selectors).map(([id, definition]) => {
-    const select = document.querySelector(definition.selector);
+    const select = query(definition.selector);
     const labels = select
       ? [...select.options].map((option) => (option.label || option.textContent || "").replace(/\s+/g, " ").trim()).filter(Boolean)
       : [];
@@ -313,7 +316,7 @@ function readOptions(selectors) {
 async function fetchRtos(stateLabels) {
   const labels = splitValues(stateLabels);
   if (labels.length !== 1) return [];
-  const state = [...document.querySelectorAll("#stateName option")]
+  const state = [...queryAll("#stateName option")]
     .find((option) => normalize(option.label || option.textContent) === normalize(labels[0]));
   if (!state) return [];
   const url = new URL("/analytics/json_rtos", location.origin);
@@ -378,7 +381,7 @@ async function getStateOptions(delhiNcrLabel) {
   if (delhiNcrChanged) {
     await waitForSelectOptionsChange("#stateName", previousStateOptions);
   }
-  const state = document.querySelector("#stateName");
+  const state = query("#stateName");
   return state
     ? [...state.options]
         .map((option) => (option.label || option.textContent || "").replace(/\s+/g, " ").trim())
@@ -389,7 +392,7 @@ async function getStateOptions(delhiNcrLabel) {
 function fill(selector, value) {
   assertFillActive();
   if (value === undefined || value === null) return;
-  const input = document.querySelector(selector);
+  const input = query(selector);
   if (!input) throw new Error(`Could not find ${selector}.`);
   const nextValue = String(value);
   if (input.value === nextValue) return;
@@ -434,7 +437,7 @@ function validateSupportedFilters(config) {
 }
 async function resetFilter(key) {
   assertFillActive();
-  const select = document.querySelector(FILTER_SELECTORS[key]);
+  const select = query(FILTER_SELECTORS[key]);
   if (!select) return;
   if (select.multiple) { await clearSelect(FILTER_SELECTORS[key]); return; }
   const neutral = [...select.options].find(option => neutralOption(option, key));
@@ -450,11 +453,11 @@ async function setFilter(config, key, stableMs = 0) {
   const selector = FILTER_SELECTORS[key];
   if (!labels.length) {
     if (RESET_FIELDS.has(key)) await resetFilter(key);
-    else if (document.querySelector(selector)?.multiple) await clearSelect(selector);
+    else if (query(selector)?.multiple) await clearSelect(selector);
     return;
   }
   if (key === 'xAxis') {
-    const yAxisLabel = String(config.yAxis || document.querySelector('#yAxis')?.selectedOptions?.[0]?.textContent || '');
+    const yAxisLabel = String(config.yAxis || query('#yAxis')?.selectedOptions?.[0]?.textContent || '');
     try {
       await waitForXAxisOptions(yAxisLabel, labels, 15_000);
     } catch (firstError) {
@@ -462,11 +465,11 @@ async function setFilter(config, key, stableMs = 0) {
       // stale. Re-trigger the selected parent once, then wait for the new
       // options and all page requests to settle before selecting anything.
       assertFillActive();
-      const yAxis = document.querySelector('#yAxis');
+      const yAxis = query('#yAxis');
       const match = yAxis && getOptionMap(yAxis).find(option => option.label === normalize(yAxisLabel));
       if (!yAxis || !match) throw firstError;
-      const xAxis = document.querySelector('#xAxis');
-      const hidden = document.querySelector('#xAxis_hidden');
+      const xAxis = query('#xAxis');
+      const hidden = query('#xAxis_hidden');
       if (xAxis) xAxis.value = '';
       if (hidden) hidden.value = '';
       yAxis.value = match.value;
@@ -480,7 +483,7 @@ async function setFilter(config, key, stableMs = 0) {
       await waitForOptions(selector, labels, 15_000, null, stableMs);
     } catch (firstError) {
       assertFillActive();
-      const state = document.querySelector('#stateName');
+      const state = query('#stateName');
       const expected = splitValues(config.states).map(normalize);
       const actual = state ? [...state.selectedOptions].map(option => normalize(option.label || option.textContent)) : [];
       if (!state || !expected.length || expected.length !== actual.length || expected.some(label => !actual.includes(label))) throw firstError;
@@ -498,8 +501,8 @@ async function setFilter(config, key, stableMs = 0) {
   }
   const changed = await selectLabels(selector, config[key]);
   if (key === 'xAxis') {
-    const hidden = document.querySelector('#xAxis_hidden');
-    if (hidden) hidden.value = document.querySelector(selector).value;
+    const hidden = query('#xAxis_hidden');
+    if (hidden) hidden.value = query(selector).value;
   }
   return changed;
 }
@@ -507,12 +510,12 @@ async function setParentFilter(config, parent, child, stableMs = 0) {
   const changed = await setFilter(config, parent, stableMs);
   const expected = splitValues(config[child]);
   if (changed || !expected.length) return;
-  const control = document.querySelector(FILTER_SELECTORS[child]);
+  const control = query(FILTER_SELECTORS[child]);
   if (control?.disabled) return; // The page already has a dependent load running.
   const available = control ? getOptionMap(control).map(option => option.label) : [];
   if (!expected.every(label => available.includes(normalize(label)))) {
     assertFillActive();
-    document.querySelector(FILTER_SELECTORS[parent])?.dispatchEvent(new Event('change', {bubbles: true}));
+    query(FILTER_SELECTORS[parent])?.dispatchEvent(new Event('change', {bubbles: true}));
   }
 }
 async function drainCancelledRequests(context) {
@@ -536,7 +539,7 @@ function filterChecks(config) {
   for (const [field, selector] of Object.entries(FILTER_SELECTORS)) {
     const requested = hasFilter(config, field);
     if (!requested && !RESET_FIELDS.has(field)) continue;
-    const select = document.querySelector(selector);
+    const select = query(selector);
     const expected = requested ? splitValues(config[field]) : [];
     const actual = select ? [...select.selectedOptions].map(option => compactText(option.label || option.textContent)) : [];
     let match;
@@ -549,17 +552,17 @@ function filterChecks(config) {
   }
   for (const [field, selector] of Object.entries(INPUT_SELECTORS)) {
     if (!hasFilter(config, field) && !['fromDate', 'toDate'].includes(field)) continue;
-    const input = document.querySelector(selector);
+    const input = query(selector);
     const expected = String(config[field] ?? '').trim();
     const actual = input?.value?.trim() ?? '';
     checks.push({field, selector, expected: [expected], actual: [actual],
       match: expected === actual && (Boolean(input) || !expected) && (!expected || !input?.disabled), mode: 'requested'});
   }
   if (hasFilter(config, 'xAxis') && splitValues(config.xAxis).length) {
-    const hidden = document.querySelector('#xAxis_hidden');
+    const hidden = query('#xAxis_hidden');
     if (hidden) checks.push({field: 'xAxis_hidden', selector: '#xAxis_hidden',
-      expected: [document.querySelector('#xAxis')?.value || ''], actual: [hidden.value],
-      match: hidden.value === document.querySelector('#xAxis')?.value, mode: 'hidden'});
+      expected: [query('#xAxis')?.value || ''], actual: [hidden.value],
+      match: hidden.value === query('#xAxis')?.value, mode: 'hidden'});
   }
   return checks;
 }
@@ -603,10 +606,10 @@ async function fillVahan(config) {
       if (!has(key) && !['fromDate', 'toDate'].includes(key)) continue;
       const value = config[key] ?? '';
       if (String(value).trim()) {
-        await waitForDomCondition(() => Boolean(document.querySelector(selector)), 15_000, 0,
+        await waitForDomCondition(() => Boolean(query(selector)), 15_000, 0,
           `FILTER_CONTROL_MISSING: ${selector}`);
       }
-      if (document.querySelector(selector)) fill(selector, value);
+      if (query(selector)) fill(selector, value);
     }
   }
   const plan = [
@@ -681,7 +684,7 @@ async function captureCaptcha(timeout = 15000) {
   const deadline = Date.now() + timeout;
   let image;
   while (Date.now() < deadline) {
-    image = document.querySelector("#captchaImage");
+    image = query("#captchaImage");
     if (image?.complete && image.naturalWidth > 0 && image.naturalHeight > 0) break;
     await delay(200);
   }
@@ -713,7 +716,7 @@ async function captureCaptcha(timeout = 15000) {
 let isRefreshingCaptcha = false;
 
 async function refreshCaptcha(previousCaptchaId, timeout = 15000) {
-  const refreshButton = document.querySelector("#captchaImg");
+  const refreshButton = query("#captchaImg");
   if (!refreshButton || !isVisible(refreshButton)) {
     throw new Error("Could not find the official VAHAN CAPTCHA refresh button.");
   }
@@ -762,10 +765,10 @@ const isVisible = (element) => {
     && style.opacity !== "0";
 };
 // A new navigation can expose the driver before the parser creates <body>.
-const getResultRegion = () => document.querySelector(".report-main-column")
+const getResultRegion = () => query(".report-main-column")
   || document.body || document.documentElement || document;
 const findExcelDownloadButton = () => {
-  const buttons = [...document.querySelectorAll(EXCEL_BUTTON_SELECTOR)];
+  const buttons = [...queryAll(EXCEL_BUTTON_SELECTOR)];
   const named = buttons.find(isVisible);
   if (named) return named;
   return [...getResultRegion().querySelectorAll("button, a")].find((element) =>
@@ -841,20 +844,20 @@ const RESULT_LOADING_SELECTOR = [
 ].join(", ");
 const isResultLoading = () => {
   const root = getResultRegion();
-  if (document.readyState === "loading" || document.querySelector("#applyTrigger")?.disabled) return true;
-  const loadingIndicators = root.querySelectorAll(RESULT_LOADING_SELECTOR);
+  if (document.readyState === "loading" || query("#applyTrigger")?.disabled) return true;
+  const loadingIndicators = root.querySelectorAll(mappedSelector(RESULT_LOADING_SELECTOR));
   if (root.matches?.(RESULT_LOADING_SELECTOR) && isVisible(root)) return true;
   return [...loadingIndicators].some(isVisible);
 };
 const isApplyPending = () => document.readyState === "loading"
-  || Boolean(document.querySelector("#applyTrigger")?.disabled);
+  || Boolean(query("#applyTrigger")?.disabled);
 const mutationCanChangeResult = (mutation) => {
   const nodes = [mutation.target, ...mutation.addedNodes, ...mutation.removedNodes];
   return nodes.some((node) => {
     const target = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
     if (!target || target.nodeType !== Node.ELEMENT_NODE) return false;
     if (mutation.type === "attributes") {
-      if (target.id === "applyTrigger" && mutation.attributeName === "disabled") return true;
+      if (target === query("#applyTrigger") && mutation.attributeName === "disabled") return true;
       if (
         mutation.attributeName === "class"
         && /(?:^|\s)(?:spinner-border|spinner-grow|loading-spinner|loading-overlay|chart-loading|fa-spinner|fa-spin|loader)(?:\s|$)/i.test(mutation.oldValue || "")

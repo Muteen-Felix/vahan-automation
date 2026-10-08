@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.filters import VahanFilters
 from app.repositories.batch_queue import BatchQueueRepository
+from app.db import engine,schema as db
+from sqlalchemy import select
 from app.realtime.server import sio
 
 router = APIRouter(prefix='/batch-queue', tags=['batch-queue'])
@@ -21,6 +23,7 @@ class StartQueueInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     session_id: UUID = Field(alias='sessionId')
     tasks: list[QueueTaskInput] = Field(min_length=1, max_length=3000)
+    preflight_id: UUID | None = Field(default=None,alias='preflightId')
     max_workers: int = Field(default=10, alias='maxWorkers', ge=1, le=10, strict=True)
 
 
@@ -30,6 +33,7 @@ class ClaimInput(BaseModel):
 
 class ResumeQueueInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
+    preflight_id: UUID | None = Field(default=None,alias='preflightId')
     max_workers: int | None = Field(default=None, alias='maxWorkers', ge=1, le=10, strict=True)
 
 
@@ -44,7 +48,11 @@ async def call(operation):
 
 @router.post('/sessions')
 async def start_queue(command: StartQueueInput, request: Request):
+    from app.repositories.ui_contract import require_gate,bind_gate
+    ids=[f'playwright-{index+1}' for index in range(command.max_workers)]
+    gate=await call(require_gate(request.state.authenticated_user,ids,command.preflight_id,fresh=True))
     await call(queue.start(command.session_id, request.state.authenticated_user, command.tasks, command.max_workers))
+    await bind_gate(command.session_id,gate)
     return await call(queue.snapshot(command.session_id, request.state.authenticated_user))
 
 
@@ -61,6 +69,11 @@ async def pause_queue(session_id: UUID, request: Request):
 
 @router.post('/sessions/{session_id}/resume')
 async def resume_queue(session_id: UUID, request: Request, command: ResumeQueueInput | None = None):
+    from app.repositories.ui_contract import require_gate,bind_gate
+    saved=await call(queue.snapshot(session_id,request.state.authenticated_user))
+    count=command.max_workers if command and command.max_workers else saved['maxWorkers']
+    gate=await call(require_gate(request.state.authenticated_user,[f'playwright-{i+1}' for i in range(count)],command.preflight_id if command else None,fresh=True))
+    await bind_gate(session_id,gate)
     await call(queue.set_status(session_id, request.state.authenticated_user, 'RUNNING',
         command.max_workers if command else None))
     return {'status': 'RUNNING'}
@@ -73,6 +86,11 @@ async def settle_task(session_id: UUID, position: int, request: Request):
 
 @router.post('/sessions/{session_id}/claim')
 async def claim_task(session_id: UUID, command: ClaimInput, request: Request):
+    from app.repositories.ui_contract import require_gate
+    # Final recovery can requeue formerly FAILED rows. It requires the same
+    # SQL gate as primary/checkpoint work before creating another job.
+    if await call(queue.needs_work(session_id,request.state.authenticated_user)):
+        await call(require_gate(request.state.authenticated_user,[command.runner_id],session_id=session_id,bound=True))
     result = await call(queue.claim(session_id, request.state.authenticated_user, command.runner_id))
     job = result.pop('job', None)
     if result['type'] == 'assigned' and job is None:

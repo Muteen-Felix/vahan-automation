@@ -14,7 +14,7 @@ export function ConnectionBanner({ backend, runners }: Props) {
   }[backend];
 
   return (
-    <div className="connection-banner" data-state={backend}>
+    <div className="connection-banner" data-state={backend} title={text} aria-label={text}>
       <span className="connection-dot" />
       <span>{text}</span>
     </div>

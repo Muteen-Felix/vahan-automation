@@ -2,6 +2,7 @@
 """Generate ignored local Docker secrets without overwriting an existing configuration."""
 import argparse, base64, os, secrets
 from pathlib import Path
+from secure_permissions import restrict_permissions
 root = Path(__file__).resolve().parents[1]
 path = root / '.docker.env'
 parser = argparse.ArgumentParser()
@@ -33,7 +34,9 @@ else:
         'VAHAN_UI_AUTH_PASSWORD': secrets.token_urlsafe(24), 'VAHAN_UI_AUTH_TOKEN_SECRET': secrets.token_hex(48),
         'VAHAN_API_RUNNER_TOKEN': secrets.token_urlsafe(36),
         'VAHAN_BROWSER_STATE_KEY': base64.urlsafe_b64encode(os.urandom(32)).decode(),
-        'API_PORT': args.api_port, 'WEB_PORT': args.web_port}
+        'API_PORT': args.api_port, 'WEB_PORT': args.web_port,
+        'API_BIND_ADDRESS': '127.0.0.1', 'WEB_BIND_ADDRESS': '127.0.0.1',
+        'VAHAN_IMAGE_NAMESPACE': 'vahan-automation', 'VAHAN_IMAGE_TAG': 'local'}
     # Retain the existing local login when upgrading this checkout.
     local = root / 'apps/api-server/.env'
     if local.exists():
@@ -47,8 +50,9 @@ else:
                 if cleaned:
                     values[key] = cleaned
     path.write_text(''.join(f'{k}={v}\n' for k,v in values.items()))
-    path.chmod(0o600)
     print(f'Created {path}; credentials remain in this ignored file.')
+
+restrict_permissions(path)
 
 runner_token = read_env_file(path).get('VAHAN_API_RUNNER_TOKEN', '')
 if len(runner_token) < 24 or runner_token == 'change-me':
@@ -59,7 +63,10 @@ if len(runner_token) < 24 or runner_token == 'change-me':
 compose_env = root / '.env'
 if compose_env.is_symlink():
     if compose_env.resolve() != path.resolve():
-        raise SystemExit(f'{compose_env} is a symlink to another file; preserve it and use run-vahan-rpa.sh.')
+        raise SystemExit(f'{compose_env} is a symlink to another file; preserve it and pass --env-file .docker.env to Compose.')
 elif not compose_env.exists():
-    compose_env.symlink_to(path.name)
-    print(f'Linked {compose_env} to {path.name} for Docker Desktop Compose launches.')
+    if os.name == 'nt':
+        print('Windows uses explicit --env-file .docker.env; no .env symlink is needed.')
+    else:
+        compose_env.symlink_to(path.name)
+        print(f'Linked {compose_env} to {path.name} for Docker Desktop Compose launches.')

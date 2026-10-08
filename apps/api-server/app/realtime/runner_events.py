@@ -18,16 +18,6 @@ _disconnect_tasks: dict[str, asyncio.Task] = {}
 _logger = logging.getLogger(__name__)
 
 
-async def _save_captcha_image(job_id: UUID, image_data_url: str) -> str | dict:
-    try:
-        return await services.captcha_images.save(job_id, image_data_url)
-    except ValueError:
-        return {"ok": False, "error": "Invalid CAPTCHA image data."}
-    except OSError:
-        _logger.exception("Could not save CAPTCHA image for job %s", job_id)
-        return {"ok": False, "error": "Could not save the CAPTCHA image in backend storage."}
-
-
 async def _expire_disconnected_runner(runner_id: str, socket_id: str) -> None:
     try:
         await asyncio.sleep(settings.runner_disconnect_grace_seconds)
@@ -200,27 +190,21 @@ async def captcha_required(sid: str, payload: dict) -> dict:
     try:
         job_id = UUID(str(payload["jobId"]))
         captcha_id = str(payload["captchaId"])
-        image_data_url = str(payload["imageDataUrl"])
     except (KeyError, TypeError, ValueError):
         return {"ok": False, "error": "Invalid CAPTCHA payload."}
-    if not captcha_id or not image_data_url.startswith("data:image/"):
-        return {"ok": False, "error": "Invalid CAPTCHA image."}
-    if len(image_data_url) > 1_000_000:
-        return {"ok": False, "error": "CAPTCHA image is too large."}
+    if not captcha_id or len(captcha_id) > 128:
+        return {"ok": False, "error": "Invalid CAPTCHA ID."}
 
     job = await services.jobs.get(job_id)
     if not job or job.runner_id != runner.id:
         return {"ok": False, "error": "Job does not belong to this runner."}
     if not can_transition(job.status, JobStatus.WAITING_CAPTCHA):
         return {"ok": False, "error": "Job cannot request CAPTCHA in its current state."}
-    storage_result = await _save_captcha_image(job_id, image_data_url)
-    if isinstance(storage_result, dict):
-        return storage_result
     updated = await services.jobs.update_status(
         job_id,
         JobStatus.WAITING_CAPTCHA,
         captcha_id=captcha_id,
-        captcha_image_data_url=image_data_url,
+        captcha_image_data_url="",
         expected_status=job.status,
     )
     if updated is None:
@@ -230,7 +214,6 @@ async def captcha_required(sid: str, payload: dict) -> dict:
         {
             "jobId": str(job_id),
             "captchaId": captcha_id,
-            "imageDataUrl": image_data_url,
         },
         room=f"job:{job_id}",
         namespace="/ui",
@@ -246,27 +229,21 @@ async def captcha_invalid(sid: str, payload: dict) -> dict:
     try:
         job_id = UUID(str(payload["jobId"]))
         captcha_id = str(payload["captchaId"])
-        image_data_url = str(payload["imageDataUrl"])
     except (KeyError, TypeError, ValueError):
         return {"ok": False, "error": "Invalid CAPTCHA payload."}
-    if not captcha_id or not image_data_url.startswith("data:image/"):
-        return {"ok": False, "error": "Invalid CAPTCHA image."}
-    if len(image_data_url) > 1_000_000:
-        return {"ok": False, "error": "CAPTCHA image is too large."}
+    if not captcha_id or len(captcha_id) > 128:
+        return {"ok": False, "error": "Invalid CAPTCHA ID."}
 
     job = await services.jobs.get(job_id)
     if not job or job.runner_id != runner.id:
         return {"ok": False, "error": "Job does not belong to this runner."}
     if job.status not in {JobStatus.SUBMITTING, JobStatus.WAITING_RESULT}:
         return {"ok": False, "error": "Job is not waiting for a VAHAN result."}
-    storage_result = await _save_captcha_image(job_id, image_data_url)
-    if isinstance(storage_result, dict):
-        return storage_result
     updated = await services.jobs.update_status(
         job_id,
         JobStatus.WAITING_CAPTCHA,
         captcha_id=captcha_id,
-        captcha_image_data_url=image_data_url,
+        captcha_image_data_url="",
         expected_status=job.status,
         expected_captcha_id=job.captcha_id,
     )
@@ -277,7 +254,6 @@ async def captcha_invalid(sid: str, payload: dict) -> dict:
         {
             "jobId": str(job_id),
             "captchaId": captcha_id,
-            "imageDataUrl": image_data_url,
         },
         room=f"job:{job_id}",
         namespace="/ui",
@@ -299,25 +275,19 @@ async def captcha_refreshed(sid: str, payload: dict) -> dict:
     try:
         job_id = UUID(str(payload["jobId"]))
         captcha_id = str(payload["captchaId"])
-        image_data_url = str(payload["imageDataUrl"])
     except (KeyError, TypeError, ValueError):
         return {"ok": False, "error": "Invalid CAPTCHA payload."}
-    if not captcha_id or not image_data_url.startswith("data:image/"):
-        return {"ok": False, "error": "Invalid CAPTCHA image."}
-    if len(image_data_url) > 1_000_000:
-        return {"ok": False, "error": "CAPTCHA image is too large."}
+    if not captcha_id or len(captcha_id) > 128:
+        return {"ok": False, "error": "Invalid CAPTCHA ID."}
 
     job = await services.jobs.get(job_id)
     if not job or job.runner_id != runner.id:
         return {"ok": False, "error": "Job does not belong to this runner."}
     if job.status != JobStatus.WAITING_CAPTCHA:
         return {"ok": False, "error": "Job is not waiting for CAPTCHA."}
-    storage_result = await _save_captcha_image(job_id, image_data_url)
-    if isinstance(storage_result, dict):
-        return storage_result
     updated = await services.jobs.update_status(
         job_id, JobStatus.WAITING_CAPTCHA,
-        captcha_id=captcha_id, captcha_image_data_url=image_data_url,
+        captcha_id=captcha_id, captcha_image_data_url="",
         expected_status=JobStatus.WAITING_CAPTCHA,
         expected_captcha_id=job.captcha_id,
     )
@@ -325,7 +295,7 @@ async def captcha_refreshed(sid: str, payload: dict) -> dict:
         return {"ok": False, "error": "CAPTCHA changed before the refresh was saved."}
     await sio.emit(
         "captcha:refreshed",
-        {"jobId": str(job_id), "captchaId": captcha_id, "imageDataUrl": image_data_url},
+        {"jobId": str(job_id), "captchaId": captcha_id},
         room=f"job:{job_id}",
         namespace="/ui",
     )
@@ -352,3 +322,15 @@ async def runner_recover(sid: str, payload: dict) -> dict:
             await services.runners.release_job(runner.id, runner.current_job_id)
     current = await services.runners.get(runner.id)
     return {"ok": True, "activeJobId": current.current_job_id if current else None}
+
+
+@sio.on('network:problem', namespace='/runner')
+async def network_problem(sid: str, _payload: dict):
+    runner = await services.runners.get_by_socket(sid)
+    if not runner:
+        return {'ok': False, 'error': 'Runner is not registered.'}
+    from app.network_guard import probe, record
+    online, error = await probe()
+    if not online:
+        await record(False, error)
+    return {'ok': True, 'online': online}

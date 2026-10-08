@@ -59,6 +59,9 @@ async def assignment_allowed(connection, runner_id):
     return (await assignment_status(connection, runner_id))[0] == 'ready'
 
 async def assignment_status(connection, runner_id):
+    from app.network_guard import KEY
+    network = await connection.scalar(select(db.app_settings.c.value).where(db.app_settings.c.key == KEY).with_for_update(read=True))
+    if network and not network['online']: return 'offline', None
     if not settings.worker_controller_url: return 'ready', None
     pool = await pool_value(connection, lock=True)
     number = re.fullmatch(r'playwright-(\d+)', runner_id)

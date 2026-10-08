@@ -5,7 +5,7 @@ import {UpdateHistory} from './UpdateHistory';
 import { ReportCoverage } from './ReportCoverage';
 import { useLiveQuery } from '../hooks/use-live-query';
 import {currentReportYear, MIN_REPORT_YEAR} from '../matrix-plan';
-import type { CoverageControls } from '../report-coverage';
+import type {MatrixPlan} from '../matrix-plan';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 type AnnualRow = {id: string; state: string; rto: string; rto_code: string; maker: string; months: (number | null)[]};
@@ -21,7 +21,7 @@ const dateTime = (value: string | null) => value ? new Date(value).toLocaleStrin
   hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
 }) : '—';
 
-function MonthlyData({refreshTrigger, coverageControls}: {refreshTrigger?: number; coverageControls?: CoverageControls}) {
+function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; coveragePlan?: MatrixPlan | null}) {
   const [year, setYear] = useState(currentReportYear);
   const [dataset, setDataset] = useState('');
   const [state, setState] = useState('');
@@ -156,17 +156,17 @@ function MonthlyData({refreshTrigger, coverageControls}: {refreshTrigger?: numbe
           <p className="annual-summary-label">Last data added · GMT+7</p><time>{dateTime(shownData?.summary.updatedAt ?? null)}</time>
           <p className="annual-policy">Each completed crawl saves immediately. Newer confirmed values update the table, with previous values retained in history.</p>
         </section>
-        {coverageControls && <ReportCoverage context={{year, dataset: shownData?.datasetId || dataset, state: search.state, rto: search.rto}}
-          controls={coverageControls} refreshTrigger={(refreshTrigger ?? 0) + refresh} />}
+        {coveragePlan && <ReportCoverage context={{year, dataset: shownData?.datasetId || dataset, state: search.state, rto: search.rto}}
+          plan={coveragePlan} refreshTrigger={(refreshTrigger ?? 0) + refresh} />}
       </aside>
     </div>
   </>;
 }
 
-export function AnnualReports({refreshTrigger, coverageControls}: {refreshTrigger?: number; coverageControls?: CoverageControls}) {
+export function AnnualReports({refreshTrigger, coveragePlan}: {refreshTrigger?: number; coveragePlan?: MatrixPlan | null}) {
   return <div className="annual-reports">
     <div className="annual-title"><div><p>MANUFACTURER REGISTRATIONS</p><h2>Exported Reports</h2></div>
     </div>
-    <MonthlyData refreshTrigger={refreshTrigger} coverageControls={coverageControls} />
+    <MonthlyData refreshTrigger={refreshTrigger} coveragePlan={coveragePlan} />
   </div>;
 }

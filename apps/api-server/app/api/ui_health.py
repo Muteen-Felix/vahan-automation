@@ -1,5 +1,13 @@
 from datetime import date, datetime, timezone
 from uuid import uuid4
+import asyncio
+from sqlalchemy import insert,select
+from app.db import engine,schema as db
+from app.repositories.postgres import now
+from app.repositories import ui_contract
+from app.repositories.filter_profiles import reserve_options_runner
+from app.models.filter_profile import StrictModel
+from pydantic import Field
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from app.access import require_admin
@@ -120,12 +128,26 @@ async def request_ui_health_check_now(
     response_model_by_alias=True,
     status_code=status.HTTP_201_CREATED,
 )
-async def receive_ui_health_log(command: UiHealthLogRequest) -> UiHealthLogResponse:
+async def receive_ui_health_log(command: UiHealthLogRequest, request: Request) -> UiHealthLogResponse:
+    validation=None
+    if 'observedControls' in command.health_check:
+        identity=request.headers.get('x-vahan-runner-id')
+        if not getattr(request.state,'authenticated_runner',False) or identity!=command.runner_id or not await services.runners.get(identity):
+            raise HTTPException(403,'Only the authenticated runner can submit DOM evidence.')
+        validation=await ui_contract.evaluate(command.health_check,command.runner_id)
+        command.health_check.update({key:validation[key] for key in ('status','reports','errorCount')})
+        command.health_check['contractValidation']=validation
+        if not validation['allowed']:
+            command.health_check['error']='UI_HEALTH_BLOCKED: '+str(validation['reports'][0]['title'])
     result = await services.ui_health_logs.append(
         command.health_check,
         page_url=command.page_url,
     )
-    response = UiHealthLogResponse.model_validate(result)
+    response = UiHealthLogResponse.model_validate({**result,'validation':validation})
+    # Publish after committing the SQL log so refresh/Copy error includes it.
+    if validation:
+        state=await ui_contract.current()
+        await sio.emit('ui-health:blocked' if state['blocked'] else 'ui-health:verified',state,namespace='/ui')
     if command.health_check.get('trigger') == 'scheduled':
         await services.ui_health.record_check()
     await sio.emit(
@@ -163,3 +185,65 @@ async def download_ui_health_report(file_name: str) -> Response:
     if report_path is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report file not found.")
     return Response(report_path, media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{file_name}"'})
+
+
+class PreflightInput(StrictModel):
+    runner_ids:list[str]=Field(alias='runnerIds',min_length=1,max_length=10)
+
+
+@router.get('/contract')
+async def current_contract():
+    return await ui_contract.current()
+
+
+@router.get('/status')
+async def contract_status():
+    state=await ui_contract.current()
+    async with engine.connect() as c:
+        latest=(await c.execute(select(db.ui_preflight_checks).order_by(db.ui_preflight_checks.c.created_at.desc()).limit(1))).mappings().first()
+    return {**state,'latestPreflight':dict(latest) if latest else None}
+
+
+@router.post('/preflight')
+async def preflight(command:PreflightInput,request:Request):
+    ids=list(dict.fromkeys(command.runner_ids))
+    if len(ids)!=len(command.runner_ids):raise HTTPException(400,'Worker IDs must be unique.')
+    known={runner.id for runner in await services.runners.list()}
+    check_id=str(uuid4());semaphore=asyncio.Semaphore(2)
+    async def check(runner_id):
+        async with semaphore:
+            if runner_id not in known:
+                return {'allowed':False,'runnerId':runner_id,'reports':[{'code':'WORKER_NOT_REGISTERED','title':'The selected worker is not registered; retry after it is connected.'}]}
+            try:
+                async with reserve_options_runner(runner_id,request.state.authenticated_user) as (socket_id,token):
+                    last=None
+                    for attempt in range(2):
+                        request_id=str(uuid4())
+                        try:
+                            result=await sio.call('ui-health:preflight',{'requestId':request_id,'trigger':'preflight'},to=socket_id,namespace='/runner',timeout=55)
+                            async with engine.connect() as c:
+                                evidence=await c.scalar(select(db.ui_health_checks.c.payload).where(db.ui_health_checks.c.id==request_id))
+                            last=((evidence or {}).get('healthCheck') or {}).get('contractValidation')
+                            if not isinstance(result,dict) or not result.get('ok') or not last or last.get('runnerId')!=runner_id:
+                                last={'allowed':False,'runnerId':runner_id,'reports':[{'code':'PREFLIGHT_NO_ACK','title':'Worker did not return SQL-validated health evidence.'}]}
+                            if last.get('allowed'):return {**last,'attempts':attempt+1}
+                        except Exception as error:
+                            last={'allowed':False,'runnerId':runner_id,'reports':[{'code':'PREFLIGHT_FAILED','title':str(error) or type(error).__name__}]}
+                    return {**last,'attempts':2}
+            except Exception as error:
+                return {'allowed':False,'runnerId':runner_id,'reports':[{'code':'PREFLIGHT_FAILED','title':str(error)}]}
+    reports=await asyncio.gather(*(check(runner) for runner in ids))
+    state=await ui_contract.current()
+    for report in reports:
+        if report.get('allowed') and report.get('versionId')!=state['versionId']:
+            report.update(allowed=False,reports=[{'code':'SQL_CONTRACT_VERSION_CHANGED','title':'Workers observed different DOM versions. Recheck all selected workers before loading Maker data.'}])
+    allowed=not state['blocked'] and all(report.get('allowed') and report.get('versionId')==state['versionId'] for report in reports)
+    async with engine.begin() as c:
+        await c.execute(insert(db.ui_preflight_checks).values(id=check_id,owner_username=request.state.authenticated_user,
+            runner_ids=ids,version_id=state['versionId'],status='PASS' if allowed else 'BLOCKED',reports=reports,created_at=now()))
+    response={'allowed':allowed,'preflightId':check_id,'revision':state['revision'],'versionId':state['versionId'],'reports':reports}
+    if not allowed:
+        await sio.emit('ui-health:blocked',response,namespace='/ui')
+        raise HTTPException(409,{'code':'UI_HEALTH_BLOCKED','message':'Preflight failed; no Maker data or tasks were loaded. Open UI Health and copy the error for dev.','diagnostics':response})
+    await sio.emit('ui-health:verified',response,namespace='/ui')
+    return response

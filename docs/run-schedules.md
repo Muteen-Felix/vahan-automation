@@ -1,0 +1,46 @@
+# Automatic report schedules
+
+In Settings, choose **Report / filter profile**, **Active workers** (1–10), **Start date**, and **Start time**. Times always use Vietnam time, UTC+07:00, regardless of the browser's time zone. The default is a one-time run; **Every day** repeats at the same local time.
+
+The navigation contains **Exported Reports**, **Filters**, and **Settings**, in that order. Exported Reports is the default page. Open **Account** at the top of Settings to sign out, change your password, or manage users (administrators). Filter previews offer **Use in Settings**, which selects the saved profile for a schedule.
+
+Settings stacks UI Health errors and the schedule form in separate full-width rows. Account controls stay inside the Account dialog. Healthy checks hide the error section. Showing or clearing an error does not change the schedule width or discard form values. Error tables fit desktop screens and become labeled items on small screens; copy actions and expandable diagnostics remain available.
+
+Settings contains the schedule form and compact run cards. Each card keeps fixed slots for its profile, reporting year, start time, repeat rule, workers, status, processed/total cases, cases/min, progress bar and two management actions. Preparing, resuming and waiting states show the backend reason in the fixed feedback slot, including worker-pool waits, filter discovery and errors. **Pause run** stops new assignments and lets active cases save. Once **Paused**, choose 1–10 workers and press **Continue run**. The selected pool is checked again, then the same queue resumes; saved data and valid no-data cases are not rerun. Paused time is excluded from processing speed. Collected data appears in Exported Reports, alongside previously saved data.
+
+Each schedule has a **System activity** panel beneath its controls. It shows the current step (Docker pool, worker connection, UI Health preflight, filter/Maker loading, queue publication, collection or recovery), time at that step, the last scheduler update and the full current message. **Worker details** shows connection, option-loading activity, current case/status and time since its last job update. **Copy diagnostics** copies schedule/session IDs, progress, the original error and worker observations for a developer. Operation checkpoints and scheduler errors are persisted in SQL; worker health observations are read-only and refreshed when schedules are polled.
+
+A preparation step taking over five minutes, a job with no status update for five minutes, or a scheduler with no checkpoint for six minutes produces a diagnostic warning. These are delay indicators, not proof of a hang, and never cancel work automatically. Docker health probes have a one-second timeout and run concurrently; an unavailable probe appears in the panel. Unexpected scheduler errors are displayed and retried from the same durable session after 30 seconds.
+
+The backend owns queue preparation and worker assignment. Viewing or reloading Settings never starts another dispatch loop. The separate manual-run page, detailed worker monitor and link to that page have been removed. Legacy manual-run URLs open Exported Reports; legacy scheduled-monitor URLs open Settings. Saved report data and backend schedules are retained.
+
+A schedule captures the saved profile's revision and report year. Later edits to the profile do not silently change an existing schedule. Add a new schedule to use a different revision. Profiles without a saved report year allow the year to be entered in Settings.
+
+| Operation | Behavior | Result |
+| --- | --- | --- |
+| Add schedule | Validate a future date/time, owned profile, report year and worker count. Persist the profile snapshot in PostgreSQL. | The schedule appears with its next start time. |
+| Scheduled start | The backend adjusts the worker pool, runs the shared UI Health preflight for all selected workers, prepares live filter options and valid cases, creates a durable queue, and assigns cases. | Reports continue without an open dashboard or a Run button click. |
+| Busy or offline workers | Wait for active queues/filter previews to finish and for the chosen number of workers to connect. | The reason is shown on the schedule card; no running batch is cancelled. |
+| Case completion | Reconcile saved results and claim the next case. Use the existing queue's failure limits. | Processed/total cases and speed update in Settings; saved data appears in Exported Reports. |
+| Processing speed | Use active execution time and observed completed cases across all workers. Exclude paused time. | Settings shows cases/min. Reloading restores the rate from server progress. |
+| UI Health blocks execution | Do not assign new cases under an invalid DOM contract. Once workers are idle, request preflight again and bind successful evidence to the queue. | Incompatible VAHAN changes remain visible as an error; scheduled execution uses the same gate as manual runs. |
+| Disable future runs | Stop future scheduled starts. | An already running report continues until explicitly stopped. |
+| Pause run | Atomically fence the scheduler and pause the queue; let active cases finish and save. | Status changes from Pausing to Paused, retaining the same session, filters, counters and future-run setting. |
+| Change workers / Continue run | Select 1–10 workers while paused. Adjust the pool, check UI Health, and resume the saved queue with the new limit. | Continue only unfinished cases; completed and no-data cases stay saved. Failed preparation leaves the session resumable. |
+| Delete schedule | Available while Paused/Stopped or once the run has ended. Lock the schedule and queue, reject active jobs or a concurrent resume. | Remove the schedule, execution queue and remaining cases; retain report sessions, jobs, files and collected data. |
+| API restart | Reload the saved execution/session checkpoint. Interrupted browser jobs follow existing restart recovery and queue retry rules. | Resume the same report queue; do not create a second scheduled run. |
+
+The API, PostgreSQL, Docker worker controller and browser workers must remain available. Closing the dashboard is supported; shutting down the server or computer pauses execution. An overdue one-time schedule starts when services become available. Daily schedules do not replay every missed day.
+
+
+CAPTCHA images stay in worker memory and are supplied directly to the existing processor through stdin. No new CAPTCHA image files or SQL copies are created. The dashboard has no CAPTCHA panel, image, monitor or refresh/entry action; `GET /api/run-schedules/captchas` returns owned job/worker IDs and status metadata only. Completion still depends on VAHAN validation and any required browser login.
+
+Schedules belong to their creator. Disabled accounts do not start scheduled jobs; an active scheduled run is stopped when its owner account becomes inactive. A PostgreSQL advisory lock chooses one scheduler leader across API processes. Prepared cases and session IDs are checkpointed before execution, and an undelivered committed assignment can be sent again using the same job ID.
+
+API: `GET/POST /api/run-schedules`, `PATCH/DELETE /api/run-schedules/{id}`, `POST /api/run-schedules/{id}/pause`, `POST /api/run-schedules/{id}/resume` with `workerCount`, legacy terminal `POST /api/run-schedules/{id}/stop`, and `GET /api/run-schedules/captchas`. These routes require dashboard authentication. The scheduler runs under the API lifespan and uses the existing `app_settings` table; no schedule-specific migration is required.
+
+Verification: `npm run test:navigation-ui`, `npm run test:filters-ui` and `npm run test:schedules-ui` in `apps/web-ui` (Vite on port 5186, or `SCHEDULE_UI_URL`), and `verification/test_run_schedules.py` in `apps/api-server`. The latter requires `VAHAN_SCHEDULE_TEST_DATABASE` naming a disposable `vahan_schedule_*_test` PostgreSQL database. It refuses to run against the production database.
+
+**Account** opens a dialog with the signed-in username, role and **Log out**. **Change password** requires the current password, a new password of at least 12 characters and matching confirmation. A successful change keeps the current session and revokes other sessions. Administrators can expand **Manage user accounts**, create or enable/disable accounts, and choose **Reset password** for another account. Reset requires matching password confirmation and signs out the target account's existing sessions. Administrators use Change password for their own account. Passwords are hashed in SQL; audit events contain account names only. These changes do not cancel browser report jobs.
+
+Settings uses compact run cards and a collapsed creation form when schedules already exist. **New schedule** opens the form; **Hide form** closes it without discarding entered values. System activity shows one summary row with **View details** and **Copy diagnostics**. Errors and delay warnings remain visible while routine metadata and worker tables are collapsed. Opening detail or changing run status does not move the controls inside a run card.
