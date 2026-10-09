@@ -4,10 +4,12 @@
 | --- | --- |
 | Lượt chính | Worker nhận các case trong nhóm 10 hiện tại. Worker nhanh có thể nhận thêm case trong cùng nhóm. |
 | Checkpoint | Khi các lượt đầu của nhóm đã kết thúc, retry các case lỗi trong nhóm. Chỉ chuyển sang nhóm tiếp theo khi các retry này kết thúc. Nhóm cuối dưới 10 cũng được kiểm tra. |
-| Quét lỗi cuối | Sau nhóm cuối, lấy toàn bộ case còn FAILED từ SQL, đưa vào lượt phục hồi cuối và phân phối cho các worker đang sẵn sàng. Không yêu cầu worker cũ; ưu tiên worker khác khi có case phù hợp. |
+| Quét lỗi cuối | Sau nhóm cuối, lấy các case còn FAILED có thể retry tự động từ SQL, đưa vào lượt phục hồi cuối và phân phối cho các worker đang sẵn sàng. Không yêu cầu worker cũ; ưu tiên worker khác khi có case phù hợp. |
 | Kết thúc | Case phục hồi thành công cập nhật With data/No data. Case vẫn lỗi giữ FAILED cùng nguyên nhân cuối, không lặp vô hạn. |
 
 Mỗi case thường có tối đa 3 lượt: ban đầu, checkpoint và lượt cuối. Hủy/tạm dừng không làm mất case hay xóa số lần thất bại đã ghi; một retry bị hủy có thể tiếp tục sau khi resume. `NO_DATA` đã xác nhận không vào danh sách retry. Mỗi lần thử giữ toàn bộ filters, tên báo cáo, session và chuỗi `retryOfJobId`/`caseId` của case gốc.
+
+Ngoại lệ cần người vận hành: `CAPTCHA_REFRESH_LIMIT`, `CAPTCHA_REJECTION_LIMIT`, `CAPTCHA_WAIT_TIMEOUT` chuyển case sang FAILED ngay lần lỗi đó, không tăng giả số lần thất bại để cạn quota. Case vẫn hiện lỗi và `requiresOperator=true`, nhưng `recoveryPending=false`; checkpoint và lượt cuối không tự khởi tạo lại. Pending target cũ mang lỗi này được chặn trước claim khi khôi phục queue. Các case khác vẫn tiếp tục; phiên có thể kết thúc với lỗi. Sau khi xử lý nguyên nhân, retry chủ động thành công được đối soát về case/session gốc. Xem [review](validation-loop-review-2026-10-09.md).
 
 Chính sách lưu tại `app_settings` với key `batch-retry-policy:<sessionId>`: nhóm hiện tại, checkpoint đã kết thúc, phase PRIMARY/CHECKPOINT/FINAL/DONE và danh sách case của lượt cuối. Mọi chuyển phase/claim được đồng bộ bằng khóa session trong transaction SQL. Reload, đổi worker hay khởi động lại không tạo thêm lượt cuối trùng lặp. Phiên lịch sử đã hoàn tất không tự chạy lại chỉ vì được mở xem.
 

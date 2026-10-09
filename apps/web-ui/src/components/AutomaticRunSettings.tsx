@@ -33,16 +33,24 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
   const [workers, setWorkers] = useState(workerCount);
   const [reportYear, setReportYear] = useState(year);
   const [repeat, setRepeat] = useState<'once' | 'daily' | 'monthly'>('once');
+  const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [actionId, setActionId] = useState('');
   const [workerChoices, setWorkerChoices] = useState<Record<string, number>>({});
   const [formOpen, setFormOpen] = useState(false);
-  const formInitialized = useRef(false);
-  useEffect(() => {if (!loading && !formInitialized.current) {formInitialized.current = true;setFormOpen(!schedules.length);}}, [loading, schedules.length]);
+  const scheduleDialog = useRef<HTMLDialogElement>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const profile = profiles.find(item => item.id === profileId);
   const selectedYear = profile?.definition.report?.year ?? reportYear;
+
+  useEffect(() => {
+    if (formOpen) {
+      if (!scheduleDialog.current?.open) scheduleDialog.current?.showModal();
+    } else if (scheduleDialog.current?.open) {
+      scheduleDialog.current.close();
+    }
+  }, [formOpen]);
 
   useEffect(() => {
     setWorkerChoices(previous => {
@@ -67,17 +75,28 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
     event.preventDefault();
     const startsAt = `${date}T${time}:00+07:00`;
     if (!profile || !date || !time || !Number.isFinite(Date.parse(startsAt)) || Date.parse(startsAt) <= Date.now()) {
-      setError('Choose a report profile and a future date and time.');
+      setFormError('Choose a report profile and a future date and time.');
       return;
     }
-    setSaving(true); setError(''); setNotice('');
+    setSaving(true); setFormError(''); setError(''); setNotice('');
     try {
       const saved = await api.createRunSchedule({profileId, year: selectedYear, workerCount: workers, startsAt, repeat});
       onUpsert(saved);
       setNotice(`Schedule saved for ${formatScheduledTime(saved.nextRunAt)} (Vietnam time).`);
+      setFormOpen(false);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Could not save the run schedule.');
+      setFormError(reason instanceof Error ? reason.message : 'Could not save the run schedule.');
     } finally {setSaving(false);}
+  }
+
+  function openNewSchedule() {
+    const nextStart = vietnamDateTime(new Date(Date.now() + 5 * 60_000));
+    setDate(nextStart.date); setTime(nextStart.time);
+    setFormError(''); setError(''); setNotice(''); setFormOpen(true);
+  }
+
+  function closeNewSchedule() {
+    if (!saving) setFormOpen(false);
   }
 
   async function action(schedule: RunSchedule, type: 'toggle' | 'pause' | 'resume' | 'delete') {
@@ -103,8 +122,12 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
       <div className="panel-heading"><div>
         <h2 id="automatic-run-heading">Automatic report schedule</h2>
         <p>Schedule and follow report collection.</p>
-      </div><button type="button" className="secondary-button schedule-form-toggle" aria-expanded={formOpen} aria-controls="new-schedule-form" onClick={() => setFormOpen(value => !value)}>{formOpen ? 'Hide form' : 'New schedule'}</button></div>
-      <div id="new-schedule-form" hidden={!formOpen}>
+      </div><button type="button" className="secondary-button schedule-form-toggle" aria-haspopup="dialog" aria-controls="new-schedule-form" onClick={openNewSchedule}>New schedule</button></div>
+      <dialog ref={scheduleDialog} id="new-schedule-form" className="schedule-dialog" aria-labelledby="new-schedule-title"
+        onCancel={event => {if (saving) event.preventDefault(); else closeNewSchedule();}}
+        onClick={event => {if (event.target === event.currentTarget) closeNewSchedule();}}>
+      <div className="schedule-dialog-heading"><div><span className="settings-eyebrow">AUTOMATIC REPORTS</span><h2 id="new-schedule-title">New schedule</h2></div>
+        <button type="button" className="schedule-dialog-close" aria-label="Close new schedule" disabled={saving} onClick={closeNewSchedule}>×</button></div>
       <form className="automatic-run-form" onSubmit={save}>
         <label className="schedule-profile-label">Report / filter profile
           <select aria-label="Report / filter profile" value={profileId} onChange={event => setProfileId(event.target.value)} required disabled={saving || !profiles.length}>
@@ -123,7 +146,8 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
         <label>Report year<input aria-label="Report year" type="number" min="1900" max={new Date().getFullYear()} value={selectedYear}
           onChange={event => setReportYear(Number(event.target.value))} required disabled={saving || Boolean(profile?.definition.report)} /></label>
         <div className="automatic-run-form-footer"><span>Vietnam time (UTC+07:00)</span>
-          <button className="primary-button" type="submit" disabled={saving || loading || !profile}>{saving ? 'Saving…' : 'Add schedule'}</button>
+          <div className="schedule-dialog-actions"><button className="secondary-button" type="button" disabled={saving} onClick={closeNewSchedule}>Cancel</button>
+            <button className="primary-button" type="submit" disabled={saving || loading || !profile}>{saving ? 'Saving…' : 'Add schedule'}</button></div>
         </div>
       </form>
       <div className="schedule-help-slot"><p className="schedule-help">{repeat === 'monthly'
@@ -131,7 +155,8 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
         : !profiles.length
         ? <>Create a <a href="#filters">filter profile</a> to select a report.</>
         : 'Saved schedules keep the selected profile. View collected data in Exported Reports.'}</p></div>
-      </div>
+      {formError && <p className="schedule-error" role="alert">{formError}</p>}
+      </dialog>
       <div className={`schedule-feedback${error || loadError || notice ? ' has-feedback' : ''}`}>
         {(error || loadError) ? <p className="schedule-error" role="alert" title={error || loadError}>{error || loadError}</p>
           : <p className="schedule-notice" role="status" title={notice}>{notice || '\u00a0'}</p>}

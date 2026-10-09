@@ -1,0 +1,75 @@
+{
+  "reviewDate": "2026-10-09",
+  "recordedAt": "2026-10-09T02:24:12.161430+00:00",
+  "scope": "read-only runtime and source review; temporary probes; no deployment",
+  "source": {
+    "branch": "feat/filter",
+    "head": "652f2e2fb707b364badf53bf875a6a15e8db20fc"
+  },
+  "mainRuntime": {
+    "imageNamespace": "vahan-db-capacity",
+    "tag": "20261008",
+    "postgres": "postgres:17.7-bookworm",
+    "revision": "0013_database_capacity",
+    "tenantIdentityTable": false,
+    "mfaTable": false,
+    "socOutboxTable": false,
+    "archiveMode": "off",
+    "walLevel": "replica",
+    "replicasConnected": 0,
+    "activeJobsAtObservation": 0,
+    "databaseBytes": 5366574227,
+    "runtimeRole": "vahan_app",
+    "runtimeRolePrivilegedFlags": false
+  },
+  "runtimeContainerSample": {
+    "services": [
+      "api",
+      "web",
+      "runner"
+    ],
+    "memoryLimitBytes": 0,
+    "nanoCPUs": 0,
+    "readOnlyRootfs": false,
+    "webConfiguredUser": ""
+  },
+  "dockerHost": {
+    "cpuCount": 8,
+    "memoryBytes": 16748113920
+  },
+  "storedFilesStatistics": {
+    "actualRows": 75588,
+    "estimatedRows": 43,
+    "lastAnalyze": null,
+    "lastAutoanalyze": null
+  },
+  "probes": {
+    "provisionTenantAutomationUsesLegacyProject": true,
+    "socUnitTests": {
+      "passed": 9,
+      "failed": 0
+    },
+    "sixEarlierReviewProbes": "diagnostics/soc/review-probes-2026-10-09.json"
+  },
+  "documentation": {
+    "missingReadmeTargets": [
+      "docs/annual-reports.md",
+      "docs/postgres-playwright.md"
+    ],
+    "staleAreas": [
+      "direct compose startup bypasses launcher drain for upgrades",
+      "plaintext backup description",
+      "production docs URL",
+      "dashboard queue versus durable scheduler"
+    ]
+  },
+  "notVerifiedInThisReview": [
+    "full hosted CI runs",
+    "full end-to-end UAT on final release",
+    "load and soak",
+    "offsite full-host disaster recovery",
+    "HA and PITR",
+    "penetration test and residual advisory reachability"
+  ],
+  "priorEvidence": "docs/security/SOC-deployment-evidence.json"
+}

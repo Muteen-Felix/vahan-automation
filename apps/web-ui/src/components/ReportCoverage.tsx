@@ -3,6 +3,14 @@ import type {MatrixPlan} from '../matrix-plan';
 import {useLiveQuery} from '../hooks/use-live-query';
 import {loadReportCoverage, type CoverageContext, type ReportCoverageData} from '../report-coverage';
 
+function formatLastUpdate(value: string | null | undefined) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('en-GB', {timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit',
+    year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false}).format(date);
+}
+
 export function ReportCoverage({context, plan, refreshTrigger}: {
   context: CoverageContext; plan: MatrixPlan; refreshTrigger?: number;
 }) {
@@ -20,6 +28,8 @@ export function ReportCoverage({context, plan, refreshTrigger}: {
   const percent = shown?.total ? 100 * shown.covered / shown.total : 0;
   const complete = Boolean(shown?.matrixLoaded && shown.total > 0 && shown.missing === 0);
   const status = shown?.matrixLoaded ? complete ? 'Complete' : 'In progress' : 'Loading';
+  const lastUpdatedAt = shown?.lastSaved?.savedAt ?? null;
+  const lastUpdated = formatLastUpdate(lastUpdatedAt);
   return <section className="report-coverage" aria-label="Main table data coverage">
     <div className="report-coverage-heading">
       <div><h3>Data coverage · {context.year}</h3>
@@ -34,6 +44,9 @@ export function ReportCoverage({context, plan, refreshTrigger}: {
       <span style={{width: `${percent}%`}} /></div>
     {shown?.matrixLoaded && <div className="report-coverage-details">
       <p><span>Results</span><strong>{shown.withData} with data · {shown.noData} no data</strong></p>
+      <p className="report-coverage-last-updated"><span>Last data update · GMT+7</span><strong>{lastUpdated
+        ? <time dateTime={lastUpdatedAt || undefined}>{lastUpdated}</time>
+        : 'No saved data yet'}</strong></p>
       {shown.firstMissing && <p><span>Next</span><strong>#{shown.firstMissing.index + 1} · {shown.firstMissing.state} · {shown.firstMissing.rto}</strong></p>}
     </div>}
     <details className="report-coverage-more"><summary>Details</summary>

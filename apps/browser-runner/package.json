@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "start": "node runner.mjs",
-    "check": "node --check runner.mjs && node --check page-driver.js && node --check ui-health-contract.mjs && node --check image-pipe.mjs && node --check page-recovery.mjs",
+    "check": "node --check runner.mjs && node --check page-driver.js && node --check ui-health-contract.mjs && node --check image-pipe.mjs && node --check page-recovery.mjs && node --check validation-guard.mjs",
     "test:ui-health": "node test-ui-health-contract.mjs && node test-health-trigger.mjs",
     "test:results": "node test-results.mjs",
-    "test:lifecycle": "node test-job-lifecycle.mjs",
+    "test:lifecycle": "node test-validation-guard.mjs && node test-job-lifecycle.mjs",
     "test:filters": "node test-filter-fill.mjs",
     "test:options": "node test-options.mjs",
     "test:navigation": "node test-navigation.mjs && node test-page-recovery.mjs",

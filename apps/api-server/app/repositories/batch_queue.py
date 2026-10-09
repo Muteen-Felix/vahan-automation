@@ -3,12 +3,13 @@ from datetime import datetime, timezone
 import re
 from uuid import UUID
 
-from sqlalchemy import case, func, insert, select, update
+from sqlalchemy import and_, case, func, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.db import engine, schema as db
 from app.models.job import Job, JobStatus
 from app.models.runner import Runner, RunnerStatus
+from app.models.validation_stop import VALIDATION_STOP_CODES, requires_operator
 from app.repositories.postgres import PostgresJobRepository, runner_document
 
 MAX_FAILURES = 2
@@ -22,13 +23,20 @@ def now():
     return datetime.now(timezone.utc)
 
 
+def automatic_retry_condition():
+    error = func.coalesce(db.batch_queue_tasks.c.error, '')
+    return and_(*(~error.startswith(code + ':', autoescape=True) for code in VALIDATION_STOP_CODES))
+
+
 def task_document(row, policy=None):
     return {
         'position': row['position'], 'name': row['scenario_name'],
         'status': row['status'], 'attempts': row['attempts'],
         'failures': row['failures'], 'runnerId': row['runner_id'],
         'jobId': row['job_id'], 'error': row['error'],
-        'recoveryPending': bool(policy and not policy['finalPassStarted'] and row['status'] == 'FAILED'),
+        'requiresOperator': requires_operator(row['error']),
+        'recoveryPending': bool(policy and not policy['finalPassStarted'] and row['status'] == 'FAILED'
+                                and not requires_operator(row['error'])),
     }
 
 
@@ -48,14 +56,15 @@ class BatchQueueRepository:
             session = await self._session(connection, session_id, owner)
             pending = await connection.scalar(select(db.batch_queue_tasks.c.position).where(
                 db.batch_queue_tasks.c.session_id == str(session_id),
-                db.batch_queue_tasks.c.status.in_(['PENDING', 'PROCESSING'])).limit(1))
+                (db.batch_queue_tasks.c.status == 'PROCESSING') |
+                ((db.batch_queue_tasks.c.status == 'PENDING') & automatic_retry_condition())).limit(1))
             if pending is not None:
                 return True
             policy = await self._policy(connection, session)
             if policy and not policy['finalPassStarted']:
                 return (await connection.scalar(select(db.batch_queue_tasks.c.position).where(
                     db.batch_queue_tasks.c.session_id == str(session_id),
-                    db.batch_queue_tasks.c.status == 'FAILED').limit(1))) is not None
+                    db.batch_queue_tasks.c.status == 'FAILED', automatic_retry_condition()).limit(1))) is not None
             return False
 
     async def _policy_rows(self, connection, session, policy):
@@ -68,6 +77,19 @@ class BatchQueueRepository:
         ).where(tasks.c.session_id == session['session_id'], condition)
             .order_by(tasks.c.position).with_for_update())).mappings()]
 
+    async def _stop_operator_retries(self, connection, session, rows):
+        # An older process may already have reopened a stopped case. Restore
+        # FAILED before another claim without faking extra failed attempts.
+        positions = [row['position'] for row in rows if row['status'] == 'PENDING'
+                     and requires_operator(row.get('error'))]
+        if positions:
+            await connection.execute(update(db.batch_queue_tasks).where(
+                db.batch_queue_tasks.c.session_id == session['session_id'],
+                db.batch_queue_tasks.c.position.in_(positions),
+                db.batch_queue_tasks.c.status == 'PENDING').values(status='FAILED', updated_at=now()))
+            rows = [{**row, 'status': 'FAILED'} if row['position'] in positions else row for row in rows]
+        return rows
+
     async def _advance_policy(self, connection, session, rows, complete_rows=True):
         policy = await self._policy(connection, session)
         if not policy:
@@ -76,6 +98,7 @@ class BatchQueueRepository:
             return None, rows
         if session['status'] != 'RUNNING':
             return policy, rows
+        rows = await self._stop_operator_retries(connection, session, rows)
         policy = dict(policy)
         original = dict(policy)
         while policy['phase'] not in {'FINAL', 'DONE'}:
@@ -94,11 +117,12 @@ class BatchQueueRepository:
                               windowEnd=min(session['total'], policy['windowEnd'] + CHECKPOINT_SIZE))
                 if not complete_rows:
                     rows = await self._policy_rows(connection, session, policy)
+                    rows = await self._stop_operator_retries(connection, session, rows)
                 continue
-            failed = [row for row in rows if row['status'] == 'FAILED'] if complete_rows else list(
+            failed = [row for row in rows if row['status'] == 'FAILED' and not requires_operator(row.get('error'))] if complete_rows else list(
                 (await connection.execute(select(db.batch_queue_tasks.c.position).where(
                     db.batch_queue_tasks.c.session_id == session['session_id'],
-                    db.batch_queue_tasks.c.status == 'FAILED').with_for_update())).mappings())
+                    db.batch_queue_tasks.c.status == 'FAILED', automatic_retry_condition()).with_for_update())).mappings())
             policy.update(phase='FINAL' if failed else 'DONE', finalPassStarted=True,
                           finalTargets=[row['position'] for row in failed])
             if failed:
@@ -213,7 +237,7 @@ class BatchQueueRepository:
             policy = await connection.scalar(select(db.app_settings.c.value).where(
                 db.app_settings.c.key == RETRY_KEY + row['session_id']))
             final_attempt = policy and policy['phase'] == 'FINAL' and row['position'] in policy['finalTargets']
-            status = 'FAILED' if final_attempt or failures >= MAX_FAILURES else 'PENDING'
+            status = 'FAILED' if requires_operator(job_row['error']) or final_attempt or failures >= MAX_FAILURES else 'PENDING'
         error = row['error'] if job_status == 'CANCELLED' and row['failures'] else job_row['error']
         values = dict(status=status, failures=failures, error=error, updated_at=now())
         await connection.execute(update(db.batch_queue_tasks).where(
@@ -382,7 +406,8 @@ class BatchQueueRepository:
                 (tasks.c.failures == 0 if policy['phase'] == 'PRIMARY' else
                  (tasks.c.failures > 0) & (tasks.c.failures < MAX_FAILURES)))
             row = (await connection.execute(select(tasks).where(
-                tasks.c.session_id == session['session_id'], tasks.c.status == 'PENDING', stage
+                tasks.c.session_id == session['session_id'], tasks.c.status == 'PENDING', stage,
+                automatic_retry_condition()
             ).order_by(case(((tasks.c.failures > 0) & (tasks.c.runner_id == runner_id), 1), else_=0),
                        tasks.c.position).limit(1).with_for_update(skip_locked=True))).mappings().first()
             if not row:

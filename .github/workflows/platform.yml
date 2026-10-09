@@ -44,7 +44,7 @@ jobs:
       - name: Install and test API
         run: |
           python -m pip install -e "apps/api-server[dev]"
-          python -m pytest apps/api-server/verification/test_ocr_platform.py apps/api-server/verification/test_captcha_ephemeral.py apps/api-server/verification/test_captcha_refresh_race.py
+          python -m pytest apps/api-server/verification/test_ocr_platform.py apps/api-server/verification/test_captcha_ephemeral.py apps/api-server/verification/test_captcha_refresh_race.py apps/api-server/verification/test_validation_stop.py
 
       - name: Install runner dependencies
         working-directory: apps/browser-runner

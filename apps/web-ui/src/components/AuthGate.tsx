@@ -7,21 +7,17 @@ import {
   AUTH_REQUIRED_EVENT,
   clearSessionMarker,
   getSessionMarker,
-  acceptCookieSession,
+  acceptLoginSession,
 } from "../services/api-client";
 import { hydratePersistentState, resetPersistentState } from '../services/persistent-state';
 import {observeSessionActivity} from '../services/session-activity';
 
-type GateState = "checking" | "setup" | "login" | "unavailable" | "authenticated" | "enroll" | "recovery";
+type GateState = "checking" | "setup" | "login" | "unavailable" | "authenticated";
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [gate, setGate] = useState<GateState>("checking");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState('');
-  const [challenge, setChallenge] = useState('');
-  const [mfaSecret, setMfaSecret] = useState('');
-  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const generation = useRef(0);
@@ -37,7 +33,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
       resetPersistentState();
       clearSessionMarker();
       setPassword("");
-      setOtp(''); setMfaSecret(''); setChallenge(''); setRecoveryCodes([]);
       setGate("login");
       setError("Your session is no longer valid. Please sign in again.");
     };
@@ -45,7 +40,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
       generation.current++;
       resetPersistentState();
       setPassword("");
-      setOtp(''); setMfaSecret(''); setChallenge(''); setRecoveryCodes([]);
       setError("You have signed out.");
       setGate("login");
     };
@@ -106,40 +100,26 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setError("");
     setSubmitting(true);
     try {
-      const result = await api.login(username.trim(), password, otp);
+      const result = await api.login(username.trim(), password);
       if (generation.current !== expected) return;
       setPassword("");
-      setOtp('');
       if (result.mfaSetupToken) {
-        const enrollment = await api.enrollMfa(result.mfaSetupToken);
-        if (generation.current !== expected) return;
-        setChallenge(result.mfaSetupToken);
-        setMfaSecret(enrollment.secret);
-        setGate('enroll');
+        setError("This account is not configured for password-only sign-in.");
         return;
       }
-      acceptCookieSession(result);
+      acceptLoginSession(result);
       await hydratePersistentState();
       if (generation.current === expected) setGate("authenticated");
     } catch (reason) {
-      if (generation.current === expected) setError(reason instanceof Error ? reason.message : "Sign-in failed.");
+      if (generation.current === expected) {
+        const message = reason instanceof Error ? reason.message : "Sign-in failed.";
+        setError(/verification code|two-step|MFA/i.test(message)
+          ? "This account is not configured for password-only sign-in."
+          : message);
+      }
     } finally {
       setSubmitting(false);
     }
-  }
-
-  async function confirmMfa(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setSubmitting(true); setError('');
-    const expected = ++generation.current;
-    try {
-      const result = await api.confirmMfa(challenge, otp);
-      if (generation.current !== expected) return;
-      acceptCookieSession(result);
-      setMfaSecret(''); setChallenge(''); setOtp('');
-      setRecoveryCodes(result.recoveryCodes || []); setGate('recovery');
-    } catch (reason) {
-      if (generation.current === expected) setError(reason instanceof Error ? reason.message : 'Verification failed.');
-    } finally {setSubmitting(false);}
   }
 
   if (gate === "authenticated") return children;
@@ -151,29 +131,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   return (
     <main className="auth-shell">
       <section className="auth-card">
-        {gate === 'enroll' ? (
-          <>
-            <h1>Set up two-step verification</h1>
-            <p>Add this setup key to your authenticator app, then enter its six-digit code.</p>
-            <code>{mfaSecret}</code>
-            <form className="auth-form" onSubmit={confirmMfa}>
-              <label>Verification code<input autoComplete="one-time-code" inputMode="numeric" maxLength={6} value={otp} onChange={e=>setOtp(e.target.value)} required /></label>
-              {error && <p className="auth-error" role="alert">{error}</p>}
-              <button className="primary-button" disabled={submitting}>Verify and continue</button>
-            </form>
-          </>
-        ) : gate === 'recovery' ? (
-          <>
-            <h1>Save your recovery codes</h1>
-            <p>Store these codes somewhere private. Each code works once if you lose your authenticator.</p>
-            <pre>{recoveryCodes.join('\n')}</pre>
-            {error && <p className="auth-error" role="alert">{error}</p>}
-            <button className="primary-button" type="button" onClick={async()=>{
-              try {await hydratePersistentState();setRecoveryCodes([]);setGate('authenticated');}
-              catch(reason){setError(reason instanceof Error?reason.message:'Could not open the dashboard.');}
-            }}>I saved the codes — open dashboard</button>
-          </>
-        ) : gate === "setup" ? (
+        {gate === "setup" ? (
           <>
             <p className="eyebrow dark">DASHBOARD SECURITY</p>
             <h1>Sign-in is not configured</h1>
@@ -210,13 +168,9 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
                   autoFocus
                   maxLength={128}
                   value={username}
-                  onChange={(event) => setUsername(event.target.value)}
+                  onChange={(event) => {setUsername(event.target.value); setError('');}}
                   required
                 />
-              </label>
-              <label>
-                Verification or recovery code
-                <input autoComplete="one-time-code" maxLength={64} value={otp} onChange={e=>setOtp(e.target.value)} />
               </label>
               <label>
                 Password
@@ -225,7 +179,7 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
                   autoComplete="current-password"
                   maxLength={1024}
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) => {setPassword(event.target.value); setError('');}}
                   required
                 />
               </label>
@@ -234,7 +188,7 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
                 {submitting ? "Signing in…" : "Sign in"}
               </button>
             </form>
-            <p className="auth-footnote">Sessions end after 12 hours or 60 minutes without activity. Administrators use two-step verification.</p>
+            <p className="auth-footnote">Sessions end after 12 hours or 60 minutes without activity.</p>
           </>
         )}
       </section>

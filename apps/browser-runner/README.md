@@ -6,6 +6,8 @@ Playwright package và Docker image pin `1.63.0`. Container chạy non-root, san
 
 Worker không giải CAPTCHA hoặc vượt qua validation. VAHAN HTTP 401 được ghi thành lỗi yêu cầu người vận hành xử lý; không retry vô hạn. Browser state mã hóa được tải/lưu qua backend PostgreSQL.
 
+Guard xác minh áp dụng cho từng job: tối đa 10 lần refresh chủ động, 3 lần bị VAHAN từ chối và deadline 10 phút từ lần chờ đầu tiên. Đổi challenge ID hoặc mất ACK không đặt lại budget. Worker chờ giá trị từ người vận hành; nhánh tự OCR → refresh → tự submit đã được gỡ. Chạm giới hạn ghi `CAPTCHA_REFRESH_LIMIT`, `CAPTCHA_REJECTION_LIMIT` hoặc `CAPTCHA_WAIT_TIMEOUT`, dừng job và giữ lỗi cần kiểm tra. Queue không đưa các lỗi này vào checkpoint/final retry; retry chủ động sau xử lý vẫn giữ case/session gốc. Timer được hủy khi submit, lưu kết quả, hủy/dừng job hoặc shutdown. Xem [review luồng và kiểm thử](../../docs/validation-loop-review-2026-10-09.md).
+
 Xem [README gốc](../../README.md).
 
 Sau Apply, DOM driver xác nhận kết quả mới, đúng RTO và đã hết loading. `No record found` gửi NO_RECORD cùng ngày giờ ISO đầy đủ, lưu lịch sử và hoàn tất NO_DATA. Khi có dữ liệu, workbook đầy đủ là bắt buộc: worker gửi một lần tới `/api/jobs/{id}/main-report`, chờ SQL lưu vào bảng chính rồi mới nhận filter tiếp theo và xóa file tạm. Không lưu bản sao DOM/Excel/TXT hoặc ảnh thành công trong SQL. Timeout là lỗi riêng. Kiểm thử: `npm run test:results`, `node test-main-report-save.mjs`.

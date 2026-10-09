@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
+import {createValidationGuard} from './validation-guard.mjs';
 
 // Execute the actual worker submission function without launching a worker or
 // accessing VAHAN. These tests supply an operator's value; no solver is used.
 const source = readFileSync(new URL('./runner.mjs', import.meta.url), 'utf8');
 const start = source.indexOf('async function submitCaptchaInternal(');
-const end = source.indexOf('async function autoSolveCaptcha(', start);
+const end = source.indexOf('async function status(', start);
 assert.ok(start >= 0 && end > start);
 
 function fixture(backendState = 'WAITING_CAPTCHA', rejectSubmitting = false, rejectVerification = false) {
@@ -14,6 +15,8 @@ function fixture(backendState = 'WAITING_CAPTCHA', rejectSubmitting = false, rej
   let storedState = backendState;
   const job = {jobId: 'fixture-job', status: 'WAITING_CAPTCHA', filters: {rtos: ['Port Blair DTO - AN1']}};
   const context = {
+    active: job,
+    validationFor: candidate => candidate.validationGuard ||= createValidationGuard(() => {}),
     RESULT_TIMEOUT: 5000,
     approvedApplySelector: '#applyTrigger',
     randomUUID: () => 'click-id',
@@ -156,7 +159,7 @@ assert.deepEqual(landing.calls, ['navigate']);
 console.log('5 page-readiness checks passed: navigation commit, usable timeout recovery, missing controls, authentication and redirect.');
 
 const refreshStart = source.indexOf('async function refreshCaptchaInternal(');
-const refreshEnd = source.indexOf('async function autoSolveCaptcha(', refreshStart);
+const refreshEnd = source.indexOf('async function status(', refreshStart);
 assert.ok(refreshStart >= 0 && refreshEnd > refreshStart);
 function refreshFixture(ackFailures = 0) {
   const calls = [];
@@ -164,13 +167,13 @@ function refreshFixture(ackFailures = 0) {
   let releasePage;
   const context = {
     active: job,
+    validationFor: candidate => candidate.validationGuard ||= createValidationGuard(() => {}),
     page: {evaluate: async () => {
       calls.push('refresh-page');
       await new Promise(resolve => { releasePage = resolve; });
       return {captchaId: 'new-captcha', imageDataUrl: 'data:image/png;base64,AA=='};
     }},
     ack: async (_event,payload) => {assert.equal('imageDataUrl' in payload,false);calls.push('ack'); if (ackFailures-- > 0) throw new Error('operation has timed out'); return {ok: true};},
-    autoSolveCaptcha: async (_job,id,dataUrl) => {assert.equal(id,'new-captcha');assert.equal(dataUrl,'data:image/png;base64,AA==');calls.push('solve-next');},
     fail: async () => calls.push('failed-job'),
     console: {error: () => calls.push('refresh-error')},
   };
@@ -182,7 +185,7 @@ const firstRefresh = refreshOnce.refresh(refreshOnce.job, 'old-captcha');
 assert.equal((await refreshOnce.refresh(refreshOnce.job, 'old-captcha')).ok, false);
 refreshOnce.releasePage();
 assert.equal((await firstRefresh).ok, true);
-assert.deepEqual(refreshOnce.calls, ['refresh-page', 'ack', 'solve-next']);
+assert.deepEqual(refreshOnce.calls, ['refresh-page', 'ack']);
 assert.equal(refreshOnce.job.captchaId, 'new-captcha');
 const staleRefresh = refreshFixture();
 const staleAttempt = staleRefresh.refresh(staleRefresh.job, 'old-captcha');
@@ -194,13 +197,43 @@ const lostAck = refreshFixture(1);
 const recoveredAck = lostAck.refresh(lostAck.job, 'old-captcha');
 lostAck.releasePage();
 assert.equal((await recoveredAck).ok, true);
-assert.deepEqual(lostAck.calls, ['refresh-page', 'ack', 'ack', 'solve-next']);
+assert.deepEqual(lostAck.calls, ['refresh-page', 'ack', 'ack']);
 const exhaustedAck = refreshFixture(2);
 const failedRefresh = exhaustedAck.refresh(exhaustedAck.job, 'old-captcha');
 exhaustedAck.releasePage();
 assert.equal((await failedRefresh).ok, false);
 assert.deepEqual(exhaustedAck.calls, ['refresh-page', 'ack', 'ack', 'refresh-error', 'failed-job']);
 console.log('CAPTCHA refresh stays single-flight, retries a lost ACK and fails a stalled job.');
+
+const refreshLimit = refreshFixture();
+for (let i = 0; i < 10; i++) {
+  const pending = refreshLimit.refresh(refreshLimit.job, refreshLimit.job.captchaId);
+  refreshLimit.releasePage();
+  assert.equal((await pending).ok, true);
+}
+const limitReply = await refreshLimit.refresh(refreshLimit.job, refreshLimit.job.captchaId);
+assert.equal(limitReply.ok, false);
+assert.match(limitReply.error, /^CAPTCHA_REFRESH_LIMIT:/);
+assert.equal(refreshLimit.calls.filter(call => call === 'refresh-page').length, 10);
+assert.equal(refreshLimit.calls.filter(call => call === 'failed-job').length, 1);
+console.log('The eleventh refresh fails before contacting the page.');
+
+const challengeStart = source.indexOf('async function challenge(');
+const challengeEnd = source.indexOf('async function fail(', challengeStart);
+const waitingJob = {jobId: 'operator-job'};
+const challengeCalls = [];
+const operatorChallenge = runInNewContext(`${source.slice(challengeStart, challengeEnd)}\nchallenge`, {
+  active: waitingJob,
+  assertCurrent: candidate => assert.equal(candidate, waitingJob),
+  validationFor: () => ({check: () => {}, wait: () => challengeCalls.push('bounded-wait')}),
+  page: {evaluate: async () => {challengeCalls.push('capture'); return {captchaId: 'id', imageDataUrl: 'private-image'};}},
+  ack: async (event, payload) => {assert.equal(event, 'captcha:required'); assert.equal('imageDataUrl' in payload, false); challengeCalls.push('ack');},
+});
+await operatorChallenge('captcha:required', waitingJob);
+assert.deepEqual(challengeCalls, ['capture', 'ack', 'bounded-wait']);
+assert.equal(waitingJob.status, 'WAITING_CAPTCHA');
+assert.ok(!source.includes('autoSolveCaptcha'), 'the unattended recognition/refresh/submission loop is absent');
+console.log('Challenges wait for operator input without starting an image processor or another refresh.');
 
 const failStart = source.indexOf('async function fail(');
 const failEnd = source.indexOf('async function execute(', failStart);

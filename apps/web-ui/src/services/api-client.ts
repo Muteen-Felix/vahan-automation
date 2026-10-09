@@ -12,8 +12,9 @@ import type {CurrentCaptcha, RunSchedule, RunScheduleInput} from '../run-schedul
 export const API_URL = (import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
 export const SESSION_MARKER_STORAGE_KEY = "vahanUiSessionMarker";
 let csrf = '';
-// Remove credentials from older releases. The new marker below is not an
-// authentication credential; the session lives in an HttpOnly cookie.
+let bearerAccessToken = '';
+// Keep credentials out of persistent browser storage. Cookie sessions stay
+// HttpOnly; APIs that return a Bearer token use it only for this page session.
 try { localStorage.removeItem('vahanUiAccessToken'); sessionStorage.removeItem('vahanUiAccessToken'); } catch { /* Storage may be disabled. */ }
 export const AUTH_REQUIRED_EVENT = "vahan:auth-required";
 export const AUTH_LOGOUT_EVENT = "vahan:logout";
@@ -34,7 +35,6 @@ export interface LoginResponse extends SessionDeadlines {
   sessionMarker?: string;
   csrfToken?: string;
   mfaSetupToken?: string;
-  recoveryCodes?: string[];
   tokenType: "Bearer" | "Cookie";
   expiresIn: number | null;
   idleTimeoutSeconds?: number;
@@ -66,6 +66,7 @@ function notifyAuthenticationRequired() {
 
 export function clearSessionMarker() {
   csrf = '';
+  bearerAccessToken = '';
   try {
     window.localStorage.removeItem(SESSION_MARKER_STORAGE_KEY);
   } catch {
@@ -78,9 +79,14 @@ export function clearSessionMarker() {
   }
 }
 
-export function acceptCookieSession(result: LoginResponse) {
+export function acceptLoginSession(result: LoginResponse) {
   csrf = result.csrfToken || '';
+  bearerAccessToken = result.tokenType === 'Bearer' ? result.accessToken || '' : '';
   localStorage.setItem(SESSION_MARKER_STORAGE_KEY, result.sessionMarker || crypto.randomUUID());
+}
+
+export function getBearerAccessToken() {
+  return bearerAccessToken || null;
 }
 
 export function csrfHeaders(): Record<string, string> {
@@ -104,12 +110,16 @@ export class ApiError extends Error {
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getSessionMarker();
+  const authorization: Record<string, string> = path === '/api/auth/login' || !bearerAccessToken
+    ? {}
+    : {Authorization: `Bearer ${bearerAccessToken}`};
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     credentials: 'include',
     headers: {
       "Content-Type": "application/json",
       ...csrfHeaders(),
+      ...authorization,
       ...init?.headers,
     },
   });
@@ -126,8 +136,10 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 async function downloadFile(path: string, fileName?: string): Promise<void> {
   const token = getSessionMarker();
+  const authorization: Record<string, string> = bearerAccessToken ? {Authorization: `Bearer ${bearerAccessToken}`} : {};
   const response = await fetch(`${API_URL}${path}`, {
     credentials: 'include',
+    headers: authorization,
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
@@ -169,20 +181,14 @@ export const api = {
     method:'POST',body:JSON.stringify({runnerId,year,search})}),
   health: () => request<{ status: string }>("/api/health"),
   authStatus: () => request<AuthStatus>("/api/auth/status"),
-  login: (username: string, password: string, otp = '') =>
+  login: (username: string, password: string) =>
     request<LoginResponse>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ username, password, otp, browserSession: true }),
+      body: JSON.stringify({ username, password, browserSession: true }),
     }),
   sessionActivity: () => request<SessionDeadlines>("/api/auth/activity", {
     method: "POST",
     body: JSON.stringify({}),
-  }),
-  enrollMfa: (challenge: string) => request<{secret: string; uri: string}>('/api/auth/mfa/enroll', {
-    method: 'POST', body: JSON.stringify({challenge}),
-  }),
-  confirmMfa: (challenge: string, code: string) => request<LoginResponse>('/api/auth/mfa/confirm', {
-    method: 'POST', body: JSON.stringify({challenge, code}),
   }),
   currentUser: () => request<{ username: string; role: string; tenantId?: string; csrfToken?: string } & SessionDeadlines>("/api/auth/me"),
   userState: () => request<Record<string, unknown>>('/api/user-state'),

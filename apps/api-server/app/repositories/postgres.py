@@ -173,7 +173,9 @@ class PostgresJobRepository:
                 return False
             if not can_transition(job.status, status):
                 return False
-            job.status, job.error = status, error
+            from app.models.validation_stop import requires_operator
+            saved_error = job.error if job.status == status == JobStatus.FAILED and requires_operator(job.error) else error
+            job.status, job.error = status, saved_error
             if captcha_id is not None:
                 job.captcha_id = captcha_id
             if captcha_image_data_url is not None:
@@ -190,7 +192,9 @@ class PostgresJobRepository:
             if status == JobStatus.NO_DATA and not (job.result_checksum and job.main_report_saved_at
                                                     and job.result_message == 'No record found'):
                 return False
-            job.status, job.error = status, error
+            from app.models.validation_stop import requires_operator
+            saved_error = job.error if job.status == status == JobStatus.FAILED and requires_operator(job.error) else error
+            job.status, job.error = status, saved_error
             return True
         return await self._change(job_id, operation)
 

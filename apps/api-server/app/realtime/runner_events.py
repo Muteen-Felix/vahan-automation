@@ -10,6 +10,7 @@ from app.config import settings
 from app.security import runner_token_matches
 from app.models.job import JobStatus, ReportSource, can_transition
 from app.models.filter_execution import FilterExecution
+from app.models.validation_stop import requires_operator
 from app.realtime.server import sio
 from app.services import services
 from app.scheduler_wakeup import wake_scheduler
@@ -322,15 +323,54 @@ async def runner_recover(sid: str, payload: dict) -> dict:
     runner = await services.runners.get_by_socket(sid)
     if not runner:
         return {"ok": False, "error": "Runner is not registered."}
+    if not isinstance(payload, dict):
+        return {'ok': False, 'error': 'Invalid recovery payload.'}
+    stop_ack = {}
+    if 'validationStop' in payload:
+        stop = payload['validationStop']
+        try:
+            stopped_id = UUID(str(stop['jobId']))
+            error = stop['error']
+        except (KeyError, TypeError, ValueError):
+            return {'ok': False, 'error': 'Invalid validation-stop payload.'}
+        if not requires_operator(error) or len(error) > 1000:
+            return {'ok': False, 'error': 'Invalid validation-stop error.'}
+        stopped_job = await services.jobs.get(stopped_id)
+        if not stopped_job or stopped_job.runner_id != runner.id:
+            return {'ok': False, 'error': 'Validation stop does not belong to this worker.'}
+        terminal = {JobStatus.COMPLETED, JobStatus.NO_DATA, JobStatus.CANCELLED}
+        if stopped_job.status not in terminal:
+            if stopped_job.status != JobStatus.FAILED and runner.current_job_id != str(stopped_id):
+                return {'ok': False, 'error': 'Validation stop is not the worker current job.'}
+            updated = await services.jobs.update_status(stopped_id, JobStatus.FAILED,
+                error=error, expected_status=stopped_job.status)
+            if updated is None:
+                stopped_job = await services.jobs.get(stopped_id)
+                if not stopped_job or stopped_job.status not in terminal | {JobStatus.FAILED}:
+                    return {'ok': False, 'error': 'Job changed during validation-stop recovery.'}
+            else:
+                stopped_job = updated
+            await services.runners.release_job(runner.id, str(stopped_id))
+            wake_scheduler()
+            if updated is not None:
+                await sio.emit('job:status', updated.model_dump(mode='json', by_alias=True),
+                    room=f'job:{stopped_id}', namespace='/ui')
+        stop_ack = {'validationStopAccepted': True, 'validationStopJobId': str(stopped_id)}
+        runner = await services.runners.get(runner.id) or runner
     if runner.current_job_id:
         job = await services.jobs.get(UUID(runner.current_job_id))
         if job and can_transition(job.status, JobStatus.FAILED) and payload.get("activeJobId") != str(job.id):
-            job = await services.jobs.update_status(job.id, JobStatus.FAILED, error="Browser worker restarted. Retry the report explicitly.")
-            await sio.emit("job:status", job.model_dump(mode="json", by_alias=True), room=f"job:{job.id}", namespace="/ui")
+            updated = await services.jobs.update_status(job.id, JobStatus.FAILED,
+                error="Browser worker restarted. Retry the report explicitly.", expected_status=job.status)
+            if updated is not None:
+                job = updated
+                await sio.emit("job:status", job.model_dump(mode="json", by_alias=True), room=f"job:{job.id}", namespace="/ui")
+            else:
+                job = await services.jobs.get(job.id)
         if not job or job.status in {JobStatus.COMPLETED, JobStatus.NO_DATA, JobStatus.FAILED, JobStatus.CANCELLED}:
             await services.runners.release_job(runner.id, runner.current_job_id)
     current = await services.runners.get(runner.id)
-    return {"ok": True, "activeJobId": current.current_job_id if current else None}
+    return {"ok": True, "activeJobId": current.current_job_id if current else None, **stop_ack}
 
 
 @sio.on('network:problem', namespace='/runner')

@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import {retireReportPage, stableDocumentRead, isConnectionError} from './page-recovery.mjs';
-import {imageBytes, runImageCommand} from './image-pipe.mjs';
+import {createValidationGuard, isValidationStop} from './validation-guard.mjs';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {inspectControls,selectorOverrides} from './ui-health-contract.mjs';
@@ -31,6 +31,7 @@ if (!LOCAL_FIXTURE && (target.origin !== 'https://analytics.parivahan.gov.in' ||
 let browser, browserPromise, context, page, active, optionsBusy = false, authRequired = false, stopping = false;
 let optionsCancellation = null;
 let pageNeedsReset = false;
+let pendingValidationStop = null;
 const socket = io(`${API}/runner`, {autoConnect: false, transports: ['websocket'], auth: {
   runnerId: ID, runnerName: process.env.VAHAN_RUNNER_NAME || 'Chromium Playwright', token: TOKEN,
   source: 'new', engine: 'playwright', version: '0.2.0',
@@ -55,18 +56,41 @@ async function ack(event, payload, timeout = 15_000) {
 function assertCurrent(job) {
   if (!job || job !== active || job.cancelled) throw new Error('Job was cancelled.');
 }
+async function recoverWorker() {
+  const pending = pendingValidationStop;
+  const recovered = await ack('runner:recover', {
+    activeJobId: active?.jobId || null,
+    ...(pending ? {validationStop: pending} : {}),
+  });
+  if (pending) {
+    if (!recovered.validationStopAccepted || recovered.validationStopJobId !== pending.jobId) {
+      throw new Error('VALIDATION_STOP_NOT_CONFIRMED: the worker stop requires server reconciliation.');
+    }
+    if (pendingValidationStop === pending) pendingValidationStop = null;
+  }
+  return recovered;
+}
+function validationFor(job) {
+  return job.validationGuard ||= createValidationGuard(error => {
+    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA') return;
+    void fail(error, job).catch(error => console.error(error.message));
+  });
+}
 async function submitCaptchaInternal(job, captchaId, value) {
-  if (!job || job.status !== 'WAITING_CAPTCHA') return {ok: false, error: 'Stale job.'};
+  if (!job || job !== active || job.cancelled || job.finishing || job.status !== 'WAITING_CAPTCHA') return {ok: false, error: 'Stale job.'};
   try {
+    validationFor(job).check();
     const current = await page.evaluate(() => globalThis.vahanDriver.captureCaptcha());
     if (current.captchaId !== captchaId) {
       await challenge('captcha:refreshed', job); return {ok: true};
     }
     assertCurrent(job);
+    validationFor(job).check();
     if (job.status !== 'WAITING_CAPTCHA') return {ok: false, error: 'Submission is already in progress.'};
     // Claim the local submission synchronously, then persist the state before
     // clicking Apply. UI submissions may already have set it in the backend.
     job.status = 'SUBMITTING';
+    validationFor(job).stopWaiting();
     await status('SUBMITTING', undefined, job);
     const verified = await page.evaluate(config => globalThis.vahanDriver.verifyFilters(config), normalizeJobFilters(job.filters));
     assertCurrent(job);
@@ -87,14 +111,16 @@ async function submitCaptchaInternal(job, captchaId, value) {
   }
 }
 async function refreshCaptchaInternal(job, captchaId) {
-  if (!job || job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
+  if (!job || job !== active || job.cancelled || job.finishing || job.status !== 'WAITING_CAPTCHA'
       || job.captchaId !== captchaId || job.refreshingCaptchaId) {
     return {ok: false, error: 'Stale CAPTCHA or job.'};
   }
   job.refreshingCaptchaId = captchaId;
   try {
+    // Reserve before awaiting the page; concurrent refreshes cannot share a slot.
+    validationFor(job).refresh();
     const captcha = await page.evaluate(id => globalThis.vahanDriver.refreshCaptcha(id), captchaId);
-    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
+    if (job !== active || job.cancelled || job.finishing || job.status !== 'WAITING_CAPTCHA'
         || job.captchaId !== captchaId) return {ok: false, error: 'Stale CAPTCHA or job.'};
     const update = {jobId: job.jobId, captchaId: captcha.captchaId};
     try {
@@ -102,19 +128,18 @@ async function refreshCaptchaInternal(job, captchaId) {
     } catch (error) {
       // The API may have committed the new challenge while its ACK was lost.
       // Repeating the same challenge is idempotent and restores the local ID.
-      if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA') throw error;
+      if (job !== active || job.cancelled || job.finishing || job.status !== 'WAITING_CAPTCHA') throw error;
       await ack('captcha:refreshed', update);
     }
-    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA') {
+    if (job !== active || job.cancelled || job.finishing || job.status !== 'WAITING_CAPTCHA') {
       return {ok: false, error: 'Stale CAPTCHA or job.'};
     }
     job.captchaId = captcha.captchaId;
-    autoSolveCaptcha(job, captcha.captchaId, captcha.imageDataUrl).catch(console.error);
     return {ok: true};
   } catch (error) {
     console.error('Failed to refresh captcha:', error.message);
     if (job === active && !job.cancelled && job.status === 'WAITING_CAPTCHA') {
-      await fail(new Error(`CAPTCHA_REFRESH_FAILED: ${error.message}`), job);
+      await fail(error.code ? error : new Error(`CAPTCHA_REFRESH_FAILED: ${error.message}`), job);
     }
     return {ok: false, error: error.message};
   } finally {
@@ -122,31 +147,6 @@ async function refreshCaptchaInternal(job, captchaId) {
   }
 }
 
-async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
-  try {
-    const { stdout } = await runImageCommand('tesseract', ['stdin', 'stdout', '-l', 'eng', '--psm', '6'], imageBytes(imageDataUrl), {
-      timeout: 3000, env: {...process.env, OMP_THREAD_LIMIT: '1'},
-    });
-    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
-        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
-
-    const rawText = stdout.trim();
-    const text = rawText.replace(/[^A-Z0-9]/ig, '').toUpperCase();
-    console.log('Image recognition finished. Validation text is excluded from logs.');
-    if (text.length === 6) {
-      console.log('Valid captcha detected, auto-submitting...');
-      await submitCaptchaInternal(job, captchaId, text);
-    } else {
-      console.log('Captcha length not 6, auto-refreshing...');
-      await refreshCaptchaInternal(job, captchaId);
-    }
-  } catch (err) {
-    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
-        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
-    console.error('Auto-OCR failed, auto-refreshing...', err.message);
-    await refreshCaptchaInternal(job, captchaId);
-  }
-}
 async function status(value, error, job = active) {
   assertCurrent(job);
   await ack('job:status', {jobId: job.jobId, status: value, ...(error ? {error} : {})});
@@ -238,14 +238,16 @@ async function snapshot(label, job = active) {
 }
 async function challenge(event = 'captcha:required', job = active) {
   assertCurrent(job);
+  validationFor(job).check();
   const captcha = await page.evaluate(() => globalThis.vahanDriver.captureCaptcha());
   assertCurrent(job); job.captchaId = captcha.captchaId;
   await ack(event, {jobId: job.jobId, captchaId: captcha.captchaId});
   assertCurrent(job); job.status = 'WAITING_CAPTCHA';
-  autoSolveCaptcha(job, captcha.captchaId, captcha.imageDataUrl).catch(console.error);
+  validationFor(job).wait();
 }
 async function fail(error, job = active) {
   if (!job || job !== active || job.cancelled) return;
+  job.validationGuard?.stopWaiting();
   if (isConnectionError(error)) {
     try {await ack('network:problem', {}, 12000);} catch {}
     if (job !== active || job.cancelled) return;
@@ -253,6 +255,9 @@ async function fail(error, job = active) {
   if (job.finishing) return; // Duplicate error paths must not retire another case's page.
   job.finishing = true;
   job.finishPromise = new Promise(resolve => {job.finish = resolve;});
+  if (isValidationStop(error)) {
+    pendingValidationStop = {jobId: job.jobId, error: error.message.slice(0, 1000)};
+  }
   let statusLost = false;
   try {
     // Capture diagnostics before retiring the damaged document. Keep the
@@ -260,7 +265,10 @@ async function fail(error, job = active) {
     pageNeedsReset = true;
     await snapshot('failure', job);
     await retireReportPage(page);
-    try { await status('FAILED', error.message, job); }
+    try {
+      await status('FAILED', error.message, job);
+      if (pendingValidationStop?.jobId === job.jobId) pendingValidationStop = null;
+    }
     catch (failure) { statusLost = true; console.error(failure.message); }
     if (active === job) active = null;
     await saveState().catch(error => console.error(error.message));
@@ -275,11 +283,17 @@ async function execute(job) {
   // A committed result can release the server's worker before its HTTP response arrives.
   // Wait for that response before accepting the next assignment on this browser.
   if (active?.finishing) await active.finishPromise;
+  // Never start another browser operation until a lost terminal ACK has been
+  // reconciled. This handshake contains IDs/errors only, not challenge data.
+  if (pendingValidationStop) {
+    const recovered = await recoverWorker();
+    if (recovered.activeJobId !== job.jobId) return;
+  }
   if (active || optionsBusy) {
     await ack('job:status', {jobId: job.jobId, status: 'FAILED', error: 'Browser worker is busy.'});
     return;
   }
-  const work = active = {...job, retries: 0, cancelled: false};
+  const work = active = {...job, cancelled: false};
   try {
     await status('OPENING_VAHAN', undefined, work);
     await ensurePage();
@@ -291,6 +305,7 @@ async function execute(job) {
   } catch (error) { await fail(error, work); }
 }
 async function finalizeResult(job, operation) {
+  job.validationGuard?.stopWaiting();
   job.finishing = true;
   job.finishPromise = new Promise(resolve => { job.finish = resolve; });
   try {
@@ -352,7 +367,7 @@ async function waitForResult(job) {
   if (active !== job || job.cancelled) return;
   if (authRequired || result.type === 'AUTH_REQUIRED') throw new Error('VAHAN_AUTH_REQUIRED');
   if (result.type === 'INVALID_CAPTCHA') {
-    if (++job.retries >= 3) throw new Error('CAPTCHA was rejected three times.');
+    validationFor(job).rejected();
     await challenge('captcha:invalid', job);
     return;
   }
@@ -391,9 +406,9 @@ async function waitForResult(job) {
 }
 socket.on('connect', async () => {
   try {
-    const recovered = await ack('runner:recover', {activeJobId: active?.jobId || null});
+    const recovered = await recoverWorker();
     if (active && recovered.activeJobId !== active.jobId) {
-      active.cancelled = true; active = null; await page?.close().catch(() => {});
+      active.cancelled = true; active.validationGuard?.stopWaiting(); active = null; await page?.close().catch(() => {});
     }
     await launch();
   } catch (error) { console.error('Browser initialization failed:', error.message); }
@@ -430,7 +445,7 @@ socket.on('captcha:refresh', async (payload, respond) => {
   respond(await refreshCaptchaInternal(job, payload.captchaId));
 });
 socket.on('job:cancelled', async ({jobId}) => {
-  if (active?.jobId === jobId) { const cancelled = active; cancelled.cancelled = true; pageNeedsReset = true; await retireReportPage(page); if (active === cancelled) active = null; }
+  if (active?.jobId === jobId) { const cancelled = active; cancelled.cancelled = true; cancelled.validationGuard?.stopWaiting(); pageNeedsReset = true; await retireReportPage(page); if (active === cancelled) active = null; }
 });
 async function runnerOptions(request, respond) {
   if (active?.finishing) await active.finishPromise;
@@ -533,6 +548,7 @@ createServer((request, response) => {
 }).listen(3001, '0.0.0.0');
 async function stop() {
   if (stopping) return; stopping = true; clearInterval(timer);
+  active?.validationGuard?.stopWaiting();
   await saveState().catch(() => {}); socket.disconnect(); await browser?.close(); process.exit(0);
 }
 process.on('SIGTERM', stop); process.on('SIGINT', stop);

@@ -35,10 +35,10 @@ class RetryCheckpoints(unittest.IsolatedAsyncioTestCase):
         session=uuid4();tasks=[QueueTaskInput(name=f'Case {i}',filters={'states':['State'],'rtos':[f'Office {i}'],'fromYear':'2025','toYear':'2025','categoryGroups':['Two Wheeler'],'fuels':['PURE EV']}) for i in range(count)]
         await self.repo.start(session,self.owner,tasks,3)
         return session,tasks
-    async def finish(self,item,status):
+    async def finish(self,item,status,error=None):
         async with engine.begin() as c:
             job=Job.model_validate(await c.scalar(select(db.jobs.c.payload).where(db.jobs.c.id==item['jobId'])))
-            job.status=status;job.error=f'Failure at {job.scenario_name}' if status==JobStatus.FAILED else None;job.touch()
+            job.status=status;job.error=(error or f'Failure at {job.scenario_name}') if status==JobStatus.FAILED else None;job.touch()
             await c.execute(update(db.jobs).where(db.jobs.c.id==str(job.id)).values(status=status.value,payload=job_document(job),updated_at=now()))
             await release_runner(c,job.runner_id,job.id)
         return await self.repo.settle(UUID(item['task']['sessionId']) if 'sessionId' in item['task'] else self.session,self.owner,item['task']['position'])
@@ -147,6 +147,71 @@ class RetryCheckpoints(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(all(task['attempts']==1 for task in snapshot['tasks']))
         self.assertTrue(all(counts.values()))
         async with engine.connect() as c:self.assertEqual(await c.scalar(select(func.count()).select_from(db.jobs)),120)
+
+    async def test_validation_stop_is_excluded_from_checkpoint_and_final_recovery(self):
+        self.session,_=await self.start(2)
+        blocked=await self.claim(1)
+        stopped=await self.finish(blocked,JobStatus.FAILED,'CAPTCHA_REFRESH_LIMIT: operator review required')
+        self.assertEqual(stopped['status'],'FAILED');self.assertEqual(stopped['failures'],1)
+        self.assertTrue(stopped['requiresOperator']);self.assertFalse(stopped['recoveryPending'])
+        normal=await self.claim(2);self.assertEqual(normal['task']['position'],1)
+        await self.finish(normal,JobStatus.FAILED)
+        checkpoint=await self.claim(3);self.assertEqual(checkpoint['task']['position'],1)
+        self.assertEqual(checkpoint['task']['attempts'],2)
+        await self.finish(checkpoint,JobStatus.FAILED)
+        final=await self.claim(1);self.assertEqual(final['task']['position'],1)
+        self.assertEqual(final['task']['attempts'],3)
+        await self.finish(final,JobStatus.COMPLETED)
+        self.repo=BatchQueueRepository()
+        snapshot=await self.repo.snapshot(self.session,self.owner)
+        self.assertTrue(snapshot['retry']['complete']);self.assertEqual(snapshot['retry']['failedRemaining'],1)
+        self.assertEqual(snapshot['tasks'][0]['attempts'],1)
+        self.assertEqual(snapshot['tasks'][0]['status'],'FAILED')
+        self.assertFalse(await self.repo.needs_work(self.session,self.owner))
+        for worker in (1,2,3):self.assertEqual((await self.claim(worker))['type'],'done')
+        async with engine.connect() as c:self.assertEqual(await c.scalar(select(func.count()).select_from(db.jobs)),4)
+
+    async def test_operator_only_queue_finishes_with_a_visible_error(self):
+        self.session,_=await self.start(1)
+        await self.finish(await self.claim(1),JobStatus.FAILED,'CAPTCHA_WAIT_TIMEOUT: operator review required')
+        snapshot=await self.repo.snapshot(self.session,self.owner)
+        self.assertEqual(snapshot['retry']['phase'],'DONE')
+        self.assertEqual(snapshot['retry']['failedRemaining'],1)
+        self.assertFalse(await self.repo.needs_work(self.session,self.owner))
+        for worker in (1,2,3):self.assertEqual((await self.claim(worker))['type'],'done')
+
+    async def test_old_pending_final_target_cannot_reopen_an_operator_stop(self):
+        self.session,_=await self.start(1)
+        await self.finish(await self.claim(1),JobStatus.FAILED,'CAPTCHA_REJECTION_LIMIT: operator review required')
+        async with engine.begin() as c:
+            policy=await c.scalar(select(db.app_settings.c.value).where(db.app_settings.c.key==RETRY_KEY+str(self.session)))
+            await c.execute(update(db.app_settings).where(db.app_settings.c.key==RETRY_KEY+str(self.session)).values(
+                value={**policy,'phase':'FINAL','finalPassStarted':True,'finalTargets':[0]}))
+            await c.execute(update(db.batch_queue_tasks).where(db.batch_queue_tasks.c.session_id==str(self.session)).values(status='PENDING'))
+        self.repo=BatchQueueRepository()
+        self.assertEqual((await self.claim(1))['type'],'done')
+        snapshot=await self.repo.snapshot(self.session,self.owner)
+        self.assertEqual(snapshot['tasks'][0]['status'],'FAILED')
+        self.assertEqual(snapshot['tasks'][0]['attempts'],1)
+        self.assertEqual(snapshot['tasks'][0]['failures'],1)
+
+    async def test_explicit_successful_retry_can_reconcile_a_stopped_case(self):
+        self.session,tasks=await self.start(1)
+        original=await self.claim(1)
+        await self.finish(original,JobStatus.FAILED,'CAPTCHA_WAIT_TIMEOUT: operator review required')
+        self.assertEqual((await self.claim(2))['type'],'done')
+        # Simulate the durable successful outcome of an explicit operator retry,
+        # not an automatic claim or a real CAPTCHA submission.
+        retry=Job(runnerId='playwright-2',sessionId=self.session,ownerUsername=self.owner,
+                  filters=tasks[0].filters,scenarioName=tasks[0].name,
+                  retryOfJobId=UUID(original['jobId']),status=JobStatus.COMPLETED)
+        await services.jobs.create(retry)
+        snapshot=await self.repo.snapshot(self.session,self.owner)
+        recovered=snapshot['tasks'][0]
+        self.assertEqual(recovered['status'],'COMPLETED');self.assertEqual(recovered['attempts'],2)
+        self.assertFalse(recovered['requiresOperator']);self.assertIsNone(recovered['error'])
+        self.assertEqual(snapshot['retry']['failedRemaining'],0)
+        self.assertEqual((await self.claim(3))['type'],'done')
 
     async def test_completed_historical_queue_is_not_reopened_by_read(self):
         self.session,_=await self.start(1)
