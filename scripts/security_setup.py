@@ -32,8 +32,6 @@ def provision(path, tenant='legacy', api_port='8000', web_port='5173', public_or
         'VAHAN_UI_AUTH_TOKEN_SECRET': secrets.token_hex(48),
         'VAHAN_BROWSER_STATE_KEY': base64.urlsafe_b64encode(os.urandom(32)).decode(),
         'VAHAN_MFA_ENCRYPTION_KEY': base64.urlsafe_b64encode(os.urandom(32)).decode(),
-        'VAHAN_SOC_INGEST_KEY': secrets.token_hex(32),
-        'VAHAN_SOC_BACKUP_KEY': secrets.token_hex(32),
         'VAHAN_DB_RUNTIME_PASSWORD': secrets.token_hex(32),
         'VAHAN_DB_MIGRATION_PASSWORD': secrets.token_hex(32),
         'VAHAN_DB_BACKUP_PASSWORD': secrets.token_hex(32),
@@ -44,7 +42,7 @@ def provision(path, tenant='legacy', api_port='8000', web_port='5173', public_or
         'VAHAN_PUBLIC_ORIGIN': origin,
         'VAHAN_ALLOWED_ORIGINS': origin if public_origin else f'{origin},http://localhost:{web_port}',
         'VAHAN_COOKIE_SECURE': 'true' if origin.startswith('https:') else 'false',
-        'VAHAN_IMAGE_NAMESPACE': 'vahan-automation', 'VAHAN_IMAGE_TAG': 'soc',
+        'VAHAN_IMAGE_NAMESPACE': 'vahan-automation', 'VAHAN_IMAGE_TAG': 'local',
         'VAHAN_BACKUP_IDENTITY_FILE': f'.secrets/{tenant}-backup.agekey',
     }
     local = ROOT / 'apps/api-server/.env'

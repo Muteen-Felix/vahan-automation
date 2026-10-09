@@ -65,7 +65,6 @@ async def configure(before):
                 await connection.execute(text('REVOKE UPDATE, DELETE, TRUNCATE ON audit_events FROM vahan_app'))
                 await connection.execute(text('REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON alembic_version FROM vahan_app'))
                 await connection.execute(text('REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON deployment_identity FROM vahan_app'))
-                await connection.execute(text('REVOKE DELETE, TRUNCATE ON soc_outbox FROM vahan_app'))
                 # Bootstrap is a migration operation. The long-running API
                 # receives neither this password nor administrative DB keys.
                 from app.db import schema as db

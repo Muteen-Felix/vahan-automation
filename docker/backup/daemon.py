@@ -1,14 +1,12 @@
 """Hourly encrypted DB snapshots using a read-only role and public age recipient."""
 from datetime import datetime,timezone
 import hashlib
-import hmac
 import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import time
-from urllib.request import Request,build_opener,ProxyHandler
 from uuid import uuid4
 
 DATA=Path('/data')
@@ -22,14 +20,6 @@ def notify(name,payload):
     event={'id':str(uuid4()),'timestamp':datetime.now(timezone.utc).isoformat(),'tenantId':TENANT,
            'service':'backup','actor':None,'event':name,'payload':payload,'context':{}}
     print(json.dumps(event),flush=True)
-    body=json.dumps(event).encode()
-    signature=hmac.new(os.environ['VAHAN_SOC_BACKUP_KEY'].encode(),body,hashlib.sha256).hexdigest()
-    try:
-        request=Request('http://soc:3100/events',data=body,headers={'Content-Type':'application/json',
-            'X-SOC-Signature':signature,'X-SOC-Source':'backup'})
-        with build_opener(ProxyHandler({})).open(request,timeout=5):pass
-    except Exception:
-        print(json.dumps({'event':'backup.notification_failed','tenantId':TENANT}),flush=True)
 
 
 def snapshot():

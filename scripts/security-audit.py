@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect a redacted SOC snapshot without changing services or application data.
+"""Collect a redacted security snapshot without changing services or application data.
 
 Run: python3 scripts/security-audit.py --output /tmp/vahan-security.json
 Only Docker metadata, GET requests, file hashes and read-only SQL are collected.

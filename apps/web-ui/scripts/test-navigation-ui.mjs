@@ -50,6 +50,7 @@ try {
   }
   await nav.getByRole('link',{name:'Settings',exact:true}).click();
   await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
+  assert.equal(await page.getByRole('heading',{name:'Security operations',exact:true}).count(),0);
   await page.getByRole('button',{name:'Account',exact:true}).click();
   const logout=page.getByRole('button',{name:'Log out',exact:true});
   assert.equal(await logout.evaluate(node=>Boolean(node.closest('#settings .settings-intro'))),true,'Regular users can log out in Settings');

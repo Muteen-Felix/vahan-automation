@@ -4,11 +4,11 @@
 
 | Thuộc tính | Giá trị |
 | --- | --- |
-| Mã tài liệu / phiên bản | VAHAN-QA-SYSTEM-001 / 1.0 |
+| Mã tài liệu / phiên bản | VAHAN-QA-SYSTEM-001 / 1.1 |
 | Ngày lập | 08/10/2026, giờ Việt Nam UTC+07:00 |
-| Đối tượng | Checkout `/Users/mac/Desktop/vahan-automation`; FastAPI/Socket.IO, React, Playwright/Chromium, PostgreSQL, Nginx, document processor, SOC collector và công cụ vận hành |
+| Đối tượng | Checkout `/Users/mac/Desktop/vahan-automation`; FastAPI/Socket.IO, React, Playwright/Chromium, PostgreSQL, Nginx, document processor và công cụ vận hành |
 | Snapshot source | HEAD `2bc878e` và working tree tại lúc lập tài liệu; SHA-256 tổng hợp `32a774db44990b793b06dc99c38411267cab561f5aa054692d2c68811b350210` trên 167 file source/config công khai; có thay đổi chưa commit |
-| Số lượng | **354 test case gốc**, 29 nhóm; **85 thao tác HTTP `/api`**, **17 sự kiện Socket.IO đầu vào**; có thêm biến thể bắt buộc theo ma trận |
+| Số lượng | **340 test case gốc**, 28 nhóm; **84 thao tác HTTP `/api`**, **17 sự kiện Socket.IO đầu vào**; có thêm biến thể bắt buộc theo ma trận |
 | Trạng thái thực thi | **Toàn bộ test case trong tài liệu: NOT RUN.** Công việc này đọc source/tài liệu/harness và kiểm tra tính nhất quán tài liệu; không chạy batch, pentest, load, migration, restore hoặc fault injection trên hệ thống thật |
 | Ý nghĩa “bao phủ toàn hệ thống” | Bao phủ thành phần, giao diện, ranh giới tin cậy và rủi ro được phát hiện trong snapshot; API/parameter/state matrix mở rộng thành run instances. Không suy ra mọi tổ hợp vô hạn hoặc mọi lỗi ngoài thực tế đã được kiểm tra |
 | Đầu ra khi nghiệm thu | Run report theo release, test-instance results, dữ liệu đối soát, log/trace đã che secret, defects, số đo SLO/RPO/RTO và biên bản ký duyệt |
@@ -28,7 +28,7 @@
 
 | Mã | Snapshot/khác biệt phát hiện | Cách đưa vào test |
 | --- | --- | --- |
-| BL-01 | Source có cookie/CSRF, MFA, tenant deployment guard, rate limit, SOC và document service mới; không xác minh chúng đã deploy live | Test cả happy/negative/recovery; không lấy báo cáo SOC cũ làm kết quả sau remediation |
+| BL-01 | Source có cookie/CSRF, MFA, tenant deployment guard, rate limit và document service mới; không xác minh chúng đã deploy live | Test cả happy/negative/recovery; cần kiểm tra trên release hiện tại |
 | BL-02 | Cùng deployment có kho báo cáo dùng chung và hai role admin/user; chưa phải shared SaaS có tenant membership/RLS đầy đủ | `P-TENANT`: một DB/deployment mỗi tenant là baseline; thử A/B hai deployment. Chọn shared DB thì TC-ACL-011 là gate bổ sung bắt buộc |
 | BL-03 | `AnnualReports.tsx` còn mở UpdateHistory; README có câu nói đã bỏ | Kiểm thử UI đang có và API cũ; Product quyết định giữ/gỡ rồi cập nhật baseline, không tự bỏ khỏi coverage |
 | BL-04 | UI hiện chỉ Export all khi search rỗng; API export vẫn hỗ trợ State/RTO | TC-REP-004 và TC-REP-005 kiểm tra riêng hai contract; không giả định UI có nút export filtered |
@@ -53,7 +53,7 @@
 | NOT RUN / PASS / FAIL | Chưa chạy / chạy đủ bước và đủ bằng chứng đạt / có kết quả trái mong đợi |
 | BLOCKED / N/A | Không thể chạy do dependency hoặc GAP có lý do; N/A chỉ dùng khi ngoài scope được Product/QA ký duyệt. Không đổi BLOCKED thành PASS |
 
-Ưu tiên test không đồng nghĩa severity lỗi. Defect cần đánh giá riêng: Critical (rò quyền/tenant, mất dữ liệu, không thể vận hành an toàn), High (chức năng chính/recovery hỏng), Medium và Low. QA lead quản lý coverage; Backend/RPA/Frontend sửa chức năng; DBA/DevOps/SOC chịu bằng chứng vận hành; Product chốt policy và scope.
+Ưu tiên test không đồng nghĩa severity lỗi. Defect cần đánh giá riêng: Critical (rò quyền/tenant, mất dữ liệu, không thể vận hành an toàn), High (chức năng chính/recovery hỏng), Medium và Low. QA lead quản lý coverage; Backend/RPA/Frontend sửa chức năng; DBA/DevOps chịu bằng chứng vận hành; Product chốt policy và scope.
 
 ## 3. Ma trận tác động nội vi và ngoại vi
 
@@ -65,7 +65,6 @@
 | Scheduler → queue/worker | Due slots, clock/epoch, pause/resume/stop/delete races, leader failover | SCH, QUEUE, RETRY, OPS |
 | Worker → VAHAN | DOM/options đổi, network/HTTP lỗi, rate limit, stale results, validation, download sai | PROF, UH, RUN, CAP, NET |
 | API → document service | Malformed file, ZIP/XML abuse, CPU/RAM/time limit, process crash, network timeout | FILE, SEC, PERF |
-| API → SOC | Redaction, chữ ký, tenant, delivery replay, outbox, disk đầy, rule và ticket | SOC, ACL, OPS |
 | VAHAN/data source thay đổi | Hãng/RTO mới/mất, tổng không đổi nhưng tháng đổi, file thiếu, snapshot khác thời điểm | DATA, HIST, MKR, E2E |
 | Tác động tài khoản nội bộ | Insider admin, demote admin cuối, offboarding, đổi password/khóa user đang chạy | AUTH, ACL, ACCT, SCH, SEC |
 | Tác động khách hàng/tác nhân ngoài | Token giả/replay, Origin sai, upload độc hại, request burst, file/ID đã biết | API, ACL, SEC, SOCK |
@@ -83,13 +82,13 @@
 | Môi trường | Dùng cho | Ràng buộc |
 | --- | --- | --- |
 | E-UNIT | Parser/policies/codec/timing/state machine với fixtures | Không kết nối portal thật hoặc DB production; fake clock có thể kiểm soát |
-| E-INT | API/SQL/socket/scheduler giữa các service | DB disposable có tên riêng; secrets test; fixture VAHAN và SOC/document servers; ports/volumes tách |
+| E-INT | API/SQL/socket/scheduler giữa các service | DB disposable có tên riêng; secrets test; fixture VAHAN và document servers; ports/volumes tách |
 | E-STAGE-A/B | Deployment tenant A/B, integration/fault/load/security | Hai DB/key/network/runtime độc lập; dữ liệu tổng hợp; không dùng dữ liệu/credential doanh nghiệp thật |
 | E-BROWSER | Chromium/Chrome/Edge/Firefox/Safari theo support matrix | Browser profile test; viewport/zoom/privacy modes được ghi trong run manifest |
 | E-UAT | Kiểm thử portal live được phép và đối soát nghiệp vụ | Mẫu nhỏ đã duyệt, throttle hợp lệ, quy trình validation hợp lệ; không load/fault/pentest lên VAHAN thật |
 | E-DR | Restore/release rehearsal | Host/volume khác; kiểm tra checksum và tenant trước cutover; không đè DB đang chạy |
 
-Trong công việc lập tài liệu này không thực thi bất kỳ tác động phá hủy nào. Khi chạy suite, chỉ fault/load/abuse trên E-INT/E-STAGE/E-DR có snapshot và quyền đã cấp. Không dùng `.docker.env` thật trong fixtures, log hoặc artifacts; không tự `down -v`, clear DB thật hay gửi tin SOC bên ngoài nếu chưa được cấp phạm vi.
+Trong công việc lập tài liệu này không thực thi bất kỳ tác động phá hủy nào. Khi chạy suite, chỉ fault/load/abuse trên E-INT/E-STAGE/E-DR có snapshot và quyền đã cấp. Không dùng `.docker.env` thật trong fixtures, log hoặc artifacts; không tự `down -v`, clear DB thật hay gửi thông báo bên ngoài nếu chưa được cấp phạm vi.
 
 ### Bộ dữ liệu chuẩn bị
 
@@ -103,7 +102,7 @@ Trong công việc lập tài liệu này không thực thi bất kỳ tác đ�
 | D-XLS | Workbook nhiều sheet; header/month/year chuẩn; giá trị dễ đối soát; OTHERS, Unicode, null và zero riêng; expected cells nhập tay/được QA review, không dùng chính parser under test tạo oracle |
 | D-XLS-DELTA | Snapshot t0/t1/equal-time; Maker/RTO mới/mất; tổng bằng nhau nhưng vector tháng khác; partial file và duplicate conflicts |
 | D-BADFILE | Empty/truncated/ZIP hỏng/giả extension/XML entity/formula CSV; sizes/row count từng biên; chỉ fixture an toàn, không thực thi mã độc thật |
-| D-STATE | Users/sessions/jobs/queue/retry phases/profile revisions/main rows/provenance/audit/outbox/browser state encrypted trước restart/backup |
+| D-STATE | Users/sessions/jobs/queue/retry phases/profile revisions/main rows/provenance/audit/browser state encrypted trước restart/backup |
 | D-FAULT | Fault proxy cho DNS/TCP/TLS/HTTP/latency; process/SQL barriers theo F-FAULT; clock được mock/điều khiển trong test, không đổi giờ host thật |
 | D-LOAD | Synthetic reports/history: 205/100k main rows, ≥1m historical jobs khi cần; 1/5/10 workers và 1/10/50 users; không PII thật |
 
@@ -155,7 +154,6 @@ Tại mỗi biên số/length/time, tạo ít nhất `min−1, min, min+1, max�
 | SLA-LOAD | Warm-up5min + steady30min; soak8h, release-critical24h; memory/connection/temp/PID không tăng vô hạn; tài nguyên có headroom được DevOps ký |
 | SLA-RPA | Không ấn định cases/min portal thật từ fixture. Measure p50/p95 từng phase/worker; queue chậm vượt deadline phải có stage/lý do, không “Preparing” im lặng |
 | SLA-DR | RPO≤15min, RTO≤60min là đề xuất; phải điều chỉnh và có restore drill bằng chứng trước cam kết |
-| SLA-SOC | Phát hiện≤5min và tiếp nhận P1≤15min là đề xuất; cần rule/collector/ticket và lịch trực thực tế |
 
 ## 6. Quy tắc mở rộng coverage
 
@@ -167,7 +165,7 @@ Tại mỗi biên số/length/time, tạo ít nhất `min−1, min, min+1, max�
 | M-SCH | TC-SCH và API matrix chạy mọi action create/start, toggle, pause, resume, stop, delete trên WAITING/PREPARING/RUNNING/PAUSING/PAUSED/RESUMING/COMPLETED/COMPLETED_WITH_ERRORS/ERROR/STOPPED; thêm owner, eligible queue, count và network intent guards |
 | M-CONCURRENCY | Mỗi mutation critical thử duplicate request, two actors, old callback, cancellation và mất ACK trước/sau commit; chạy ít nhất30 iterations race có barriers, không dựa timing ngẫu nhiên |
 | M-BROWSER | Critical flows trên browser support; viewport320/390/768/1024/1440/1920, zoom100/200/400%; pairwise cho tổ hợp ít rủi ro, exhaustive cho quyền/data invariants |
-| M-NET | Allowed links: browser→web; web→api; api→DB/runner/documents/SOC; runner→API/VAHAN/DNS cần thiết. Deny links: web/runner→DB, application→Docker socket, public→documents/SOC, tenantA→private services tenantB |
+| M-NET | Allowed links: browser→web; web→api; api→DB/runner/documents; runner→API/VAHAN/DNS cần thiết. Deny links: web/runner→DB, application→Docker socket, public→documents, tenantA→private services tenantB |
 | Run instance | ID dạng `TC-<group>-nnn.HTTP-xxx.principal.variant.environment.iteration`; một case parameterized có nhiều kết quả. Count case gốc không bằng count run instances hoặc coverage đã đạt |
 
 ## 7. Test case chi tiết
@@ -181,7 +179,7 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | ID | Ưu tiên / loại / căn cứ | Tình huống và tiền điều kiện | Bước thực hiện | Kết quả mong đợi |
 | --- | --- | --- | --- | --- |
 | TC-ENV-001 | P0 · O · SRC | Khởi động mới; DB sạch, cấu hình hợp lệ D-ENV. | 1) Chạy migration; 2) khởi động stack; 3) đọc health/ready. | Schema đúng head; bootstrap một admin; ready chỉ đạt sau DB và guard; không lộ secret. |
-| TC-ENV-002 | P0 · N · SRC | Thiếu signing key, MFA key, SOC key hoặc worker token trong production. | 1) Bỏ từng biến bắt buộc; 2) khởi động. | Từ chối cấu hình không an toàn; lỗi đủ chẩn đoán; không phục vụ session/job nửa khởi tạo. |
+| TC-ENV-002 | P0 · N · SRC | Thiếu signing key, MFA key hoặc worker token trong production. | 1) Bỏ từng biến bắt buộc; 2) khởi động. | Từ chối cấu hình không an toàn; lỗi đủ chẩn đoán; không phục vụ session/job nửa khởi tạo. |
 | TC-ENV-003 | P0 · S · SRC | DB thuộc tenant B; service cấu hình tenant A. | 1) Trỏ service A vào DB B; 2) khởi động. | Startup bị chặn; không bootstrap, sửa dữ liệu hay phát job vào tenant B. |
 | TC-ENV-004 | P0 · S · SRC | Runtime DB role có superuser/createdb/createrole/bypassrls. | 1) Cấp từng quyền trên DB test; 2) startup production. | Guard từ chối; runtime hợp lệ không có DDL/admin capability. |
 | TC-ENV-005 | P1 · R · SRC | Restart stack; đã có users, lịch và dữ liệu. | 1) Ghi snapshot D-STATE; 2) restart; 3) đối soát. | Mật khẩu không bị bootstrap ghi đè; SQL/queue giữ checkpoint; job dở dang có trạng thái truy vết. |
@@ -189,7 +187,7 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | TC-ENV-007 | P1 · O · SRC | Health và readiness khi PostgreSQL ngắt kết nối. | 1) Ngắt DB test; 2) gọi hai endpoint; 3) phục hồi. | Liveness không bị hiểu là readiness; ready báo không sẵn sàng; không trả DB lỗi giả thành healthy. |
 | TC-ENV-008 | P1 · O · CFG | Nginx/API origin cùng host và reverse proxy. | 1) Mở UI; 2) gọi API/socket; 3) tải sâu #settings. | Assets/API/socket định tuyến đúng; SPA không che lỗi API bằng HTML 200. |
 | TC-ENV-009 | P1 · N · SRC | Trùng port hoặc Docker không chạy; launcher trên OS mục tiêu. | 1) Chiếm port/stop Docker test; 2) chạy launcher. | Dừng với lỗi rõ; không kill dịch vụ khác, xóa volume hay ghi đè cấu hình. |
-| TC-ENV-010 | P1 · S · SRC | Service documents/SOC/DB ở mạng riêng. | 1) Kiểm tra connectivity matrix M-NET; 2) thử kết nối bị cấm. | Chỉ kết nối được cấp quyền; runner/web không đọc DB hoặc gọi Docker socket. |
+| TC-ENV-010 | P1 · S · SRC | Service documents/DB ở mạng riêng. | 1) Kiểm tra connectivity matrix M-NET; 2) thử kết nối bị cấm. | Chỉ kết nối được cấp quyền; runner/web không đọc DB hoặc gọi Docker socket. |
 
 ### 7.2. Đăng nhập, session và logout (AUTH)
 
@@ -561,7 +559,7 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | TC-API-007 | P1 · N · SRC | Endpoint gặp DB/network/processor pressure. | 1) Inject503/timeout/429; 2) client retry policy. | Error envelope/Retry-After/CORS đúng; không trả HTML giả JSON hoặc success giả. |
 | TC-API-008 | P1 · S · SRC | Origin allowlist, cookie CSRF và bearer/worker token trên mọi route. | 1) Chạy ma trận auth transport hợp lệ/sai. | Trust boundary nhất quán; endpoint alias/legacy không bypass security. |
 | TC-API-009 | P1 · F · SRC | Pagination/filter/sort trên list endpoints. | 1) Seed >2pages; 2) cập nhật khi đọc; 3) so count/order. | Không full-payload mặc định; limit hợp lệ; document snapshot/cursor behavior rõ. |
-| TC-API-010 | P1 · S · SRC | Health/docs/schema/root và internal documents/SOC routes. | 1) Probe anon ở dev/production/ngress. | Chỉ public endpoints theo policy; production docs off; internal routes không bị expose qua proxy. |
+| TC-API-010 | P1 · S · SRC | Health/docs/schema/root và internal documents routes. | 1) Probe anon ở dev/production/ngress. | Chỉ public endpoints theo policy; production docs off; internal routes không bị expose qua proxy. |
 
 ### 7.21. Socket.IO, realtime và reconnect (SOCK)
 
@@ -612,7 +610,7 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | TC-DB-003 | P0 · R · SRC | Pool10+overflow 5 cạn; timeout 5s. | 1) Giữ connections test; 2) gọi list/mutation. | 503 DATABASE_BUSY/Retry-After; bounded wait; không tự replay write. |
 | TC-DB-004 | P1 · N · SRC | Statement 60s/lock 5s/idle transaction 30s timeout. | 1) Giữ query/lock/transaction có kiểm soát. | Rollback/release; mã pressure đúng; không treo worker/API vô thời hạn. |
 | TC-DB-005 | P0 · C · SRC | Deadlock/serialization failure/connection invalidated. | 1) Inject SQLSTATE thuộc L-DB; 2) retry rõ ràng. | 503 recoverable; không commit partial hoặc tự nhân side effect. |
-| TC-DB-006 | P0 · R · SRC | DB restart/crash tại transaction main/queue/auth/outbox. | 1) Kill test DB tại barriers; 2) recover. | ACID giữ; dữ liệu/session/attempt/outbox không lệch; no healthy giả. |
+| TC-DB-006 | P0 · R · SRC | DB restart/crash tại transaction main/queue/auth. | 1) Kill test DB tại barriers; 2) recover. | ACID giữ; dữ liệu/session/attempt không lệch; no healthy giả. |
 | TC-DB-007 | P1 · P · SRC | Bulk concurrency 2, acquire2s; 10 workers import khác RTO. | 1) Saturate bulk slots và query nhỏ. | Heavy work bounded; lightweight requests vẫn đáp ứng SLO; slot release mọi exception. |
 | TC-DB-008 | P1 · P · SRC | Report sessions/job detail trên history lớn. | 1) Seed D-LOAD; 2) EXPLAIN và đo query/memory. | Pagination/count đúng; không tải historical payload/artifact toàn bộ chỉ để summary. |
 | TC-DB-009 | P0 · S · SRC | Runtime DML role, migrator, backup và audit permissions. | 1) Test GRANT/REVOKE bằng từng role. | Runtime không DDL/admin/audit update-delete; backup read-only; secrets không xuất logs. |
@@ -621,30 +619,9 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | TC-DB-012 | P1 · F · SRC | Source observed_at/saved_at và host timezone/NTP khác. | 1) Nhập t0/t1; 2) hiển thị/export. | TIMESTAMPTZ đúng UTC; UI UTC+7; không tự suy ngày từ tháng/năm filter. |
 | TC-DB-013 | P1 · F · SRC | GET /database/status khi DB bình thường/pressure; admin/member. | 1) Gọi endpoint; 2) so pool/connection stats. | Metrics đúng thời điểm và quyền; không lộ connection string/query parameters; metrics failure không fake healthy. |
 
-### 7.24. Audit, collector, cảnh báo và điều tra (SOC)
+### 7.24. An toàn ứng dụng, secrets và hardening (SEC)
 
-**Phụ trách:** SOC + AppSec + Backend. **Tác động:** Nội vi; collector/SIEM ngoại vi. **Nguồn:** `app/soc.py; audit_mutations; docker/soc/collector.py; app/db/schema.py`.
-
-| ID | Ưu tiên / loại / căn cứ | Tình huống và tiền điều kiện | Bước thực hiện | Kết quả mong đợi |
-| --- | --- | --- | --- | --- |
-| TC-SOC-001 | P0 · F · SRC | Login fail/success, MFA, password/role/reset, deny, export. | 1) Thực hiện sự kiện thật; 2) đối chiếu audit/outbox/collector. | Có actor/tenant/time/requestID/IP/action/outcome; export GET vẫn audit; không secret. |
-| TC-SOC-002 | P0 · S · SRC | Payload nested có password/token/cookie/recovery/browser state. | 1) Ghi audit fixture; 2) xem mọi sink. | Redact recursive và bearer/string secrets; không CRLF/JSON log injection; payload bounded. |
-| TC-SOC-003 | P0 · S · SRC | Collector signature sai/missing hoặc tenant khác. | 1) POST /events; 2) kiểm tra files/SQLite. | 401/403 không persist/alert; chỉ signed đúng tenant mới accepted202. |
-| TC-SOC-004 | P1 · B · SRC | Event empty/>1MiB, invalid UUID/event type/length và truncated. | 1) Gửi fixtures qua internal endpoint. | 400/413 bounded; không crash/thread leak hoặc nhận event không hợp lệ. |
-| TC-SOC-005 | P0 · R · SRC | Collector offline rồi online; API restart. | 1) Ghi events; 2) gián đoạn; 3) restore. | Outbox durable; backoff hữu hạn; delivered chỉ sau202; không mất event. |
-| TC-SOC-006 | P0 · C · SRC | Collector accept nhưng sender mất reply; ID replay. | 1) Replay signed sameID; 2) check event/alert counts. | Dedup theo ID; không nhân cảnh báo; ACK không dựa event timestamp giả. |
-| TC-SOC-007 | P0 · R · SRC | Crash giữa JSONL append/SQLite commit/outbox delivered. | 1) Gây lỗi ở từng barrier; 2) replay. | Không mất bằng chứng; duplicateID được nhận biết; không false multiple alerts. |
-| TC-SOC-008 | P1 · F · SRC | Threshold rules login5/10min, export3/60s, privilege/rate-limit. | 1) Inject dưới/đúng/trên thresholds; 2) kiểm tra alerts. | Rule/actor/severity/sourceEventID đúng; sự kiện quota429 không được giả successful export. |
-| TC-SOC-009 | P0 · S · SRC | API runtime bị chiếm: thử đọc/xóa audit/SOC files. | 1) Dùng quyền container/runtime role thực tế. | Không read/delete API của collector; audit append-only; mạng/volume/role tách biệt được chứng minh. |
-| TC-SOC-010 | P1 · R · SRC | Collector disk full hoặc audit persist failure. | 1) Inject storage failure; 2) đối soát business+outbox/log. | Lỗi quan sát được; không tuyên bố audit durable khi chưa persist; hồi phục có reconcile. |
-| TC-SOC-011 | P1 · O · GAP | Mất heartbeat/delivery backlog/clock skew cần cảnh báo vận hành. | 1) Dừng heartbeat hoặc tăng backlog. | Có rule/monitor và người nhận; chưa có detection end-to-end ghi GAP, không coi health200 là đủ SOC. |
-| TC-SOC-012 | P1 · O · CFG | SIEM/ticket/retention và trực xử lý doanh nghiệp. | 1) Diễn tập event P1; 2) kiểm tra nhận/triage/closure. | Evidence timestamp và owner đầy đủ; đạt SLA-SOC đã duyệt; retention/legal hold kiểm chứng. |
-| TC-SOC-013 | P0 · S · SRC | GET /security/status bằng admin/member/anonymous/worker. | 1) Gọi endpoint mới; 2) so source/DB và quyền. | Chỉ admin đọc; không lộ secret; tenant/pending/config flags đúng, configured không đồng nghĩa healthy. |
-| TC-SOC-014 | P1 · F · SRC | Collector backlog tăng rồi delivery muộn; đọc security status. | 1) Delay delivery; 2) so pending/timestamp với timeline. | Pending count đúng; ý nghĩa lastDeliveredEventAt nhất quán; không nhầm thời điểm tạo event với delivery thực. |
-
-### 7.25. An toàn ứng dụng, secrets và hardening (SEC)
-
-**Phụ trách:** AppSec + DevOps + QA. **Tác động:** Nội vi và tác nhân không tin cậy ngoại vi. **Nguồn:** `docker/nginx.conf; compose.yaml; security.py; SOC assessment; Dockerfiles`.
+**Phụ trách:** AppSec + DevOps + QA. **Tác động:** Nội vi và tác nhân không tin cậy ngoại vi. **Nguồn:** `docker/nginx.conf; compose.yaml; security.py; Dockerfiles`.
 
 | ID | Ưu tiên / loại / căn cứ | Tình huống và tiền điều kiện | Bước thực hiện | Kết quả mong đợi |
 | --- | --- | --- | --- | --- |
@@ -654,16 +631,16 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | TC-SEC-004 | P1 · S · SRC | CSP/frame/nosniff/referrer/permissions trên200/4xx/5xx. | 1) Đọc response Nginx/API; 2) thử frame. | Headers đúng cả lỗi; không clickjacking; font/connect chính đáng không phá app. |
 | TC-SEC-005 | P0 · S · CFG | HTTPS ingress, cert rotation, HTTP redirect và bypass API port. | 1) Test domain approved; 2) probe direct routes. | Không auth qua plaintext ngoài trust boundary; Secure cookie/HSTS ở ingress đúng policy. |
 | TC-SEC-006 | P0 · S · SRC | Secret scan repo/image/log/build/artifact/backup metadata. | 1) Scan fixture và manifest; 2) review findings. | Không embedded production keys; false positives được triage; không đưa password vào bằng chứng. |
-| TC-SEC-007 | P0 · S · SRC | Rotate runner/signing/Fernet/MFA/SOC keys. | 1) Rotate test keys; 2) replay old credentials/data. | Credential cũ revoke; ciphertext cũ theo kế hoạch reencrypt/restore; không mất dữ liệu do đổi key mù. |
+| TC-SEC-007 | P0 · S · SRC | Rotate runner/signing/Fernet/MFA keys. | 1) Rotate test keys; 2) replay old credentials/data. | Credential cũ revoke; ciphertext cũ theo kế hoạch reencrypt/restore; không mất dữ liệu do đổi key mù. |
 | TC-SEC-008 | P0 · S · SRC | Containers non-root/read-only/cap_drop/seccomp/no-new-privileges. | 1) Inspect runtime; 2) thử writes/escalation có kiểm soát. | Chỉ tmpfs cần thiết ghi được; không Docker socket/privileged/host mounts trái policy. |
 | TC-SEC-009 | P1 · S · SRC | CPU/RAM/PID/log limits và disk growth. | 1) Tạo tải có giới hạn; 2) inspect caps/rotation. | Caps thật áp dụng; không ảnh hưởng host/người dùng khác; log retention không tăng vô hạn. |
-| TC-SEC-010 | P0 · S · CFG | Insider admin đổi quyền/export/xóa history trái quy trình. | 1) Diễn tập thay đổi đã duyệt; 2) kiểm tra audit/SOC. | Không vượt trust boundary; nhạy cảm truy vết/phê duyệt theo enterprise policy. |
+| TC-SEC-010 | P0 · S · CFG | Insider admin đổi quyền/export/xóa history trái quy trình. | 1) Diễn tập thay đổi đã duyệt; 2) kiểm tra audit. | Không vượt trust boundary; nhạy cảm truy vết/phê duyệt theo enterprise policy. |
 | TC-SEC-011 | P1 · S · CFG | Dependency/OS image/SBOM/signature/release digest. | 1) Scan source/lockfiles/images; 2) verify artifact. | Findings reachable triage; critical/high unresolved theo gate; đúng digest đã test mới deploy. |
 | TC-SEC-012 | P1 · S · CFG | Credential/phishing/session theft trong thiết bị bị mất. | 1) Diễn tập revoke/offboard; 2) replay session test. | MFA/revoke giảm phạm vi; incident evidence đủ; không tự coi MFA chữa được mọi session theft. |
 
-### 7.26. Migration, backup, restore và disaster recovery (OPS)
+### 7.25. Migration, backup, restore và disaster recovery (OPS)
 
-**Phụ trách:** DBA + DevOps + SOC + QA. **Tác động:** Nội vi và hạ tầng ngoại vi. **Nguồn:** `migrations/versions/*; initialize_database.py; import_legacy.py; scripts/backup-docker.py; deployment.md`.
+**Phụ trách:** DBA + DevOps + QA. **Tác động:** Nội vi và hạ tầng ngoại vi. **Nguồn:** `migrations/versions/*; initialize_database.py; import_legacy.py; scripts/backup-docker.py; deployment.md`.
 
 | ID | Ưu tiên / loại / căn cứ | Tình huống và tiền điều kiện | Bước thực hiện | Kết quả mong đợi |
 | --- | --- | --- | --- | --- |
@@ -675,14 +652,14 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | TC-OPS-006 | P0 · F · SRC | Backup khi scheduled batch/SQL commits hoạt động. | 1) pg_dump snapshot test; 2) restore clone. | Consistent dump; DB và key/browser state theo manifest; không giả backup thành công khi command fail. |
 | TC-OPS-007 | P0 · S · GAP | Backup role tối thiểu, encrypted/offsite/immutable. | 1) Kiểm tra script/quyền/archive; 2) restore thử. | Read-only backup role; mã hóa/key tách quản lý; thiếu control ghi GAP, quyền600 không thay encryption. |
 | TC-OPS-008 | P0 · R · CFG | Restore DB+Fernet/MFA keys lên host mới. | 1) Restore môi trường riêng; 2) read/login/browser state. | Checksum/row counts/tenant đúng; ciphertext giải được; session/job recovery theo policy. |
-| TC-OPS-009 | P0 · R · CFG | Restore cũ: lịch quá hạn, job active, outbox chưa gửi. | 1) Khởi động clone từ backup tại thời điểm đó. | Không tự Apply/replay writes từ snapshot không rõ; checkpoint/revoke/reconcile rõ. |
+| TC-OPS-009 | P0 · R · CFG | Restore cũ: lịch quá hạn, job active. | 1) Khởi động clone từ backup tại thời điểm đó. | Không tự Apply/replay writes từ snapshot không rõ; checkpoint/revoke/reconcile rõ. |
 | TC-OPS-010 | P0 · O · CFG | Host power loss/OS reboot/Docker restart/OOM. | 1) Gây fault staging tại điểm F-FAULT; 2) recover. | Đạt RPO/RTO đã duyệt; không duplicate/lost committed result; timeline evidence đủ. |
 | TC-OPS-011 | P1 · O · SRC | Launch/stop/restart scripts và Web-only deployment. | 1) Test active-job safeguards; 2) update đúng service. | Không recreate API/DB/runner ngoài scope; không down-v; preserves volume/secrets. |
 | TC-OPS-012 | P1 · R · CFG | Rollback release sau schema thay đổi. | 1) Deploy new trên clone; 2) rollback theo runbook. | Compatibility/migration policy rõ; không downgrade mất dữ liệu hoặc dùng keys/cookie không tương thích. |
 | TC-OPS-013 | P1 · O · CFG | Backup quá hạn/corrupt/offsite unavailable; restore drill định kỳ. | 1) Giả từng failure; 2) thử fallback. | Alert và owner; kiểm tra checksum trước cutover; không ghi backup success giả. |
 | TC-OPS-014 | P1 · O · CFG | NTP skew, license/policy VAHAN, thay đổi host/network/firewall. | 1) Diễn tập thay đổi cấu hình đã duyệt. | Login/MFA/lịch/data timestamp đúng hoặc lỗi rõ; tài liệu/runbook được cập nhật cùng release. |
 
-### 7.27. Tải, tài nguyên và độ ổn định (PERF)
+### 7.26. Tải, tài nguyên và độ ổn định (PERF)
 
 **Phụ trách:** Performance QA + DevOps + DBA. **Tác động:** Nội vi; tải khách hàng và network ngoại vi. **Nguồn:** `db/pressure.py; annual_export.py; document_worker.py; compose.yaml; các harness fixture`.
 
@@ -699,7 +676,7 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | TC-PERF-009 | P1 · P · CFG | VAHAN chậm/rate-limit với throttle hợp lệ. | 1) Controlled fixture; 2) small authorized live sample. | Retry/backoff không khuếch đại tải; live sample không được dùng làm load test portal. |
 | TC-PERF-010 | P1 · P · CFG | Load giảm sau spike và service capacity thay đổi. | 1) Ramp-up/down; 2) tiếp tục workload bình thường. | Resources/queue recover; không semaphore leak, backlog bị bỏ hoặc degraded state vĩnh viễn. |
 
-### 7.28. Nghiệm thu toàn luồng và đối soát toàn dữ liệu (E2E)
+### 7.27. Nghiệm thu toàn luồng và đối soát toàn dữ liệu (E2E)
 
 **Phụ trách:** QA lead + Product + Backend + RPA + DBA. **Tác động:** Toàn bộ nội vi và ngoại vi. **Nguồn:** `Toàn bộ thành phần trong A-API/A-SOCKET và ma trận yêu cầu R-TRACE`.
 
@@ -712,9 +689,9 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | TC-E2E-005 | P0 · S · SRC | Hai deployment A/B đồng thời; admin/member/worker sai danh tính. | 1) Run/exfiltration-negative test trên cảHTTP/socket/files. | Không đọc/ghi cross-deployment; enterprise metadata riêng; same-deployment shared data đúng policy. |
 | TC-E2E-006 | P0 · F · CFG | Toàn State/RTO trong profile so với baseline VAHAN độc lập. | 1) Lấy scope oracle đã duyệt; 2) chạy; 3) đối soát case/cell. | Không missing/duplicate; every case có committed/no-data/failure;100% known plan không thay full-source proof. |
 | TC-E2E-007 | P0 · F · GAP | Maker incremental so với full crawl cùng source snapshot. | 1) Tạo delta giữ/đổi tổng; 2) incremental; 3) full-scan oracle. | Khác biệt dữ liệu0; phạm vi/refresh không bỏ office; chưa có orchestrator thì chưa nghiệm thu thay manual. |
-| TC-E2E-008 | P0 · O · CFG | DR+SOC+release production rehearsal. | 1) Restore clone/revoke incident/deploy digest; 2) sign-off. | Đạt gates G-EXIT và RPO/RTO/SOC; evidence theo release; ngoại lệ có owner/hạn, không pass chỉ từ build. |
+| TC-E2E-008 | P0 · O · CFG | DR+release production rehearsal. | 1) Restore clone/revoke incident/deploy digest; 2) sign-off. | Đạt gates G-EXIT và RPO/RTO; evidence theo release; ngoại lệ có owner/hạn, không pass chỉ từ build. |
 
-### 7.29. Đa nền tảng, utilities và CI/release (PLAT)
+### 7.28. Đa nền tảng, utilities và CI/release (PLAT)
 
 **Phụ trách:** QA + DevOps + Engineering. **Tác động:** Nội vi và OS/supply chain ngoại vi. **Nguồn:** `.github/workflows/platform.yml; scripts/setup-docker.py; Dockerfiles; test_ocr_platform.py`.
 
@@ -726,7 +703,7 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | TC-PLAT-004 | P1 · O · SRC | Repo path có dấu cách/Unicode; PowerShell/Bash launchers. | 1) Chạy setup/config-only/backup trên path test. | Command quoting đúng; paths relative; không shell expansion hoặc chọn sai project. |
 | TC-PLAT-005 | P0 · S · SRC | Test runner DB destructive guard và artifacts. | 1) Trỏ harness vào tên DB production giả; 2) run dry setup. | Từ chối DB không disposable; evidence không chứa credential; không dùng prod .env trong CI. |
 | TC-PLAT-006 | P1 · O · SRC | Tất cả harness sẵn có với fixture/schema hiện hành. | 1) Run trên environment riêng; 2) so danh mục CI với A-AUTO. | Không report test cũ pass cho feature mới; auth/schema lỗi phải sửa hoặc ghi defect, không bỏ qua âm thầm. |
-| TC-PLAT-007 | P1 · O · GAP | Security/MFA/SOC/DR cases chưa nối vào CI. | 1) Thay controlled regression; 2) mở PR test. | Gate phát hiện/từ chối release; file test tồn tại không đồng nghĩa CI chạy. |
+| TC-PLAT-007 | P1 · O · GAP | Security/MFA/DR cases chưa nối vào CI. | 1) Thay controlled regression; 2) mở PR test. | Gate phát hiện/từ chối release; file test tồn tại không đồng nghĩa CI chạy. |
 | TC-PLAT-008 | P1 · R · CFG | Upgrade libs/browser/PostgreSQL/Fernet và schema. | 1) Replay encrypted old state/golden workbooks; 2) E2E. | Compatibility dữ liệu/keys đảm bảo; performance/security regression được đánh giá. |
 | TC-PLAT-009 | P2 · F · SRC | Utilities OCR tài liệu thường; ảnh rõ/mờ/Unicode; Tesseract OS paths. | 1) Chạy fixture ordinary-document theo từng utility. | Lỗi dependency/encoding rõ; không crash OS; kết quả đối chiếu golden text; không dùng để bypass challenge. |
 | TC-PLAT-010 | P0 · O · CFG | Bundle live/image digest không trùng source đã test. | 1) Verify deployed assets/digest/migration; 2) smoke. | Release mismatch được phát hiện; không ký nghiệm thu chỉ bằng build source chưa deploy. |
@@ -748,14 +725,13 @@ Tiền điều kiện chung: môi trường/dữ liệu ở mục4 sẵn sàng, 
 | F10 Commit trước notify/UI refresh | Socket loss/browser closed | Data durable; polling/reload thấy kết quả | TC-REP-011, TC-SOCK-005, TC-SOCK-006 |
 | F11 Checkpoint/final đang active | Pause/worker death/API restart | Same phase/window/lineage; không reset quota | TC-RETRY-001, TC-RETRY-003, TC-RETRY-006, TC-RETRY-011 |
 | F12 Scheduler callback cũ | Stop/delete/resume epoch mới | Old callback không hồi state/queue | TC-SCH-014, TC-SCH-015 |
-| F13 SOC accept trước delivered flag | HTTP ACK drop/collector crash | Stable event ID; không mất evidence hoặc nhân alert | TC-SOC-005, TC-SOC-006, TC-SOC-007 |
 | F14 Backup/restore/cutover | Dump lỗi/key sai/host mất điện | Không switch sang DB không kiểm chứng; RPO/RTO có số đo | TC-OPS-006, TC-OPS-008, TC-OPS-010 |
 
 Mỗi injection ghi timestamp UTC, barrier, process/job/session/case/attempt/requestID, snapshot trước/sau và cleanup. Không cố tạo “exactly once” cho browser side effect chưa biết; yêu cầu hệ thống nhận diện uncertainty, không replay mù và giữ dữ liệu idempotent ở SQL.
 
 ## 9. Ma trận truy vết R-TRACE và automation sẵn có
 
-Các đường dẫn dưới đây là harness **tồn tại/tham chiếu trong repo**, không phải bằng chứng đã PASS phiên bản này. CI hiện chạy một tập con; MFA/SOC/pressure/DR mới cần đối chiếu và bổ sung. `verification/*` thuộc API, `scripts/test-*.mjs` thuộc web-ui, `test-*.mjs` thuộc browser-runner.
+Các đường dẫn dưới đây là harness **tồn tại/tham chiếu trong repo**, không phải bằng chứng đã PASS phiên bản này. CI hiện chạy một tập con; MFA/pressure/DR mới cần đối chiếu và bổ sung. `verification/*` thuộc API, `scripts/test-*.mjs` thuộc web-ui, `test-*.mjs` thuộc browser-runner.
 
 | Yêu cầu/nhóm | Case gốc | Phạm vi ID | Harness và khoảng trống |
 | --- | --- | --- | --- |
@@ -782,8 +758,7 @@ Các đường dẫn dưới đây là harness **tồn tại/tham chiếu trong 
 | R-SOCK · Socket.IO, realtime và reconnect | 12 | TC-SOCK-001 … TC-SOCK-012 | tests/test_socketio_flow.py; tests/test_repositories.py; cần so schema/auth/cookie mới |
 | R-NET · Mạng, VAHAN và lỗi phụ thuộc ngoài | 12 | TC-NET-001 … TC-NET-012 | scripts/test-network-ui.mjs; test-page-recovery.mjs; chưa thấy fault-proxy end-to-end đầy đủ |
 | R-DB · SQL, backpressure và lưu state | 13 | TC-DB-001 … TC-DB-013 | tests/test_repositories.py; DB integration suites; cần thêm pressure/least-privilege/restore coverage |
-| R-SOC · Audit, collector, cảnh báo và điều tra | 14 | TC-SOC-001 … TC-SOC-014 | Chưa thấy harness chuyên dụng signed collector/outbox/rules/chaos |
-| R-SEC · An toàn ứng dụng, secrets và hardening | 12 | TC-SEC-001 … TC-SEC-012 | scripts/security-audit.py (collector đọc trạng thái, không thay thế pentest); verification/test_permissions.py |
+| R-SEC · An toàn ứng dụng, secrets và hardening | 12 | TC-SEC-001 … TC-SEC-012 | scripts/security-audit.py (đọc trạng thái, không thay thế pentest); verification/test_permissions.py |
 | R-OPS · Migration, backup, restore và disaster recovery | 14 | TC-OPS-001 … TC-OPS-014 | verification/test_main_migration.py; verification/test_shared_migration.py; cần restore/fault rehearsal riêng |
 | R-PERF · Tải, tài nguyên và độ ổn định | 10 | TC-PERF-001 … TC-PERF-010 | verification/test_shared_batch_queue.py kiểm tra concurrency; chưa thay thế workload/soak/metrics đầy đủ |
 | R-E2E · Nghiệm thu toàn luồng và đối soát toàn dữ liệu | 8 | TC-E2E-001 … TC-E2E-008 | Harness thành phần sẵn có; chưa có bằng chứng current-turn nghiệm thu full portal/DR |
@@ -791,7 +766,7 @@ Các đường dẫn dưới đây là harness **tồn tại/tham chiếu trong 
 
 ## 10. Phụ lục A-API — từng operation phải có run instances
 
-Có **85 operations** từ decorator source ở snapshot này. Mỗi dòng áp dụng TC-API-001…010 theo tính thích hợp cùng nhóm nghiệp vụ; route alias/deprecated vẫn phải kiểm thử ACL/input/state. Không lấy con số 81 ở API document cũ làm inventory mới.
+Có **84 operations** từ decorator source ở snapshot này. Mỗi dòng áp dụng TC-API-001…010 theo tính thích hợp cùng nhóm nghiệp vụ; route alias/deprecated vẫn phải kiểm thử ACL/input/state. Không lấy con số 81 ở API document cũ làm inventory mới.
 
 | API ID | Method | Path | Nhóm nghiệp vụ | Model/handler nguồn |
 | --- | --- | --- | --- | --- |
@@ -800,7 +775,7 @@ Có **85 operations** từ decorator source ở snapshot này. Mỗi dòng áp d
 | HTTP-003 | GET | `/api/annual-reports/export` | REP, DATA; API, ACL | `api/annual_reports.py::export_annual_reports` |
 | HTTP-004 | GET | `/api/annual-reports/history` | REP, DATA; API, ACL | `api/annual_reports.py::annual_history` |
 | HTTP-005 | GET | `/api/annual-reports/update-status` | HIST; API, ACL | `api/update_status.py::update_status` |
-| HTTP-006 | GET | `/api/audit` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::audit_history` |
+| HTTP-006 | GET | `/api/audit` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::audit_history` |
 | HTTP-007 | POST | `/api/auth/activity` | AUTH, MFA, ACCT; API, ACL | `api/auth.py::session_activity` |
 | HTTP-008 | POST | `/api/auth/login` | AUTH, MFA, ACCT; API, ACL | `api/auth.py::login` |
 | HTTP-009 | POST | `/api/auth/logout` | AUTH, MFA, ACCT; API, ACL | `api/auth.py::logout` |
@@ -816,10 +791,10 @@ Có **85 operations** từ decorator source ở snapshot này. Mỗi dòng áp d
 | HTTP-019 | POST | `/api/batch-queue/sessions/{session_id}/resume` | QUEUE, RETRY, JOB; API, ACL | `api/batch_queue.py::resume_queue` |
 | HTTP-020 | POST | `/api/batch-queue/sessions/{session_id}/tasks/{position}/settle` | QUEUE, RETRY, JOB; API, ACL | `api/batch_queue.py::settle_task` |
 | HTTP-021 | GET | `/api/database/status` | ENV, DB, NET; API, ACL | `api/health.py::database_status` |
-| HTTP-022 | GET | `/api/files` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::files` |
-| HTTP-023 | POST | `/api/files` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::upload` |
-| HTTP-024 | GET | `/api/files/{file_id}/download` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::download` |
-| HTTP-025 | GET | `/api/files/{file_id}/rows` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::rows` |
+| HTTP-022 | GET | `/api/files` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::files` |
+| HTTP-023 | POST | `/api/files` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::upload` |
+| HTTP-024 | GET | `/api/files/{file_id}/download` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::download` |
+| HTTP-025 | GET | `/api/files/{file_id}/rows` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::rows` |
 | HTTP-026 | GET | `/api/filter-profiles` | PROF, UH; API, ACL | `api/filter_profiles.py::list_profiles` |
 | HTTP-027 | POST | `/api/filter-profiles` | PROF, UH; API, ACL | `api/filter_profiles.py::create_profile` |
 | HTTP-028 | POST | `/api/filter-profiles/makers` | PROF, UH; API, ACL | `api/filter_profiles.py::search_makers` |
@@ -838,7 +813,7 @@ Có **85 operations** từ decorator source ở snapshot này. Mỗi dòng áp d
 | HTTP-041 | POST | `/api/jobs/reports/sessions/{session_id}/restore` | DATA, FILE, HIST, REP; API, ACL | `api/excel.py::restore_report_session` |
 | HTTP-042 | POST | `/api/jobs/reports/verify` | DATA, FILE, HIST, REP; API, ACL | `api/excel.py::verify_exported_reports` |
 | HTTP-043 | GET | `/api/jobs/{job_id}` | JOB, DATA, ACL; API, ACL | `api/jobs.py::get_job` |
-| HTTP-044 | POST | `/api/jobs/{job_id}/artifacts` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::runner_artifact` |
+| HTTP-044 | POST | `/api/jobs/{job_id}/artifacts` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::runner_artifact` |
 | HTTP-045 | POST | `/api/jobs/{job_id}/cancel` | JOB, DATA, ACL; API, ACL | `api/jobs.py::cancel_job` |
 | HTTP-046 | GET | `/api/jobs/{job_id}/excel` | DATA, FILE, HIST, REP; API, ACL | `api/excel.py::download_excel` |
 | HTTP-047 | POST | `/api/jobs/{job_id}/main-report` | DATA, FILE, HIST, REP; API, ACL | `api/excel.py::upload_excel` |
@@ -858,11 +833,10 @@ Có **85 operations** từ decorator source ở snapshot này. Mỗi dòng áp d
 | HTTP-061 | POST | `/api/run-schedules/{schedule_id}/pause` | SCH, UH; API, ACL | `api/run_schedules.py::pause_schedule` |
 | HTTP-062 | POST | `/api/run-schedules/{schedule_id}/resume` | SCH, UH; API, ACL | `api/run_schedules.py::resume_schedule` |
 | HTTP-063 | POST | `/api/run-schedules/{schedule_id}/stop` | SCH, UH; API, ACL | `api/run_schedules.py::stop_schedule` |
-| HTTP-064 | POST | `/api/runner-logs` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::runner_log` |
-| HTTP-065 | GET | `/api/runner-state/{runner_id}` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::get_browser_state` |
-| HTTP-066 | PUT | `/api/runner-state/{runner_id}` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::put_browser_state` |
+| HTTP-064 | POST | `/api/runner-logs` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::runner_log` |
+| HTTP-065 | GET | `/api/runner-state/{runner_id}` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::get_browser_state` |
+| HTTP-066 | PUT | `/api/runner-state/{runner_id}` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::put_browser_state` |
 | HTTP-067 | GET | `/api/runners` | RUN, SOCK; API, ACL | `api/runners.py::list_runners` |
-| HTTP-068 | GET | `/api/security/status` | SOC, SEC, ENV; API, ACL | `api/soc_status.py::status` |
 | HTTP-069 | GET | `/api/ui-health/contract` | UH; API, ACL | `api/ui_health.py::current_contract` |
 | HTTP-070 | POST | `/api/ui-health/logs` | UH; API, ACL | `api/ui_health.py::receive_ui_health_log` |
 | HTTP-071 | POST | `/api/ui-health/preflight` | UH; API, ACL | `api/ui_health.py::preflight` |
@@ -872,38 +846,38 @@ Có **85 operations** từ decorator source ở snapshot này. Mỗi dòng áp d
 | HTTP-075 | GET | `/api/ui-health/schedule` | UH; API, ACL | `api/ui_health.py::get_ui_health_schedule` |
 | HTTP-076 | PUT | `/api/ui-health/schedule` | UH; API, ACL | `api/ui_health.py::update_ui_health_schedule` |
 | HTTP-077 | GET | `/api/ui-health/status` | UH; API, ACL | `api/ui_health.py::contract_status` |
-| HTTP-078 | GET | `/api/user-state` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::state` |
-| HTTP-079 | PUT | `/api/user-state/{key}` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::put_state` |
-| HTTP-080 | GET | `/api/users` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::users` |
-| HTTP-081 | POST | `/api/users` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::create_user` |
-| HTTP-082 | PATCH | `/api/users/{username}` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::update_user` |
-| HTTP-083 | POST | `/api/users/{username}/password` | ACL, ACCT, FILE, DB, SOC; API, ACL | `api/data.py::reset_password` |
+| HTTP-078 | GET | `/api/user-state` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::state` |
+| HTTP-079 | PUT | `/api/user-state/{key}` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::put_state` |
+| HTTP-080 | GET | `/api/users` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::users` |
+| HTTP-081 | POST | `/api/users` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::create_user` |
+| HTTP-082 | PATCH | `/api/users/{username}` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::update_user` |
+| HTTP-083 | POST | `/api/users/{username}/password` | ACL, ACCT, FILE, DB; API, ACL | `api/data.py::reset_password` |
 | HTTP-084 | GET | `/api/worker-pool` | QUEUE, ENV; API, ACL | `api/worker_pool.py::get_worker_pool` |
 | HTTP-085 | PUT | `/api/worker-pool` | QUEUE, ENV; API, ACL | `api/worker_pool.py::set_worker_pool` |
 
-Ngoài `/api`: kiểm tra `GET /`, `/docs`, `/redoc`, `/openapi.json` theo dev/production; Nginx static/deep-link routes; transport `/socket.io`; internal document `GET /health`, `POST /extract`, `POST /export`; internal SOC `GET /health`, `POST /events`; worker `GET :3001/health`. Các đường internal phải bị chặn từ client/public theo M-NET.
+Ngoài `/api`: kiểm tra `GET /`, `/docs`, `/redoc`, `/openapi.json` theo dev/production; Nginx static/deep-link routes; transport `/socket.io`; internal document `GET /health`, `POST /extract`, `POST /export`; worker `GET :3001/health`. Các đường internal phải bị chặn từ client/public theo M-NET.
 
 ## 11. Phụ lục A-SOCKET — hai chiều giao tiếp
 
 | Input ID | Namespace | Event đầu vào API | Coverage |
 | --- | --- | --- | --- |
-| SOC-IN-001 | /runner | `captcha:invalid` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-002 | /runner | `captcha:refreshed` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-003 | /runner | `captcha:required` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-004 | /runner | `connect` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-005 | /runner | `disconnect` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-006 | /runner | `job:apply-clicked` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-007 | /runner | `job:filters-verified` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-008 | /runner | `job:status` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-009 | /runner | `network:problem` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-010 | /runner | `runner:heartbeat` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-011 | /runner | `runner:recover` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-012 | /ui | `captcha:refresh` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-013 | /ui | `captcha:submitted` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-014 | /ui | `connect` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-015 | /ui | `disconnect` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-016 | /ui | `ui:runner-options` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
-| SOC-IN-017 | /ui | `ui:subscribe-job` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-001 | /runner | `captcha:invalid` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-002 | /runner | `captcha:refreshed` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-003 | /runner | `captcha:required` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-004 | /runner | `connect` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-005 | /runner | `disconnect` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-006 | /runner | `job:apply-clicked` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-007 | /runner | `job:filters-verified` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-008 | /runner | `job:status` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-009 | /runner | `network:problem` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-010 | /runner | `runner:heartbeat` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-011 | /runner | `runner:recover` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-012 | /ui | `captcha:refresh` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-013 | /ui | `captcha:submitted` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-014 | /ui | `connect` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-015 | /ui | `disconnect` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-016 | /ui | `ui:runner-options` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
+| SOCK-IN-017 | /ui | `ui:subscribe-job` | SOCK, AUTH, ACL; thêm JOB/RUN/CAP/NET/UH theo payload |
 
 Các event/command đầu ra literal phát hiện từ `sio.emit/sio.call` trong backend; tên event động và transport reconnect cũng thuộc SOCK/API matrix, không được bỏ chỉ vì không literal.
 
@@ -959,9 +933,9 @@ Mọi144cặp phải được tạo thành run instances; endpoint guard bổ su
 | 0 — baseline | Khóa release/config/data/policy; inventory API/socket/schema; prepare isolated fixtures | Không secret thật; manifest và oracle review; môi trường test khác production |
 | 1 — static/unit | Build/check, parser/profile/timing/codec/state/security policy fixtures | Tests hiện hành không bị skip để né regression; source và test contract thống nhất |
 | 2 — integration | API/SQL/socket/queue/gates/worker trên fixture portal | Invariants I-DATA đạt; mọi API/namespace có positive và negative quyền |
-| 3 — resilience/security | F-FAULT, race barriers, A/B isolation, abuse/file/Origin/MFA/SOC | Không mất/rò dữ liệu; unknown side effects được xử lý rõ; evidence độc lập |
+| 3 — resilience/security | F-FAULT, race barriers, A/B isolation, abuse/file/Origin/MFA | Không mất/rò dữ liệu; unknown side effects được xử lý rõ; evidence độc lập |
 | 4 — platform/performance | Browser/OS/architecture matrix, steady/soak/load limits | SLO đã duyệt, dữ liệu đúng sau load; resource/connection/temp phục hồi |
-| 5 — UAT/DR/release | Mẫu portal được phép, full scope reconciliation, backup restore và deployed digest | Product/QA/AppSec/DBA/DevOps/SOC ký gates; có rollback/incident runbook |
+| 5 — UAT/DR/release | Mẫu portal được phép, full scope reconciliation, backup restore và deployed digest | Product/QA/AppSec/DBA/DevOps ký gates; có rollback/incident runbook |
 
 **Một run không được báo full PASS vì test component pass.** Live UAT chỉ lấy mẫu đã cấp quyền/throttle; toàn bộ lỗi destructive/load vẫn trên fixture/staging. Giữ giờ UTC trong log và hiển thị UTC+7 trong biên bản.
 
@@ -988,7 +962,7 @@ Mọi144cặp phải được tạo thành run instances; endpoint guard bổ su
 | Permission/security | Negative request/transport + DB/event không side effect + actor/tenant/signed event; không cần khai thác phá hoại để chứng minh deny |
 | Concurrency/recovery | Barriers/timeline + before/after snapshots + job/case lineage + repeatability; ít nhất30 race iterations cho mutation critical |
 | Performance | Workload/hardware/limits, p50/p95/p99/errors, RSS/CPU/PID/tmp/DB pool/locks, raw metrics và data diff sau run |
-| SOC/DR/operations | Outbox/collector/signed IDs/alert-ticket timelines; dump/key/restore manifest; checksum và RPO/RTO đo được |
+| DR/operations | Audit/incident timelines; dump/key/restore manifest; checksum và RPO/RTO đo được |
 
 ## 13. Gates nghiệm thu G-EXIT
 
@@ -999,11 +973,10 @@ Mọi144cặp phải được tạo thành run instances; endpoint guard bổ su
 | G3 — security | Không Critical/High mở cho identity/tenant/worker/data leak; MFA/CSRF/Origin/role/revoke/upload checks có evidence; shared-SaaS nếu chọn phải qua TC-ACL-011 |
 | G4 — recovery | F-FAULT đủ; không tự replay Apply khi chưa biết outcome; queue/checkpoint/epoch và active timing giữ qua restart/reload |
 | G5 — operations | Cấu hình/network/DB role/resource đúng runtime; HTTPS ngoài trust boundary; backup/restore+keys+RPO/RTO có bằng chứng và owner |
-| G6 — SOC | Audit/secret redaction/outbox/collector/rules được thử end-to-end; monitoring/delivery failure/incident runbook và người nhận được xác minh |
 | G7 — capacity | SLO được doanh nghiệp ký và đạt trên workload/hardware đã chốt; soak không leak; overload bounded, dữ liệu đúng sau tải |
 | G8 — business replacement | Nếu tuyên bố thay manual toàn dữ liệu: TC-E2E-006 phải đạt full-source oracle; nếu dùng incremental: thêm TC-MKR-012/TC-E2E-007; known-plan 100% hoặc GLOBAL≥30 State chưa đủ |
 | G9 — release identity | Bộ deploy đúng source/image/bundle/migration/config đã test; CI và production smoke có bằng chứng; rollback được review |
-| G10 — sign-off | QA lead, Product, Backend/RPA, DBA/DevOps và AppSec/SOC ký phần mình. P1 chưa đạt cần quyết định ngoại lệ có owner/hạn; P0/GAP trong scope không được đổi thành PASS |
+| G10 — sign-off | QA lead, Product, Backend/RPA, DBA/DevOps và AppSec ký phần mình. P1 chưa đạt cần quyết định ngoại lệ có owner/hạn; P0/GAP trong scope không được đổi thành PASS |
 
 **Trạng thái tại lúc bàn giao tài liệu:** đã lập và kiểm tra tính nhất quán của test design; **chưa có run report nên chưa gate nào được công việc này chứng nhận đạt**. Các test/snapshot pass ở lần làm việc trước không tự thay thế evidence của release/source hiện tại.
 
@@ -1011,4 +984,4 @@ Mọi144cặp phải được tạo thành run instances; endpoint guard bổ su
 
 Mỗi thay đổi API/model/schema/filter/DOM/role/deployment phải cập nhật R-TRACE, A-API/A-SOCKET, dữ liệu oracle và case liên quan; bổ sung regression cho defect thực tế. Khi source/digest đổi, đánh giá lại impact rồi chọn regression phù hợp; không chạy lại mọi suite nếu thay đổi không ảnh hưởng và bằng chứng vẫn hợp lệ. Chỉ ký phiên bản mới sau review coverage và các policy BL còn mở.
 
-Tài liệu nguồn hỗ trợ: [API reference](api-reference.md), [system status](system-status.md), [run schedules](run-schedules.md), [batch recovery](batch-error-recovery.md), [database enterprise](database-enterprise.md), [SQL UI Health](ui-health-sql.md), [deployment](deployment.md), [SOC assessment snapshot](security/SOC-assessment-2026-10-08.md). Source snapshot và quyết định baseline ở mục1 được ưu tiên khi tài liệu cũ mâu thuẫn; khác biệt phải được ghi issue và chốt, không âm thầm bỏ test.
+Tài liệu nguồn hỗ trợ: [API reference](api-reference.md), [system status](system-status.md), [run schedules](run-schedules.md), [batch recovery](batch-error-recovery.md), [database enterprise](database-enterprise.md), [SQL UI Health](ui-health-sql.md), [deployment](deployment.md). Source snapshot và quyết định baseline ở mục1 được ưu tiên khi tài liệu cũ mâu thuẫn; khác biệt phải được ghi issue và chốt, không âm thầm bỏ test.

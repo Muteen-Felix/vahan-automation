@@ -15,7 +15,7 @@ function stopped(code, detail) {
 }
 
 export function createValidationGuard(onTimeout, {
-  now = () => performance.now(), schedule = setTimeout, unschedule = clearTimeout,
+  now = () => Date.now(), schedule = setTimeout, unschedule = clearTimeout,
 } = {}) {
   let deadline = null, refreshes = 0, rejections = 0, timer, generation = 0, stopError;
 

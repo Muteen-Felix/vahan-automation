@@ -8,6 +8,7 @@ import {
   clearSessionMarker,
   getSessionMarker,
   acceptLoginSession,
+  ApiError,
 } from "../services/api-client";
 import { hydratePersistentState, resetPersistentState } from '../services/persistent-state';
 import {observeSessionActivity} from '../services/session-activity';
@@ -20,7 +21,34 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [retryUntil, setRetryUntil] = useState(0);
+  const [retrySeconds, setRetrySeconds] = useState(0);
   const generation = useRef(0);
+
+  useEffect(() => {
+    if (!retryUntil) return;
+    const update = () => {
+      const remaining = Math.max(0, Math.ceil((retryUntil - Date.now()) / 1000));
+      setRetrySeconds(remaining);
+      if (!remaining) setRetryUntil(0);
+    };
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [retryUntil]);
+
+  const signInError = retrySeconds > 0
+    ? `Too many sign-in attempts. Try again in ${Math.floor(retrySeconds / 60)}:${String(retrySeconds % 60).padStart(2, '0')}.`
+    : error;
+
+  function rateLimited(reason: unknown) {
+    if (!(reason instanceof ApiError) || reason.status !== 429) return false;
+    const seconds = reason.retryAfterSeconds || 60;
+    setRetrySeconds(seconds);
+    setRetryUntil(Date.now() + seconds * 1000);
+    setError('');
+    return true;
+  }
 
   useEffect(() => {
     if (gate === 'authenticated') return observeSessionActivity();
@@ -96,6 +124,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting || retrySeconds > 0) return;
     const expected = ++generation.current;
     setError("");
     setSubmitting(true);
@@ -103,19 +132,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
       const result = await api.login(username.trim(), password);
       if (generation.current !== expected) return;
       setPassword("");
-      if (result.mfaSetupToken) {
-        setError("This account is not configured for password-only sign-in.");
-        return;
-      }
       acceptLoginSession(result);
       await hydratePersistentState();
       if (generation.current === expected) setGate("authenticated");
     } catch (reason) {
       if (generation.current === expected) {
+        if (rateLimited(reason)) return;
         const message = reason instanceof Error ? reason.message : "Sign-in failed.";
-        setError(/verification code|two-step|MFA/i.test(message)
-          ? "This account is not configured for password-only sign-in."
-          : message);
+        setError(message);
       }
     } finally {
       setSubmitting(false);
@@ -183,8 +207,8 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
                   required
                 />
               </label>
-              {error && <p className="auth-error" role="alert">{error}</p>}
-              <button className="primary-button" type="submit" disabled={submitting}>
+              {signInError && <p className="auth-error" role="alert">{signInError}</p>}
+              <button className="primary-button" type="submit" disabled={submitting || retrySeconds > 0}>
                 {submitting ? "Signing in…" : "Sign in"}
               </button>
             </form>

@@ -13,7 +13,6 @@
     "revision": "0013_database_capacity",
     "tenantIdentityTable": false,
     "mfaTable": false,
-    "socOutboxTable": false,
     "archiveMode": "off",
     "walLevel": "replica",
     "replicasConnected": 0,
@@ -45,11 +44,10 @@
   },
   "probes": {
     "provisionTenantAutomationUsesLegacyProject": true,
-    "socUnitTests": {
+    "securityUnitTests": {
       "passed": 9,
       "failed": 0
-    },
-    "sixEarlierReviewProbes": "diagnostics/soc/review-probes-2026-10-09.json"
+    }
   },
   "documentation": {
     "missingReadmeTargets": [
@@ -70,6 +68,5 @@
     "offsite full-host disaster recovery",
     "HA and PITR",
     "penetration test and residual advisory reachability"
-  ],
-  "priorEvidence": "docs/security/SOC-deployment-evidence.json"
+  ]
 }

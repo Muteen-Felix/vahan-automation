@@ -1,6 +1,5 @@
 import {useEffect, useState} from 'react';
 import {AccountSettings} from './components/AccountSettings';
-import {SecurityStatus} from './components/SecurityStatus';
 import {AnnualReports} from './components/AnnualReports';
 import {AutomaticRunSettings} from './components/AutomaticRunSettings';
 import {ConnectionBanner} from './components/ConnectionBanner';
@@ -16,6 +15,7 @@ import {flushPersistentState, persistentState} from './services/persistent-state
 import {uiSocket} from './services/socket-client';
 import {NetworkNotice, useNetworkStatus} from './components/NetworkNotice';
 import {useRunSchedules} from './services/use-run-schedules';
+import {CaptchaQueue} from './components/CaptchaQueue';
 
 type AppSection = 'reports' | 'filters' | 'settings' | 'forbidden';
 
@@ -199,6 +199,7 @@ export default function App() {
     <div className="app-layout"><div className="app-main">
       <NetworkNotice network={network}/>
       <StateSyncStatus />
+      {isAdmin && <CaptchaQueue />}
       {error && <div className="global-error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></div>}
       {isAdmin && healthBlock && activeSection !== 'settings' && <div className="ui-health-block" role="alert">
         <strong>UI Health blocked — new crawl work cannot start.</strong>
@@ -217,7 +218,6 @@ export default function App() {
             <AccountSettings signingOut={signingOut} onSignOut={signOut}/>
           </div>
           <UiHealthContract refreshToken={healthRefresh} scrollIntoView={routeHash === '#settings-ui-health'} />
-          <SecurityStatus />
           <AutomaticRunSettings profiles={profiles} selectedProfileId={selectedProfileId}
             workerCount={runDefaults.workerCount} year={runDefaults.year} schedules={scheduledRuns.schedules}
             loading={scheduledRuns.loading} loadError={scheduledRuns.error}

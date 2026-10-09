@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
 import {chromium} from '../../browser-runner/node_modules/playwright/index.mjs';
 
-const url=process.env.SOC_TEST_UI_URL;
-if(!url?.startsWith('http://127.0.0.1:18080/')||!process.env.SOC_TEST_USER?.startsWith('soc-browser-'))throw new Error('Use the dedicated disposable SOC fixture.');
+const url=process.env.SECURITY_TEST_UI_URL;
+if(!url?.startsWith('http://127.0.0.1:18080/')||!process.env.SECURITY_TEST_USER?.startsWith('security-browser-'))throw new Error('Use the dedicated disposable security fixture.');
 function otp(secret){
   const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';let bits='';
   for(const c of secret.replace(/=+$/,''))bits+=alphabet.indexOf(c).toString(2).padStart(5,'0');
@@ -17,8 +17,8 @@ try{
   const context=await browser.newContext();const page=await context.newPage();const errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(url);
-  await page.getByLabel('Username',{exact:true}).fill(process.env.SOC_TEST_USER);
-  await page.getByLabel('Password',{exact:true}).fill(process.env.SOC_TEST_PASSWORD);
+  await page.getByLabel('Username',{exact:true}).fill(process.env.SECURITY_TEST_USER);
+  await page.getByLabel('Password',{exact:true}).fill(process.env.SECURITY_TEST_PASSWORD);
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
   await page.getByRole('heading',{name:'Set up two-step verification'}).waitFor();
   const secret=await page.locator('.auth-card code').innerText();
@@ -31,16 +31,17 @@ try{
   assert.equal(await page.evaluate(()=>localStorage.getItem('vahanUiAccessToken')),null);
   assert.ok(await page.evaluate(()=>localStorage.getItem('vahanUiSessionMarker')));
   assert.equal(await page.evaluate(()=>document.cookie.includes('vahan_session_')),false);
-  const cookie=(await context.cookies()).find(value=>value.name==='vahan_session_soc-validation');
+  const cookie=(await context.cookies()).find(value=>value.name==='vahan_session_security-validation');
   assert.equal(cookie.httpOnly,true);assert.equal(cookie.sameSite,'Strict');
   const second=await context.newPage();await second.goto(url);
   await second.getByRole('navigation',{name:'Main navigation'}).waitFor();
   await page.getByRole('link',{name:'Settings',exact:true}).click();
-  await page.getByRole('heading',{name:'Security operations',exact:true}).waitFor();
+  await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
+  assert.equal(await page.getByRole('heading',{name:'Security operations',exact:true}).count(),0);
   await page.getByRole('button',{name:'Account',exact:true}).click();
   await page.getByRole('button',{name:'Log out',exact:true}).click();
   await page.getByRole('heading',{name:'Welcome back',exact:true}).waitFor();
   await second.getByRole('heading',{name:'Welcome back',exact:true}).waitFor();
   assert.deepEqual(errors,[]);
-  console.log('Live MFA UI, recovery codes, HttpOnly cookie, reload, security status and cross-tab logout passed.');
+  console.log('Live MFA UI, recovery codes, HttpOnly cookie, reload, Settings and cross-tab logout passed.');
 }finally{await browser.close();}

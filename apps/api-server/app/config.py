@@ -92,8 +92,6 @@ class Settings:
     cookie_secure: bool = False
     require_admin_mfa: bool = False
     mfa_key: str = ""
-    soc_url: str = ""
-    soc_ingest_key: str = ""
     trusted_proxy_host: str = ""
     max_export_rows: int = 100_000
     parser_timeout_seconds: int = 120
@@ -142,8 +140,6 @@ class Settings:
             cookie_secure=_as_bool(os.getenv('VAHAN_COOKIE_SECURE')),
             require_admin_mfa=_as_bool(os.getenv('VAHAN_REQUIRE_ADMIN_MFA')),
             mfa_key=os.getenv('VAHAN_MFA_ENCRYPTION_KEY', ''),
-            soc_url=os.getenv('VAHAN_SOC_URL', ''),
-            soc_ingest_key=os.getenv('VAHAN_SOC_INGEST_KEY', ''),
             trusted_proxy_host=os.getenv('VAHAN_TRUSTED_PROXY_HOST', ''),
             max_export_rows=_env_int('VAHAN_MAX_EXPORT_ROWS', 100000, 1, 1048573),
             parser_timeout_seconds=_env_int('VAHAN_PARSER_TIMEOUT_SECONDS', 120, 10, 300),

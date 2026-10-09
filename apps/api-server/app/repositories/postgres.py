@@ -519,10 +519,9 @@ async def recover_after_restart():
             await connection.execute(update(db.runners).values(connected=False, socket_id=None, current_job_id=None))
 
 async def audit(actor, event, payload):
-    from app import soc
-    record = soc.event(actor, event, payload)
+    from app import audit_log
+    record = audit_log.event(actor, event, payload)
     async with engine.begin() as connection:
         await connection.execute(insert(db.audit_events).values(id=record['id'], actor=actor,
             event=event, payload={'tenantId': settings.tenant_id, **record['payload'],
                                   '_context': record['context']}, created_at=now()))
-        await soc.enqueue(connection, record)

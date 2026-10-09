@@ -15,11 +15,11 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--env-file',type=Path,default=ROOT/'.secrets/soc-validation.env')
-    parser.add_argument('--output',type=Path,default=ROOT/'diagnostics/soc/release')
+    parser.add_argument('--env-file',type=Path,default=ROOT/'.docker.env')
+    parser.add_argument('--output',type=Path,default=ROOT/'diagnostics/release')
     args=parser.parse_args();values=read_env(args.env_file);args.output.mkdir(parents=True,exist_ok=True)
     images={}
-    for service in ['api','web','runner','postgres','soc','backup']:
+    for service in ['api','web','runner','postgres','backup']:
         tag=f"{values['VAHAN_IMAGE_NAMESPACE']}/{service}:{values['VAHAN_IMAGE_TAG']}"
         image=json.loads(subprocess.run(['docker','image','inspect',tag],capture_output=True,text=True,check=True).stdout)[0]
         images[service]={'imageId':image['Id'],'tag':tag,'architecture':image['Architecture']}
@@ -45,7 +45,7 @@ def main():
     (args.output/'manifest.sig').write_bytes(key.sign(encoded))
     (args.output/'public.pem').write_bytes(public)
     key.public_key().verify((args.output/'manifest.sig').read_bytes(),encoded)
-    services={name:{'image':images[name]['imageId']} for name in ['api','web','postgres','soc','backup']}
+    services={name:{'image':images[name]['imageId']} for name in ['api','web','postgres','backup']}
     services.update({'migrate':{'image':images['api']['imageId']},'documents':{'image':images['api']['imageId']}})
     for name in ['runner',*[f'runner-{n}' for n in range(2,11)]]:services[name]={'image':images['runner']['imageId']}
     (args.output/'images.compose.json').write_text(json.dumps({'services':services},indent=2)+'\n')

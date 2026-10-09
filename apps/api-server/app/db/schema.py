@@ -134,15 +134,6 @@ security_rate_limits = Table('security_rate_limits', metadata,
     Column('key', String(64), primary_key=True),
     Column('started_at', DateTime(timezone=True), nullable=False),
     Column('hits', Integer, nullable=False))
-soc_outbox = Table('soc_outbox', metadata,
-    Column('id', String(36), primary_key=True), Column('payload', document, nullable=False),
-    Column('created_at', DateTime(timezone=True), nullable=False),
-    Column('delivered', Boolean, nullable=False, server_default='false'),
-    Column('delivered_at', DateTime(timezone=True)),
-    Column('attempts', Integer, nullable=False, server_default='0'),
-    Column('next_attempt_at', DateTime(timezone=True), nullable=False))
-Index('ix_soc_delivery', soc_outbox.c.next_attempt_at,
-      postgresql_where=text('NOT delivered'))
 MONTH_COLUMNS = ('jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec')
 main_reports = Table('main_reports', metadata,
     Column('id', String(64), primary_key=True),

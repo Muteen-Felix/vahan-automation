@@ -9,6 +9,7 @@ const testFiles = [
   'scripts/test-batch-timing.mjs',
   'scripts/test-schedule-timing.mjs',
   'scripts/test-session-ui.mjs',
+  'scripts/test-auth-login-ui.mjs',
   'scripts/test-annual-reports.mjs',
   'scripts/test-filter-profiles-ui.mjs',
   'scripts/test-health-page-ui.mjs',

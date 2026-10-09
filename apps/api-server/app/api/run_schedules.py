@@ -1,6 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+import base64
+import binascii
+import re
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 
 from app.access import owner_filter, require_admin
@@ -9,6 +13,7 @@ from app.models.job import Job, JobStatus
 from app.models.run_schedule import RunScheduleCreate, RunScheduleToggle, RunScheduleResume
 from app.repositories.run_schedules import RunScheduleRepository, public_schedule
 from app.scheduler_wakeup import wake_scheduler
+from app.services import services
 
 router = APIRouter(prefix='/run-schedules', tags=['run-schedules'], dependencies=[Depends(require_admin)])
 repository = RunScheduleRepository()
@@ -44,9 +49,68 @@ async def current_captchas(request: Request):
     async with engine.connect() as connection:
         payloads = list(await connection.scalars(query.limit(10)))
     jobs = [Job.model_validate(payload) for payload in payloads]
+    waiting = []
+    for job in jobs:
+        if job.updated_at <= datetime.now(timezone.utc) - timedelta(minutes=10):
+            from app.realtime.server import sio
+            failed = await services.jobs.update_status(job.id, JobStatus.FAILED,
+                error='CAPTCHA_WAIT_TIMEOUT: No operator input within 10 minutes. Review and continue the saved run.',
+                expected_status=JobStatus.WAITING_CAPTCHA, expected_captcha_id=job.captcha_id)
+            if failed:
+                await services.runners.release_job(job.runner_id, str(job.id))
+                await sio.emit('job:cancelled', {'jobId': str(job.id)}, room=f'runner:{job.runner_id}', namespace='/runner')
+                await sio.emit('job:status', failed.model_dump(mode='json', by_alias=True), room=f'job:{job.id}', namespace='/ui')
+            continue
+        waiting.append(job)
     return [{'jobId': str(job.id), 'runnerId': job.runner_id, 'captchaId': job.captcha_id,
         'scenarioName': job.scenario_name}
-        for job in jobs if job.captcha_id]
+        for job in waiting if job.captcha_id]
+
+
+@router.get('/captchas/{job_id}')
+async def inspect_captcha(job_id: UUID, request: Request, response: Response):
+    """Read the live image for a human operator; never persist image or answer."""
+    from app.realtime.server import sio
+    from socketio.exceptions import TimeoutError as SocketIOTimeoutError
+    require_admin(request)
+    job = await services_job(job_id, request)
+    runner = await services.runners.get(job.runner_id)
+    if not runner or not runner.socket_id:
+        raise HTTPException(409, 'The browser worker is offline.')
+    try:
+        result = await sio.call('captcha:inspect', {'jobId': str(job_id), 'captchaId': job.captcha_id},
+                                to=runner.socket_id, namespace='/runner', timeout=10)
+    except SocketIOTimeoutError:
+        raise HTTPException(504, 'The browser worker did not return the CAPTCHA image in time.') from None
+    if not isinstance(result, dict) or not result.get('ok'):
+        raise HTTPException(409, 'The worker no longer has this waiting CAPTCHA. Reload the list.')
+    current = await services_job(job_id, request)
+    if result.get('captchaId') != current.captcha_id:
+        raise HTTPException(409, 'The CAPTCHA changed while loading. Reload its image.')
+    image = result.get('imageDataUrl', '')
+    if not isinstance(image, str) or len(image) > 1_000_000:
+        raise HTTPException(502, 'The worker returned an invalid CAPTCHA image.')
+    match = re.fullmatch(r'data:image/png;base64,([A-Za-z0-9+/]+={0,2})', image)
+    try:
+        data = base64.b64decode(match.group(1), validate=True) if match else b''
+    except (ValueError, binascii.Error):
+        data = b''
+    if len(data) > 750_000 or not data.startswith(b'\x89PNG\r\n\x1a\n'):
+        raise HTTPException(502, 'The worker returned an invalid CAPTCHA image.')
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['Pragma'] = 'no-cache'
+    return {'jobId': str(job_id), 'captchaId': current.captcha_id, 'imageDataUrl': image}
+
+
+async def services_job(job_id, request):
+    from app.services import services
+    job = await services.jobs.get(job_id)
+    owner = owner_filter(request)
+    if not job or (owner is not None and job.owner_username != owner):
+        raise HTTPException(404, 'Job not found.')
+    if job.status != JobStatus.WAITING_CAPTCHA or not job.captcha_id:
+        raise HTTPException(409, 'This job is no longer waiting for CAPTCHA.')
+    return job
 
 
 @router.post('', status_code=201)

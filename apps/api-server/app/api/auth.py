@@ -5,7 +5,7 @@ from app.config import settings
 from app.security import issue_access_token, ABSOLUTE_TTL_SECONDS, IDLE_TIMEOUT_SECONDS, csrf_token
 from app.services import services
 from app.repositories.postgres import audit
-from app.security_limits import consume
+from app.security_limits import consume, refund
 from app import mfa
 import asyncio
 import secrets
@@ -44,25 +44,35 @@ async def login(command: LoginRequest, response: Response, request: Request) -> 
     ip = getattr(request.state, 'security_client_ip', request.client.host if request.client else 'unknown')
     await consume('login:global', 120, 60)
     await consume(f'login:ip:{ip}', 20, 60)
-    await consume(f'login:account:{command.username}', 5, 600)
-    async with _password_slots:
-        user = await services.users.authenticate(command.username, command.password)
-    if not user:
-        await audit(command.username, 'auth.login_failed', {'reason': 'credentials'})
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="The username or password is incorrect.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    has_mfa = await mfa.enabled(user['username'])
-    if user['role'] == 'admin' and settings.require_admin_mfa and not has_mfa:
-        await audit(user['username'], 'auth.mfa_enrollment_required', {})
-        return {'mfaSetupToken': mfa.setup_challenge(user), 'username': user['username'],
-                'accessToken': None, 'mfaRequired': True}
-    if has_mfa and not await mfa.verify(user['username'], command.otp):
-        await audit(user['username'], 'auth.login_failed', {'reason': 'second_factor'})
-        raise HTTPException(401, 'The username, password or verification code is incorrect.')
-    return await establish_session(user, response, browser=command.browser_session or settings.production)
+    reservation = await consume(f'login:account:{command.username}', 5, 600)
+    failed = False
+    try:
+        async with _password_slots:
+            user = await services.users.authenticate(command.username, command.password)
+        if not user:
+            failed = True
+            await audit(command.username, 'auth.login_failed', {'reason': 'credentials'})
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="The username or password is incorrect.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        has_mfa = settings.require_admin_mfa and await mfa.enabled(user['username'])
+        if user['role'] == 'admin' and settings.require_admin_mfa and not has_mfa:
+            await audit(user['username'], 'auth.mfa_enrollment_required', {})
+            return {'mfaSetupToken': mfa.setup_challenge(user), 'username': user['username'],
+                    'accessToken': None, 'mfaRequired': True}
+        if has_mfa and not await mfa.verify(user['username'], command.otp):
+            # The password step deliberately omits a code. Only an incorrect
+            # code submitted by the user consumes the account failure budget.
+            failed = bool(command.otp)
+            if failed:
+                await audit(user['username'], 'auth.login_failed', {'reason': 'second_factor'})
+            raise HTTPException(401, 'The username, password or verification code is incorrect.')
+        return await establish_session(user, response, browser=command.browser_session or settings.production)
+    finally:
+        if not failed:
+            await refund(reservation)
 
 
 async def establish_session(user, response, *, browser=True):

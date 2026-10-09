@@ -11,7 +11,7 @@ from app.realtime.server import sio
 from app.security import runner_token_matches, authenticate_access_token
 from app.security import csrf_token
 from app.deployment_security import verify_deployment
-from app import soc
+from app import audit_log
 from app.services import services
 from app.db import engine
 from app.repositories.postgres import recover_after_restart
@@ -36,14 +36,12 @@ async def lifespan(_app: FastAPI):
     scheduler_task = asyncio.create_task(run_scheduler())
     from app.network_guard import monitor
     network_task = asyncio.create_task(monitor())
-    soc_task = asyncio.create_task(soc.forward_loop())
     try:
         yield
     finally:
         network_task.cancel()
         scheduler_task.cancel()
-        soc_task.cancel()
-        await asyncio.gather(scheduler_task, network_task, soc_task, return_exceptions=True)
+        await asyncio.gather(scheduler_task, network_task, return_exceptions=True)
         await engine.dispose()
 
 
@@ -163,12 +161,12 @@ async def audit_mutations(request: Request, call_next):
             pass
     request.state.security_client_ip = ip
     request_id = str(uuid4())
-    context = soc.request_context.set({'requestId': request_id, 'sourceIp': ip,
+    context = audit_log.request_context.set({'requestId': request_id, 'sourceIp': ip,
                                       'method': request.method, 'path': request.url.path[:512]})
     try:
         response = await call_next(request)
     except BaseException:
-        soc.request_context.reset(context)
+        audit_log.request_context.reset(context)
         raise
     response.headers['X-Request-ID'] = request_id
     response.headers['X-Content-Type-Options'] = 'nosniff'
@@ -185,8 +183,8 @@ async def audit_mutations(request: Request, call_next):
                 await audit(actor, name, {'method': request.method, 'path': request.url.path,
                     'statusCode': response.status_code, 'durationMs': round((time.monotonic() - started) * 1000)})
             except Exception:
-                soc.logger.error('{"event":"audit.persist_failed"}')
-    soc.request_context.reset(context)
+                audit_log.logger.error('{"event":"audit.persist_failed"}')
+    audit_log.request_context.reset(context)
     return response
 
 

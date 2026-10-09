@@ -1439,6 +1439,17 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .network-notice strong { display:block; }
 .network-notice p { margin:4px 0 0; font-size:11px; line-height:1.5; }
 .network-notice-status { margin-left:auto; white-space:nowrap; font-size:10px; }
+.captcha-queue { margin:16px 20px; padding:16px; border:1px solid #d9b66f; border-radius:10px; background:#fffaf0; }
+.captcha-queue h2 { margin:0 0 8px; font-size:17px; }
+.captcha-queue > p { font-size:12px; }
+.captcha-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
+.captcha-card { padding:14px; background:white; border:1px solid #e0e5df; border-radius:8px; }
+.captcha-card .captcha-case { font-size:11px; line-height:1.5; }
+.captcha-card img { display:block; max-width:100%; height:auto; min-height:40px; margin:12px 0; }
+.captcha-card label { display:flex; flex-direction:column; gap:6px; font-size:12px; }
+.captcha-card input { padding:10px; border:1px solid #bdcdbf; border-radius:6px; font-size:17px; letter-spacing:3px; }
+.captcha-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.captcha-card [role=alert] { color:#a83221; font-size:12px; }
 @media(max-width:600px) { .network-notice { margin:10px 14px 0; align-items:flex-start; flex-wrap:wrap; } .network-notice > div { flex:1; min-width:200px; } }
 
 /* Keep Settings controls anchored to the page heading and health reports close to schedules. */

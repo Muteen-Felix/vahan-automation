@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create/remove a synthetic account only in the isolated SOC staging tenant."""
+"""Create/remove a synthetic account only in the isolated security staging tenant."""
 import json
 import os
 from pathlib import Path
@@ -11,10 +11,10 @@ ROOT=Path(__file__).resolve().parents[1]
 
 
 def main():
-    values=read_env(ROOT/'.secrets/soc-validation.env')
-    if values['VAHAN_TENANT_ID']!='soc-validation':raise RuntimeError('Refusing customer account changes.')
-    username='soc-browser-'+secrets.token_hex(6);password=secrets.token_urlsafe(32)
-    command=['docker','compose','--env-file',str(ROOT/'.secrets/soc-validation.env'),'exec','-T','api','python','-c']
+    values=read_env(ROOT/'.secrets/security-validation.env')
+    if values['VAHAN_TENANT_ID']!='security-validation':raise RuntimeError('Refusing customer account changes.')
+    username='security-browser-'+secrets.token_hex(6);password=secrets.token_urlsafe(32)
+    command=['docker','compose','--env-file',str(ROOT/'.secrets/security-validation.env'),'exec','-T','api','python','-c']
     create="""import asyncio,json,sys
 from app.services import services
 from app.db import engine
@@ -34,9 +34,9 @@ async def main():
 asyncio.run(main())"""
     subprocess.run([*command,create],input=json.dumps({'username':username,'password':password}),text=True,check=True,capture_output=True)
     try:
-        environment=dict(os.environ,SOC_TEST_USER=username,SOC_TEST_PASSWORD=password,
-                         SOC_TEST_UI_URL='http://127.0.0.1:18080/')
-        subprocess.run(['node','scripts/test-soc-live-ui.mjs'],cwd=ROOT/'apps/web-ui',env=environment,check=True)
+        environment=dict(os.environ,SECURITY_TEST_USER=username,SECURITY_TEST_PASSWORD=password,
+                         SECURITY_TEST_UI_URL='http://127.0.0.1:18080/')
+        subprocess.run(['node','scripts/test-security-live-ui.mjs'],cwd=ROOT/'apps/web-ui',env=environment,check=True)
     finally:
         subprocess.run([*command,cleanup],input=json.dumps({'username':username}),text=True,check=True,capture_output=True)
 

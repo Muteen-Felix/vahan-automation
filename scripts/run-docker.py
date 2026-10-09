@@ -66,7 +66,7 @@ def main() -> int:
         # successful migrator still has the same Compose configuration hash.
         run([*command,'rm','-f','migrate'])
         run([*command,'up','-d','--no-build','--remove-orphans','--wait','--wait-timeout','240',
-             'postgres','soc','documents','backup','api','web',*RUNNERS])
+             'postgres','documents','backup','api','web',*RUNNERS])
         run([*command,'ps'])
     finally:
         if held and not changed:resume(command)

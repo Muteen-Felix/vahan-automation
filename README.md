@@ -17,6 +17,8 @@ Trên Windows dùng PowerShell `./run-vahan-rpa.ps1`. Hướng dẫn production 
 
 File `.docker.env` bị Git bỏ qua và không được đưa vào image; script giới hạn quyền file cho tài khoản hiện tại (mode `600` trên POSIX, ACL riêng trên Windows). Tài khoản quản trị đầu tiên lấy từ `VAHAN_UI_AUTH_USERNAME` / `VAHAN_UI_AUTH_PASSWORD` trong file này. Khi nâng cấp checkout có `apps/api-server/.env`, script giữ thông tin đăng nhập hiện có và thay token runner mặc định bằng token riêng. Script không ghi đè cấu hình đã tồn tại. Các lần khởi động sau không đặt lại mật khẩu người dùng trong SQL.
 
+Dashboard đăng nhập trực tiếp bằng tên tài khoản và mật khẩu, không có bước thiết lập hoặc nhập mã xác thực hai bước. Docker đặt `VAHAN_REQUIRE_ADMIN_MFA=false`; tài khoản đã từng thiết lập MFA cũng đăng nhập trực tiếp bằng mật khẩu.
+
 `API_PORT` và `WEB_PORT` trong `.docker.env` mặc định là `8000` / `5173`. Nếu cổng đang dùng, hãy dừng đúng dịch vụ đang chiếm cổng trước khi khởi chạy. PostgreSQL chỉ mở trong mạng Docker.
 
 ## Kiến trúc

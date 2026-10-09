@@ -61,11 +61,9 @@ services:
       VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
       VAHAN_PRODUCTION: 'true'
       VAHAN_COOKIE_SECURE: ${VAHAN_COOKIE_SECURE:-false}
-      VAHAN_REQUIRE_ADMIN_MFA: 'true'
+      VAHAN_REQUIRE_ADMIN_MFA: 'false'
       VAHAN_MFA_ENCRYPTION_KEY: ${VAHAN_MFA_ENCRYPTION_KEY:?Configure MFA encryption key}
       VAHAN_RUNNER_TOKENS: ${VAHAN_RUNNER_TOKENS:?Configure unique worker identities}
-      VAHAN_SOC_URL: http://soc:3100
-      VAHAN_SOC_INGEST_KEY: ${VAHAN_SOC_INGEST_KEY:?Configure SOC key}
       VAHAN_TRUSTED_PROXY_HOST: web
       VAHAN_DOCUMENT_SERVICE_URL: http://documents:3101
       VAHAN_MAX_EXPORT_ROWS: ${VAHAN_MAX_EXPORT_ROWS:-100000}
@@ -86,7 +84,6 @@ services:
     depends_on:
       postgres: {condition: service_healthy}
       migrate: {condition: service_completed_successfully}
-      soc: {condition: service_healthy}
       documents: {condition: service_healthy}
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
@@ -96,7 +93,7 @@ services:
     cpus: ${API_CPU_LIMIT:-2.0}
     pids_limit: 256
     logging: *logging
-    networks: [ingress, database, workers, audit, processing]
+    networks: [ingress, database, workers, processing]
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/ready')"]
       interval: 5s
@@ -266,28 +263,6 @@ services:
     pids_limit: 128
     logging: *logging
     networks: [database]
-  soc:
-    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/soc:${VAHAN_IMAGE_TAG:-local}
-    build: {context: ., dockerfile: docker/soc/Dockerfile}
-    environment:
-      VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
-      VAHAN_SOC_INGEST_KEY: ${VAHAN_SOC_INGEST_KEY:?Configure SOC key}
-      VAHAN_SOC_BACKUP_KEY: ${VAHAN_SOC_BACKUP_KEY:?Configure backup publisher}
-    volumes: [soc_data:/data]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
-    read_only: true
-    tmpfs: ['/tmp:rw,size=16m,uid=10002,gid=10002']
-    mem_limit: 256m
-    pids_limit: 64
-    logging: *logging
-    networks: [audit]
-    healthcheck:
-      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3100/health')"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
   backup:
     image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/backup:${VAHAN_IMAGE_TAG:-local}
     build: {context: ., dockerfile: docker/backup/Dockerfile}
@@ -298,13 +273,11 @@ services:
       PGPASSWORD: ${VAHAN_DB_BACKUP_PASSWORD:?Configure backup role}
       VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
       VAHAN_BACKUP_RECIPIENT: ${VAHAN_BACKUP_RECIPIENT:-}
-      VAHAN_SOC_BACKUP_KEY: ${VAHAN_SOC_BACKUP_KEY:?Configure backup publisher}
       VAHAN_BACKUP_INTERVAL_SECONDS: ${VAHAN_BACKUP_INTERVAL_SECONDS:-3600}
       VAHAN_BACKUP_MAX_BYTES: ${VAHAN_BACKUP_MAX_BYTES:-21474836480}
     volumes: [backup_data:/data]
     depends_on:
       migrate: {condition: service_completed_successfully}
-      soc: {condition: service_healthy}
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     read_only: true
@@ -313,7 +286,7 @@ services:
     cpus: 0.5
     pids_limit: 64
     logging: *logging
-    networks: [database, audit]
+    networks: [database]
     restart: unless-stopped
   documents:
     image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/api:${VAHAN_IMAGE_TAG:-local}
@@ -339,11 +312,9 @@ services:
     restart: unless-stopped
 volumes:
   postgres_data:
-  soc_data:
   backup_data:
 networks:
   ingress: {}
   database: {internal: true}
-  audit: {internal: true}
   processing: {internal: true}
   workers: {}

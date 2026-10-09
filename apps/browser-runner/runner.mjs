@@ -426,6 +426,26 @@ console.error = (...parts) => {
   }
 };
 socket.on('job:assigned', job => execute(job).catch(error => console.error(error.message)));
+socket.on('captcha:inspect', async (payload, respond) => {
+  const job = active;
+  if (!job || job.cancelled || job.finishing || payload.jobId !== job.jobId || job.status !== 'WAITING_CAPTCHA') {
+    respond({ok: false, error: 'No waiting CAPTCHA for this job.'}); return;
+  }
+  try {
+    validationFor(job).check();
+    const captcha = await page.evaluate(() => globalThis.vahanDriver.captureCaptcha(5000));
+    if (job !== active || job.cancelled || job.finishing || job.status !== 'WAITING_CAPTCHA') {
+      respond({ok: false, error: 'Job changed while reading CAPTCHA.'}); return;
+    }
+    if (captcha.captchaId !== job.captchaId) {
+      await ack('captcha:refreshed', {jobId: job.jobId, captchaId: captcha.captchaId});
+      job.captchaId = captcha.captchaId;
+    }
+    respond({ok: true, captchaId: captcha.captchaId, imageDataUrl: captcha.imageDataUrl});
+  } catch (error) {
+    respond({ok: false, error: error.message});
+  }
+});
 socket.on('captcha:submit', async (payload, respond) => {
   const job = active;
   if (!job || payload.jobId !== job.jobId || payload.captchaId !== job.captchaId || job.status !== 'WAITING_CAPTCHA') {
@@ -538,9 +558,13 @@ socket.on('ui-health:run-now', request => healthCheck(request).catch(error => co
 const timer = setInterval(async () => {
   if (!socket.connected || stopping) return;
   try {
+    if (active?.status === 'WAITING_CAPTCHA' && !active.finishing) validationFor(active).check();
     await ack('runner:heartbeat', {});
     await saveState();
-  } catch (error) { console.error('Worker heartbeat:', error.message); }
+  } catch (error) {
+    if (isValidationStop(error) && active) await fail(error, active).catch(error => console.error(error.message));
+    else console.error('Worker heartbeat:', error.message);
+  }
 }, 15_000);
 createServer((request, response) => {
   response.writeHead(socket.connected && context && browser?.isConnected() ? 200 : 503, {'Content-Type': 'application/json'});

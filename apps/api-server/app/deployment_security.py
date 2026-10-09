@@ -23,9 +23,10 @@ async def verify_deployment():
             raise RuntimeError('Production requires unique private credentials for each worker.')
         if '*' in settings.cors_origins or settings.socketio_cors_origins == '*' or '*' in settings.socketio_cors_origins:
             raise RuntimeError('Wildcard origins are forbidden in production.')
-        if not settings.require_admin_mfa or not settings.mfa_key or not settings.soc_url or not settings.soc_ingest_key:
-            raise RuntimeError('Production requires MFA and an independent SOC collector.')
-        Fernet(settings.mfa_key.encode())
+        if settings.require_admin_mfa:
+            if not settings.mfa_key:
+                raise RuntimeError('MFA requires an encryption key when enabled.')
+            Fernet(settings.mfa_key.encode())
     async with engine.begin() as connection:
         if not settings.production:
             await connection.execute(insert(db.deployment_identity).values(id=1, tenant_id=settings.tenant_id)

@@ -9,7 +9,7 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from app.config import Settings
-from app import security, mfa, soc
+from app import security, mfa, audit_log
 from app.main import require_ui_authentication
 
 BASE = Settings(ui_auth_token_secret='isolated-security-test-' + 'x'*48,
@@ -42,7 +42,7 @@ class TokenBoundaryTests(unittest.TestCase):
             self.assertIsNone(security.verify_access_token(token+'tampered'))
 
     def test_sensitive_fields_and_bearer_are_redacted(self):
-        value = soc.redact({'password':'private','csrfToken':'private','mfaSetupToken':'private',
+        value = audit_log.redact({'password':'private','csrfToken':'private','mfaSetupToken':'private',
                             'nested':{'recoveryCodes':['private']},'message':'Bearer private-token'})
         self.assertNotIn('private', json.dumps(value))
 

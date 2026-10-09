@@ -34,7 +34,6 @@ export interface LoginResponse extends SessionDeadlines {
   accessToken: string | null;
   sessionMarker?: string;
   csrfToken?: string;
-  mfaSetupToken?: string;
   tokenType: "Bearer" | "Cookie";
   expiresIn: number | null;
   idleTimeoutSeconds?: number;
@@ -103,14 +102,15 @@ async function logout() {
 }
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(public readonly status: number, message: string, public readonly retryAfterSeconds?: number) {
     super(message);
   }
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getSessionMarker();
-  const authorization: Record<string, string> = path === '/api/auth/login' || !bearerAccessToken
+  const signInRequest = path === '/api/auth/login';
+  const authorization: Record<string, string> = signInRequest || !bearerAccessToken
     ? {}
     : {Authorization: `Bearer ${bearerAccessToken}`};
   const response = await fetch(`${API_URL}${path}`, {
@@ -125,9 +125,12 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    if (response.status === 401 && path !== "/api/auth/login" && getSessionMarker() === token) notifyAuthenticationRequired();
+    if (response.status === 401 && !signInRequest && getSessionMarker() === token) notifyAuthenticationRequired();
     const detail=Array.isArray(body.detail)?body.detail.map((item:{msg?:string})=>item.msg||'Invalid input').join('; '):body.detail;
-    throw new ApiError(response.status, (typeof detail==='object'&&detail!==null?JSON.stringify(detail):detail) || `Request failed (${response.status}).`);
+    const retryAfter = response.headers.get('Retry-After');
+    const delay = retryAfter === null ? NaN : Number(retryAfter);
+    const retryAfterSeconds = Number.isFinite(delay) && delay > 0 ? Math.ceil(delay) : undefined;
+    throw new ApiError(response.status, (typeof detail==='object'&&detail!==null?JSON.stringify(detail):detail) || `Request failed (${response.status}).`, retryAfterSeconds);
   }
   const result = await response.json();
   if (typeof result.csrfToken === 'string') csrf = result.csrfToken;
@@ -171,6 +174,7 @@ export const api = {
   resumeRunSchedule: (id: string, workerCount: number) => request<RunSchedule>(`/api/run-schedules/${id}/resume`, {method: 'POST', body: JSON.stringify({workerCount})}),
   deleteRunSchedule: (id: string) => request(`/api/run-schedules/${id}`, {method: 'DELETE'}),
   currentCaptchas: () => request<CurrentCaptcha[]>('/api/run-schedules/captchas'),
+  captchaImage: (jobId: string) => request<{jobId: string; captchaId: string; imageDataUrl: string}>(`/api/run-schedules/captchas/${jobId}`),
   filterProfiles:()=>request<FilterProfile[]>('/api/filter-profiles'),
   saveFilterProfile:(name:string,definition:ProfileDefinition,id?:string,revision?:number)=>request<FilterProfile>(
     `/api/filter-profiles${id?`/${id}`:''}`,{method:id?'PUT':'POST',body:JSON.stringify({name,definition,revision})}),

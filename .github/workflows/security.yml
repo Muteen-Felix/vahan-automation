@@ -23,7 +23,7 @@ jobs:
           python -m pip install --no-deps -e apps/api-server
       - name: Verify authentication and worker boundaries
         working-directory: apps/api-server
-        run: python -m pytest verification/test_soc_unit.py verification/test_permissions.py -q
+        run: python -m pytest verification/test_security_unit.py verification/test_permissions.py -q
       - name: Verify MFA, cookie CSRF and atomic limits on an isolated database
         run: python scripts/run-security-verification.py
       - name: Audit Node dependencies and build UI
@@ -46,6 +46,6 @@ jobs:
           docker compose --env-file .docker.env build
       - name: Scan fixable critical and high image advisories
         run: |
-          for service in api web runner postgres soc backup; do
-            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro aquasec/trivy:0.74.0 image --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 "vahan-automation/$service:soc"
+          for service in api web runner postgres backup; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro aquasec/trivy:0.74.0 image --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 "vahan-automation/$service:local"
           done

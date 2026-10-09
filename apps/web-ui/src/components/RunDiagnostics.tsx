@@ -58,7 +58,7 @@ export function RunDiagnostics({schedule}: {schedule: RunSchedule}) {
         <h4 id={`${dialogId}-workers-title`}>Worker details · checked {formatScheduledTime(diagnostics.checkedAt)}</h4>
         <div className="schedule-failed-scroll"><table><thead><tr><th>Worker</th><th>Activity / case</th><th>Last change</th><th>Connection</th></tr></thead>
           <tbody>{diagnostics.workers.map(worker => <tr key={worker.id}><td>{worker.id}{!worker.selected && ' (outside selected pool)'}</td>
-            <td>{worker.optionsBusy ? 'Loading options / checking website' : worker.status === 'IDLE' ? 'Waiting for assignment' : worker.status}
+            <td>{worker.optionsBusy ? 'Loading options / checking website' : worker.status === 'WAITING_CAPTCHA' ? 'Waiting for your CAPTCHA input — use the CAPTCHA panel on the dashboard' : worker.status === 'IDLE' ? 'Waiting for assignment' : worker.status}
               {worker.case && <p>{worker.case}</p>}{worker.error && <p>{worker.error}</p>}</td>
             <td>{elapsed(worker.jobAgeSeconds ?? worker.heartbeatAgeSeconds)}</td>
             <td>{worker.reachable === false ? 'Health endpoint unavailable' : !worker.connected ? 'Disconnected' : worker.browserReady === false ? 'Browser not ready' : 'Connected'}</td></tr>)}</tbody></table></div>
