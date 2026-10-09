@@ -5,6 +5,10 @@ from pathlib import Path
 from secure_permissions import restrict_permissions
 root = Path(__file__).resolve().parents[1]
 path = root / '.docker.env'
+# Dockerfiles copy this optional certificate directory even on machines with no custom CA.
+certs = root / 'docker' / 'certs'
+certs.mkdir(parents=True, exist_ok=True)
+(certs / '.gitkeep').touch(exist_ok=True)
 parser = argparse.ArgumentParser()
 parser.add_argument('--api-port', default='8000')
 parser.add_argument('--web-port', default='5173')

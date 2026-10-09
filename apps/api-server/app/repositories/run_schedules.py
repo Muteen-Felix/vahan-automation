@@ -17,20 +17,22 @@ def now():
     return datetime.now(timezone.utc)
 
 
-def next_daily_run(starts_at, current):
-    """Keep the original Vietnam wall-clock time and skip missed daily slots."""
-    anchor = datetime.fromisoformat(starts_at).astimezone(ZoneInfo(TIME_ZONE))
-    current = current.astimezone(ZoneInfo(TIME_ZONE))
+def next_daily_run(starts_at, current, time_zone=TIME_ZONE):
+    """Keep the original schedule wall-clock time and skip missed daily slots."""
+    zone = ZoneInfo(time_zone)
+    anchor = datetime.fromisoformat(starts_at).astimezone(zone)
+    current = current.astimezone(zone)
     candidate = anchor.replace(year=current.year, month=current.month, day=current.day)
     if candidate <= current:
         candidate += timedelta(days=1)
     return max(candidate, anchor).astimezone(timezone.utc).isoformat()
 
 
-def next_monthly_run(starts_at, current):
-    """Keep the original Vietnam day and wall-clock time; clamp short months to month end."""
-    anchor = datetime.fromisoformat(starts_at).astimezone(ZoneInfo(TIME_ZONE))
-    current = current.astimezone(ZoneInfo(TIME_ZONE))
+def next_monthly_run(starts_at, current, time_zone=TIME_ZONE):
+    """Keep the original schedule day and wall-clock time; clamp short months to month end."""
+    zone = ZoneInfo(time_zone)
+    anchor = datetime.fromisoformat(starts_at).astimezone(zone)
+    current = current.astimezone(zone)
     anchor_month = anchor.year * 12 + anchor.month - 1
     current_month = current.year * 12 + current.month - 1
 
@@ -49,6 +51,7 @@ def next_monthly_run(starts_at, current):
 
 def public_schedule(value):
     result = {key: item for key, item in value.items() if key not in {'definition', 'tasks', 'owner'}}
+    result.setdefault('timeZone', TIME_ZONE)
     result['canResume'] = bool(value['status'] == 'PAUSED' and not value.get('networkPaused') and value.get('sessionId') or
         value['status'] == 'STOPPED' and value.get('lastSessionId') and (value['done'] < value['total']
             or value.get('retryProgress') and not value['retryProgress']['complete']))
@@ -198,6 +201,20 @@ class RunScheduleRepository:
             await connection.execute(update(db.app_settings).where(db.app_settings.c.key == key).values(value=value))
         return value
 
+    async def set_owner_time_zone(self, owner, time_zone):
+        updated = []
+        async with engine.begin() as connection:
+            records = (await connection.execute(select(db.app_settings.c.key, db.app_settings.c.value)
+                .where(db.app_settings.c.key.like(PREFIX + '%'),
+                    db.app_settings.c.value['owner'].as_string() == owner)
+                .with_for_update())).all()
+            for key, value in records:
+                if value.get('timeZone', TIME_ZONE) != time_zone:
+                    value = {**value, 'timeZone': time_zone, 'updatedAt': now().isoformat()}
+                    await connection.execute(update(db.app_settings).where(db.app_settings.c.key == key).values(value=value))
+                updated.append(value)
+        return updated
+
     async def create(self, owner, command):
         profile = await FilterProfileRepository().get(owner, command.profile_id)
         year = (profile['definition'].get('report') or {}).get('year', command.year)
@@ -205,7 +222,7 @@ class RunScheduleRepository:
             'profileId': profile['id'], 'profileName': profile['name'], 'profileRevision': profile['revision'],
             'definition': profile['definition'], 'year': year, 'workerCount': command.worker_count,
             'startsAt': command.starts_at.isoformat(), 'nextRunAt': command.starts_at.isoformat(),
-            'timeZone': TIME_ZONE, 'repeat': command.repeat, 'enabled': True, 'status': 'WAITING',
+            'timeZone': command.time_zone, 'repeat': command.repeat, 'enabled': True, 'status': 'WAITING',
             'sessionId': None, 'lastSessionId': None, 'lastRunAt': None, 'lastFinishedAt': None,
             'message': 'Waiting for the scheduled start time.', 'total': 0, 'done': 0,
             'withData': 0, 'noData': 0, 'failed': 0, 'preparationAttempts': 0, 'retryAfter': None,
@@ -222,8 +239,9 @@ class RunScheduleRepository:
             if not current or current.get('sessionId') != value['sessionId'] or current.get('executionEpoch', 0) != value.get('executionEpoch', 0):
                 return None
             finished = now()
-            next_run = (next_daily_run(current['startsAt'], finished) if current['repeat'] == 'daily'
-                else next_monthly_run(current['startsAt'], finished) if current['repeat'] == 'monthly' else None)
+            time_zone = current.get('timeZone', TIME_ZONE)
+            next_run = (next_daily_run(current['startsAt'], finished, time_zone) if current['repeat'] == 'daily'
+                else next_monthly_run(current['startsAt'], finished, time_zone) if current['repeat'] == 'monthly' else None)
             current = {**current, **counts, 'status': 'COMPLETED_WITH_ERRORS' if counts['failed'] else 'COMPLETED',
                 'message': f"Finished {counts['done']}/{counts['total']} cases. {counts['failed']} failed.",
                 'sessionId': None, 'lastSessionId': value['sessionId'], 'lastFinishedAt': finished.isoformat(),
@@ -247,9 +265,9 @@ class RunScheduleRepository:
                 if not legacy_resume:
                     changes.update(status='WAITING', preparationAttempts=0, retryAfter=None)
                 if value['repeat'] == 'daily':
-                    changes['nextRunAt'] = next_daily_run(value['startsAt'], now())
+                    changes['nextRunAt'] = next_daily_run(value['startsAt'], now(), value.get('timeZone', TIME_ZONE))
                 elif value['repeat'] == 'monthly':
-                    changes['nextRunAt'] = next_monthly_run(value['startsAt'], now())
+                    changes['nextRunAt'] = next_monthly_run(value['startsAt'], now(), value.get('timeZone', TIME_ZONE))
             stamp = now().isoformat()
             if 'operation' not in changes and ('stage' in changes or value.get('operation')):
                 changes = dict(changes)

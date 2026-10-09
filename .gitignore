@@ -16,4 +16,5 @@ dist/
 *.tsbuildinfo
 .venv
 apps/api-server/runtime/
+/docker/certs/*.crt
 runs/

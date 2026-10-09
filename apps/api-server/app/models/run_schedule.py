@@ -9,6 +9,7 @@ from app.models.filter_profile import StrictModel
 class RunScheduleCreate(StrictModel):
     profile_id: UUID = Field(alias='profileId')
     starts_at: datetime = Field(alias='startsAt')
+    time_zone: Literal['Asia/Ho_Chi_Minh', 'Asia/Kolkata'] = Field(default='Asia/Ho_Chi_Minh', alias='timeZone')
     worker_count: int = Field(alias='workerCount', ge=1, le=10, strict=True)
     year: int = Field(ge=1900, strict=True)
     repeat: Literal['once', 'daily', 'monthly'] = 'once'
@@ -29,6 +30,10 @@ class RunScheduleCreate(StrictModel):
         if value > datetime.now().year:
             raise ValueError('Choose the current calendar year or an earlier year.')
         return value
+
+
+class RunScheduleTimeZone(StrictModel):
+    time_zone: Literal['Asia/Ho_Chi_Minh', 'Asia/Kolkata'] = Field(alias='timeZone')
 
 
 class RunScheduleToggle(StrictModel):

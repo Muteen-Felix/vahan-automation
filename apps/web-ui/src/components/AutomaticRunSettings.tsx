@@ -1,7 +1,10 @@
 import {useEffect, useRef, useState, type FormEvent} from 'react';
 import type {FilterProfile} from '../filter-profiles';
 import {api} from '../services/api-client';
-import {canResumeSchedule, formatScheduledTime, vietnamDateTime, vietnamDayOfMonth, type RunSchedule} from '../run-schedules';
+import {persistentState} from '../services/persistent-state';
+import {canResumeSchedule, formatScheduledTime, isRunTimeZone, readRunTimeZone, runTimeZone, runTimeZoneLabel,
+  RUN_TIME_ZONE, INDIA_TIME_ZONE, RUN_TIME_ZONE_STORAGE_KEY, scheduleDateTime, scheduleDateTimeIso,
+  scheduledDayOfMonth, type RunSchedule} from '../run-schedules';
 import {RunScheduleProgress} from './RunScheduleProgress';
 import {BatchRetryStatus} from './BatchRetryStatus';
 import {RunDiagnostics} from './RunDiagnostics';
@@ -26,7 +29,8 @@ interface Props {
 }
 
 export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, year, schedules, loading, loadError, onUpsert, onDelete}: Props) {
-  const initial = vietnamDateTime(new Date(Date.now() + 5 * 60_000));
+  const [timeZone, setTimeZone] = useState(readRunTimeZone);
+  const initial = scheduleDateTime(new Date(Date.now() + 5 * 60_000), timeZone);
   const [profileId, setProfileId] = useState(selectedProfileId);
   const [date, setDate] = useState(initial.date);
   const [time, setTime] = useState(initial.time);
@@ -34,6 +38,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
   const [reportYear, setReportYear] = useState(year);
   const [repeat, setRepeat] = useState<'once' | 'daily' | 'monthly'>('once');
   const [saving, setSaving] = useState(false);
+  const [timeZoneSaving, setTimeZoneSaving] = useState(false);
   const [actionId, setActionId] = useState('');
   const [workerChoices, setWorkerChoices] = useState<Record<string, number>>({});
   const [formOpen, setFormOpen] = useState(false);
@@ -48,6 +53,25 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
   const [notice, setNotice] = useState('');
   const profile = profiles.find(item => item.id === profileId);
   const selectedYear = profile?.definition.report?.year ?? reportYear;
+
+  async function updateTimeZone(value: string) {
+    if (!isRunTimeZone(value) || value === timeZone) return;
+    setTimeZoneSaving(true); setError(''); setNotice('');
+    try {
+      const updated = await api.setRunScheduleTimeZone(value);
+      updated.forEach(onUpsert);
+      setTimeZone(value);
+      persistentState.setItem(RUN_TIME_ZONE_STORAGE_KEY, value);
+      const next = scheduleDateTime(new Date(Date.now() + 5 * 60_000), value);
+      setDate(next.date);
+      setTime(next.time);
+      setNotice(updated.length
+        ? `Time zone changed for your ${updated.length} saved ${updated.length === 1 ? 'schedule' : 'schedules'}. Their next run times are unchanged.`
+        : `Schedule time zone set to ${runTimeZoneLabel(value)}.`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not change the schedule time zone.');
+    } finally {setTimeZoneSaving(false);}
+  }
 
   useEffect(() => {
     setWorkerChoices(previous => {
@@ -70,16 +94,17 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const startsAt = `${date}T${time}:00+07:00`;
+    const startsAt = scheduleDateTimeIso(date, time, timeZone);
     if (!profile || !date || !time || !Number.isFinite(Date.parse(startsAt)) || Date.parse(startsAt) <= Date.now()) {
       setError('Choose a report profile and a future date and time.');
       return;
     }
     setSaving(true); setError(''); setNotice('');
     try {
-      const saved = await api.createRunSchedule({profileId, year: selectedYear, workerCount: workers, startsAt, repeat});
+      const saved = await api.createRunSchedule({profileId, year: selectedYear, workerCount: workers, startsAt, timeZone, repeat});
       onUpsert(saved);
-      setNotice(`Schedule saved for ${formatScheduledTime(saved.nextRunAt)} (Vietnam time).`);
+      const savedTimeZone = runTimeZone(saved.timeZone);
+      setNotice(`Schedule saved for ${formatScheduledTime(saved.nextRunAt, savedTimeZone)} (${runTimeZoneLabel(savedTimeZone)}).`);
       setFormOpen(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not save the run schedule.');
@@ -111,6 +136,15 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
         <p>Schedule and follow report collection.</p>
       </div><button type="button" className="secondary-button schedule-form-toggle" aria-haspopup="dialog" aria-expanded={formOpen} aria-controls="new-schedule-form"
         onClick={() => {setError('');setNotice('');setFormOpen(true);}}>Show form</button></div>
+      <div className="schedule-timezone-setting">
+        <label htmlFor="schedule-time-zone">Schedule time zone
+          <select id="schedule-time-zone" value={timeZone} onChange={event => void updateTimeZone(event.target.value)} disabled={saving || timeZoneSaving}>
+            <option value={RUN_TIME_ZONE}>Vietnam time (UTC+07:00)</option>
+            <option value={INDIA_TIME_ZONE}>India time (UTC+05:30)</option>
+          </select>
+        </label>
+        <p>New schedules and repeats use this zone. Changing it converts your saved schedules while keeping their next run times unchanged.</p>
+      </div>
       <dialog ref={formDialog} id="new-schedule-form" className="schedule-form-dialog" aria-labelledby="new-schedule-title"
         onCancel={event => {if (saving) event.preventDefault(); else setFormOpen(false);}}
         onClose={() => setFormOpen(false)}
@@ -137,7 +171,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
             </select></label>
             <label>Report year<input aria-label="Report year" type="number" min="1900" max={new Date().getFullYear()} value={selectedYear}
               onChange={event => setReportYear(Number(event.target.value))} required disabled={saving || Boolean(profile?.definition.report)} /></label>
-            <div className="automatic-run-form-footer"><span>Vietnam time (UTC+07:00)</span>
+            <div className="automatic-run-form-footer"><span>{runTimeZoneLabel(timeZone)}</span>
               <button className="primary-button" type="submit" disabled={saving || loading || !profile}>{saving ? 'Saving…' : 'Add schedule'}</button>
             </div>
           </form>
@@ -164,9 +198,9 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
                 {!schedule.enabled && !schedule.sessionId && schedule.nextRunAt ? 'Disabled' : schedule.networkPaused ? 'Waiting for network' : STATUS_LABELS[schedule.status]}
               </span></div>
             <dl className="run-schedule-details">
-              <div className="run-schedule-start"><dt>{schedule.nextRunAt ? 'Next start' : 'Scheduled start'}</dt><dd title={formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt)}>{formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt)}</dd><small>Vietnam time · UTC+07:00</small></div>
+              <div className="run-schedule-start"><dt>{schedule.nextRunAt ? 'Next start' : 'Scheduled start'}</dt><dd title={formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}>{formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}</dd><small>{runTimeZoneLabel(schedule.timeZone)}</small></div>
               <div><dt>Repeat</dt><dd>{schedule.repeat === 'monthly' ? 'Every month' : schedule.repeat === 'daily' ? 'Every day' : 'Once'}</dd>
-                <small>{schedule.repeat === 'monthly' ? `Day ${vietnamDayOfMonth(schedule.startsAt)} · month-end if needed` : schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
+                <small>{schedule.repeat === 'monthly' ? `Day ${scheduledDayOfMonth(schedule.startsAt, runTimeZone(schedule.timeZone))} · month-end if needed` : schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
               <div className="schedule-worker-setting"><dt>Workers</dt><dd>
                 <select aria-label={`Workers for ${schedule.profileName}`} value={workerChoices[schedule.id] ?? schedule.workerCount}
                   disabled={Boolean(actionId) || !canResumeSchedule(schedule)}

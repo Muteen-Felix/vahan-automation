@@ -7,7 +7,7 @@ import type {
   UiHealthSchedule,
 } from "../contracts";
 import type {FilterProfile, ProfileDefinition, ProfileOptions} from '../filter-profiles';
-import type {CurrentCaptcha, RunSchedule, RunScheduleInput} from '../run-schedules';
+import type {CurrentCaptcha, RunSchedule, RunScheduleInput, RunTimeZone} from '../run-schedules';
 
 export const API_URL = (import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
 export const ACCESS_TOKEN_STORAGE_KEY = "vahanUiAccessToken";
@@ -140,6 +140,9 @@ export const api = {
   runSchedules: () => request<RunSchedule[]>('/api/run-schedules'),
   createRunSchedule: (input: RunScheduleInput) => request<RunSchedule>('/api/run-schedules', {
     method: 'POST', body: JSON.stringify(input),
+  }),
+  setRunScheduleTimeZone: (timeZone: RunTimeZone) => request<RunSchedule[]>('/api/run-schedules/time-zone', {
+    method: 'POST', body: JSON.stringify({timeZone}),
   }),
   toggleRunSchedule: (id: string, enabled: boolean) => request<RunSchedule>(`/api/run-schedules/${id}`, {
     method: 'PATCH', body: JSON.stringify({enabled}),

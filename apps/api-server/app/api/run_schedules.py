@@ -6,7 +6,7 @@ from sqlalchemy import select
 from app.access import owner_filter, require_admin
 from app.db import engine, schema as db
 from app.models.job import Job, JobStatus
-from app.models.run_schedule import RunScheduleCreate, RunScheduleToggle, RunScheduleResume
+from app.models.run_schedule import RunScheduleCreate, RunScheduleTimeZone, RunScheduleToggle, RunScheduleResume
 from app.repositories.run_schedules import RunScheduleRepository, public_schedule
 from app.scheduler_wakeup import wake_scheduler
 
@@ -54,6 +54,13 @@ async def create_schedule(command: RunScheduleCreate, request: Request):
     value = await call(repository.create(request.state.authenticated_user, command))
     wake_scheduler()
     return public_schedule(value)
+
+
+@router.post('/time-zone')
+async def set_schedule_time_zone(command: RunScheduleTimeZone, request: Request):
+    values = await call(repository.set_owner_time_zone(request.state.authenticated_user, command.time_zone))
+    wake_scheduler()
+    return [public_schedule(value) for value in values]
 
 
 @router.patch('/{schedule_id}')

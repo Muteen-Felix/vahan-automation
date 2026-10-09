@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {formatScheduledTime, type RunSchedule} from '../run-schedules';
+import {formatScheduledTime, runTimeZone, type RunSchedule} from '../run-schedules';
 
 function elapsed(seconds: number | null | undefined) {
   if (seconds == null) return '—';
@@ -7,6 +7,7 @@ function elapsed(seconds: number | null | undefined) {
 }
 
 export function RunDiagnostics({schedule}: {schedule: RunSchedule}) {
+  const timeZone = runTimeZone(schedule.timeZone);
   const [copyState, setCopyState] = useState('');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const detailsDialog = useRef<HTMLDialogElement>(null);
@@ -44,13 +45,13 @@ export function RunDiagnostics({schedule}: {schedule: RunSchedule}) {
       <div className="run-diagnostics-dialog-body">
         <dl className="run-diagnostics-summary">
           <div><dt>Time at this step</dt><dd>{active ? elapsed(diagnostics?.stageAgeSeconds) : '—'}</dd></div>
-          <div><dt>Last scheduler update</dt><dd>{formatScheduledTime(schedule.operation?.heartbeatAt || schedule.updatedAt || null)}</dd></div>
+          <div><dt>Last scheduler update</dt><dd>{formatScheduledTime(schedule.operation?.heartbeatAt || schedule.updatedAt || null, timeZone)}</dd></div>
         </dl>
         <p className="run-diagnostics-detail">{schedule.message || 'Waiting for the scheduled start.'}</p>
         {error && error !== schedule.message && <p role="alert" className="schedule-error">{error}</p>}
-        {active && schedule.retryAfter && <p>Next preparation retry: {formatScheduledTime(schedule.retryAfter)}</p>}
+        {active && schedule.retryAfter && <p>Next preparation retry: {formatScheduledTime(schedule.retryAfter, timeZone)}</p>}
         {warning && <p role="alert" className="schedule-error">{warning}</p>}
-        {active && diagnostics && <details open><summary>Worker details · checked {formatScheduledTime(diagnostics.checkedAt)}</summary>
+        {active && diagnostics && <details open><summary>Worker details · checked {formatScheduledTime(diagnostics.checkedAt, timeZone)}</summary>
           <div className="schedule-failed-scroll"><table><thead><tr><th>Worker</th><th>Activity / case</th><th>Last change</th><th>Connection</th></tr></thead>
             <tbody>{diagnostics.workers.map(worker => <tr key={worker.id}><td>{worker.id}{!worker.selected && ' (outside selected pool)'}</td>
               <td>{worker.optionsBusy ? 'Loading options / checking website' : worker.status === 'IDLE' ? 'Waiting for assignment' : worker.status}

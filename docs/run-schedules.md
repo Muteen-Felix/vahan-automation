@@ -1,6 +1,6 @@
 # Automatic report schedules
 
-In Settings, choose **Report / filter profile**, **Active workers** (1–10), **Start date**, and **Start time**. Times always use Vietnam time, UTC+07:00, regardless of the browser's time zone. The default is a one-time run; **Every day** repeats at the same local time.
+In Settings, choose **Schedule time zone**, **Report / filter profile**, **Active workers** (1–10), **Start date**, and **Start time**. Schedule inputs and repeats use the selected time zone rather than the browser or server time zone. The default is Vietnam time, UTC+07:00. The default schedule is a one-time run; **Every day** repeats at the same local time.
 
 The navigation contains **Exported Reports**, **Filters**, and **Settings**, in that order. Exported Reports is the default page. Open **Account** at the top of Settings to sign out, change your password, or manage users (administrators). Filter previews offer **Use in Settings**, which selects the saved profile for a schedule.
 
@@ -42,6 +42,8 @@ API: `GET/POST /api/run-schedules`, `PATCH/DELETE /api/run-schedules/{id}`, `POS
 Verification: `npm run test:navigation-ui`, `npm run test:filters-ui` and `npm run test:schedules-ui` in `apps/web-ui` (Vite on port 5186, or `SCHEDULE_UI_URL`), and `verification/test_run_schedules.py` in `apps/api-server`. The latter requires `VAHAN_SCHEDULE_TEST_DATABASE` naming a disposable `vahan_schedule_*_test` PostgreSQL database. It refuses to run against the production database.
 
 **Account** opens a dialog with the signed-in username, role and **Log out**. **Change password** requires the current password, a new password of at least 12 characters and matching confirmation. A successful change keeps the current session and revokes other sessions. Administrators can expand **Manage user accounts**, create or enable/disable accounts, and choose **Reset password** for another account. Reset requires matching password confirmation and signs out the target account's existing sessions. Administrators use Change password for their own account. Passwords are hashed in SQL; audit events contain account names only. These changes do not cancel browser report jobs.
+
+In Settings, choose **Schedule time zone** to use Vietnam time (UTC+07:00) or India time (UTC+05:30). The preference is saved to the signed-in user's settings. New schedule date/time inputs and daily or monthly repeats use the selected zone; the API stores each schedule's time zone and runs it at the matching instant on the server. Changing the selection updates schedules created by the signed-in admin and preserves their next run instants. Schedules created by other admins keep their own time zone, shown on each schedule card.
 
 Settings uses compact run cards and a collapsed creation form when schedules already exist. **Show form** opens the form; **Hide form** closes it without discarding entered values. System activity shows one summary row with **View details** and **Copy diagnostics**. Errors and delay warnings remain visible while routine metadata and worker tables are collapsed. Opening detail or changing run status does not move the controls inside a run card.
 

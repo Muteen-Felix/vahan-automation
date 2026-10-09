@@ -1,3 +1,5 @@
+import {persistentState} from './services/persistent-state';
+
 export interface RunSchedule {
   id: string;
   profileId: string;
@@ -8,7 +10,7 @@ export interface RunSchedule {
   startsAt: string;
   nextRunAt: string | null;
   repeat: 'once' | 'daily' | 'monthly';
-  timeZone: string;
+  timeZone: RunTimeZone;
   enabled: boolean;
   status: 'WAITING' | 'PREPARING' | 'RUNNING' | 'PAUSING' | 'PAUSED' | 'RESUMING' | 'COMPLETED' | 'COMPLETED_WITH_ERRORS' | 'ERROR' | 'STOPPED';
   sessionId: string | null;
@@ -47,6 +49,7 @@ export interface RunScheduleInput {
   workerCount: number;
   startsAt: string;
   repeat: 'once' | 'daily' | 'monthly';
+  timeZone: RunTimeZone;
 }
 
 export interface CurrentCaptcha {
@@ -56,22 +59,51 @@ export interface CurrentCaptcha {
   scenarioName: string | null;
 }
 
-export const RUN_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+export const RUN_TIME_ZONE = 'Asia/Ho_Chi_Minh' as const;
+export const INDIA_TIME_ZONE = 'Asia/Kolkata' as const;
+export const RUN_TIME_ZONE_STORAGE_KEY = 'vahanScheduleTimeZoneV1';
+export type RunTimeZone = typeof RUN_TIME_ZONE | typeof INDIA_TIME_ZONE;
 
-export function vietnamDateTime(value: Date) {
-  const parts = new Intl.DateTimeFormat('en-CA', {timeZone: RUN_TIME_ZONE,
+const TIME_ZONE_SETTINGS: Record<RunTimeZone, {label: string; offset: string}> = {
+  [RUN_TIME_ZONE]: {label: 'Vietnam time (UTC+07:00)', offset: '+07:00'},
+  [INDIA_TIME_ZONE]: {label: 'India time (UTC+05:30)', offset: '+05:30'},
+};
+
+export function isRunTimeZone(value: unknown): value is RunTimeZone {
+  return value === RUN_TIME_ZONE || value === INDIA_TIME_ZONE;
+}
+
+export function runTimeZone(value: unknown): RunTimeZone {
+  return isRunTimeZone(value) ? value : RUN_TIME_ZONE;
+}
+
+export function readRunTimeZone() {
+  return runTimeZone(persistentState.getItem(RUN_TIME_ZONE_STORAGE_KEY));
+}
+
+export function runTimeZoneLabel(value: unknown) {
+  return TIME_ZONE_SETTINGS[runTimeZone(value)].label;
+}
+
+export function scheduleDateTime(value: Date, timeZone: RunTimeZone) {
+  const parts = new Intl.DateTimeFormat('en-CA', {timeZone,
     year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'})
     .formatToParts(value);
   const part = (type: string) => parts.find(item => item.type === type)?.value || '';
   return {date: `${part('year')}-${part('month')}-${part('day')}`, time: `${part('hour')}:${part('minute')}`};
 }
 
-export function formatScheduledTime(value: string | null) {
+export function scheduleDateTimeIso(date: string, time: string, timeZone: RunTimeZone) {
+  if (!date || !time) return '';
+  return `${date}T${time}:00${TIME_ZONE_SETTINGS[timeZone].offset}`;
+}
+
+export function formatScheduledTime(value: string | null, timeZone: RunTimeZone = RUN_TIME_ZONE) {
   if (!value) return '—';
-  return new Intl.DateTimeFormat('en-GB', {timeZone: RUN_TIME_ZONE, day: '2-digit', month: 'short',
+  return new Intl.DateTimeFormat('en-GB', {timeZone, day: '2-digit', month: 'short',
     year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).format(new Date(value));
 }
 
-export function vietnamDayOfMonth(value: string) {
-  return Number(new Intl.DateTimeFormat('en-US', {timeZone: RUN_TIME_ZONE, day: 'numeric'}).format(new Date(value)));
+export function scheduledDayOfMonth(value: string, timeZone: RunTimeZone) {
+  return Number(new Intl.DateTimeFormat('en-US', {timeZone, day: 'numeric'}).format(new Date(value)));
 }
