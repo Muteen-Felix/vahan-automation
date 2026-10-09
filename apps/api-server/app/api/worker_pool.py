@@ -5,7 +5,7 @@ from app.worker_pool import apply_pool, pool_status, PoolError
 router = APIRouter(prefix='/worker-pool', tags=['worker-pool'])
 
 class WorkerCount(BaseModel):
-    count: int = Field(ge=1, le=10, strict=True)
+    count: int = Field(ge=1, strict=True)
 
 @router.get('')
 async def get_worker_pool():

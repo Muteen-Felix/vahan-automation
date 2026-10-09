@@ -1,7 +1,6 @@
 """Backend orchestration: schedules keep running without a dashboard connection."""
 import asyncio
 import logging
-import re
 from datetime import datetime, timedelta
 from uuid import UUID
 from fastapi import HTTPException
@@ -27,11 +26,6 @@ LEADER_LOCK = 846_217_035
 def preflight_waiting(error):
     detail=getattr(error,'detail',None)
     return isinstance(error,HTTPException) and isinstance(detail,dict) and detail.get('code')=='PREFLIGHT_WAITING'
-
-
-def worker_number(runner):
-    match = re.fullmatch(r'playwright-(\d+)', runner.id)
-    return int(match[1]) if match else 999
 
 
 async def owner_active(owner):
@@ -162,10 +156,10 @@ async def prepare_run(value):
         if not await still_current(value):
             return
         ready = sorted([runner for runner in await services.runners.list()
-            if worker_number(runner) <= value['workerCount'] and runner.source.value == 'new'
-            and runner.status == RunnerStatus.ONLINE and not runner.current_job_id], key=worker_number)
-        if len(ready) < value['workerCount']:
-            await checkpoint(value, {'stage': 'Worker connection', 'message': f"Waiting for {value['workerCount']} connected, idle workers."})
+            if runner.source.value == 'new' and runner.status == RunnerStatus.ONLINE
+            and not runner.current_job_id], key=lambda runner: runner.id)
+        if not ready:
+            await checkpoint(value, {'stage': 'Worker connection', 'message': 'Waiting for a connected, idle browser worker.'})
             return
         runner_ids = [runner.id for runner in ready]
         # Resume is a new execution segment and must check the selected pool again.
@@ -251,12 +245,6 @@ async def pause_run_tick(value):
         return
     processing = [task for task in snapshot['tasks'] if task['status'] == 'PROCESSING'] if snapshot else []
     if processing:
-        for task in processing:
-            if not task['jobId']:
-                continue
-            job = await services.jobs.get(UUID(task['jobId']))
-            if job and job.status == JobStatus.ASSIGNED:
-                await emit_assignment(job, job.runner_id)  # Recover a committed but undelivered assignment.
         await checkpoint(value, {**counts, 'message': f'Pausing: waiting for {len(processing)} active cases to save.'})
         return
     await checkpoint(value, {**counts, 'status': 'PAUSED', 'pausedAt': now().isoformat(),
@@ -277,7 +265,12 @@ async def dispatch_run(value):
     if await checkpoint(value, {**counts, 'stage': 'Recovering failed cases' if (snapshot.get('retry') or {}).get('phase') in {'CHECKPOINT', 'FINAL'} else 'Collecting reports', 'retryProgress': snapshot.get('retry'), 'message': retry_message(snapshot, counts)}) is None:
         return
     from app.repositories.ui_contract import require_gate, bind_gate
-    runner_ids = [f'playwright-{number}' for number in range(1, value['workerCount'] + 1)]
+    runner_ids = [runner.id for runner in await services.runners.list()
+        if runner.source.value == 'new' and runner.status in {RunnerStatus.ONLINE, RunnerStatus.BUSY}]
+    if not runner_ids:
+        await checkpoint(value, {'stage': 'Waiting for workers', 'operationError': None,
+            'message': 'Waiting for a connected browser worker before continuing the queue.'})
+        return
     try:
         await require_gate(value['owner'], runner_ids, session_id=session_id)
     except ValueError as error:
@@ -297,30 +290,8 @@ async def dispatch_run(value):
                 return
             await checkpoint(value, {'stage': 'UI Health gate', 'operationError': str(check_error), 'message': f'Waiting for a successful UI health check: {check_error}'})
             return
-    for runner in sorted(await services.runners.list(), key=worker_number):
-        from app.network_guard import require_connection
-        await require_connection()
-        if worker_number(runner) > value['workerCount']:
-            continue
-        if not await still_current(value):
-            return
-        if runner.current_job_id:
-            job = await services.jobs.get(UUID(runner.current_job_id))
-            if job and str(job.session_id) == session_id and job.status == JobStatus.ASSIGNED:
-                await emit_assignment(job, runner.id)
-            continue
-        result = await queue.claim(UUID(session_id), value['owner'], runner.id)
-        if result['type'] != 'assigned':
-            continue
-        job = result.get('job') or await services.jobs.get(UUID(result['jobId']))
-        if job and (not result.get('recovered') or job.status == JobStatus.ASSIGNED):
-            await emit_assignment(job, runner.id)
-
-
-async def emit_assignment(job, runner_id):
-    await sio.emit('job:assigned', {'jobId': str(job.id), 'filters': job.filters.runner_payload(),
-        'scenarioName': job.scenario_name, 'source': job.source.value},
-        room=f'runner:{runner_id}', namespace='/runner')
+    # Redis Stream consumers claim tasks themselves. The scheduler updates the
+    # run state and UI Health gate, but does not select or notify a worker.
 
 
 async def scheduler_tick():

@@ -1,6 +1,6 @@
 # Triển khai và đóng gói đa nền tảng
 
-Ứng dụng được đóng gói thành các Linux container. Cùng một source và Compose file chạy trên Ubuntu, macOS và Windows thông qua Docker; Windows cần Docker Desktop ở chế độ Linux containers. Máy production nên dùng Ubuntu Server, Docker Engine và Compose plugin. Stack hiện là một máy chủ Compose: API, PostgreSQL, web và tối đa 10 Chromium workers không tự phân tán sang nhiều host.
+Ứng dụng được đóng gói thành các Linux container. Cùng một source và Compose file chạy trên Ubuntu, macOS và Windows thông qua Docker; Windows cần Docker Desktop ở chế độ Linux containers. Máy production nên dùng Ubuntu Server, Docker Engine và Compose plugin. Stack local chạy trên một máy Compose; worker Chromium được nhân bản từ một service và không tự phân tán sang nhiều host.
 
 ## Nền tảng hỗ trợ
 
@@ -34,7 +34,7 @@ Hai script gọi chung `scripts/run-docker.py`: tạo `.docker.env` nếu chưa 
 ./run-vahan-rpa.sh --config-only
 ```
 
-Để chạy bằng image đã build hoặc đã tải từ registry, dùng `--no-build`. Docker Compose v2 và Docker Engine/Desktop phải đang hoạt động.
+Mặc định launcher đánh giá CPU/RAM Docker, RAM trống của host và mức dùng thực tế của runner trước khi chọn số instance; worker đang chạy được giữ lại để không ngắt job. Xem kết quả mà không thay đổi container bằng `py -3 scripts/run-docker.py --assess-only` trên Windows hoặc `python3 scripts/run-docker.py --assess-only` trên Linux/macOS. Có thể ghi đè thủ công bằng `--workers 3`; để chạy image đã build hoặc tải từ registry, kết hợp `--no-build`. Docker Compose v2 và Docker Engine/Desktop phải đang hoạt động.
 
 ## Build và phát hành image
 
@@ -62,9 +62,9 @@ Build trên Linux production hoặc CI cùng kiến trúc CPU với máy đích.
 - Giữ `API_BIND_ADDRESS=127.0.0.1`. API chỉ được publish trên loopback của host; Nginx trong Compose vẫn truy cập API nội bộ.
 - Đặt `WEB_BIND_ADDRESS=127.0.0.1` nếu một reverse proxy trên host kết thúc HTTPS và chuyển tiếp tới cổng web. Nếu cần truy cập trực tiếp trong mạng riêng, đặt `0.0.0.0` và giới hạn cổng bằng firewall; Compose không tự cấp TLS.
 - Dùng tên miền HTTPS, VPN hoặc firewall để giới hạn người truy cập dashboard. Không công khai Docker socket, PostgreSQL hoặc cổng worker.
-- Giữ volume `postgres_data`, sao lưu thường xuyên bằng `python3 scripts/backup-docker.py`. Bản backup chứa database và `.docker.env`, do đó chỉ tài khoản vận hành được đọc.
+- Giữ volume `postgres_data`, sao lưu thường xuyên bằng `python3 scripts/backup-docker.py`. Bản backup chứa database và `.docker.env`, do đó chỉ tài khoản vận hành được đọc. Redis giữ AOF trong volume `redis_data` để bảo toàn stream khi container khởi động lại; script backup hiện tại chưa xuất volume Redis.
 - Giữ `.docker.env`, backup, signing key và browser-state key ngoài Git. Sao lưu các khóa cùng database để có thể khôi phục cookie mã hóa và phiên đăng nhập.
-- Pool gồm 10 runner khởi động sẵn; backend giới hạn số worker được cấp việc bằng khóa PostgreSQL. Không mount Docker socket vào container. Giảm giới hạn yêu cầu job và lượt kiểm tra/filter options ngoài giới hạn mới hoàn tất trước; các container nhàn rỗi vẫn dùng tài nguyên host.
+- Số browser worker do operator cấu hình; API giữ hạn mức task đồng thời trong PostgreSQL. Không mount Docker socket vào container. Các browser container nhàn rỗi vẫn dùng tài nguyên host.
 
 Stack hiện cung cấp một API process và một PostgreSQL primary, không phải dịch vụ HA. Khi cập nhật API/runner trên host đang xử lý job, chờ batch về trạng thái cuối trước khi triển khai image mới. Lệnh `docker compose down -v` xóa database volume; không dùng cho cập nhật thông thường.
 
@@ -82,4 +82,4 @@ Phiên UI hết hạn sau 12 giờ kể từ lúc đăng nhập hoặc 60 phút 
 
 Migration `0012_auth_session_limits` thu hồi các phiên cũ không có thời hạn, vì vậy người dùng cần đăng nhập lại sau triển khai. Logout/hết phiên chỉ kết thúc quyền truy cập UI; scheduler và job đã tiếp nhận vẫn chạy bằng xác thực riêng của runner. Job cần CAPTCHA thủ công có thể phải chờ đăng nhập lại. Khóa tài khoản chủ sở hữu vẫn dừng lịch chạy theo chính sách hiện có.
 
-Khi nâng cấp, chờ công việc đang chạy hoàn tất rồi dùng launcher với `--no-build` hoặc build image mới. Launcher dùng `--remove-orphans` để gỡ container controller cũ cùng mount Docker socket. Không dùng `down -v`; giữ nguyên volume dữ liệu.
+Với lượt triển khai local này, nên để các báo cáo VAHAN đang chạy hoàn tất trước khi thay runner nếu có thể. Nếu worker dừng giữa task, message pending trong Redis và trạng thái queue trong PostgreSQL sẽ phục hồi sau khi lease hết hạn. Launcher dùng `--remove-orphans` để gỡ controller cũ cùng mount Docker socket. Không dùng `down -v`; giữ nguyên các volume dữ liệu.

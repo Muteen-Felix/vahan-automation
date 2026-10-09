@@ -1,6 +1,6 @@
 # Tài liệu API toàn hệ thống VAHAN Automation
 
-Ngày rà soát: **08/10/2026**, theo giờ Việt Nam (UTC+07:00). Phạm vi: checkout `vahan-automation`, FastAPI, Socket.IO, browser runner và giới hạn worker tại backend. Tài liệu mô tả **mã nguồn hiện tại**, gồm cả API vẫn tồn tại sau khi giao diện Create Report đã được gỡ.
+Ngày rà soát: **09/10/2026**, theo giờ Việt Nam (UTC+07:00). Phạm vi: checkout `vahan-automation`, FastAPI, Socket.IO, browser runner và giới hạn worker tại backend. Tài liệu mô tả **mã nguồn hiện tại**, gồm cả API vẫn tồn tại sau khi giao diện Create Report đã được gỡ.
 
 Đối chiếu OpenAPI lần gần nhất: **81 thao tác HTTP trong source và 81 trên API live** tại `127.0.0.1:8000`. `GET /api/network/status` có trên live; gọi không kèm token trả 401 như yêu cầu xác thực. Chưa đọc được giá trị trạng thái mạng vì lần kiểm tra này không dùng token. Việc có cùng route/schema không chứng minh mọi chi tiết xử lý của hai build hoàn toàn giống nhau.
 
@@ -33,7 +33,7 @@ Việc rà soát dùng đọc mã nguồn và GET OpenAPI; **không gọi API t�
 | ReDoc | `http://127.0.0.1:8000/redoc` | Tài liệu tự sinh của build đang chạy. |
 | OpenAPI live | `http://127.0.0.1:8000/openapi.json` | Không bao gồm Socket.IO hoặc runner health. |
 | Socket.IO | `http://127.0.0.1:8000`, path `/socket.io/` | Namespace `/ui` và `/runner`; client hiện dùng WebSocket. Có thể đi qua proxy dashboard. |
-| Browser worker | `http://runner:3001`, `http://runner-2:3001` … | Chỉ có health endpoint nội bộ; ID tương ứng là `playwright-1`, `playwright-2` … |
+| Browser worker | Mỗi instance của service `runner`, health endpoint nội bộ trên cổng `3001` | Worker có ID riêng do instance đăng ký; số instance được cấu hình khi chạy Compose. |
 
 Request JSON dùng `Content-Type: application/json`; upload dùng `multipart/form-data`; preview dùng NDJSON; tải tệp trả binary. Dùng URL HTTPS và prefix theo cấu hình reverse proxy thực tế khi triển khai ngoài máy cục bộ.
 
@@ -54,7 +54,7 @@ Không đặt access token trong query string. Các API download cần header Be
 
 ```http
 X-VAHAN-RUNNER-TOKEN: <runner-secret>
-X-VAHAN-RUNNER-ID: playwright-1
+X-VAHAN-RUNNER-ID: worker-<instance-id>
 ```
 
 Runner token khác access token dashboard. Middleware chỉ chấp nhận token runner ở danh sách route được cho phép: đọc UI Health schedule/contract, gửi UI Health logs, lưu main-report/upload-excel/report-result/artifacts, đọc/ghi runner-state và gửi runner-logs. Header ID được handler kiểm tra cho các thao tác gắn job hoặc browser state.
@@ -78,7 +78,7 @@ Admin dùng `PATCH /api/users/{username}` với `role: "admin"` hoặc `"user"` 
 ### 2.3. Socket.IO
 
 - `/ui`: handshake `auth: {token: "<accessToken>"}` chỉ chấp nhận admin. Server kiểm tra lại session và quyền trong handler; user thường đọc báo cáo qua REST/polling.
-- `/runner`: handshake `auth: {token: "<runner-secret>", runnerId: "playwright-1", runnerName: "Worker 1", engine: "playwright", version: "<version>", source: "new"}`.
+- `/runner`: handshake `auth: {token: "<runner-secret>", runnerId: "worker-<instance-id>", runnerName: "Browser worker", engine: "playwright", version: "<version>", source: "new"}`. The ID is generated for each runner process unless `VAHAN_RUNNER_ID` is configured.
 - Room `runner:<runnerId>` nhận lệnh cho worker; room `job:<jobId>` nhận trạng thái job sau khi UI subscribe; room `reports:shared` nhận thông báo báo cáo đã commit cho dashboard đã xác thực.
 
 ## 3. Quy ước dữ liệu và lỗi
@@ -88,7 +88,7 @@ Admin dùng `PATCH /api/users/{username}` với `role: "admin"` hoặc `"user"` 
 | Quy ước | Chi tiết |
 | --- | --- |
 | Alias | Request theo schema dùng camelCase: `runnerId`, `sessionId`, `startsAt`, `workerCount`, `preflightId`… Không giả định mọi response đều camelCase: record SQL có thể dùng `rto_code`, `owner_username`, `created_at`. |
-| ID | Path có schema `format=uuid` phải là UUID. `runnerId` là chuỗi, thường `playwright-N`; `dataset`/scope là ID bộ lọc, không phải tên profile. |
+| ID | Path có schema `format=uuid` phải là UUID. `runnerId` là chuỗi do worker tự sinh; `dataset`/scope là ID bộ lọc, không phải tên profile. |
 | Thời gian | ISO 8601 có timezone cho lịch và bằng chứng `observedAt`. Lịch lặp theo `Asia/Ho_Chi_Minh`, UTC+07:00; response thường lưu UTC. |
 | Năm báo cáo | Profile và schedule không nhận năm tương lai; API đọc annual-reports nhận 1900–9999. `GET annual-reports` hiện mặc định 2026, nên client truyền `year` rõ ràng. |
 | Strict integer | Worker count ở lịch/pool/queue và một số model không nhận `true`, số thực hay chuỗi thay cho integer. |
@@ -231,7 +231,7 @@ Danh mục dưới đây gồm đủ **81 method + path** đăng ký trong sourc
 | `GET` | `/api/ui-health/reports/{file_name}/download`<br>Tải báo cáo CSV UI Health | Bearer | path `file_name` (string, bắt buộc) | text/csv attachment.<br><br>404 nếu không tìm thấy tệp báo cáo. Không phải báo cáo Excel dữ liệu VAHAN. | 200, 422 validation |
 | `GET` | `/api/ui-health/contract`<br>Hợp đồng UI được SQL công nhận | Bearer hoặc Runner | Không có tham số/body. | JSON trạng thái contract, versionId, revision, controls và lỗi quan sát hiện tại.<br><br>Worker dùng selectors đã được xác minh. Không có endpoint HTTP để tự ép allowed hoặc bỏ qua gate. | 200 |
 | `GET` | `/api/ui-health/status`<br>Trạng thái UI Health và preflight mới nhất | Bearer | Không có tham số/body. | Trạng thái contract cùng latestPreflight: id, owner_username, runner_ids, version_id, status, reports, created_at.<br><br>Có sự pha trộn camelCase và snake_case trong record latestPreflight. Trạng thái/last preflight hiện đọc toàn hệ thống, không lọc riêng owner. | 200 |
-| `POST` | `/api/ui-health/preflight`<br>Kiểm tra mới trên toàn bộ worker được chọn | Bearer | body `application/json` → `PreflightInput` (bắt buộc) | 200: allowed, preflightId, revision, versionId, reports.<br><br>runnerIds 1–10, không trùng. Kiểm tra tối đa 2 worker song song; mỗi worker có tối đa 2 lần ACK 55 giây. 409 UI_HEALTH_BLOCKED nếu bất kỳ worker/SQL contract không đạt. Chưa tạo case/crawl Maker khi gate không đạt. | 200, 422 validation |
+| `POST` | `/api/ui-health/preflight`<br>Kiểm tra mới trên toàn bộ worker được chọn | Bearer | body `application/json` → `PreflightInput` (bắt buộc) | 200: allowed, preflightId, revision, versionId, reports.<br><br>runnerIds không trùng; danh sách lấy từ các worker cần chạy. Kiểm tra tối đa 2 worker song song; mỗi worker có tối đa 2 lần ACK 55 giây. 409 UI_HEALTH_BLOCKED nếu bất kỳ worker/SQL contract không đạt. Chưa tạo case/crawl Maker khi gate không đạt. | 200, 422 validation |
 | `POST` | `/api/runner-logs`<br>Lưu lỗi vận hành của worker | Runner + ID; không dùng Bearer thay thế | header `X-VAHAN-RUNNER-ID` (string hoặc null, tùy chọn); body `application/json` → `RunnerLog` (bắt buộc) | 201: ok=true, ghi audit runner.log.<br><br>403 runner không đăng ký hoặc thiếu ID. message 1–8000 ký tự; level=info/warning/error; jobId tùy chọn. | 201, 422 validation |
 
 ### 5.4 Tài khoản, state và audit
@@ -273,14 +273,14 @@ Danh mục dưới đây gồm đủ **81 method + path** đăng ký trong sourc
 
 | Method | Endpoint | Quyền | Input | Kết quả và lưu ý | HTTP thành công / validation trong OpenAPI |
 | --- | --- | --- | --- | --- | --- |
-| `POST` | `/api/batch-queue/sessions`<br>Tạo queue bền vững | Bearer; owner hiện tại | body `application/json` → `StartQueueInput` (bắt buộc) | Snapshot: sessionId, status, maxWorkers, tasks, retry.<br><br>1–3000 tasks; preflight phải phủ playwright-1..N; 409 khi gate/queue không hợp lệ. Với lịch tự động, scheduler tự tạo queue; client không tạo queue thứ hai. | 200, 422 validation |
+| `POST` | `/api/batch-queue/sessions`<br>Tạo queue bền vững | Bearer; owner hiện tại | body `application/json` → `StartQueueInput` (bắt buộc) | Snapshot: sessionId, status, maxWorkers, tasks, retry.<br><br>1–3000 tasks; preflight áp dụng cho các worker đang sẵn sàng được chọn; không yêu cầu ID theo số thứ tự hoặc đủ số worker đã cấu hình. 409 khi gate/queue không hợp lệ. Với lịch tự động, scheduler tự tạo queue; client không tạo queue thứ hai. | 200, 422 validation |
 | `GET` | `/api/batch-queue/sessions/{session_id}`<br>Đọc và reconcile queue | Bearer; owner hiện tại | path `session_id` (string, bắt buộc) | Snapshot queue cùng trạng thái retry.<br><br>GET này có thể cập nhật trạng thái task và policy trong SQL khi reconcile; không phải thao tác chỉ đọc thuần túy. 404 nếu queue không thuộc owner. | 200, 422 validation |
 | `POST` | `/api/batch-queue/sessions/{session_id}/pause`<br>Pause queue cấp thấp | Bearer; owner hiện tại | path `session_id` (string, bắt buộc) | JSON: status=PAUSED.<br><br>Ngừng claim mới, không hủy job hiện tại. Không đồng bộ đầy đủ trạng thái run-schedules; với lịch dùng /run-schedules/{id}/pause. | 200, 422 validation |
 | `POST` | `/api/batch-queue/sessions/{session_id}/resume`<br>Resume queue cấp thấp | Bearer; owner hiện tại | path `session_id` (string, bắt buộc); body `application/json` → `ResumeQueueInput hoặc null` (tùy chọn) | JSON: status=RUNNING.<br><br>Body tùy chọn; cần fresh preflight cho worker count hiện tại/mới. 409 nếu đổi workers khi case chưa dừng; với lịch dùng endpoint resume của lịch. | 200, 422 validation |
 | `POST` | `/api/batch-queue/sessions/{session_id}/tasks/{position}/settle`<br>Reconcile một vị trí case | Bearer; owner hiện tại | path `session_id` (string, bắt buộc); path `position` (integer, bắt buộc) | QueueTask: position, name, status, attempts, failures, runnerId, jobId, error; có metadata retry theo policy.<br><br>position là zero-based; 404 nếu không có queue/case. Không đồng nghĩa xác nhận dữ liệu chưa được commit. | 200, 422 validation |
-| `POST` | `/api/batch-queue/sessions/{session_id}/claim`<br>Giao case tiếp theo cho một runner | Bearer; owner hiện tại | path `session_id` (string, bắt buộc); body `application/json` → `ClaimInput` (bắt buộc) | Discriminated response: assigned, waiting, done, paused, runner_unavailable, pool_updating, worker_disabled hoặc network_paused; assigned có task, jobId, recovered.<br><br>Tạo/giao job chỉ khi gate, kết nối mạng và giới hạn worker cho phép; row lock chống claim trùng. Với lịch đang chạy, scheduler đã claim; không điều phối song song từ client. | 200, 422 validation |
+| `POST` | `/api/runner/queue/claim`<br>Worker claim task từ Redis Stream | Runner token + `X-VAHAN-RUNNER-ID` | body `application/json` → `{ "sessionId": "<uuid>" }` | Worker yêu cầu API cấp task kế tiếp sau khi nhận message trong consumer group. API kiểm tra gate, trạng thái session và concurrency trong PostgreSQL trước khi tạo job; trả `assigned`, `waiting`, `done`, `paused` hoặc trạng thái chờ phù hợp. Chỉ worker đã xác thực được dùng endpoint này. | 200, 401/409 |
 | `GET` | `/api/worker-pool`<br>Giới hạn worker toàn hệ thống | Bearer; admin | Không có tham số/body. | JSON: enabled=true, mode=logical, runningCount (runner kết nối), activeCount (job hoặc reservation), desiredCount, phase, workers. Container do deployment quản lý. | 200 |
-| `PUT` | `/api/worker-pool`<br>Thay giới hạn worker nhận việc | Bearer; admin | body `application/json` → `WorkerCount` (bắt buộc) | Worker pool sau khi áp dụng count.<br><br>count strict integer 1–10; 409 nếu job/reservation đang chạy không phù hợp giới hạn mới. Không dừng container hoặc hủy job. Giới hạn toàn hệ thống, ngoài giới hạn riêng của từng queue. | 200, 422 validation |
+| `PUT` | `/api/worker-pool`<br>Thay giới hạn worker nhận việc | Bearer; admin | body `application/json` → `WorkerCount` (bắt buộc) | Worker pool sau khi áp dụng count.<br><br>count là số nguyên dương; 409 nếu job/reservation đang chạy không phù hợp giới hạn mới. Không dừng container hoặc hủy job. Giới hạn toàn hệ thống, ngoài giới hạn riêng của từng queue. | 200, 422 validation |
 
 ### 5.8 Filter profiles và preview
 
@@ -299,13 +299,13 @@ Danh mục dưới đây gồm đủ **81 method + path** đăng ký trong sourc
 | Method | Endpoint | Quyền | Input | Kết quả và lưu ý | HTTP thành công / validation trong OpenAPI |
 | --- | --- | --- | --- | --- | --- |
 | `GET` | `/api/run-schedules`<br>Danh sách lịch và diagnostics | Bearer; owner hiện tại | Không có tham số/body. | Mảng RunSchedulePublic; active run có diagnostics với worker/stage/heartbeat.<br><br>Ẩn definition, tasks, owner. Diagnostics theo source có thể chưa có ở build khác; đọc cả message, operation, retryProgress thay vì chỉ status. | 200 |
-| `POST` | `/api/run-schedules`<br>Đặt lịch tự động | Bearer; owner hiện tại | body `application/json` → `RunScheduleCreate` (bắt buộc) | 201: RunSchedulePublic, status=WAITING, enabled=true.<br><br>startsAt có timezone và nằm trong tương lai; workers strict integer 1–10; repeat=once/daily. Năm trong profile được ưu tiên. Chưa có case khi chỉ tạo lịch. | 201, 422 validation |
+| `POST` | `/api/run-schedules`<br>Đặt lịch tự động | Bearer; owner hiện tại | body `application/json` → `RunScheduleCreate` (bắt buộc) | 201: RunSchedulePublic, status=WAITING, enabled=true.<br><br>startsAt có timezone và nằm trong tương lai; workers là số nguyên dương, dùng làm giới hạn đồng thời; không cần chạy đủ số instance mới bắt đầu. Năm trong profile được ưu tiên. Chưa có case khi chỉ tạo lịch. | 201, 422 validation |
 | `GET` | `/api/run-schedules/captchas`<br>Metadata các job đợi validation | Bearer; owner/admin | Không có tham số/body. | Tối đa 10 item: jobId, runnerId, captchaId, scenarioName.<br><br>Chỉ metadata; không có imageDataUrl/bytes. Không phải endpoint giải hoặc gửi CAPTCHA. | 200 |
 | `PATCH` | `/api/run-schedules/{schedule_id}`<br>Bật/tắt lần khởi động tương lai | Bearer; owner hiện tại | path `schedule_id` (string, bắt buộc); body `application/json` → `RunScheduleToggle` (bắt buộc) | RunSchedulePublic cập nhật enabled.<br><br>Không dừng phiên hiện tại. Một lịch once đã hết hạn không thể bật lại mà không có lượt tiếp theo; trả 409. | 200, 422 validation |
 | `DELETE` | `/api/run-schedules/{schedule_id}`<br>Xóa lịch và queue đã dừng | Bearer; owner hiện tại | path `schedule_id` (string, bắt buộc) | ok=true.<br><br>Chỉ khi Paused/Stopped hoặc chưa/đã chạy xong và không còn active job; row lock chặn race Resume. Xóa queue/case còn lại và retry policy; giữ report_sessions, jobs, tệp, main_reports. 404 nếu không thuộc owner; 409 nếu chưa dừng xong. | 200, 422 validation |
 | `POST` | `/api/run-schedules/{schedule_id}/stop`<br>Dừng terminal tương thích cũ | Bearer; owner hiện tại | path `schedule_id` (string, bắt buộc) | RunSchedulePublic: STOPPED, enabled=false, sessionId=null, nextRunAt=null.<br><br>Hủy job đang hoạt động và pause queue. Khác Pause/Continue; giao diện hiện dùng pause thay stop. | 200, 422 validation |
 | `POST` | `/api/run-schedules/{schedule_id}/pause`<br>Tạm dừng, đợi case lưu | Bearer; owner hiện tại | path `schedule_id` (string, bắt buộc) | RunSchedulePublic ban đầu PAUSING; GET chuyển PAUSED sau khi drain.<br><br>Không hủy kết quả đang commit. Khi tất cả case đã hoàn thành, có thể đi thẳng COMPLETED thay vì PAUSED. | 200, 422 validation |
-| `POST` | `/api/run-schedules/{schedule_id}/resume`<br>Tiếp tục cùng session với số worker mới | Bearer; owner hiện tại | path `schedule_id` (string, bắt buộc); body `application/json` → `RunScheduleResume` (bắt buộc) | RunSchedulePublic: RESUMING rồi RUNNING; dữ liệu cũ được giữ.<br><br>workerCount strict integer 1–10; 409 nếu chưa paused, queue không hợp lệ hoặc đã hết việc. Source mới chặn khi mất mạng; một số STOPPED cũ có lastSessionId vẫn tiếp tục được. | 200, 422 validation |
+| `POST` | `/api/run-schedules/{schedule_id}/resume`<br>Tiếp tục cùng session với số worker mới | Bearer; owner hiện tại | path `schedule_id` (string, bắt buộc); body `application/json` → `RunScheduleResume` (bắt buộc) | RunSchedulePublic: RESUMING rồi RUNNING; dữ liệu cũ được giữ.<br><br>workerCount là số nguyên dương; 409 nếu chưa paused, queue không hợp lệ hoặc đã hết việc. Source mới chặn khi mất mạng; một số STOPPED cũ có lastSessionId vẫn tiếp tục được. | 200, 422 validation |
 
 
 ## 6. Hợp đồng response cần lưu ý
@@ -451,7 +451,7 @@ Job status gồm `QUEUED`, `ASSIGNED`, `OPENING_VAHAN`, `CAPTURING_CAPTCHA`, `FI
 
 ### 9.3. Retry và tiến độ
 
-Queue lưu `attempts`, `failures`, `recoveryPending` và chính sách `retry`. Source đang chạy check lỗi theo mỗi 10 case, retry các case lỗi của checkpoint rồi tiếp tục, sau lượt chính có final pass cho lỗi còn lại. Kết quả hợp lệ `NO_DATA` không retry. Có thể thấy phase `PRIMARY`, `CHECKPOINT`, `FINAL`, `DONE`, `pendingRetries`, `failedRemaining`, `complete`, cùng checkpoint index. `done` đo số case đã hoàn tất, không đo tổng số lần worker thử.
+Queue lưu `attempts`, `failures`, `recoveryPending` và chính sách `retry`. Source kiểm tra lỗi theo từng checkpoint, retry các case lỗi của checkpoint rồi tiếp tục, sau lượt chính có final pass cho lỗi còn lại. Checkpoint tối thiểu 10 case và mở rộng theo concurrency khi cần. Kết quả hợp lệ `NO_DATA` không retry. Có thể thấy phase `PRIMARY`, `CHECKPOINT`, `FINAL`, `DONE`, `pendingRetries`, `failedRemaining`, `complete`, cùng checkpoint index. `done` đo số case đã hoàn tất, không đo tổng số lần worker thử.
 
 ### 9.4. Khi phiên đứng ở PREPARING hoặc RUNNING
 
@@ -531,7 +531,7 @@ Gọi `POST /api/run-schedules` với JSON trên. Sau đó poll `GET /api/run-sc
 curl -sS -X POST "$VAHAN_API_BASE/api/ui-health/preflight" \
   -H "Authorization: Bearer ${VAHAN_ACCESS_TOKEN}" \
   -H 'Content-Type: application/json' \
-  -d '{"runnerIds":["playwright-1","playwright-2","playwright-3","playwright-4","playwright-5"]}'
+  -d '{"runnerIds":["worker-alpha","worker-beta"]}'
 ```
 
 Một lịch PAUSED được tiếp tục bằng worker count được kiểm tra lại trước khi tiếp tục:
@@ -578,7 +578,7 @@ socket.on("reports:updated", report => console.log(report));
   "detail": {
     "code": "UI_HEALTH_BLOCKED",
     "message": "The browser UI did not pass the required check.",
-    "diagnostics": {"runnerId":"playwright-2", "status":"BLOCKED"}
+    "diagnostics": {"runnerId":"worker-<instance-id>", "status":"BLOCKED"}
   }
 }
 ```
@@ -591,13 +591,13 @@ Giữ nguyên `diagnostics` khi gửi báo lỗi kỹ thuật; không tự chuy�
 | --- | --- |
 | Upload | Mặc định 50 MiB. Reverse proxy có thể giới hạn tổng request body thấp hơn file tối đa. |
 | Excel nhập main report | Workbook được đọc trong memory; source checks 50 MiB, 250 MiB giải nén, tối đa 500.000 dòng. |
-| Worker | Pool, schedule, resume từ 1–10; số lượng phải là integer thực, `true` không hợp lệ. |
+| Worker | Pool, schedule, resume nhận số nguyên dương; `true` không hợp lệ. Số instance được cấu hình riêng khi khởi chạy Compose. |
 | Queue | 1–3.000 tasks/session. Filter profile tối đa 3.000 cases, tối đa 30 rules. |
 | Pagination | Annual table tối đa 500 rows/call; history mặc định 20, tối đa 100; audit tối đa 1.000; report-result `limit` tối đa 1.000 nhưng payload hiện metadata rỗng; retired file rows tối đa 1.000 rồi trả 410. |
 | Maker updates | Danh sách tối đa 20 run mới nhất; endpoint yêu cầu `year`. Router source chỉ có GET list/detail. |
 | Coverage | Tối đa 5.000 case; mỗi case đúng một State, một RTO và một năm, không trùng combination. |
 | Preview | Stream NDJSON; HTTP 200 vẫn có thể chứa `type:error`. Đọc đến `ready` hoặc `error`, xử lý heartbeat và cancel khi client disconnect. |
-| UI Health preflight | 1–10 runner ID, không trùng; 2 worker song song; tối đa 2 ACK/runner, timeout 55 giây mỗi lượt; kết quả phải fresh (5 phút), đúng owner/version/worker coverage và chưa bị BLOCKED mới hơn. |
+| UI Health preflight | Runner ID không trùng; 2 worker song song; tối đa 2 ACK/runner, timeout 55 giây mỗi lượt; kết quả phải fresh (5 phút), đúng owner/version/worker coverage và chưa bị BLOCKED mới hơn. |
 | Runner state / user state | JSON tối đa 5 MiB; runner state được mã hóa Fernet. User-state key tối đa 128 ký tự và không cho key chứa token/password. |
 | Token | Token dashboard mới không đặt expiry; session SQL vẫn thu hồi được. Password đổi giữ session hiện tại và thu hồi session khác. |
 | Shared data | Annual report main table/history/update-status/coverage evidence dùng chung; job/profile/schedule/queue theo owner. Admin có phạm vi rộng ở các endpoint được đánh dấu owner/admin, nhưng admin vẫn chỉ xem profile/queue/schedule của chính mình. |
@@ -1093,9 +1093,9 @@ Bảng này đánh giá **mã nguồn trong checkout ngày 08/10/2026**. “Đã
 | Kiểm tra UI Health trước khi bắt đầu hoặc tiếp tục run | Đã có trong source | Preflight fail-closed cho toàn bộ worker chọn. Settings chỉ hiện phần UI Health khi có lỗi/chặn; có copy lỗi và diagnostics. |
 | Lịch kiểm tra UI Health định kỳ/Check now trên giao diện | Đã gỡ khỏi UI theo yêu cầu | Các route tương thích vẫn tồn tại trong API. Worker hiện không chạy timer kiểm tra định kỳ từ schedule API cũ. |
 | Hiển thị tiến độ, số liệu, trạng thái, stage, worker heartbeat và lỗi | Đã có trong source | Settings có Diagnostics và Failed cases; cảnh báo tuổi job là chỉ báo chậm, không tự kết luận treo. |
-| Pause an toàn, Continue cùng queue, đổi 1–10 workers khi paused | Đã có trong source | Case đang chạy được drain/lưu trước khi paused; resume kiểm tra worker/UI Health lại và giữ kết quả đã lưu. |
+| Pause an toàn, Continue cùng queue, đổi giới hạn worker khi paused | Đã có trong source | Case đang chạy được drain/lưu trước khi paused; resume kiểm tra worker/UI Health lại và giữ kết quả đã lưu. |
 | Disable future runs và Delete schedule/case còn lại | Đã có trong source | Delete yêu cầu phiên dừng; xóa queue và case chưa chạy nhưng giữ report data, job, file và bảng chính. |
-| Retry lỗi theo checkpoint mỗi 10 case và final recovery pass | Đã có trong source | `NO_DATA` hợp lệ không bị retry; số lần thử/failed cases được lưu. Cần kiểm chứng runtime với các lỗi thật trước khi xem như nghiệm thu vận hành. |
+| Retry lỗi theo checkpoint và final recovery pass | Đã có trong source | Checkpoint tối thiểu 10 case và mở rộng theo concurrency khi cần; `NO_DATA` hợp lệ không bị retry; số lần thử/failed cases được lưu. Cần kiểm chứng runtime với các lỗi thật trước khi xem như nghiệm thu vận hành. |
 | Dự đoán **thời gian hoàn thành** | Chưa hoàn tất | Helper tính `remainingMs`/`finishesAt`, UI mới hiện `cases/min`; chưa hiện “còn bao lâu” hoặc giờ hoàn thành, API chưa trả ETA. Đây là mục cần phát triển tiếp theo yêu cầu trước đó. |
 | Đồng bộ trạng thái mạng VAHAN và tự giữ queue khi offline | Có trong source; runtime chưa xác minh | Route có trong live OpenAPI; gọi không token trả 401. Chưa đọc giá trị trạng thái mạng hoặc quan sát tình huống offline/recovery. |
 | Update Maker tăng dần theo Maker thay đổi | Mới có một phần backend | GLOBAL snapshot, tạo task DISCOVER/REFRESH, validation và commit/đối soát có trong repository; generic `POST /api/jobs` có thể tạo các job loại này. Thiếu dashboard/orchestrator tự chạy hết chuỗi task và thiếu thao tác full crawl ban đầu. Router `/api/maker-updates` chỉ có GET để theo dõi; chưa thể dùng như một nút thay thế full manual run. |

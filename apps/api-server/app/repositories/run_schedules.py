@@ -161,8 +161,8 @@ class RunScheduleRepository:
         return value
 
     async def resume(self, schedule_id, owner, worker_count):
-        if isinstance(worker_count, bool) or not isinstance(worker_count, int) or not 1 <= worker_count <= 10:
-            raise ValueError('Choose between 1 and 10 workers.')
+        if isinstance(worker_count, bool) or not isinstance(worker_count, int) or worker_count < 1:
+            raise ValueError('Choose a positive concurrency limit.')
         async with engine.begin() as connection:
             key = PREFIX + str(schedule_id)
             value = await connection.scalar(select(db.app_settings.c.value).where(db.app_settings.c.key == key).with_for_update())
@@ -196,7 +196,7 @@ class RunScheduleRepository:
             elapsed = active_elapsed_ms(value)
             value = {**value, 'sessionId': session_id, 'status': 'RESUMING', 'workerCount': worker_count,
                 'executionEpoch': value.get('executionEpoch', 0) + 1, 'preparationAttempts': 0, 'retryAfter': None,
-                'activeElapsedMs': elapsed, 'activeSegmentStartedAt': None, 'lastFinishedAt': None, 'pausedAt': None,
+        'activeElapsedMs': elapsed, 'activeSegmentStartedAt': None, 'lastFinishedAt': None, 'pausedAt': None,
                 'networkPaused': False, 'message': f'Preparing {worker_count} workers to continue the saved session.', 'updatedAt': now().isoformat()}
             await connection.execute(update(db.app_settings).where(db.app_settings.c.key == key).values(value=value))
         return value

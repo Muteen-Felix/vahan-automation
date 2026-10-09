@@ -2,8 +2,8 @@
 
 | Giai đoạn | Hành vi |
 | --- | --- |
-| Lượt chính | Worker nhận các case trong nhóm 10 hiện tại. Worker nhanh có thể nhận thêm case trong cùng nhóm. |
-| Checkpoint | Khi các lượt đầu của nhóm đã kết thúc, retry các case lỗi trong nhóm. Chỉ chuyển sang nhóm tiếp theo khi các retry này kết thúc. Nhóm cuối dưới 10 cũng được kiểm tra. |
+| Lượt chính | Worker nhận các case trong nhóm checkpoint hiện tại. Nhóm tối thiểu 10 case và mở rộng theo concurrency đã chọn. |
+| Checkpoint | Khi các lượt đầu của nhóm đã kết thúc, retry các case lỗi trong nhóm. Chỉ chuyển sang nhóm tiếp theo khi các retry này kết thúc. Nhóm cuối nhỏ hơn checkpoint cũng được kiểm tra. |
 | Quét lỗi cuối | Sau nhóm cuối, lấy toàn bộ case còn FAILED từ SQL, đưa vào lượt phục hồi cuối và phân phối cho các worker đang sẵn sàng. Không yêu cầu worker cũ; ưu tiên worker khác khi có case phù hợp. |
 | Kết thúc | Case phục hồi thành công cập nhật With data/No data. Case vẫn lỗi giữ FAILED cùng nguyên nhân cuối, không lặp vô hạn. |
 

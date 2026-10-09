@@ -10,7 +10,7 @@ class RunScheduleCreate(StrictModel):
     profile_id: UUID = Field(alias='profileId')
     starts_at: datetime = Field(alias='startsAt')
     time_zone: Literal['Asia/Ho_Chi_Minh', 'Asia/Kolkata'] = Field(default='Asia/Ho_Chi_Minh', alias='timeZone')
-    worker_count: int = Field(alias='workerCount', ge=1, le=10, strict=True)
+    worker_count: int = Field(alias='workerCount', ge=1, strict=True)
     year: int = Field(ge=1900, strict=True)
     repeat: Literal['once', 'daily', 'monthly'] = 'once'
 
@@ -41,4 +41,4 @@ class RunScheduleToggle(StrictModel):
 
 
 class RunScheduleResume(StrictModel):
-    worker_count: int = Field(alias='workerCount', ge=1, le=10, strict=True)
+    worker_count: int = Field(alias='workerCount', ge=1, strict=True)

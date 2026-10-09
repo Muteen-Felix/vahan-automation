@@ -1,24 +1,4 @@
 name: vahan-automation
-x-extra-runner: &extra-runner
-  image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/runner:${VAHAN_IMAGE_TAG:-local}
-  build:
-    context: .
-    dockerfile: apps/browser-runner/Dockerfile
-  init: true
-  shm_size: 1gb
-  security_opt: ["seccomp=./docker/seccomp_profile.json"]
-  environment: &extra-runner-environment
-    VAHAN_API_URL: http://api:8000
-    VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token in .docker.env}
-    VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
-  depends_on:
-    api: {condition: service_healthy}
-  healthcheck:
-    test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-    interval: 10s
-    timeout: 5s
-    retries: 12
-  restart: unless-stopped
 services:
   postgres:
     image: postgres:17.7-bookworm
@@ -33,6 +13,16 @@ services:
       timeout: 5s
       retries: 20
     restart: unless-stopped
+  redis:
+    image: redis:8.2.1-bookworm
+    command: [redis-server, --appendonly, "yes", --appendfsync, everysec]
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
   api:
     image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/api:${VAHAN_IMAGE_TAG:-local}
     build:
@@ -40,6 +30,8 @@ services:
       dockerfile: apps/api-server/Dockerfile
     environment:
       DATABASE_URL: postgresql+asyncpg://vahan:${POSTGRES_PASSWORD}@postgres:5432/vahan
+      VAHAN_REDIS_URL: redis://redis:6379/0
+      VAHAN_REDIS_RECLAIM_MS: ${VAHAN_REDIS_RECLAIM_MS:-60000}
       VAHAN_UI_AUTH_USERNAME: ${VAHAN_UI_AUTH_USERNAME:-admin}
       VAHAN_UI_AUTH_PASSWORD: ${VAHAN_UI_AUTH_PASSWORD:?Configure bootstrap password}
       VAHAN_UI_AUTH_TOKEN_SECRET: ${VAHAN_UI_AUTH_TOKEN_SECRET:?Configure signing secret}
@@ -50,6 +42,7 @@ services:
     ports: ["${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8000}:8000"]
     depends_on:
       postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/ready')"]
       interval: 5s
@@ -66,39 +59,20 @@ services:
     security_opt: ["seccomp=./docker/seccomp_profile.json"]
     environment:
       VAHAN_API_URL: http://api:8000
+      VAHAN_REDIS_URL: redis://redis:6379/0
+      VAHAN_REDIS_RECLAIM_MS: ${VAHAN_REDIS_RECLAIM_MS:-60000}
       VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token in .docker.env}
-      VAHAN_RUNNER_ID: playwright-1
-      VAHAN_RUNNER_NAME: Chromium Playwright 1
       VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
     depends_on:
       api: {condition: service_healthy}
+      redis: {condition: service_healthy}
     healthcheck:
       test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 12
-    restart: unless-stopped
-  runner-2:
-    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/runner:${VAHAN_IMAGE_TAG:-local}
-    build:
-      context: .
-      dockerfile: apps/browser-runner/Dockerfile
-    init: true
-    shm_size: 1gb
-    security_opt: ["seccomp=./docker/seccomp_profile.json"]
-    environment:
-      VAHAN_API_URL: http://api:8000
-      VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN}
-      VAHAN_RUNNER_ID: playwright-2
-      VAHAN_RUNNER_NAME: Chromium Playwright 2
-      VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
-    depends_on:
-      api: {condition: service_healthy}
-    healthcheck:
-      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
+    deploy:
+      replicas: ${VAHAN_WORKER_REPLICAS:-1}
     restart: unless-stopped
   web:
     image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/web:${VAHAN_IMAGE_TAG:-local}
@@ -114,53 +88,6 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
-  runner-3:
-    <<: *extra-runner
-    environment:
-      <<: *extra-runner-environment
-      VAHAN_RUNNER_ID: playwright-3
-      VAHAN_RUNNER_NAME: Chromium Playwright 3
-  runner-4:
-    <<: *extra-runner
-    environment:
-      <<: *extra-runner-environment
-      VAHAN_RUNNER_ID: playwright-4
-      VAHAN_RUNNER_NAME: Chromium Playwright 4
-  runner-5:
-    <<: *extra-runner
-    environment:
-      <<: *extra-runner-environment
-      VAHAN_RUNNER_ID: playwright-5
-      VAHAN_RUNNER_NAME: Chromium Playwright 5
-  runner-6:
-    <<: *extra-runner
-    environment:
-      <<: *extra-runner-environment
-      VAHAN_RUNNER_ID: playwright-6
-      VAHAN_RUNNER_NAME: Chromium Playwright 6
-  runner-7:
-    <<: *extra-runner
-    environment:
-      <<: *extra-runner-environment
-      VAHAN_RUNNER_ID: playwright-7
-      VAHAN_RUNNER_NAME: Chromium Playwright 7
-  runner-8:
-    <<: *extra-runner
-    environment:
-      <<: *extra-runner-environment
-      VAHAN_RUNNER_ID: playwright-8
-      VAHAN_RUNNER_NAME: Chromium Playwright 8
-  runner-9:
-    <<: *extra-runner
-    environment:
-      <<: *extra-runner-environment
-      VAHAN_RUNNER_ID: playwright-9
-      VAHAN_RUNNER_NAME: Chromium Playwright 9
-  runner-10:
-    <<: *extra-runner
-    environment:
-      <<: *extra-runner-environment
-      VAHAN_RUNNER_ID: playwright-10
-      VAHAN_RUNNER_NAME: Chromium Playwright 10
 volumes:
   postgres_data:
+  redis_data:

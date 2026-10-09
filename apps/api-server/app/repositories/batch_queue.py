@@ -1,6 +1,5 @@
 """Durable shared queue for independent State/RTO report cases."""
 from datetime import datetime, timezone
-import re
 from uuid import UUID
 
 from sqlalchemy import case, func, insert, select, update
@@ -9,17 +8,19 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from app.db import engine, schema as db
 from app.models.job import Job, JobStatus
 from app.models.runner import Runner, RunnerStatus
-from app.repositories.postgres import PostgresJobRepository, runner_document
+from app.repositories.postgres import PostgresJobRepository, release_runner, runner_document, save_job
 
 MAX_FAILURES = 2
-CHECKPOINT_SIZE = 10
 RETRY_KEY = 'batch-retry-policy:'
-MAX_ACTIVE_WORKERS = 10
 TERMINAL_TASKS = {'COMPLETED', 'NO_DATA', 'FAILED'}
 
 
 def now():
     return datetime.now(timezone.utc)
+
+
+def checkpoint_size(session):
+    return max(10, session['max_workers'])
 
 
 def task_document(row, policy=None):
@@ -91,7 +92,7 @@ class BatchQueueRepository:
             policy['lastCheckpoint'] = policy['windowEnd']
             if policy['windowEnd'] < session['total']:
                 policy.update(phase='PRIMARY', windowStart=policy['windowEnd'],
-                              windowEnd=min(session['total'], policy['windowEnd'] + CHECKPOINT_SIZE))
+                              windowEnd=min(session['total'], policy['windowEnd'] + checkpoint_size(session)))
                 if not complete_rows:
                     rows = await self._policy_rows(connection, session, policy)
                 continue
@@ -107,6 +108,10 @@ class BatchQueueRepository:
                     db.batch_queue_tasks.c.session_id == session['session_id'],
                     db.batch_queue_tasks.c.position.in_(positions),
                     db.batch_queue_tasks.c.status == 'FAILED').values(status='PENDING', updated_at=now()))
+                await connection.execute(insert(db.queue_outbox), [{
+                    'session_id': session['session_id'], 'position': position,
+                    'created_at': now(), 'published_at': None,
+                } for position in positions])
                 rows = [{**row, 'status': 'PENDING'} if row['position'] in positions else row for row in rows]
                 if not complete_rows:
                     rows = await self._policy_rows(connection, session, policy)
@@ -140,9 +145,9 @@ class BatchQueueRepository:
             progress.update(failedRemaining=failed, pendingRetries=pending)
         return progress
 
-    async def start(self, session_id: UUID, owner: str, tasks: list, max_workers: int = MAX_ACTIVE_WORKERS):
-        if isinstance(max_workers, bool) or not isinstance(max_workers, int) or not 1 <= max_workers <= MAX_ACTIVE_WORKERS:
-            raise ValueError('Choose between 1 and 10 workers.')
+    async def start(self, session_id: UUID, owner: str, tasks: list, max_workers: int = 1):
+        if isinstance(max_workers, bool) or not isinstance(max_workers, int) or max_workers < 1:
+            raise ValueError('Choose at least one worker.')
         from app.models.filter_profile import case_key
         office_keys = [case_key(task.filters.model_dump(mode='json', by_alias=True))
                       for task in tasks if len(task.filters.states) == 1 and len(task.filters.rtos) == 1
@@ -179,9 +184,12 @@ class BatchQueueRepository:
                 'status': 'PENDING', 'attempts': 0, 'failures': 0,
                 'runner_id': None, 'job_id': None, 'error': None, 'updated_at': now(),
             } for position, task in enumerate(tasks)])
+            await connection.execute(insert(db.queue_outbox), [{
+                'session_id': session_key, 'position': position, 'created_at': now(), 'published_at': None,
+            } for position in range(len(tasks))])
             await self._save_policy(connection, {'session_id': session_key}, {
                 'version': 1, 'phase': 'PRIMARY', 'windowStart': 0,
-                'windowEnd': min(CHECKPOINT_SIZE, len(tasks)), 'lastCheckpoint': 0,
+                'windowEnd': min(max(10, max_workers), len(tasks)), 'lastCheckpoint': 0,
                 'finalPassStarted': False, 'finalTargets': []})
 
     async def _session(self, connection, session_id: UUID, owner: str, lock=False):
@@ -202,7 +210,18 @@ class BatchQueueRepository:
             return row
         job = Job.model_validate(job_row)
         if job.status not in {JobStatus.COMPLETED, JobStatus.NO_DATA, JobStatus.FAILED, JobStatus.CANCELLED}:
-            return row
+            runner_connected = await connection.scalar(select(db.runners.c.connected).where(
+                db.runners.c.id == job.runner_id))
+            if runner_connected:
+                return row
+            from app.redis_queue import queue_stream
+            if await queue_stream.worker_has_live_task(job.runner_id):
+                return row
+            job.status = JobStatus.FAILED
+            job.error = 'Worker task lease expired. The report will be retried from its saved filters.'
+            job.touch()
+            await save_job(connection, job, event='worker-lease-expired')
+            await release_runner(connection, job.runner_id, job.id)
         if job.status in {JobStatus.COMPLETED, JobStatus.NO_DATA}:
             status, failures = job.status.value, row['failures']
         elif job.status == JobStatus.CANCELLED:
@@ -218,6 +237,9 @@ class BatchQueueRepository:
         await connection.execute(update(db.batch_queue_tasks).where(
             db.batch_queue_tasks.c.session_id == row['session_id'],
             db.batch_queue_tasks.c.position == row['position']).values(**values))
+        if status == 'PENDING':
+            await connection.execute(insert(db.queue_outbox).values(
+                session_id=row['session_id'], position=row['position'], created_at=now(), published_at=None))
         return {**row, **values}
 
     async def _reconcile_successful_retries(self, connection, rows):
@@ -276,7 +298,7 @@ class BatchQueueRepository:
             session = await self._session(connection, session_id, owner, lock=True)
             values = dict(status=status, updated_at=now())
             if max_workers is not None and max_workers != session['max_workers']:
-                if not 1 <= max_workers <= MAX_ACTIVE_WORKERS or session['status'] != 'PAUSED':
+                if max_workers < 1 or session['status'] != 'PAUSED':
                     raise ValueError('Pause the queue before changing its worker count.')
                 processing = (await connection.execute(select(db.batch_queue_tasks).where(
                     db.batch_queue_tasks.c.session_id == str(session_id), db.batch_queue_tasks.c.status == 'PROCESSING')
@@ -288,20 +310,33 @@ class BatchQueueRepository:
                 if active:
                     raise ValueError('Wait for active cases to stop before changing workers.')
                 values['max_workers'] = max_workers
+                session = {**session, 'max_workers': max_workers}
+                policy = await self._policy(connection, session)
+                if policy and policy['phase'] in {'PRIMARY', 'CHECKPOINT'}:
+                    expanded_end = min(session['total'], max(
+                        policy['windowEnd'], policy['windowStart'] + max_workers))
+                    if expanded_end != policy['windowEnd']:
+                        await self._save_policy(connection, session, {**policy, 'windowEnd': expanded_end})
             await connection.execute(update(db.batch_queue_sessions).where(
                 db.batch_queue_sessions.c.session_id == str(session_id)).values(**values))
+            if status == 'RUNNING' and session['status'] == 'PAUSED':
+                pending = list(await connection.scalars(select(db.batch_queue_tasks.c.position).where(
+                    db.batch_queue_tasks.c.session_id == str(session_id),
+                    db.batch_queue_tasks.c.status == 'PENDING')))
+                if pending:
+                    await connection.execute(insert(db.queue_outbox), [{
+                        'session_id': str(session_id), 'position': position,
+                        'created_at': now(), 'published_at': None,
+                    } for position in pending])
 
     async def claim(self, session_id: UUID, owner: str, runner_id: str):
         async with engine.begin() as connection:
             preliminary = await self._session(connection, session_id, owner)
             if preliminary['status'] != 'RUNNING': return {'type': 'paused'}
             from app.worker_pool import assignment_status, capacity_available
-            allocation, count = await assignment_status(connection, runner_id)
+            allocation, _ = await assignment_status(connection, runner_id)
             if allocation == 'offline': return {'type': 'network_paused'}
             if allocation == 'updating': return {'type': 'pool_updating'}
-            number = re.fullmatch(r'playwright-(\d+)', runner_id)
-            if allocation == 'disabled' or (number and int(number[1]) > preliminary['max_workers']):
-                return {'type': 'worker_disabled', 'workerCount': min(preliminary['max_workers'], count or 10)}
             runner_row = (await connection.execute(select(db.runners).where(
                 db.runners.c.id == runner_id).with_for_update())).mappings().first()
             await connection.execute(select(db.report_sessions.c.id).where(
@@ -349,9 +384,10 @@ class BatchQueueRepository:
                     .order_by(db.batch_queue_tasks.c.position).limit(1))
                 if unfinished is None:
                     return {'type': 'done'}
-                window_start = unfinished // CHECKPOINT_SIZE * CHECKPOINT_SIZE
+                size = checkpoint_size(session)
+                window_start = unfinished // size * size
                 policy = {'version': 1, 'phase': 'PRIMARY', 'windowStart': window_start,
-                    'windowEnd': min(session['total'], window_start + CHECKPOINT_SIZE),
+                    'windowEnd': min(session['total'], window_start + size),
                     'lastCheckpoint': window_start, 'finalPassStarted': False, 'finalTargets': []}
                 await self._save_policy(connection, session, policy)
             rows = await self._policy_rows(connection, session, policy)

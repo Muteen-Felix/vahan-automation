@@ -14,7 +14,9 @@ async def health() -> dict[str, str]:
 async def ready():
     async with engine.connect() as connection:
         await connection.execute(text("SELECT 1 FROM users LIMIT 1"))
-    return {"status": "ok", "storage": "postgresql"}
+    from app.redis_queue import queue_stream
+    await queue_stream.client.ping()
+    return {"status": "ok", "storage": "postgresql", "queue": "redis-streams"}
 
 
 @router.get('/network/status')

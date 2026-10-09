@@ -1,5 +1,5 @@
 """Verified DOM versions, immutable observations and preflight evidence in SQL."""
-import hashlib,json,re
+import hashlib,json
 from uuid import uuid4
 from datetime import timedelta
 from sqlalchemy import select,insert,text,func,or_,cast,update
@@ -72,12 +72,9 @@ async def evaluate(observation,runner_id):
         runner_errors=dict(previous.get('runnerErrors',{}))
         if allowed:runner_errors.pop(runner_id,None)
         else:runner_errors[runner_id]=details
-        pool=await c.scalar(select(db.app_settings.c.value)
-            .where(db.app_settings.c.key=='docker-worker-pool')) or {}
-        desired_count=pool.get('desiredCount',10)
-        active_errors={key:value for key,value in runner_errors.items()
-            if not (match:=re.fullmatch(r'playwright-(\d+)',key))
-            or int(match[1])<=desired_count}
+        connected_ids=set(await c.scalars(select(db.runners.c.id).where(db.runners.c.connected.is_(True))))
+        runner_errors={key:value for key,value in runner_errors.items() if key in connected_ids}
+        active_errors=runner_errors
         blocked=bool(active_errors)
         details['blocked']=blocked
         value={'versionId':version_id,'revision':revision,'blocked':blocked,'runnerErrors':runner_errors,

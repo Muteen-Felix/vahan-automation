@@ -480,17 +480,19 @@ class PostgresUsers:
                 set_={"value": value, "updated_at": now()}))
 
 async def recover_after_restart():
-    """Keep history; fail interrupted browser actions rather than replaying a submission."""
+    """Preserve queue jobs with a live Redis consumer lease across API restarts."""
     repository = PostgresJobRepository()
     async with engine.connect() as connection:
+        live_queue_jobs = set(await connection.scalars(select(db.batch_queue_tasks.c.job_id).where(
+            db.batch_queue_tasks.c.status == 'PROCESSING', db.batch_queue_tasks.c.job_id.is_not(None))))
         payloads = (await connection.execute(select(db.jobs.c.payload).where(db.jobs.c.status.not_in([s.value for s in TERMINAL])))).scalars().all()
     for payload in payloads:
         job = Job.model_validate(payload)
-        if job.status not in TERMINAL:
+        if job.status not in TERMINAL and str(job.id) not in live_queue_jobs:
             await repository.update_status(job.id, JobStatus.FAILED, error="API restarted; browser context must be restarted. Retry this report explicitly.")
     async with engine.begin() as connection:
             await connection.execute(delete(db.runner_planning_leases))
-            await connection.execute(update(db.runners).values(connected=False, socket_id=None, current_job_id=None))
+            await connection.execute(update(db.runners).values(connected=False, socket_id=None))
 
 async def audit(actor, event, payload):
     async with engine.begin() as connection:

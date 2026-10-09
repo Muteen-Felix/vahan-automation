@@ -1343,10 +1343,13 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .schedule-feedback { height:0; overflow:hidden; }
 .schedule-feedback.has-feedback { height:30px; }
 .run-schedule-list-heading { margin-top:12px; padding-top:10px; }
-.settings-page .run-schedule-card { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); grid-template-areas:'title progress' 'details details' 'retry actions'; grid-template-rows:52px 60px 38px; padding:14px; gap:10px; }
+.settings-page .run-schedule-card { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); grid-template-areas:'title progress' 'details details' 'retry actions'; grid-template-rows:52px minmax(78px,auto) minmax(38px,auto); padding:14px; gap:10px; }
 .run-schedule-title { grid-area:title; grid-template-columns:minmax(0,1fr) 118px; gap:10px; font-size:13px; }
 .run-schedule-details { grid-area:details; padding:6px 0; gap:10px; }
 .run-schedule-details small { font-size:9px; }
+.settings-page .run-schedule-card .schedule-worker-setting input { display:block; box-sizing:border-box; width:100%; height:30px; min-height:30px; margin:0; padding:4px 8px; border:1px solid #dbe3dd; border-radius:6px; color:#354e3e; background:#fff; font-size:12px; line-height:18px; }
+.settings-page .run-schedule-card .schedule-worker-setting input:disabled { opacity:1; background:#f6f8f5; color:#65736a; }
+.settings-page .run-schedule-card .schedule-worker-setting small { margin-top:2px; line-height:12px; white-space:normal; overflow-wrap:anywhere; }
 .settings-page .run-schedule-card .schedule-worker-setting select { height:23px; min-height:23px; padding:1px 5px; }
 .run-schedule-progress { grid-area:progress; grid-template-rows:28px 4px; padding:7px 10px; gap:5px; }
 .schedule-progress-header { grid-template-columns:minmax(0,1fr) 100px; gap:8px; }
@@ -1372,7 +1375,7 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
   .settings-page .schedule-timezone-setting { grid-template-columns:minmax(0,1fr); gap:8px; }
   .settings-page .automatic-run-form { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .settings-page .automatic-run-form .schedule-profile-label { grid-column:1/-1; }
-  .settings-page .run-schedule-card { grid-template-columns:minmax(0,1fr); grid-template-areas:'title' 'details' 'progress' 'retry' 'actions'; grid-template-rows:44px 70px 52px 38px 38px; padding:12px; gap:8px; }
+  .settings-page .run-schedule-card { grid-template-columns:minmax(0,1fr); grid-template-areas:'title' 'details' 'progress' 'retry' 'actions'; grid-template-rows:44px minmax(116px,auto) 52px 38px 38px; padding:12px; gap:8px; }
   .run-schedule-details { grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1fr); }
   .run-schedule-details dd { font-size:11px; }
   .run-diagnostics-heading { flex-wrap:wrap; gap:7px; }

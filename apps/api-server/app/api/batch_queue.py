@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app.realtime.server import sio
 
 router = APIRouter(prefix='/batch-queue', tags=['batch-queue'])
+worker_router = APIRouter(prefix='/runner', tags=['runner-queue'])
 queue = BatchQueueRepository()
 
 
@@ -24,17 +25,18 @@ class StartQueueInput(BaseModel):
     session_id: UUID = Field(alias='sessionId')
     tasks: list[QueueTaskInput] = Field(min_length=1, max_length=3000)
     preflight_id: UUID | None = Field(default=None,alias='preflightId')
-    max_workers: int = Field(default=10, alias='maxWorkers', ge=1, le=10, strict=True)
+    max_workers: int = Field(default=1, alias='maxWorkers', ge=1, strict=True)
+
+
+class ResumeQueueInput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    preflight_id: UUID | None = Field(default=None,alias='preflightId')
+    max_workers: int | None = Field(default=None, alias='maxWorkers', ge=1, strict=True)
 
 
 class ClaimInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     runner_id: str = Field(alias='runnerId', min_length=1, max_length=128)
-
-class ResumeQueueInput(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-    preflight_id: UUID | None = Field(default=None,alias='preflightId')
-    max_workers: int | None = Field(default=None, alias='maxWorkers', ge=1, le=10, strict=True)
 
 
 async def call(operation):
@@ -49,8 +51,17 @@ async def call(operation):
 @router.post('/sessions')
 async def start_queue(command: StartQueueInput, request: Request):
     from app.repositories.ui_contract import require_gate,bind_gate
-    ids=[f'playwright-{index+1}' for index in range(command.max_workers)]
+    from app.services import services
+    from app.worker_pool import apply_pool, PoolError
+    ids=[runner.id for runner in await services.runners.list()
+        if runner.source.value == 'new' and runner.status.value == 'ONLINE' and not runner.current_job_id]
+    if not ids:
+        raise HTTPException(409, 'Start at least one browser worker before starting the queue.')
     gate=await call(require_gate(request.state.authenticated_user,ids,command.preflight_id,fresh=True))
+    try:
+        await apply_pool(command.max_workers)
+    except PoolError as error:
+        raise HTTPException(409, str(error)) from error
     await call(queue.start(command.session_id, request.state.authenticated_user, command.tasks, command.max_workers))
     await bind_gate(command.session_id,gate)
     return await call(queue.snapshot(command.session_id, request.state.authenticated_user))
@@ -72,8 +83,18 @@ async def resume_queue(session_id: UUID, request: Request, command: ResumeQueueI
     from app.repositories.ui_contract import require_gate,bind_gate
     saved=await call(queue.snapshot(session_id,request.state.authenticated_user))
     count=command.max_workers if command and command.max_workers else saved['maxWorkers']
-    gate=await call(require_gate(request.state.authenticated_user,[f'playwright-{i+1}' for i in range(count)],command.preflight_id if command else None,fresh=True))
+    from app.services import services
+    ids=[runner.id for runner in await services.runners.list()
+        if runner.source.value == 'new' and runner.status.value == 'ONLINE' and not runner.current_job_id]
+    if not ids:
+        raise HTTPException(409, 'Start at least one browser worker before resuming the queue.')
+    gate=await call(require_gate(request.state.authenticated_user,ids,command.preflight_id if command else None,fresh=True))
     await bind_gate(session_id,gate)
+    from app.worker_pool import apply_pool, PoolError
+    try:
+        await apply_pool(count)
+    except PoolError as error:
+        raise HTTPException(409, str(error)) from error
     await call(queue.set_status(session_id, request.state.authenticated_user, 'RUNNING',
         command.max_workers if command else None))
     return {'status': 'RUNNING'}
@@ -84,21 +105,59 @@ async def settle_task(session_id: UUID, position: int, request: Request):
     return await call(queue.settle(session_id, request.state.authenticated_user, position))
 
 
-@router.post('/sessions/{session_id}/claim')
 async def claim_task(session_id: UUID, command: ClaimInput, request: Request):
+    """Compatibility helper for pre-Streams internal callers; no HTTP route is registered."""
     from app.repositories.ui_contract import require_gate
-    # Final recovery can requeue formerly FAILED rows. It requires the same
-    # SQL gate as primary/checkpoint work before creating another job.
-    if await call(queue.needs_work(session_id,request.state.authenticated_user)):
-        await call(require_gate(request.state.authenticated_user,[command.runner_id],session_id=session_id,bound=True))
+    if await call(queue.needs_work(session_id, request.state.authenticated_user)):
+        await call(require_gate(request.state.authenticated_user, [command.runner_id],
+            session_id=session_id, bound=True))
     result = await call(queue.claim(session_id, request.state.authenticated_user, command.runner_id))
     job = result.pop('job', None)
     if result['type'] == 'assigned' and job is None:
         from app.services import services
         job = await services.jobs.get(UUID(result['jobId']))
     if job:
-        await sio.emit('job:assigned', {
-            'jobId': str(job.id), 'filters': job.filters.runner_payload(),
-            'scenarioName': job.scenario_name, 'source': job.source.value,
-        }, room=f'runner:{command.runner_id}', namespace='/runner')
+        await sio.emit('job:assigned', {'jobId': str(job.id), 'filters': job.filters.runner_payload(),
+            'scenarioName': job.scenario_name, 'source': job.source.value},
+            room=f'runner:{command.runner_id}', namespace='/runner')
+    return result
+
+
+class StreamClaimInput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    session_id: UUID = Field(alias='sessionId')
+
+
+@worker_router.post('/queue/claim')
+async def claim_stream_task(command: StreamClaimInput, request: Request):
+    """Let an authenticated stream consumer claim the next durable queue task."""
+    runner_id = request.headers.get('x-vahan-runner-id', '').strip()
+    if not getattr(request.state, 'authenticated_runner', False) or not runner_id:
+        raise HTTPException(401, 'Runner authentication is required.')
+    async with engine.connect() as connection:
+        owner = await connection.scalar(select(db.batch_queue_sessions.c.owner_username).where(
+            db.batch_queue_sessions.c.session_id == str(command.session_id)))
+    if not owner:
+        return {'type': 'done'}
+    from app.repositories.ui_contract import require_gate
+    try:
+        if await queue.needs_work(command.session_id, owner):
+            await require_gate(owner, [runner_id], session_id=command.session_id, bound=True)
+    except ValueError as error:
+        if str(error).startswith(('UI_PREFLIGHT_REQUIRED:', 'UI_HEALTH_BLOCKED:')):
+            return {'type': 'gate_required'}
+        raise HTTPException(409, str(error)) from error
+    result = await queue.claim(command.session_id, owner, runner_id)
+    job = result.pop('job', None)
+    if result['type'] == 'assigned' and job is None:
+        from app.services import services
+        job = await services.jobs.get(UUID(result['jobId']))
+    if job:
+        job_payload = job.model_dump(mode='json', by_alias=True)
+        # The browser-runner job protocol uses `jobId`; the shared Job model
+        # exposes its primary key as `id` for the dashboard API.
+        job_payload['jobId'] = str(job.id)
+        result['job'] = job_payload
+    else:
+        result['job'] = None
     return result

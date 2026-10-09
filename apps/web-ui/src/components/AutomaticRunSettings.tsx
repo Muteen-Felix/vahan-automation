@@ -161,9 +161,8 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
                 {profiles.map(item => <option key={item.id} value={item.id}>{item.name} · {item.definition.report?.year ?? reportYear}</option>)}
               </select>
             </label>
-            <label>Active workers<select aria-label="Active workers" value={workers} onChange={event => setWorkers(Number(event.target.value))} disabled={saving}>
-              {Array.from({length: 10}, (_, i) => i + 1).map(count => <option key={count} value={count}>{count} {count === 1 ? 'worker' : 'workers'}</option>)}
-            </select></label>
+            <label>Parallel task limit<input aria-label="Parallel task limit" type="number" min="1" step="1" value={workers}
+              onChange={event => setWorkers(Math.max(1, Math.floor(Number(event.target.value) || 1)))} disabled={saving} /></label>
             <label>Start date<input aria-label="Start date" type="date" value={date} onChange={event => setDate(event.target.value)} required disabled={saving} /></label>
             <label>Start time<input aria-label="Start time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={saving} /></label>
             <label>Repeat<select aria-label="Repeat" value={repeat} onChange={event => setRepeat(event.target.value as 'once' | 'daily' | 'monthly')} disabled={saving}>
@@ -201,13 +200,11 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
               <div className="run-schedule-start"><dt>{schedule.nextRunAt ? 'Next start' : 'Scheduled start'}</dt><dd title={formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}>{formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}</dd><small>{runTimeZoneLabel(schedule.timeZone)}</small></div>
               <div><dt>Repeat</dt><dd>{schedule.repeat === 'monthly' ? 'Every month' : schedule.repeat === 'daily' ? 'Every day' : 'Once'}</dd>
                 <small>{schedule.repeat === 'monthly' ? `Day ${scheduledDayOfMonth(schedule.startsAt, runTimeZone(schedule.timeZone))} · month-end if needed` : schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
-              <div className="schedule-worker-setting"><dt>Workers</dt><dd>
-                <select aria-label={`Workers for ${schedule.profileName}`} value={workerChoices[schedule.id] ?? schedule.workerCount}
+              <div className="schedule-worker-setting"><dt>Parallel tasks</dt><dd>
+                <input aria-label={`Parallel tasks for ${schedule.profileName}`} type="number" min="1" step="1" value={workerChoices[schedule.id] ?? schedule.workerCount}
                   disabled={Boolean(actionId) || !canResumeSchedule(schedule)}
-                  onChange={event => setWorkerChoices(current => ({...current, [schedule.id]: Number(event.target.value)}))}>
-                  {Array.from({length:10},(_,i)=>i+1).map(count=><option key={count} value={count}>{count} {count === 1 ? 'worker' : 'workers'}</option>)}
-                </select>
-              </dd><small>{canResumeSchedule(schedule) ? 'Applied on continue' : schedule.status === 'PAUSING' ? 'Waiting for cases to save' : 'Pause to change workers'}</small></div>
+                  onChange={event => setWorkerChoices(current => ({...current, [schedule.id]: Math.max(1, Math.floor(Number(event.target.value) || 1))}))} />
+              </dd><small>{canResumeSchedule(schedule) ? 'Applied on continue' : schedule.status === 'PAUSING' ? 'Waiting for cases to save' : 'Pause to change task limit'}</small></div>
             </dl>
             <RunScheduleProgress schedule={schedule} statusLabel={!schedule.enabled && !schedule.sessionId && schedule.nextRunAt ? 'Disabled' : schedule.networkPaused ? 'Waiting for network' : STATUS_LABELS[schedule.status]} />
             <div className="schedule-retry-slot">
@@ -217,7 +214,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
                     role={schedule.status==='ERROR'?'alert':'status'} title={schedule.message}>{schedule.message}</p>
                 : schedule.retryProgress&&schedule.retryProgress.phase!=='PRIMARY'&&!(schedule.retryProgress.phase==='DONE'&&!schedule.failed)
                 ?<BatchRetryStatus progress={schedule.retryProgress} running={schedule.status==='RUNNING'}/>
-                :<p className="schedule-retry-note">Errors are checked every 10 cases, then all remaining failures receive a final recovery pass.</p>}
+                :<p className="schedule-retry-note">Errors are checked after each report group, then all remaining failures receive a final recovery pass.</p>}
             </div>
             <div className="run-schedule-actions">
               <button type="button" className="secondary-button"

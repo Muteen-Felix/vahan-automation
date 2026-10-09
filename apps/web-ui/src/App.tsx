@@ -193,7 +193,8 @@ export default function App() {
         {isAdmin && <><a className={activeSection === 'filters' ? 'active' : undefined} aria-current={activeSection === 'filters' ? 'page' : undefined} href="#filters">Filters</a>
         <a className={activeSection === 'settings' ? 'active' : undefined} aria-current={activeSection === 'settings' ? 'page' : undefined} href="#settings">Settings</a></>}
       </nav>
-      <div className="header-actions">{isAdmin ? <ConnectionBanner backend={connection} runners={runners.length} /> : <AccountSettings signingOut={signingOut} onSignOut={signOut}/>}</div>
+      <div className="header-actions">{isAdmin ? <ConnectionBanner backend={connection}
+        runners={runners.filter(runner => runner.status === 'ONLINE' || runner.status === 'BUSY').length} /> : <AccountSettings signingOut={signingOut} onSignOut={signOut}/>}</div>
     </header>
     <div className="app-layout"><div className="app-main">
       <NetworkNotice network={network}/>

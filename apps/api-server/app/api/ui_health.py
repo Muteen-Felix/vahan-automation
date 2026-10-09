@@ -188,7 +188,7 @@ async def download_ui_health_report(file_name: str) -> Response:
 
 
 class PreflightInput(StrictModel):
-    runner_ids:list[str]=Field(alias='runnerIds',min_length=1,max_length=10)
+    runner_ids:list[str]=Field(alias='runnerIds',min_length=1)
 
 
 @router.get('/contract')

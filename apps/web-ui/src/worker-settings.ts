@@ -1,1 +1,1 @@
-export const TARGET_WORKER_COUNT = 10;
+export const DEFAULT_WORKER_CONCURRENCY = 1;
