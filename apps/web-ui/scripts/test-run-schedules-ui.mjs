@@ -136,7 +136,7 @@ try {
   assert.deepEqual(await bounds(),desktop);
   await page.getByRole('button',{name:'Hide form',exact:true}).click();
   await page.locator('.settings-page').screenshot({path:testArtifactPath('settings-compact-desktop.png')});
-  await page.getByRole('button',{name:'New schedule',exact:true}).click();
+  await page.getByRole('button',{name:'Show form',exact:true}).click();
   assert.equal(await page.getByRole('button',{name:'Delete schedule',exact:true}).isDisabled(),true);
   assert.match(await card.locator('.schedule-progress-numbers').innerText(),/2\s*\/\s*10 cases/);
   assert.match(await card.locator('.schedule-progress-speed').innerText(),/\d+\.\d\s*cases\/min/);
@@ -151,7 +151,6 @@ try {
   await diagnosticsPanel.getByText('A worker is still busy.',{exact:true}).waitFor();
   await diagnosticsPanel.getByRole('alert').waitFor();
   await diagnosticsPanel.getByRole('button',{name:'View details',exact:true}).click();
-  await diagnosticsPanel.locator('summary').click();
   await diagnosticsPanel.getByText('Loading options / checking website',{exact:true}).waitFor();
   await page.context().grantPermissions(['clipboard-read','clipboard-write'],{origin:new URL(process.env.SCHEDULE_UI_URL||'http://127.0.0.1:5186/').origin});
   await diagnosticsPanel.getByRole('button',{name:'Copy diagnostics',exact:true}).click();
@@ -193,7 +192,7 @@ try {
   assert.ok(await card.locator('.run-schedule-details').evaluate(node=>[...node.children].every(child=>child.getBoundingClientRect().bottom<=node.getBoundingClientRect().bottom+1)),'Mobile metadata fits its row');
   await page.getByRole('button',{name:'Hide form',exact:true}).click();
   await page.locator('.settings-page').screenshot({path:testArtifactPath('settings-compact-mobile.png')});
-  await page.getByRole('button',{name:'New schedule',exact:true}).click();
+  await page.getByRole('button',{name:'Show form',exact:true}).click();
   schedules[0]={...schedules[0],profileName:'Extremely long name '.repeat(50),status:'PREPARING',message:'A worker is still busy. Stop its job before changing containers.'};
   await card.locator('.schedule-status').getByText('Preparing',{exact:true}).waitFor();
   assert.deepEqual(await bounds(),mobile,'Mobile layout stays fixed during status and text changes');

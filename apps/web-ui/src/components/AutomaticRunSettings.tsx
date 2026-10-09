@@ -37,8 +37,13 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
   const [actionId, setActionId] = useState('');
   const [workerChoices, setWorkerChoices] = useState<Record<string, number>>({});
   const [formOpen, setFormOpen] = useState(false);
-  const formInitialized = useRef(false);
-  useEffect(() => {if (!loading && !formInitialized.current) {formInitialized.current = true;setFormOpen(!schedules.length);}}, [loading, schedules.length]);
+  const formDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = formDialog.current;
+    if (!dialog) return;
+    if (formOpen && !dialog.open) dialog.showModal();
+    else if (!formOpen && dialog.open) dialog.close();
+  }, [formOpen]);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const profile = profiles.find(item => item.id === profileId);
@@ -75,6 +80,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
       const saved = await api.createRunSchedule({profileId, year: selectedYear, workerCount: workers, startsAt, repeat});
       onUpsert(saved);
       setNotice(`Schedule saved for ${formatScheduledTime(saved.nextRunAt)} (Vietnam time).`);
+      setFormOpen(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not save the run schedule.');
     } finally {setSaving(false);}
@@ -103,37 +109,47 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
       <div className="panel-heading"><div>
         <h2 id="automatic-run-heading">Automatic report schedule</h2>
         <p>Schedule and follow report collection.</p>
-      </div><button type="button" className="secondary-button schedule-form-toggle" aria-expanded={formOpen} aria-controls="new-schedule-form" onClick={() => setFormOpen(value => !value)}>{formOpen ? 'Hide form' : 'New schedule'}</button></div>
-      <div id="new-schedule-form" hidden={!formOpen}>
-      <form className="automatic-run-form" onSubmit={save}>
-        <label className="schedule-profile-label">Report / filter profile
-          <select aria-label="Report / filter profile" value={profileId} onChange={event => setProfileId(event.target.value)} required disabled={saving || !profiles.length}>
-            {!profiles.length && <option value="">No saved profiles</option>}
-            {profiles.map(item => <option key={item.id} value={item.id}>{item.name} · {item.definition.report?.year ?? reportYear}</option>)}
-          </select>
-        </label>
-        <label>Active workers<select aria-label="Active workers" value={workers} onChange={event => setWorkers(Number(event.target.value))} disabled={saving}>
-          {Array.from({length: 10}, (_, i) => i + 1).map(count => <option key={count} value={count}>{count} {count === 1 ? 'worker' : 'workers'}</option>)}
-        </select></label>
-        <label>Start date<input aria-label="Start date" type="date" value={date} onChange={event => setDate(event.target.value)} required disabled={saving} /></label>
-        <label>Start time<input aria-label="Start time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={saving} /></label>
-        <label>Repeat<select aria-label="Repeat" value={repeat} onChange={event => setRepeat(event.target.value as 'once' | 'daily' | 'monthly')} disabled={saving}>
-          <option value="once">Once</option><option value="daily">Every day</option><option value="monthly">Every month</option>
-        </select></label>
-        <label>Report year<input aria-label="Report year" type="number" min="1900" max={new Date().getFullYear()} value={selectedYear}
-          onChange={event => setReportYear(Number(event.target.value))} required disabled={saving || Boolean(profile?.definition.report)} /></label>
-        <div className="automatic-run-form-footer"><span>Vietnam time (UTC+07:00)</span>
-          <button className="primary-button" type="submit" disabled={saving || loading || !profile}>{saving ? 'Saving…' : 'Add schedule'}</button>
+      </div><button type="button" className="secondary-button schedule-form-toggle" aria-haspopup="dialog" aria-expanded={formOpen} aria-controls="new-schedule-form"
+        onClick={() => {setError('');setNotice('');setFormOpen(true);}}>Show form</button></div>
+      <dialog ref={formDialog} id="new-schedule-form" className="schedule-form-dialog" aria-labelledby="new-schedule-title"
+        onCancel={event => {if (saving) event.preventDefault(); else setFormOpen(false);}}
+        onClose={() => setFormOpen(false)}
+        onClick={event => {if (event.target === event.currentTarget && !saving) setFormOpen(false);}}>
+        <div className="schedule-form-dialog-header"><div><span className="settings-eyebrow">AUTOMATIC RUN</span><h3 id="new-schedule-title">Schedule a report</h3>
+          <p>Choose when the saved report profile should run.</p></div>
+          <button type="button" className="schedule-form-dialog-close" aria-label="Hide form" title="Hide form" disabled={saving} onClick={() => setFormOpen(false)}>×</button></div>
+        <div className="schedule-form-dialog-body">
+          {error && <p className="schedule-dialog-error" role="alert">{error}</p>}
+          <form className="automatic-run-form" onSubmit={save}>
+            <label className="schedule-profile-label">Report / filter profile
+              <select aria-label="Report / filter profile" value={profileId} onChange={event => setProfileId(event.target.value)} required disabled={saving || !profiles.length}>
+                {!profiles.length && <option value="">No saved profiles</option>}
+                {profiles.map(item => <option key={item.id} value={item.id}>{item.name} · {item.definition.report?.year ?? reportYear}</option>)}
+              </select>
+            </label>
+            <label>Active workers<select aria-label="Active workers" value={workers} onChange={event => setWorkers(Number(event.target.value))} disabled={saving}>
+              {Array.from({length: 10}, (_, i) => i + 1).map(count => <option key={count} value={count}>{count} {count === 1 ? 'worker' : 'workers'}</option>)}
+            </select></label>
+            <label>Start date<input aria-label="Start date" type="date" value={date} onChange={event => setDate(event.target.value)} required disabled={saving} /></label>
+            <label>Start time<input aria-label="Start time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={saving} /></label>
+            <label>Repeat<select aria-label="Repeat" value={repeat} onChange={event => setRepeat(event.target.value as 'once' | 'daily' | 'monthly')} disabled={saving}>
+              <option value="once">Once</option><option value="daily">Every day</option><option value="monthly">Every month</option>
+            </select></label>
+            <label>Report year<input aria-label="Report year" type="number" min="1900" max={new Date().getFullYear()} value={selectedYear}
+              onChange={event => setReportYear(Number(event.target.value))} required disabled={saving || Boolean(profile?.definition.report)} /></label>
+            <div className="automatic-run-form-footer"><span>Vietnam time (UTC+07:00)</span>
+              <button className="primary-button" type="submit" disabled={saving || loading || !profile}>{saving ? 'Saving…' : 'Add schedule'}</button>
+            </div>
+          </form>
+          <div className="schedule-help-slot"><p className="schedule-help">{repeat === 'monthly'
+            ? `Runs on day ${Number(date.slice(-2))} each month; shorter months use their last day.`
+            : !profiles.length
+            ? <>Create a <a href="#filters">filter profile</a> to select a report.</>
+            : 'Saved schedules keep the selected profile. View collected data in Exported Reports.'}</p></div>
         </div>
-      </form>
-      <div className="schedule-help-slot"><p className="schedule-help">{repeat === 'monthly'
-        ? `Runs on day ${Number(date.slice(-2))} each month; shorter months use their last day.`
-        : !profiles.length
-        ? <>Create a <a href="#filters">filter profile</a> to select a report.</>
-        : 'Saved schedules keep the selected profile. View collected data in Exported Reports.'}</p></div>
-      </div>
-      <div className={`schedule-feedback${error || loadError || notice ? ' has-feedback' : ''}`}>
-        {(error || loadError) ? <p className="schedule-error" role="alert" title={error || loadError}>{error || loadError}</p>
+      </dialog>
+      <div className={`schedule-feedback${loadError || (!formOpen && (error || notice)) ? ' has-feedback' : ''}`}>
+        {(loadError || (!formOpen && error)) ? <p className="schedule-error" role="alert" title={loadError || error}>{loadError || error}</p>
           : <p className="schedule-notice" role="status" title={notice}>{notice || '\u00a0'}</p>}
       </div>
       <div className="run-schedule-list-heading" id="saved-schedules"><h3>Saved schedules</h3><span>{schedules.length} {schedules.length === 1 ? 'schedule' : 'schedules'}</span></div>

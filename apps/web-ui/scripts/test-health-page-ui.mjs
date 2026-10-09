@@ -38,7 +38,7 @@ try {
  const healthyBounds=await scheduleBounds();
  assert.equal(await page.getByLabel('Start time',{exact:true}).isVisible(),false,'Existing schedules keep the creation form closed');
  assert.ok((await page.locator('.run-schedule-card').boundingBox()).height<240);
- await page.getByRole('button',{name:'New schedule',exact:true}).click();
+ await page.getByRole('button',{name:'Show form',exact:true}).click();
  await page.getByLabel('Start time',{exact:true}).fill('11:51');
  await page.getByLabel('Active workers',{exact:true}).selectOption('7');
  assert.equal(await page.getByRole('link',{name:'UI Health' ,exact:true}).count(),0,'UI Health lives inside Settings');

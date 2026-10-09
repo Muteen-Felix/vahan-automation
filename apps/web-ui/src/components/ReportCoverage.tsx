@@ -3,6 +3,14 @@ import type {MatrixPlan} from '../matrix-plan';
 import {useLiveQuery} from '../hooks/use-live-query';
 import {loadReportCoverage, type CoverageContext, type ReportCoverageData} from '../report-coverage';
 
+function formatSavedAt(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  });
+}
+
 export function ReportCoverage({context, plan, refreshTrigger}: {
   context: CoverageContext; plan: MatrixPlan; refreshTrigger?: number;
 }) {
@@ -36,6 +44,10 @@ export function ReportCoverage({context, plan, refreshTrigger}: {
       <p><span>Results</span><strong>{shown.withData} with data · {shown.noData} no data</strong></p>
       {shown.firstMissing && <p><span>Next</span><strong>#{shown.firstMissing.index + 1} · {shown.firstMissing.state} · {shown.firstMissing.rto}</strong></p>}
     </div>}
+    {shown?.matrixLoaded && shown.lastSaved && <p className="report-coverage-updated">
+      <span>Last data saved · GMT+7</span>
+      <time dateTime={shown.lastSaved.savedAt}>{formatSavedAt(shown.lastSaved.savedAt)}</time>
+    </p>}
     <details className="report-coverage-more"><summary>Details</summary>
       {shown?.matrixLoaded && <p>Last saved <strong>{shown.lastSaved ? `#${shown.lastSaved.index + 1} · ${shown.lastSaved.state} · ${shown.lastSaved.rto}` : 'No reports yet'}</strong></p>}
     </details>
