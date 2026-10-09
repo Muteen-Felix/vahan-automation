@@ -120,8 +120,8 @@ async def put_state(key: str, command: StateValue, request: Request):
     return {'ok': True}
 
 @router.get('/files')
-async def files(request: Request):
-    return await services.files.list(owner_filter(request))
+async def files(request: Request, offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500)):
+    return await services.files.list(owner_filter(request), offset=offset, limit=limit)
 
 @router.post('/files', status_code=201)
 async def upload(file: UploadFile, request: Request):

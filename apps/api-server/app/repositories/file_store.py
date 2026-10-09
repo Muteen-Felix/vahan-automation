@@ -9,6 +9,7 @@ from app.db import engine
 from app.db import schema as db
 from app.models.job import Job, JobStatus, UpdateKind
 from app.repositories.postgres import now, save_job, release_runner
+from app.db.pressure import bounded_bulk, bulk_operation
 
 MAX_EXPANDED_BYTES = 250 * 1024 * 1024
 MAX_EXTRACTED_ROWS = 500_000
@@ -74,17 +75,19 @@ async def insert_file(connection, *, name, content, kind, mime_type, job=None, o
 class PostgresFileStore:
     async def put(self, *, name, content, kind, mime_type, job=None, owner=None, metadata=None, extract=False):
         if kind in {'excel', 'upload'} and extract:
-            rows, _ = await asyncio.to_thread(extract_file, content, name)
-            source = 'upload:' + str(uuid4())
-            from app.repositories.annual_reports import import_rows
-            async with engine.begin() as connection:
-                await import_rows(connection, source_key=source, name=name, rows=rows,
-                    filters=job.filters.model_dump(mode='json', by_alias=True) if job else {},
-                    owner=job.owner_username if job else owner, observed_at=now(), strict=True,
-                    checksum=hashlib.sha256(content).hexdigest())
-                summary = await connection.scalar(select(db.report_update_history.c.details)
-                    .where(db.report_update_history.c.source_key == source))
-            return {'sourceKey': source, 'name': name, 'summary': summary}
+            async with bulk_operation():
+                from app.document_client import document
+                rows, _ = await document('extract', content, name)
+                source = 'upload:' + str(uuid4())
+                from app.repositories.annual_reports import import_rows
+                async with engine.begin() as connection:
+                    await import_rows(connection, source_key=source, name=name, rows=rows,
+                        filters=job.filters.model_dump(mode='json', by_alias=True) if job else {},
+                        owner=job.owner_username if job else owner, observed_at=now(), strict=True,
+                        checksum=hashlib.sha256(content).hexdigest())
+                    summary = await connection.scalar(select(db.report_update_history.c.details)
+                        .where(db.report_update_history.c.source_key == source))
+                return {'sourceKey': source, 'name': name, 'summary': summary}
         if kind in {'excel', 'no-data'}:
             raise ValueError('Reports must be committed directly to the main table.')
         async with engine.begin() as connection:
@@ -92,8 +95,10 @@ class PostgresFileStore:
                 mime_type=mime_type, job=job, owner=owner, metadata=metadata)
         return await self.get(file_id, include_content=False)
 
+    @bounded_bulk
     async def commit_excel(self, job_id, name, content, *, observed_at=None, page_url='', runner_id=None):
-        rows, _ = await asyncio.to_thread(extract_file, content, name)
+        from app.document_client import document
+        rows, _ = await document('extract', content, name)
         checksum = hashlib.sha256(content).hexdigest()
         async with engine.begin() as connection:
             payload = await connection.scalar(select(db.jobs.c.payload).where(db.jobs.c.id == str(job_id)).with_for_update())
@@ -155,12 +160,14 @@ class PostgresFileStore:
                 db.stored_files.c.kind == kind).order_by(db.stored_files.c.created_at.desc()).limit(1))).mappings().first()
         return dict(row) if row else None
 
-    async def list(self, owner=None, kind=None):
+    async def list(self, owner=None, kind=None, *, offset=0, limit=None):
         query = select(*[c for c in db.stored_files.c if c.name != "content"]).order_by(db.stored_files.c.created_at.desc())
         if owner:
             query = query.where(db.stored_files.c.owner_username == owner)
         if kind:
             query = query.where(db.stored_files.c.kind == kind)
+        if limit is not None:
+            query = query.offset(offset).limit(limit)
         async with engine.connect() as connection:
             return [dict(row) for row in (await connection.execute(query)).mappings()]
 

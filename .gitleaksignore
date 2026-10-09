@@ -1,0 +1,4 @@
+# Retired example passwords verified not used by live accounts; public extension manifest key.
+287bfe7da37d3637dcd5fd0bfc0afdc6e73ed238:apps/api-server/.env.example:generic-api-key:12
+fcb6fb78d5a7eb8f0a31763bcd2a95e024f6cdd6:apps/api-server/.env.example:generic-api-key:9
+fcb6fb78d5a7eb8f0a31763bcd2a95e024f6cdd6:vahan-chrome-extension/manifest.json:generic-api-key:6

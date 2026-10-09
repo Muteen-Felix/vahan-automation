@@ -7,7 +7,7 @@ try {
   const errors=[],manualWrites=[];
   let logoutFails=true,logoutCalls=0;
   page.on('pageerror',error=>errors.push(error.message));
-  await page.addInitScript(()=>localStorage.setItem('vahanUiAccessToken','fixture'));
+  await page.addInitScript(()=>localStorage.setItem('vahanUiSessionMarker','fixture'));
   await page.route('https://fonts.googleapis.com/**',r=>r.abort());
   await page.route('https://fonts.gstatic.com/**',r=>r.abort());
   await page.routeWebSocket('**/socket.io/**',socket=>{
@@ -57,7 +57,7 @@ try {
   await logout.click();await page.getByRole('alert').filter({hasText:'Fixture logout failure'}).waitFor();
   await page.getByRole('button',{name:'Account',exact:true}).click();
   assert.equal(await logout.isEnabled(),true,'Failed logout is retryable');
-  assert.equal(await page.evaluate(()=>localStorage.getItem('vahanUiAccessToken')),'fixture','Failed logout preserves auth');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('vahanUiSessionMarker')),'fixture','Failed logout preserves auth');
   await page.getByRole('button',{name:'Close account settings',exact:true}).click();
   for(const hash of ['#configure','#configure?scheduled=old-schedule']){
     await page.goto(origin+hash);
@@ -73,7 +73,7 @@ try {
   await page.getByRole('button',{name:'Account',exact:true}).click();
   await logout.waitFor();logoutFails=false;await logout.click();
   await page.getByRole('heading',{name:'Welcome back',exact:true}).waitFor();
-  assert.equal(await page.evaluate(()=>localStorage.getItem('vahanUiAccessToken')),null);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('vahanUiSessionMarker')),null);
   assert.equal(logoutCalls,2);assert.deepEqual(manualWrites,[]);assert.deepEqual(errors,[]);
   console.log('Navigation: ordered tabs, default reports, retired routes, Settings-only logout, retry/sign-out and 320–1440px layouts passed.');
 } finally {await browser.close();}

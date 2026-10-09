@@ -1,5 +1,6 @@
 """Use the same strictly guarded disposable PostgreSQL database as report verification."""
 import io
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 import unittest
@@ -292,7 +293,7 @@ class AnnualReportsTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.headers['x-report-row-count'],'151')
         filename = unquote(response.headers['content-disposition'].split("UTF-8''",1)[1])
         self.assertEqual(filename,'Maker Month Wise Data of UDALGURI - AS27, ASSAM (2026).xlsx')
-        workbook=load_workbook(io.BytesIO(response.body),data_only=False)
+        workbook=load_workbook(io.BytesIO(Path(response.path).read_bytes()),data_only=False)
         sheet=workbook.active
         self.assertEqual(sheet.max_row,154)
         self.assertEqual(sheet.max_column,17)
@@ -309,6 +310,7 @@ class AnnualReportsTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sheet.freeze_panes,'F4')
         self.assertEqual(sheet.auto_filter.ref,'A3:Q154')
         workbook.close()
+        Path(response.path).unlink(missing_ok=True)
 
     async def test_export_all_requires_confirmation_and_respects_shared_scope_and_year(self):
         await self.ingest('first',rows(['Maker',"JAN'26"],[['BAJAJ AUTO LTD',0]]))
@@ -321,6 +323,7 @@ class AnnualReportsTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(error.exception.status_code,409)
         response=await export_annual_reports(request('alpha','user'),year=2026,dataset='',state='',rto='',confirm_all=True)
         self.assertEqual(response.headers['x-report-row-count'],'3')
+        Path(response.path).unlink(missing_ok=True)
         self.assertIn('All%20RTOs%2C%20ASSAM%20%282026%29.xlsx',response.headers['content-disposition'])
         # Every account selects the same shared scope.
         alpha=(await annual_reports(request('alpha','user'),year=2026,dataset='',state='',rto='',offset=0,limit=100))['datasetId']
@@ -341,7 +344,7 @@ class AnnualReportsTest(unittest.IsolatedAsyncioTestCase):
         response=await export_annual_reports(request('alpha','user'),year=2026,dataset='',state='',rto='AN1',confirm_all=False)
         filename=unquote(response.headers['content-disposition'].split("UTF-8''",1)[1])
         self.assertEqual(filename,'Maker Month Wise Data of Port Blair DTO - AN1, Andaman & Nicobar Island (2026).xlsx')
-        workbook=load_workbook(io.BytesIO(response.body),data_only=True)
+        workbook=load_workbook(io.BytesIO(Path(response.path).read_bytes()),data_only=True)
         sheet=workbook.active
         self.assertEqual(sheet['A1'].value,filename[:-5])
         self.assertEqual(sum(sheet.cell(r,c).value or 0 for r in range(4,7) for c in range(6,18)),64)

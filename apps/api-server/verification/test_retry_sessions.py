@@ -27,7 +27,7 @@ from openpyxl import Workbook
 from sqlalchemy import delete, func, select, update
 from starlette.requests import Request
 from app.api.jobs import create_job
-from app.api.excel import (list_exported_report_sessions, download_job_file,
+from app.api.excel import (list_exported_report_sessions, read_exported_report_session, download_job_file,
     delete_report_session, restore_report_session)
 from app.db import engine, schema as db
 from app.models.job import Job, JobStatus, CreateJobRequest
@@ -71,7 +71,7 @@ class RetrySessionsTest(unittest.IsolatedAsyncioTestCase):
                 payload = await connection.scalar(select(db.jobs.c.payload).where(db.jobs.c.id == str(job.id)))
                 payload.pop('case_id', None)
                 payload.pop('retry_of_job_id', None)
-                await connection.execute(update(db.jobs).where(db.jobs.c.id == str(job.id)).values(payload=payload))
+                await connection.execute(update(db.jobs).where(db.jobs.c.id == str(job.id)).values(payload=payload, case_id=None, retry_of_job_id=None))
             job = await services.jobs.get(job.id)
         return job
 
@@ -81,8 +81,7 @@ class RetrySessionsTest(unittest.IsolatedAsyncioTestCase):
         return await create_job(CreateJobRequest.model_validate({**data, **changes}), self.request)
 
     async def summary(self):
-        sessions = await list_exported_report_sessions(self.request)
-        return next(session for session in sessions if session['sessionId'] == str(self.session_id))
+        return await read_exported_report_session(self.session_id, self.request)
 
     async def finish(self, job, data=True, workbook=True):
         for status in [JobStatus.OPENING_VAHAN, JobStatus.FILLING_FILTERS, JobStatus.SUBMITTING, JobStatus.WAITING_RESULT]:

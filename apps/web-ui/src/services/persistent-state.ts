@@ -1,4 +1,4 @@
-import { api, getAccessToken } from './api-client';
+import { api, getSessionMarker } from './api-client';
 
 export const STATE_SYNC_EVENT = 'vahan:state-sync';
 const LEGACY_KEYS = ['vahanStateRtoMatrixV1', 'vahanStateRtoBatchRecoveryV1', 'vahanActiveJobId'];
@@ -54,7 +54,7 @@ function flush(): Promise<void> {
 
 async function drain() {
   const current = generation;
-  const token = getAccessToken();
+  const token = getSessionMarker();
   try {
     while (pending.size && current === generation) {
       const [key, value] = pending.entries().next().value as [string, unknown];

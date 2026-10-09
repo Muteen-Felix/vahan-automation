@@ -14,7 +14,8 @@
     "test:navigation": "node test-navigation.mjs && node test-page-recovery.mjs",
     "test:image-pipe": "node test-image-pipe.mjs",
     "test:profile-options": "node test-profile-options.mjs",
-    "test:main-report-save": "node test-main-report-save.mjs"
+    "test:main-report-save": "node test-main-report-save.mjs",
+    "test:save-pressure": "node test-save-pressure.mjs"
   },
   "dependencies": {
     "playwright": "1.63.0",

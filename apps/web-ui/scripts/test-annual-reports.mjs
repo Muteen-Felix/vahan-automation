@@ -3,6 +3,7 @@ import {testArtifactPath} from './test-artifact-path.mjs';
 import { chromium } from '../../browser-runner/node_modules/playwright/index.mjs';
 
 const browser = await chromium.launch({headless: true});
+const corsOrigin=new URL(process.env.ANNUAL_UI_URL || 'http://127.0.0.1:5174/#reports').origin;
 try {
   const page = await browser.newPage({viewport: {width: 1920, height: 1080}});
   const errors = [];
@@ -40,7 +41,7 @@ try {
         'Maker Month Wise Data of All RTOs, All States (2026).xlsx';
       return route.fulfill({status:200, contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         body:Buffer.from('workbook-download-fixture'),headers:{'Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
-          'access-control-allow-origin':'*','access-control-expose-headers':'Content-Disposition'}});
+          'access-control-allow-origin':corsOrigin,'access-control-allow-credentials':'true','access-control-expose-headers':'Content-Disposition'}});
     }
     if (url.pathname === '/api/annual-reports/history') historyRequests++;
     if (url.pathname === '/api/auth/status') body = {configured: true};
@@ -72,11 +73,12 @@ try {
         const wait = nextReadDelayMs; nextReadDelayMs = 0;
         await new Promise(resolve => setTimeout(resolve, wait));
       }
-      await route.fulfill({status:200, contentType:'application/json', body:responseBody, headers:{'access-control-allow-origin':'*'}});
+      await route.fulfill({status:200, contentType:'application/json', body:responseBody, headers:{'access-control-allow-origin':corsOrigin,'access-control-allow-credentials':'true'}});
     } finally {if (watched) activeReads--;}
   });
   await page.goto(process.env.ANNUAL_UI_URL || 'http://127.0.0.1:5174/#reports');
   await page.getByLabel('Year',{exact:true}).waitFor();
+  await page.getByRole('rowheader', {name:'OLA ELECTRIC TECHNOLOGIES PVT LTD', exact:true}).waitFor();
   assert.equal(await page.getByLabel('Year',{exact:true}).inputValue(),String(new Date().getFullYear()),'reports default to the current year even when crawl settings use a historical year');
   await page.getByRole('rowheader', {name:'OLA ELECTRIC TECHNOLOGIES PVT LTD', exact:true}).waitFor();
   assert.deepEqual(await page.getByLabel('Report filters',{exact:true}).locator('option').allTextContents(),

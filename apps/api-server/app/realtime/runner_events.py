@@ -46,7 +46,7 @@ def _registration(auth: dict | None) -> tuple[str, str, str | None, ReportSource
         source = ReportSource(auth.get("source", ReportSource.NEW))
     except ValueError:
         return None
-    if not runner_id or len(runner_id) > 128 or not runner_name or not runner_token_matches(token) or source != ReportSource.NEW or auth.get("engine") != "playwright":
+    if not runner_id or len(runner_id) > 128 or not runner_name or not runner_token_matches(token, runner_id) or source != ReportSource.NEW or auth.get("engine") != "playwright":
         return None
     return runner_id, runner_name, version, source
 
@@ -55,6 +55,8 @@ def _registration(auth: dict | None) -> tuple[str, str, str | None, ReportSource
 async def connect(sid: str, _environ: dict, auth: dict | None) -> bool:
     registration = _registration(auth)
     if not registration:
+        from app.repositories.postgres import audit
+        await audit(None, 'security.worker_denied', {'reason': 'credential_or_identity'})
         return False
     runner_id, name, version, source = registration
     pending_disconnect = _disconnect_tasks.pop(runner_id, None)
@@ -67,6 +69,8 @@ async def connect(sid: str, _environ: dict, auth: dict | None) -> bool:
         version=version,
         source=source,
     )
+    from app.repositories.postgres import audit
+    await audit(runner_id, 'worker.registered', {'engine': 'playwright'})
     await sio.enter_room(sid, f"runner:{runner_id}", namespace="/runner")
     await sio.emit(
         "runner:online",

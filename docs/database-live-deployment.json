@@ -1,0 +1,60 @@
+{
+  "previousPool": {
+    "phase": "ready",
+    "desiredCount": 7
+  },
+  "before": {
+    "counts": {
+      "jobs": 47079,
+      "job_events": 528324,
+      "stored_files": 75588,
+      "main_reports": 64638,
+      "report_update_history": 38546,
+      "batch_queue_tasks": 82124,
+      "report_sessions": 84
+    },
+    "monthTotals": {
+      "apr": 392055,
+      "aug": 453636,
+      "dec": 263641,
+      "feb": 357393,
+      "jan": 386265,
+      "jul": 487522,
+      "jun": 438877,
+      "mar": 577112,
+      "may": 470529,
+      "nov": 348174,
+      "oct": 402905,
+      "sep": 480574
+    }
+  },
+  "sourceWorktree": "/Users/mac/Desktop/vahan-automation-db-capacity",
+  "baseCommit": "2bc878eed2640c3f6560657afee49aef5b956cf5",
+  "after": {
+    "counts": {
+      "jobs": 47079,
+      "job_events": 528324,
+      "stored_files": 75588,
+      "main_reports": 64638,
+      "report_update_history": 38546,
+      "batch_queue_tasks": 82124,
+      "report_sessions": 84
+    },
+    "monthTotals": {
+      "apr": 392055,
+      "aug": 453636,
+      "dec": 263641,
+      "feb": 357393,
+      "jan": 386265,
+      "jul": 487522,
+      "jun": 438877,
+      "mar": 577112,
+      "may": 470529,
+      "nov": 348174,
+      "oct": 402905,
+      "sep": 480574
+    }
+  },
+  "migrationSeconds": 64.91,
+  "revision": "0013_database_capacity"
+}

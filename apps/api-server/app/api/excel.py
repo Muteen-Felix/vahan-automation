@@ -2,7 +2,8 @@ from uuid import UUID
 from pathlib import Path
 import json
 import re
-from fastapi import APIRouter, HTTPException, UploadFile, Header, Request, Form
+from fastapi import APIRouter, HTTPException, UploadFile, Header, Request, Form, Query
+from typing import Annotated
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, AwareDatetime
 from sqlalchemy import select, update
@@ -46,9 +47,10 @@ class VerifyReportsRequest(BaseModel):
 
 @router.get('/reports')
 async def list_exported_reports(request: Request):
-    jobs = {str(j.id): j for j in await services.jobs.list_all(owner_filter(request))}
+    files = await services.files.list(owner_filter(request), kind='excel')
+    jobs = {str(j.id): j for j in await services.jobs.list_all(owner_filter(request), job_ids=[f['job_id'] for f in files])} if files else {}
     reports = []
-    for file in await services.files.list(owner_filter(request), kind='excel'):
+    for file in files:
         job = jobs.get(file['job_id'])
         if not job or job.status != JobStatus.COMPLETED:
             continue
@@ -58,63 +60,21 @@ async def list_exported_reports(request: Request):
     return reports
 
 @router.get('/reports/sessions')
-async def list_exported_report_sessions(request: Request, deleted: bool = False):
-    query = select(db.report_sessions).where(
-        db.report_sessions.c.deleted_at.is_not(None) if deleted else db.report_sessions.c.deleted_at.is_(None))
-    owner = owner_filter(request)
-    if owner is not None:
-        query = query.where(db.report_sessions.c.owner_username == owner)
-    async with engine.connect() as connection:
-        session_records = {row['id']: row for row in (await connection.execute(query)).mappings()}
-    files = {(f['job_id'], f['kind']): f for f in await services.files.list(owner_filter(request))}
-    sessions = {}
-    attempts = sorted((job for job in await services.jobs.list_all(owner_filter(request))
-        if str(job.session_id) in session_records), key=lambda j: (j.created_at, str(j.id)))
-    attempts_by_id = {job.id: job for job in attempts}
-    legacy_roots = {}
-    legacy_case_ids = {}
-    for job in attempts:
-        if job.case_id is None and job.retry_of_job_id is None:
-            # Older matrix runs did not save retry links. Each office/filter set
-            # occurs once per session; repeated identical attempts are retries.
-            key = (job.session_id, job.source, job.scenario_name,
-                json.dumps(job.filters.model_dump(mode='json'), sort_keys=True))
-            legacy_case_ids[job.id] = legacy_roots.setdefault(key, job.id)
-    latest_cases = {}
-    for job in attempts:
-        session_id = str(job.session_id)
-        session = sessions.setdefault(session_id, dict(sessionId=session_id, sessionFolder=session_id,
-            startedAt=job.created_at.isoformat(), updatedAt=job.updated_at.isoformat(),
-            deletedAt=session_records[session_id]['deleted_at'].isoformat() if deleted else None, jobs=[]))
-        session['startedAt'] = min(session['startedAt'], job.created_at.isoformat())
-        session['updatedAt'] = max(session['updatedAt'], job.updated_at.isoformat())
-        # Keep all attempts in storage, but count each logical case only once.
-        case_id = job.case_id or job.id
-        case_id = legacy_case_ids.get(case_id, case_id)
-        latest_cases[(session_id, case_id)] = job
-    for (session_id, case_id), job in latest_cases.items():
-        session = sessions[session_id]
-        original = attempts_by_id.get(case_id, job)
-        kind = 'excel' if job.status == JobStatus.COMPLETED else 'no-data' if job.status == JobStatus.NO_DATA else None
-        file = files.get((str(job.id), kind))
-        session['jobs'].append(dict(jobId=str(job.id), scenarioName=job.scenario_name or 'VAHAN report',
-            state=job.filters.states[0] if job.filters.states else '', rto=job.filters.rtos[0] if job.filters.rtos else '',
-            source=job.source.value, status=job.status.value, error=job.error,
-            filters=job.filters.model_dump(mode='json', by_alias=True), fileName=file['name'] if file else None,
-            fileType=('excel' if kind == 'excel' else 'text') if file else None,
-            fileSize=file['size'] if file else 0, filePath=f"postgresql:{file['id']}" if file else None,
-            createdAt=original.created_at.isoformat(), updatedAt=job.updated_at.isoformat(),
-            downloadUrl=f'/api/jobs/{job.id}/{kind}' if file else None))
-    for session in sessions.values():
-        jobs = session['jobs']
-        session.update(jobCount=len(jobs), completedCount=sum(j['status'] == 'COMPLETED' for j in jobs),
-            noDataCount=sum(j['status'] == 'NO_DATA' for j in jobs), failedCount=sum(j['status'] == 'FAILED' for j in jobs),
-            cancelledCount=sum(j['status'] == 'CANCELLED' for j in jobs),
-            activeCount=sum(j['status'] not in {'COMPLETED', 'NO_DATA', 'FAILED', 'CANCELLED'} for j in jobs),
-            fileCount=sum(bool(j['downloadUrl']) for j in jobs), totalFileSize=sum(j['fileSize'] for j in jobs),
-            sources=sorted({j['source'] for j in jobs}))
-        jobs.sort(key=lambda j: j['createdAt'])
-    return sorted(sessions.values(), key=lambda s: s['startedAt'], reverse=True)
+async def list_exported_report_sessions(request: Request, deleted: bool = False,
+    offset: Annotated[int, Query(ge=0)] = 0, limit: Annotated[int, Query(ge=1, le=200)] = 100):
+    from app.repositories.report_sessions import read_sessions
+    return await read_sessions(owner_filter(request), deleted=deleted, offset=offset, limit=limit)
+
+
+@router.get('/reports/sessions/{session_id}')
+async def read_exported_report_session(session_id: UUID, request: Request,
+    offset: Annotated[int, Query(ge=0)] = 0, limit: Annotated[int, Query(ge=1, le=500)] = 100):
+    from app.repositories.report_sessions import read_sessions
+    records = await read_sessions(owner_filter(request), session_id=session_id,
+                                  job_offset=offset, job_limit=limit)
+    if not records:
+        raise HTTPException(404, 'Report session not found.')
+    return records[0]
 
 
 @router.delete('/reports/sessions/{session_id}')
@@ -137,7 +97,10 @@ async def delete_report_session(session_id: UUID, request: Request):
         if active_job or active_batch:
             raise HTTPException(409, 'Stop this session before deleting it.')
         await connection.execute(update(db.report_sessions).where(db.report_sessions.c.id == str(session_id)).values(deleted_at=now()))
+    from app.db.read_cache import invalidate_report_sessions
+    invalidate_report_sessions()
     return {'ok': True, 'sessionId': str(session_id)}
+
 
 
 @router.post('/reports/sessions/{session_id}/restore')
@@ -149,12 +112,15 @@ async def restore_report_session(session_id: UUID, request: Request):
             raise HTTPException(404, 'Report session not found.')
         require_owner(request, session['owner_username'])
         await connection.execute(update(db.report_sessions).where(db.report_sessions.c.id == str(session_id)).values(deleted_at=None))
+    from app.db.read_cache import invalidate_report_sessions
+    invalidate_report_sessions()
     return {'ok': True, 'sessionId': str(session_id)}
+
 
 @router.post('/reports/verify')
 async def verify_exported_reports(command: VerifyReportsRequest, request: Request):
-    jobs = {str(j.id): j for j in await services.jobs.list_all(owner_filter(request))}
     files = await services.files.list(owner_filter(request), 'excel')
+    jobs = {str(j.id): j for j in await services.jobs.list_all(owner_filter(request), job_ids=[f['job_id'] for f in files])} if files else {}
     result = {}
     for name in command.file_names:
         matches = [f for f in files if f['name'] == name and f['job_id'] in jobs

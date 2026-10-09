@@ -36,11 +36,23 @@ def job_document(job):
     payload["successful_apply_click_ids"] = job.successful_apply_click_ids
     return payload
 
+
+def job_event_document(job, event):
+    fields = {'id', 'session_id', 'runner_id', 'status', 'error', 'updated_at',
+              'captcha_id', 'successful_apply_count', 'main_report_checksum',
+              'main_report_saved_at', 'result_checksum', 'result_message',
+              'report_row_count', 'report_table_count'}
+    if event == 'filters-verified':
+        fields.add('filter_execution')
+    if event.startswith('main-report-'):
+        fields.add('main_report_summary')
+    return {'payloadVersion': 2, **job.model_dump(mode='json', by_alias=True, include=fields)}
+
 async def save_job(connection, job, event="updated"):
     await connection.execute(update(db.jobs).where(db.jobs.c.id == str(job.id)).values(
         status=job.status.value, payload=job_document(job), updated_at=job.updated_at))
     await connection.execute(insert(db.job_events).values(id=str(uuid4()), job_id=str(job.id),
-        event=event, payload=job.model_dump(mode='json', by_alias=True), created_at=now()))
+        event=event, payload=job_event_document(job, event), created_at=now()))
 
 def runner_document(runner):
     return {**runner.model_dump(mode="json"), "socket_id": runner.socket_id}
@@ -74,7 +86,7 @@ class PostgresJobRepository:
                     or previous.update_task_id != job.update_task_id):
                 raise ValueError('Retry must preserve the original owner, session, filters and source.')
             child = await connection.scalar(select(db.jobs.c.id).where(
-                db.jobs.c.payload['retry_of_job_id'].as_string() == str(previous.id)).limit(1))
+                db.jobs.c.retry_of_job_id == str(previous.id)).limit(1))
             if child:
                 raise ValueError('This job already has a retry. Retry the latest failed attempt instead.')
             job.case_id = previous.case_id or previous.id
@@ -90,6 +102,8 @@ class PostgresJobRepository:
             raise ValueError('Report session was deleted. Restore it before continuing or retrying.')
         await connection.execute(insert(db.jobs).values(id=str(job.id), owner_username=job.owner_username,
             session_id=str(job.session_id), runner_id=job.runner_id, status=job.status.value,
+            case_id=str(job.case_id), retry_of_job_id=str(job.retry_of_job_id) if job.retry_of_job_id else None,
+            scenario_name=job.scenario_name, source=job.source.value,
             filters=job.filters.model_dump(mode="json", by_alias=True), payload=job_document(job),
             created_at=job.created_at, updated_at=job.updated_at))
         await connection.execute(insert(db.job_events).values(id=str(uuid4()), job_id=str(job.id),
@@ -215,10 +229,18 @@ class PostgresJobRepository:
             return True
         return await self._change(job_id, operation, 'filters-verified')
 
-    async def list_all(self, owner=None):
-        query = select(db.jobs.c.payload).order_by(db.jobs.c.created_at.desc())
+    async def list_all(self, owner=None, *, limit=None, offset=0, session_ids=None, job_ids=None):
+        # Strip retired embedded images on the server, including historical jobs.
+        query = select(db.jobs.c.payload.op('-')('captcha_image_data_url')).order_by(
+            db.jobs.c.created_at.desc(), db.jobs.c.id.desc())
         if owner:
             query = query.where(db.jobs.c.owner_username == owner)
+        if session_ids is not None:
+            query = query.where(db.jobs.c.session_id.in_(session_ids))
+        if job_ids is not None:
+            query = query.where(db.jobs.c.id.in_(job_ids))
+        if limit is not None:
+            query = query.offset(offset).limit(limit)
         async with engine.connect() as connection:
             return [Job.model_validate(value) for value in (await connection.execute(query)).scalars()]
 
@@ -399,11 +421,11 @@ class PostgresUsers:
         valid = await asyncio.to_thread(check_password, password, encoded)
         return user if user and user["active"] and valid else None
 
-    async def create_session(self, username, expected_password_hash=None):
+    async def create_session(self, username, expected_password_hash=None, expected_role=None):
         raw = secrets.token_urlsafe(32)
         async with engine.begin() as connection:
             user = (await connection.execute(select(db.users).where(db.users.c.username == username).with_for_update())).mappings().first()
-            if not user or not user['active'] or (expected_password_hash is not None and user['password_hash'] != expected_password_hash):
+            if not user or not user['active'] or (expected_password_hash is not None and user['password_hash'] != expected_password_hash) or (expected_role is not None and user['role'] != expected_role):
                 raise ValueError('Credentials changed. Please sign in again.')
             from app.security import ABSOLUTE_TTL_SECONDS
             created = now()
@@ -493,6 +515,10 @@ async def recover_after_restart():
             await connection.execute(update(db.runners).values(connected=False, socket_id=None, current_job_id=None))
 
 async def audit(actor, event, payload):
+    from app import soc
+    record = soc.event(actor, event, payload)
     async with engine.begin() as connection:
-        await connection.execute(insert(db.audit_events).values(id=str(uuid4()), actor=actor,
-            event=event, payload=payload, created_at=now()))
+        await connection.execute(insert(db.audit_events).values(id=record['id'], actor=actor,
+            event=event, payload={'tenantId': settings.tenant_id, **record['payload'],
+                                  '_context': record['context']}, created_at=now()))
+        await soc.enqueue(connection, record)

@@ -124,6 +124,22 @@ function sessionStatusClass(session: ExportedReportSession): string {
 }
 
 function SessionDetail({ session, onClose }: { session: ExportedReportSession; onClose: () => void }) {
+  const [page, setPage] = useState(0);
+  const [jobs, setJobs] = useState<ExportedReportJob[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const pageSize = 100;
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    void api.exportedReportSession(session.sessionId, page * pageSize).then(detail => {
+      if (active) setJobs(detail.jobs);
+    }).catch(reason => {
+      if (active) setError(reason instanceof Error ? reason.message : 'Could not load cases.');
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [session.sessionId, session.updatedAt, page]);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -161,11 +177,20 @@ function SessionDetail({ session, onClose }: { session: ExportedReportSession; o
         </div>
         <p className="report-detail-time">Started: {formatDate(session.startedAt)} · Updated: {formatDate(session.updatedAt)}</p>
 
+        <div className="report-session-actions" aria-label="Case pagination">
+          <button className="secondary-button" type="button" disabled={loading || page === 0}
+            onClick={() => setPage(value => value - 1)}>Previous cases</button>
+          <span role="status">{loading ? 'Loading cases…' : `${page * pageSize + (jobs.length ? 1 : 0)}–${page * pageSize + jobs.length} of ${session.jobCount} cases`}</span>
+          <button className="secondary-button" type="button" disabled={loading || (page + 1) * pageSize >= session.jobCount}
+            onClick={() => setPage(value => value + 1)}>Next cases</button>
+        </div>
+        {error && <p className="report-case-error" role="alert">{error}</p>}
+
         <div className="report-detail-list" aria-label="Reports in this session">
-          {session.jobs.map((job, index) => (
+          {!loading && jobs.map((job, index) => (
             <article className="report-detail-case" key={job.jobId}>
               <div className="report-detail-case-heading">
-                <span className="report-detail-index">{index + 1}</span>
+                <span className="report-detail-index">{page * pageSize + index + 1}</span>
                 <div className="report-detail-case-main">
                   <strong>{job.scenarioName}</strong>
                   <div className="report-detail-tags">
@@ -230,6 +255,9 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
   const calendarInitialized = useRef(false);
   const calendarPickerRef = useRef<HTMLDivElement>(null);
   const loadSequenceRef = useRef(0);
+  const inFlightRef = useRef(0);
+  const [hasOlderSessions, setHasOlderSessions] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   const selectedDate = parseDateDraft(dateInput);
   const dateInputHasValue = dateInput.length > 0;
@@ -284,6 +312,8 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
   }
 
   async function loadReports(background = false) {
+    if (background && (inFlightRef.current > 0 || document.hidden)) return;
+    inFlightRef.current += 1;
     const sequence = ++loadSequenceRef.current;
     if (!background) {
       setLoading(true);
@@ -292,15 +322,31 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
     try {
       const data = await api.exportedReportSessions(showDeleted);
       if (sequence !== loadSequenceRef.current) return;
-      setSessions(data);
+      if (!background || sessions.length <= data.length) setHasOlderSessions(data.length === 100);
+      setSessions(current => background ? [...data, ...current.filter(item => !data.some(fresh => fresh.sessionId === item.sessionId))] : data);
       setError("");
-      setSelectedSession((current) => current ? data.find((session) => session.sessionId === current.sessionId) ?? null : null);
+      setSelectedSession((current) => current ? data.find((session) => session.sessionId === current.sessionId) ?? current : null);
     } catch (e) {
       if (sequence !== loadSequenceRef.current) return;
       setError(e instanceof Error ? e.message : "Could not load report sessions.");
     } finally {
+      inFlightRef.current -= 1;
       if (sequence === loadSequenceRef.current) setLoading(false);
     }
+  }
+
+  async function loadOlderSessions() {
+    if (loadingOlder) return;
+    setLoadingOlder(true);
+    const sequence = loadSequenceRef.current;
+    try {
+      const older = await api.exportedReportSessions(showDeleted, sessions.length);
+      if (sequence !== loadSequenceRef.current) return;
+      setHasOlderSessions(older.length === 100);
+      setSessions(current => [...current, ...older.filter(item => !current.some(existing => existing.sessionId === item.sessionId))]);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not load older sessions.');
+    } finally { setLoadingOlder(false); }
   }
 
   async function changeSession(session: ExportedReportSession, restore = false) {
@@ -487,7 +533,9 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
         </div>
       )}
 
-      {selectedSession && <SessionDetail session={selectedSession} onClose={() => setSelectedSession(null)} />}
+      {hasOlderSessions && <button className="secondary-button" type="button" disabled={loadingOlder}
+        onClick={() => void loadOlderSessions()}>{loadingOlder ? 'Loading…' : 'Load older sessions'}</button>}
+      {selectedSession && <SessionDetail key={selectedSession.sessionId} session={selectedSession} onClose={() => setSelectedSession(null)} />}
     </section>
   );
 }

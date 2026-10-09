@@ -7,6 +7,8 @@ diagnostics/
 .env
 .docker.env
 backups/
+.secrets/
+tenants/
 .pytest_cache/
 .coverage
 htmlcov/

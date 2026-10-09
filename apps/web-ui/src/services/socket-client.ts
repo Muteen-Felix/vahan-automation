@@ -1,10 +1,10 @@
 import { io } from "socket.io-client";
 
-import { API_URL, getAccessToken } from "./api-client";
+import { API_URL } from "./api-client";
 
 export const uiSocket = io(`${API_URL}/ui`, {
   transports: ["websocket"],
-  auth: (callback) => callback({ token: getAccessToken() }),
+  withCredentials: true,
   autoConnect: false,
   reconnection: true,
   reconnectionDelay: 1_000,

@@ -1,0 +1,66 @@
+{
+  "snapshot": {
+    "counts": {
+      "jobs": 46363,
+      "job_events": 520698,
+      "stored_files": 75580,
+      "main_reports": 64638,
+      "report_update_history": 37835,
+      "batch_queue_tasks": 82124,
+      "report_sessions": 84
+    },
+    "monthTotals": {
+      "jan": "386265",
+      "feb": "357393",
+      "mar": "577112",
+      "apr": "392055",
+      "may": "470529",
+      "jun": "438877",
+      "jul": "487522",
+      "aug": "453636",
+      "sep": "480574",
+      "oct": "402905",
+      "nov": "348174",
+      "dec": "263641"
+    }
+  },
+  "summarySessions": 84,
+  "summaryBytes": 34648,
+  "summaryMedianMs": 507.76,
+  "cachedSummaryMs": 0.62,
+  "historyCache": {
+    "hits": 1,
+    "loads": 6,
+    "coalesced": 19,
+    "entries": 1,
+    "inFlight": 0,
+    "ttlSeconds": 2
+  },
+  "twentyCoalescedReadsMs": 405.96,
+  "historicalPayloadSample": {
+    "rows": 1000,
+    "bytes": 9966347
+  },
+  "normalizedKeyMismatches": 0,
+  "invalidIndexes": 0,
+  "reportPlanBefore": {
+    "executionMs": 1235.7,
+    "nodes": [
+      "Limit",
+      "Sort",
+      "Bitmap Heap Scan",
+      "Bitmap Index Scan"
+    ]
+  },
+  "reportPlanAfter": {
+    "executionMs": 2.373,
+    "nodes": [
+      "Limit",
+      "Index Scan"
+    ]
+  },
+  "upgradeCheckMs": 1566,
+  "upgradeCheckNote": "The clone was already upgraded during the first recovery test; this timing is a no-op revision check, not the initial DDL time.",
+  "benchmarkEnvironment": "Isolated PostgreSQL, 1 CPU, 768 MB; API benchmark process 1 CPU, 512 MB.",
+  "reportPlanNote": "Baseline plan measured with only the new order index removed on the isolated clone; the index was recreated before measuring the upgraded plan."
+}

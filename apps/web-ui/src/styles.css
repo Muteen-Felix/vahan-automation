@@ -929,16 +929,21 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid rg
 .update-history-dialog header button { border:0; padding:0 9px; font-size:23px; }
 .update-history-body { flex:1; min-height:0; overflow:auto; padding:18px 20px; }
 .update-history-controls { display:grid; grid-template-columns:100px 100px minmax(0,1fr) auto; align-items:end; gap:12px; }
-.update-history-controls label { margin:0; color:#52675a; font-size:11px; }
-.update-history-controls :is(input,select) { width:100%; min-width:0; min-height:35px; padding:7px 10px; border:1px solid #dbe3dd; border-radius:3px; font-size:12px; }
+.update-history-controls label { display:grid; grid-template-rows:14px 38px; align-content:end; align-self:end; min-width:0; margin:0; gap:6px; color:#52675a; font-size:11px; line-height:14px; }
+.update-history-controls :is(input,select) { display:block; width:100%; min-width:0; height:38px; min-height:38px; margin:0; padding:6px 10px; border:1px solid #dbe3dd; border-radius:3px; font-size:12px; line-height:1.25; }
+.update-history-controls button { align-self:end; height:38px; min-height:38px; margin:0; padding:6px 12px; white-space:nowrap; }
 .update-history-note { color:#65736a; font-size:11px; line-height:1.6; }
 .update-history-body [role="alert"] { color:#a02f22; font-size:12px; }
 .update-history-table-wrap { overflow:auto; border:1px solid #dbe3dd; border-radius:3px; }
-.update-history-table { width:100%; min-width:960px; table-layout:fixed; border-collapse:collapse; font-size:11px; }
+.update-history-table { width:100%; min-width:1040px; table-layout:fixed; border-collapse:collapse; font-size:11px; }
+.update-history-table th:nth-child(1),.update-history-table td:nth-child(1) { width:18%; }
+.update-history-table th:nth-child(2),.update-history-table td:nth-child(2) { width:14%; }
+.update-history-table th:nth-child(3),.update-history-table td:nth-child(3) { width:16%; }
+.update-history-table th:nth-child(4),.update-history-table td:nth-child(4) { width:18%; }
+.update-history-table th:nth-child(5),.update-history-table td:nth-child(5) { width:22%; }
+.update-history-table th:nth-child(6),.update-history-table td:nth-child(6) { width:12%; }
 .update-history-table th { position:sticky; top:0; padding:11px; text-align:left; background:#e6f1df; color:#354e3e; }
 .update-history-table td { padding:12px 11px; vertical-align:top; border-top:1px solid #e2e7e3; overflow-wrap:anywhere; }
-.update-history-table td:nth-child(1) { width:18%; }
-.update-history-table td:nth-child(5) { width:23%; }
 .update-history-table td > :is(span,small,b) { display:block; margin-top:5px; }
 .update-history-table small { color:#65736a; font-size:10px; line-height:1.5; }
 .update-history-coverage { display:grid; gap:6px; }
@@ -951,7 +956,12 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid rg
 .update-history-days { display:grid; gap:12px; margin-top:12px; max-height:280px; overflow:auto; }
 .update-history-days > div { display:grid; gap:6px; padding:9px; border:1px solid #e2e7e3; border-radius:3px; }
 .update-history-dialog summary { cursor:pointer; color:#285d37; }
-@media(max-width:600px) { .update-history-dialog header,.update-history-body { padding:14px; } .update-history-controls { grid-template-columns:1fr 1fr; } .update-history-controls label:nth-child(3) { grid-column:1/-1; } .update-history-controls button { justify-self:start; } }
+@media(max-width:760px) {
+  .update-history-dialog header,.update-history-body { padding:14px; }
+  .update-history-controls { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .update-history-controls label:nth-child(3) { grid-column:1/-1; }
+  .update-history-controls button { grid-column:2; justify-self:end; }
+}
 
 /* Anchored value menus retain fixed filter rows and escape clipping through the top layer. */
 .profile-value-popover { position:fixed; inset:auto; margin:0; max-width:none; max-height:none; border-radius:4px; box-shadow:0 8px 24px #20362426; }
@@ -1233,31 +1243,59 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .settings-page .automatic-run-form { padding:18px; border:1px solid #e5ece6; border-radius:10px; background:#fafcf9; }
 .settings-page .run-schedule-card { border-radius:12px; }
 #automatic-run-heading,#saved-schedules { scroll-margin-top:95px; }
-.account-dialog { width:min(680px,calc(100vw - 32px)); max-height:calc(100dvh - 48px); padding:26px; border:1px solid #d8e4db; border-radius:18px; color:#2a3d30; background:#fff; box-shadow:0 24px 90px #122d2a33; overflow:auto; }
+.account-dialog { display:none; width:min(760px,calc(100vw - 32px)); height:min(640px,calc(100dvh - 48px)); max-width:none; max-height:none; flex-direction:column; padding:24px; border:1px solid #d8e4db; border-radius:18px; color:#2a3d30; background:#fff; box-shadow:0 24px 90px #122d2a33; overflow:hidden; }
+.account-dialog[open] { display:flex; }
 .account-dialog::backdrop { background:#18302960; backdrop-filter:blur(4px); }
-.account-dialog-heading { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.account-dialog-heading { display:flex; flex:0 0 auto; align-items:center; justify-content:space-between; min-height:42px; gap:14px; }
 .account-dialog-heading h2 { margin:0; font-size:22px; color:#2c4434; }
-.settings-page .account-close { width:34px; height:34px; min-height:34px; padding:0; border:1px solid #dde6df; border-radius:50%; font-size:23px; color:#62796a; background:#f7faf7; }
-.account-identity { display:flex; align-items:center; gap:12px; padding:16px; margin:22px 0; border:1px solid #dfe9e1; border-radius:11px; background:#f6faf5; }
+.account-dialog .account-close { width:34px; height:34px; min-width:34px; min-height:34px; margin:0; padding:0; border:1px solid #dde6df; border-radius:50%; font-size:23px; line-height:1; color:#62796a; background:#f7faf7; }
+.account-dialog .primary-button { border-color:#285d37; background:#285d37; color:#fff; }
+.account-dialog .primary-button:hover:not(:disabled) { border-color:#1f492b; background:#1f492b; }
+.account-dialog .secondary-button { border-color:#dbe3dd; background:#fff; color:#354e3e; }
+.account-dialog .secondary-button:hover:not(:disabled) { border-color:#94b893; background:#f1f6ed; }
+.account-workspace { display:flex; flex:1 1 auto; flex-direction:column; min-height:0; gap:16px; margin-top:20px; }
+.account-tabs { display:grid; flex:0 0 auto; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.account-tab { width:100%; min-width:0; min-height:42px; margin:0; padding:8px 12px; border:1px solid #dbe5dd; border-radius:9px; background:#f8faf8; color:#52675a; font-size:12px; font-weight:600; line-height:1.3; white-space:normal; }
+.account-tab:hover { border-color:#a8c0ac; background:#f1f6f0; }
+.account-tab[aria-selected="true"] { border-color:#92b39a; background:#eaf3e9; color:#285d37; box-shadow:inset 0 0 0 1px #92b39a; }
+.account-panel-viewport { flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.account-tabpanel { min-height:100%; }
+.account-tabpanel[hidden] { display:none; }
+.account-identity { display:flex; align-items:center; min-height:96px; gap:12px; padding:16px; margin:0; border:1px solid #dfe9e1; border-radius:11px; background:#f6faf5; }
 .account-avatar { display:grid; place-items:center; width:42px; height:42px; border-radius:12px; background:#dfece1; color:#315e3e; font-size:18px; font-weight:650; }
+.account-identity > div { min-width:0; }
 .account-identity strong,.account-identity small { display:block; overflow-wrap:anywhere; }
 .account-identity small { margin-top:4px; color:#718478; font-size:11px; }
-.account-identity button { margin-left:auto!important; flex-shrink:0; }
-.account-password-section h3 { margin:0; font-size:15px; }
-.account-password-section > p,.account-reset-form > p { color:#748478; font-size:12px; line-height:1.6; }
+.account-identity button { width:auto; min-width:96px; min-height:38px; margin:0 0 0 auto!important; padding:8px 12px; flex-shrink:0; border-radius:8px; font-size:11px; letter-spacing:0; text-transform:none; }
+.account-panel-help { margin:14px 0 0; color:#748478; font-size:12px; line-height:1.6; }
+.account-panel-heading { margin-bottom:18px; }
+.account-panel-heading h3 { margin:0; font-size:15px; }
+.account-panel-heading p,.account-reset-form > p { margin:6px 0 0; color:#748478; font-size:12px; line-height:1.6; }
 .account-password-form,.account-reset-form { display:grid; gap:14px; }
 .account-password-form label,.account-reset-form label { display:grid; gap:7px; margin:0; }
-.account-password-form button { justify-self:start; }
+.account-password-form { max-width:520px; }
+.account-password-form button { width:auto; min-width:150px; margin:2px 0 0; justify-self:start; }
 .account-feedback { margin:0; padding:10px 12px; color:#2e603d; background:#edf6ed; border:1px solid #d8e8da; border-radius:8px; font-size:12px; line-height:1.6; }
 .account-feedback-error { color:#a3382b; background:#fff3f0; border-color:#f0d6cf; }
-.account-users { margin-top:24px; border-top:1px solid #e4ece6; padding-top:18px; }
-.account-users > summary { cursor:pointer; color:#3a6045; font-weight:600; font-size:13px; padding:5px 0; }
-.settings-page .account-users .data-panel { border:0; padding:18px 0 0; box-shadow:none; }
-.settings-page .account-users .data-user-form { grid-template-columns:1fr 1fr; }
-.settings-page .account-users .data-table table { min-width:440px; }
+.account-users-panel > .data-panel { min-width:0; margin:0; padding:0; border:0; background:transparent; box-shadow:none; }
+.account-users-panel .settings-card-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:15px; border-bottom:1px solid #e7ede8; }
+.account-users-panel .settings-card-heading h3 { margin:0; color:#354e3e; font-size:16px; font-weight:650; }
+.account-users-panel .settings-card-heading p { margin:5px 0 0; color:#65736a; font-size:11px; }
+.account-users-panel .settings-card-heading > span { flex:0 0 auto; padding:5px 7px; border-radius:3px; background:#eef3ef; color:#52675a; font-size:10px; }
+.account-users-panel .data-user-form { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; align-items:end; gap:12px; margin-top:16px; }
+.account-users-panel .data-user-form label { display:grid; min-width:0; gap:6px; margin:0; color:#52675a; font-size:11px; }
+.account-users-panel .data-user-form button { width:auto; min-height:38px; margin:0; padding:8px 12px; white-space:nowrap; }
+.account-users-panel .data-table { max-width:100%; max-height:none; margin-top:17px; overflow:auto; border:1px solid #dbe3dd; border-radius:8px; }
+.account-users-panel .data-table table { width:100%; min-width:520px; border-collapse:collapse; font-size:11px; text-align:left; }
+.account-users-panel .data-table :is(th,td) { padding:10px 12px; border-bottom:1px solid #e2e7e3; }
+.account-users-panel .data-table th { position:sticky; top:0; z-index:1; background:#e6f1df; color:#354e3e; font-size:10px; }
+.account-users-panel .data-table td { color:#354e3e; overflow-wrap:anywhere; }
+.account-users-panel .data-table tbody tr:nth-child(even) { background:#fafcf9; }
+.account-users-panel .data-table button { width:auto; min-height:30px; margin:0 4px 3px 0; padding:5px 9px; font-size:10px; }
 .account-reset-form { padding:15px; margin-top:16px; background:#f6faf5; border:1px solid #dce8df; border-radius:10px; }
 .account-reset-form h4 { margin:0; font-size:13px; }
-.account-reset-form > p { margin:0; }
+.account-reset-form > div { display:flex; flex-wrap:wrap; gap:8px; }
+.account-reset-form > div button { width:auto; margin:0; }
 @media(max-width:600px) {
   .settings-page { padding:22px 14px 40px; gap:16px; }
   .settings-intro { align-items:flex-start; gap:12px; }
@@ -1267,9 +1305,14 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
   .settings-overview > a { padding:14px; }
   .settings-page .panel { padding:16px; }
   .settings-page .automatic-run-form { padding:12px; }
-  .account-dialog { padding:18px; border-radius:14px; max-height:calc(100dvh - 24px); }
-  .settings-page .account-users .data-user-form { grid-template-columns:1fr; }
+  .account-dialog { width:calc(100vw - 24px); height:min(640px,calc(100dvh - 24px)); padding:18px; border-radius:14px; }
+  .account-workspace { gap:12px; margin-top:16px; }
+  .account-tabs { gap:6px; }
+  .account-tab { min-height:44px; padding:7px 6px; font-size:10px; }
   .account-identity { padding:12px; gap:9px; }
+  .account-identity button { min-width:78px; padding-inline:9px; }
+  .account-users-panel .data-user-form { grid-template-columns:minmax(0,1fr); }
+  .account-users-panel .data-user-form button { justify-self:start; }
 }
 
 /* Compact settings: primary controls stay visible; detail is opt-in. */

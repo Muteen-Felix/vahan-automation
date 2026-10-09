@@ -1,22 +1,27 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import {
-  ACCESS_TOKEN_STORAGE_KEY,
+  SESSION_MARKER_STORAGE_KEY,
   api,
   AUTH_LOGOUT_EVENT,
   AUTH_REQUIRED_EVENT,
-  clearAccessToken,
-  getAccessToken,
+  clearSessionMarker,
+  getSessionMarker,
+  acceptCookieSession,
 } from "../services/api-client";
 import { hydratePersistentState, resetPersistentState } from '../services/persistent-state';
 import {observeSessionActivity} from '../services/session-activity';
 
-type GateState = "checking" | "setup" | "login" | "unavailable" | "authenticated";
+type GateState = "checking" | "setup" | "login" | "unavailable" | "authenticated" | "enroll" | "recovery";
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [gate, setGate] = useState<GateState>("checking");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState('');
+  const [challenge, setChallenge] = useState('');
+  const [mfaSecret, setMfaSecret] = useState('');
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const generation = useRef(0);
@@ -30,8 +35,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
     const expireSession = () => {
       generation.current++;
       resetPersistentState();
-      clearAccessToken();
+      clearSessionMarker();
       setPassword("");
+      setOtp(''); setMfaSecret(''); setChallenge(''); setRecoveryCodes([]);
       setGate("login");
       setError("Your session is no longer valid. Please sign in again.");
     };
@@ -39,6 +45,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       generation.current++;
       resetPersistentState();
       setPassword("");
+      setOtp(''); setMfaSecret(''); setChallenge(''); setRecoveryCodes([]);
       setError("You have signed out.");
       setGate("login");
     };
@@ -55,19 +62,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
           setGate("setup");
           return;
         }
-        if (!getAccessToken()) {
-          setGate("login");
-          return;
-        }
         try {
-          const token = getAccessToken();
+          const token = getSessionMarker();
           await api.currentUser();
-          if (!current() || getAccessToken() !== token) return;
+          if (!current() || getSessionMarker() !== token) return;
+          if (!token) localStorage.setItem(SESSION_MARKER_STORAGE_KEY, crypto.randomUUID());
           await hydratePersistentState();
-          if (current() && getAccessToken() === token) setGate("authenticated");
+          if (current()) setGate("authenticated");
         } catch {
           if (!current()) return;
-          clearAccessToken();
+          clearSessionMarker();
           setGate("login");
         }
       } catch (reason) {
@@ -79,7 +83,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
     void restoreSession();
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== ACCESS_TOKEN_STORAGE_KEY) return;
+      if (event.key !== SESSION_MARKER_STORAGE_KEY) return;
       resetPersistentState();
       if (!event.newValue) signOut();
       else {
@@ -102,17 +106,40 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setError("");
     setSubmitting(true);
     try {
-      const result = await api.login(username.trim(), password);
+      const result = await api.login(username.trim(), password, otp);
       if (generation.current !== expected) return;
-      window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, result.accessToken);
       setPassword("");
+      setOtp('');
+      if (result.mfaSetupToken) {
+        const enrollment = await api.enrollMfa(result.mfaSetupToken);
+        if (generation.current !== expected) return;
+        setChallenge(result.mfaSetupToken);
+        setMfaSecret(enrollment.secret);
+        setGate('enroll');
+        return;
+      }
+      acceptCookieSession(result);
       await hydratePersistentState();
-      if (generation.current === expected && getAccessToken() === result.accessToken) setGate("authenticated");
+      if (generation.current === expected) setGate("authenticated");
     } catch (reason) {
       if (generation.current === expected) setError(reason instanceof Error ? reason.message : "Sign-in failed.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function confirmMfa(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setSubmitting(true); setError('');
+    const expected = ++generation.current;
+    try {
+      const result = await api.confirmMfa(challenge, otp);
+      if (generation.current !== expected) return;
+      acceptCookieSession(result);
+      setMfaSecret(''); setChallenge(''); setOtp('');
+      setRecoveryCodes(result.recoveryCodes || []); setGate('recovery');
+    } catch (reason) {
+      if (generation.current === expected) setError(reason instanceof Error ? reason.message : 'Verification failed.');
+    } finally {setSubmitting(false);}
   }
 
   if (gate === "authenticated") return children;
@@ -124,7 +151,29 @@ export function AuthGate({ children }: { children: ReactNode }) {
   return (
     <main className="auth-shell">
       <section className="auth-card">
-        {gate === "setup" ? (
+        {gate === 'enroll' ? (
+          <>
+            <h1>Set up two-step verification</h1>
+            <p>Add this setup key to your authenticator app, then enter its six-digit code.</p>
+            <code>{mfaSecret}</code>
+            <form className="auth-form" onSubmit={confirmMfa}>
+              <label>Verification code<input autoComplete="one-time-code" inputMode="numeric" maxLength={6} value={otp} onChange={e=>setOtp(e.target.value)} required /></label>
+              {error && <p className="auth-error" role="alert">{error}</p>}
+              <button className="primary-button" disabled={submitting}>Verify and continue</button>
+            </form>
+          </>
+        ) : gate === 'recovery' ? (
+          <>
+            <h1>Save your recovery codes</h1>
+            <p>Store these codes somewhere private. Each code works once if you lose your authenticator.</p>
+            <pre>{recoveryCodes.join('\n')}</pre>
+            {error && <p className="auth-error" role="alert">{error}</p>}
+            <button className="primary-button" type="button" onClick={async()=>{
+              try {await hydratePersistentState();setRecoveryCodes([]);setGate('authenticated');}
+              catch(reason){setError(reason instanceof Error?reason.message:'Could not open the dashboard.');}
+            }}>I saved the codes — open dashboard</button>
+          </>
+        ) : gate === "setup" ? (
           <>
             <p className="eyebrow dark">DASHBOARD SECURITY</p>
             <h1>Sign-in is not configured</h1>
@@ -166,6 +215,10 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
                 />
               </label>
               <label>
+                Verification or recovery code
+                <input autoComplete="one-time-code" maxLength={64} value={otp} onChange={e=>setOtp(e.target.value)} />
+              </label>
+              <label>
                 Password
                 <input
                   type="password"
@@ -181,7 +234,7 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
                 {submitting ? "Signing in…" : "Sign in"}
               </button>
             </form>
-            <p className="auth-footnote">Your sign-in stays active until you log out, your account is disabled or the server signing secret changes.</p>
+            <p className="auth-footnote">Sessions end after 12 hours or 60 minutes without activity. Administrators use two-step verification.</p>
           </>
         )}
       </section>

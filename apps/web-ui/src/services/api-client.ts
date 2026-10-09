@@ -10,7 +10,11 @@ import type {FilterProfile, ProfileDefinition, ProfileOptions} from '../filter-p
 import type {CurrentCaptcha, RunSchedule, RunScheduleInput} from '../run-schedules';
 
 export const API_URL = (import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
-export const ACCESS_TOKEN_STORAGE_KEY = "vahanUiAccessToken";
+export const SESSION_MARKER_STORAGE_KEY = "vahanUiSessionMarker";
+let csrf = '';
+// Remove credentials from older releases. The new marker below is not an
+// authentication credential; the session lives in an HttpOnly cookie.
+try { localStorage.removeItem('vahanUiAccessToken'); sessionStorage.removeItem('vahanUiAccessToken'); } catch { /* Storage may be disabled. */ }
 export const AUTH_REQUIRED_EVENT = "vahan:auth-required";
 export const AUTH_LOGOUT_EVENT = "vahan:logout";
 
@@ -26,8 +30,12 @@ export interface SessionDeadlines {
 }
 
 export interface LoginResponse extends SessionDeadlines {
-  accessToken: string;
-  tokenType: "Bearer";
+  accessToken: string | null;
+  sessionMarker?: string;
+  csrfToken?: string;
+  mfaSetupToken?: string;
+  recoveryCodes?: string[];
+  tokenType: "Bearer" | "Cookie";
   expiresIn: number | null;
   idleTimeoutSeconds?: number;
   username: string;
@@ -44,20 +52,9 @@ export interface BatchRetryProgress {
   complete: boolean;
 }
 
-export function getAccessToken(): string | null {
+export function getSessionMarker(): string | null {
   try {
-    const persistentToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
-    if (persistentToken) return persistentToken;
-    const previousSessionToken = window.sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
-    if (previousSessionToken) {
-      try {
-        window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, previousSessionToken);
-        window.sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
-      } catch {
-        // Continue using the previous session token when persistent storage is unavailable.
-      }
-    }
-    return previousSessionToken;
+    return window.localStorage.getItem(SESSION_MARKER_STORAGE_KEY);
   } catch {
     return null;
   }
@@ -67,24 +64,34 @@ function notifyAuthenticationRequired() {
   window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT));
 }
 
-export function clearAccessToken() {
+export function clearSessionMarker() {
+  csrf = '';
   try {
-    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    window.localStorage.removeItem(SESSION_MARKER_STORAGE_KEY);
   } catch {
     // Continue clearing the legacy tab-scoped token below.
   }
   try {
-    window.sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    window.sessionStorage.removeItem(SESSION_MARKER_STORAGE_KEY);
   } catch {
     // The UI remains usable if browser storage is disabled; the next request will require login.
   }
 }
 
+export function acceptCookieSession(result: LoginResponse) {
+  csrf = result.csrfToken || '';
+  localStorage.setItem(SESSION_MARKER_STORAGE_KEY, result.sessionMarker || crypto.randomUUID());
+}
+
+export function csrfHeaders(): Record<string, string> {
+  return csrf ? {'X-CSRF-Token': csrf} : {};
+}
+
 async function logout() {
-  const token = getAccessToken();
+  const token = getSessionMarker();
   await request('/api/auth/logout', {method: 'POST'});
-  if (getAccessToken() === token) {
-    clearAccessToken();
+  if (getSessionMarker() === token) {
+    clearSessionMarker();
     window.dispatchEvent(new Event(AUTH_LOGOUT_EVENT));
   }
 }
@@ -96,32 +103,35 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getAccessToken();
+  const token = getSessionMarker();
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
+    credentials: 'include',
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...csrfHeaders(),
       ...init?.headers,
     },
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    if (response.status === 401 && path !== "/api/auth/login" && getAccessToken() === token) notifyAuthenticationRequired();
+    if (response.status === 401 && path !== "/api/auth/login" && getSessionMarker() === token) notifyAuthenticationRequired();
     const detail=Array.isArray(body.detail)?body.detail.map((item:{msg?:string})=>item.msg||'Invalid input').join('; '):body.detail;
     throw new ApiError(response.status, (typeof detail==='object'&&detail!==null?JSON.stringify(detail):detail) || `Request failed (${response.status}).`);
   }
-  return response.json() as Promise<T>;
+  const result = await response.json();
+  if (typeof result.csrfToken === 'string') csrf = result.csrfToken;
+  return result as T;
 }
 
 async function downloadFile(path: string, fileName?: string): Promise<void> {
-  const token = getAccessToken();
+  const token = getSessionMarker();
   const response = await fetch(`${API_URL}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'include',
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    if (response.status === 401 && getAccessToken() === token) notifyAuthenticationRequired();
+    if (response.status === 401 && getSessionMarker() === token) notifyAuthenticationRequired();
     throw new Error(body.detail || `Could not download the file (${response.status}).`);
   }
   const objectUrl = URL.createObjectURL(await response.blob());
@@ -159,20 +169,27 @@ export const api = {
     method:'POST',body:JSON.stringify({runnerId,year,search})}),
   health: () => request<{ status: string }>("/api/health"),
   authStatus: () => request<AuthStatus>("/api/auth/status"),
-  login: (username: string, password: string) =>
+  login: (username: string, password: string, otp = '') =>
     request<LoginResponse>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, otp, browserSession: true }),
     }),
   sessionActivity: () => request<SessionDeadlines>("/api/auth/activity", {
     method: "POST",
     body: JSON.stringify({}),
   }),
-  currentUser: () => request<{ username: string; role: string } & SessionDeadlines>("/api/auth/me"),
-  userState: () => request<Record<string, unknown>>('/api/user-state'),
-  putUserState: (key: string, value: unknown, token?: string | null) => request(`/api/user-state/${encodeURIComponent(key)}`, {
-    method: 'PUT', body: JSON.stringify({value}), ...(token ? {headers: {Authorization: `Bearer ${token}`}} : {}),
+  enrollMfa: (challenge: string) => request<{secret: string; uri: string}>('/api/auth/mfa/enroll', {
+    method: 'POST', body: JSON.stringify({challenge}),
   }),
+  confirmMfa: (challenge: string, code: string) => request<LoginResponse>('/api/auth/mfa/confirm', {
+    method: 'POST', body: JSON.stringify({challenge, code}),
+  }),
+  currentUser: () => request<{ username: string; role: string; tenantId?: string; csrfToken?: string } & SessionDeadlines>("/api/auth/me"),
+  userState: () => request<Record<string, unknown>>('/api/user-state'),
+  putUserState: (key: string, value: unknown, token?: string | null) => {
+    if (token && token !== getSessionMarker()) return Promise.reject(new Error('The active session changed.'));
+    return request(`/api/user-state/${encodeURIComponent(key)}`, {method: 'PUT', body: JSON.stringify({value})});
+  },
   logout,
   downloadFile,
   runners: () => request<Runner[]>("/api/runners"),
@@ -193,7 +210,8 @@ export const api = {
     `/api/ui-health/reports${date ? `?date=${encodeURIComponent(date)}` : ""}`,
   ),
   exportedReports: () => request<ExportedReportItem[]>("/api/jobs/reports"),
-  exportedReportSessions: (deleted = false) => request<ExportedReportSession[]>(`/api/jobs/reports/sessions${deleted ? "?deleted=true" : ""}`),
+  exportedReportSessions: (deleted = false, offset = 0) => request<ExportedReportSession[]>(`/api/jobs/reports/sessions?deleted=${deleted}&offset=${offset}&limit=100`),
+  exportedReportSession: (sessionId: string, offset = 0) => request<ExportedReportSession>(`/api/jobs/reports/sessions/${encodeURIComponent(sessionId)}?offset=${offset}&limit=100`),
   deleteReportSession: (sessionId: string) => request<{ ok: boolean }>(`/api/jobs/reports/sessions/${sessionId}`, { method: "DELETE" }),
   restoreReportSession: (sessionId: string) => request<{ ok: boolean }>(`/api/jobs/reports/sessions/${sessionId}/restore`, { method: "POST" }),
   verifyReports: (fileNames: string[], sessionIds?: Record<string, string>) => request<{ files: Record<string, number> }>("/api/jobs/reports/verify", {

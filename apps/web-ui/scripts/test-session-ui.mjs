@@ -8,9 +8,12 @@ try {
   const requests = [];
   let deadline = Date.now() / 1000 + 8;
   let token = 'session-fixture';
+  await context.addCookies([{name:'vahan_session_fixture',value:token,url:new URL(origin).origin,
+    httpOnly:true,sameSite:'Strict'}]);
   await context.addInitScript(() => {
     if (!localStorage.getItem('session-fixture-seeded')) {
       localStorage.setItem('vahanUiAccessToken', 'session-fixture');
+      localStorage.setItem('vahanUiSessionMarker', 'fixture-marker');
       localStorage.setItem('session-fixture-seeded', 'yes');
     }
   });
@@ -31,12 +34,14 @@ try {
     else if (path === '/api/auth/login') {
       token = `session-fixture-${Date.now()}`;
       deadline = Date.now() / 1000 + 3600;
-      body = {accessToken: token, username: 'fixture', tokenType: 'Bearer', expiresIn: 43200};
+      body = {accessToken: null, sessionMarker:`marker-${Date.now()}`,csrfToken:'fixture-csrf',username: 'fixture', tokenType: 'Cookie', expiresIn: 43200};
+      return route.fulfill({json:body,headers:{'Set-Cookie':`vahan_session_fixture=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=43200`}});
     } else if (path === '/api/auth/me' || path === '/api/auth/activity') {
-      if (request.headers().authorization !== `Bearer ${token}` || Date.now() / 1000 >= deadline) {
+      assert.equal(request.headers().authorization,undefined,'UI never sends an exposed bearer token');
+      if (!request.headers().cookie?.includes(`vahan_session_fixture=${token}`) || Date.now() / 1000 >= deadline) {
         return route.fulfill({status: 401, json: {detail: 'Session expired'}});
       }
-      body = {username: 'fixture', role: 'admin', expiresAt: Math.floor(Date.now() / 1000 + 43200), idleExpiresAt: Math.floor(deadline)};
+      body = {username: 'fixture', role: 'admin', csrfToken:'fixture-csrf',expiresAt: Math.floor(Date.now() / 1000 + 43200), idleExpiresAt: Math.floor(deadline)};
     } else if (path === '/api/user-state') body = {};
     else if (path === '/api/network/status') body = {online: true};
     else if (path === '/api/ui-health/status') body = {blocked: false, latestPreflight: null};
@@ -61,7 +66,7 @@ try {
   const second = await context.newPage();
   await second.goto(origin);
   await second.getByRole('navigation', {name: 'Main navigation'}).waitFor();
-  await page.evaluate(() => localStorage.removeItem('vahanUiAccessToken'));
+  await page.evaluate(() => localStorage.removeItem('vahanUiSessionMarker'));
   await second.getByRole('heading', {name: 'Welcome back', exact: true}).waitFor();
   assert.deepEqual(errors, []);
   await context.close();

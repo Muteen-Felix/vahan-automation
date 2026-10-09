@@ -1,0 +1,915 @@
+{
+  "collectedAtUtc": "2026-10-08T13:48:30.384610+00:00",
+  "scope": "/Users/mac/Desktop/vahan-automation",
+  "mode": "read-only",
+  "errors": [],
+  "git": {
+    "head": "2bc878eed2640c3f6560657afee49aef5b956cf5",
+    "branch": "feat/filter",
+    "status": [
+      "M apps/web-ui/scripts/test-account-settings-ui.mjs",
+      " M apps/web-ui/src/components/AccountSettings.tsx",
+      " M apps/web-ui/src/styles.css",
+      "?? docs/security/",
+      "?? scripts/security-audit.py"
+    ]
+  },
+  "secretFileMetadata": [
+    {
+      "path": ".docker.env",
+      "posixMode": "0o600",
+      "tracked": false
+    },
+    {
+      "path": "apps/api-server/.env",
+      "posixMode": "0o600",
+      "tracked": false
+    },
+    {
+      "path": "apps/web-ui/.env",
+      "posixMode": "0o644",
+      "tracked": false
+    }
+  ],
+  "localBackups": [
+    {
+      "directory": "20261002T055631674399Z",
+      "bytes": 1370420,
+      "posixMode": "0o600",
+      "includesEnvironmentFile": true
+    },
+    {
+      "directory": "20261002T060253725254Z",
+      "bytes": 1370561,
+      "posixMode": "0o600",
+      "includesEnvironmentFile": true
+    },
+    {
+      "directory": "20261002T105411765814Z",
+      "bytes": 112669150,
+      "posixMode": "0o600",
+      "includesEnvironmentFile": true
+    },
+    {
+      "directory": "20261002T110015593795Z",
+      "bytes": 119429942,
+      "posixMode": "0o600",
+      "includesEnvironmentFile": true
+    },
+    {
+      "directory": "20261004T133146284565Z",
+      "bytes": 440538891,
+      "posixMode": "0o600",
+      "includesEnvironmentFile": true
+    },
+    {
+      "directory": "20261005T051646833630Z",
+      "bytes": 238125420,
+      "posixMode": "0o600",
+      "includesEnvironmentFile": true
+    },
+    {
+      "directory": "20261007T154306830252Z",
+      "bytes": 2036259131,
+      "posixMode": "0o600",
+      "includesEnvironmentFile": true
+    }
+  ],
+  "containers": [
+    {
+      "service": "web",
+      "name": "vahan-automation-web-1",
+      "imageId": "sha256:9afdf5368aa1bddbb5ac3de035584cd9aa8b76c91b8b30dd9b6bdab334562f51",
+      "state": "running",
+      "health": "healthy",
+      "user": "(image default)",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": false,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "80/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "5173"
+          }
+        ]
+      },
+      "mounts": []
+    },
+    {
+      "service": "api",
+      "name": "vahan-automation-api-1",
+      "imageId": "sha256:37dddde5bee3e7f30a7d63ea5be072f962f6e466c78a4811c82b84fbbd2965b9",
+      "state": "running",
+      "health": "healthy",
+      "user": "vahan",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": false,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "8000/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "8000"
+          }
+        ]
+      },
+      "mounts": []
+    },
+    {
+      "service": "worker-control",
+      "name": "vahan-automation-worker-control-1",
+      "imageId": "sha256:a65c2b3a5f8d472d5accb121306537dfbb8f194e30c81bcde57f6ea0e25c2cee",
+      "state": "running",
+      "health": "healthy",
+      "user": "(image default)",
+      "privileged": false,
+      "readOnly": true,
+      "noNewPrivileges": true,
+      "customSeccomp": false,
+      "capDrop": [
+        "ALL"
+      ],
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "3002/tcp": null
+      },
+      "mounts": [
+        {
+          "destination": "/var/run/docker.sock",
+          "writable": true,
+          "type": "bind"
+        }
+      ]
+    },
+    {
+      "service": "runner-8",
+      "name": "vahan-automation-runner-8-1",
+      "imageId": "sha256:7fca8335810804b0ed4145c43a600a58c816d5e9d1002d4db8a396260c5b8624",
+      "state": "exited",
+      "health": "unhealthy",
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {},
+      "mounts": []
+    },
+    {
+      "service": "runner-2",
+      "name": "vahan-automation-runner-2-1",
+      "imageId": "sha256:7fca8335810804b0ed4145c43a600a58c816d5e9d1002d4db8a396260c5b8624",
+      "state": "running",
+      "health": "healthy",
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "3001/tcp": null
+      },
+      "mounts": []
+    },
+    {
+      "service": "runner-3",
+      "name": "vahan-automation-runner-3-1",
+      "imageId": "sha256:7fca8335810804b0ed4145c43a600a58c816d5e9d1002d4db8a396260c5b8624",
+      "state": "running",
+      "health": "healthy",
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "3001/tcp": null
+      },
+      "mounts": []
+    },
+    {
+      "service": "runner-4",
+      "name": "vahan-automation-runner-4-1",
+      "imageId": "sha256:7fca8335810804b0ed4145c43a600a58c816d5e9d1002d4db8a396260c5b8624",
+      "state": "running",
+      "health": "healthy",
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "3001/tcp": null
+      },
+      "mounts": []
+    },
+    {
+      "service": "runner-6",
+      "name": "vahan-automation-runner-6-1",
+      "imageId": "sha256:7fca8335810804b0ed4145c43a600a58c816d5e9d1002d4db8a396260c5b8624",
+      "state": "running",
+      "health": "healthy",
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "3001/tcp": null
+      },
+      "mounts": []
+    },
+    {
+      "service": "runner-7",
+      "name": "vahan-automation-runner-7-1",
+      "imageId": "sha256:7fca8335810804b0ed4145c43a600a58c816d5e9d1002d4db8a396260c5b8624",
+      "state": "exited",
+      "health": "unhealthy",
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {},
+      "mounts": []
+    },
+    {
+      "service": "runner-5",
+      "name": "vahan-automation-runner-5-1",
+      "imageId": "sha256:7fca8335810804b0ed4145c43a600a58c816d5e9d1002d4db8a396260c5b8624",
+      "state": "running",
+      "health": "healthy",
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "3001/tcp": null
+      },
+      "mounts": []
+    },
+    {
+      "service": "runner",
+      "name": "vahan-automation-runner-1",
+      "imageId": "sha256:7fca8335810804b0ed4145c43a600a58c816d5e9d1002d4db8a396260c5b8624",
+      "state": "running",
+      "health": "healthy",
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "3001/tcp": null
+      },
+      "mounts": []
+    },
+    {
+      "service": "runner-10",
+      "name": "vahan-automation-runner-10-1",
+      "imageId": "sha256:d53e5dc598c0c7fb16057a162df0af832e544577b9dec3c4bc25f180b000319f",
+      "state": "created",
+      "health": null,
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {},
+      "mounts": [
+        {
+          "destination": "/Users/mac/Desktop/vahan-automation/apps/api-server/app/ocr",
+          "writable": true,
+          "type": "bind"
+        }
+      ]
+    },
+    {
+      "service": "runner-9",
+      "name": "vahan-automation-runner-9-1",
+      "imageId": "sha256:bca59c28525ff2c99b35ed70943285e7266dc149562aab2edb167d858a892f48",
+      "state": "created",
+      "health": null,
+      "user": "pwuser",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": true,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {},
+      "mounts": [
+        {
+          "destination": "/Users/mac/Desktop/vahan-automation/apps/api-server/app/ocr",
+          "writable": true,
+          "type": "bind"
+        }
+      ]
+    },
+    {
+      "service": "postgres",
+      "name": "vahan-automation-postgres-1",
+      "imageId": "sha256:86e0b703649d7a792bd9243ee28afc9d8f7c6b2b5638077c9d6882d4d472bbfd",
+      "state": "running",
+      "health": "healthy",
+      "user": "(image default)",
+      "privileged": false,
+      "readOnly": false,
+      "noNewPrivileges": false,
+      "customSeccomp": false,
+      "capDrop": null,
+      "memoryBytes": 0,
+      "nanoCpus": 0,
+      "pidsLimit": null,
+      "logConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "networks": [
+        "vahan-automation_default"
+      ],
+      "ports": {
+        "5432/tcp": null
+      },
+      "mounts": [
+        {
+          "destination": "/var/lib/postgresql/data",
+          "writable": true,
+          "type": "volume"
+        }
+      ]
+    }
+  ],
+  "runtimeApi": {
+    "files": {
+      "app/config.py": {
+        "runtimeSha256": "bfd15cb3bf833d041f8df1f77a7017150b8121215ef7b980a792a0f67e216dad",
+        "workspaceSha256": "bfd15cb3bf833d041f8df1f77a7017150b8121215ef7b980a792a0f67e216dad",
+        "matchesWorkspace": true
+      },
+      "app/main.py": {
+        "runtimeSha256": "5a25f81e67067836fd629d0381945442e6f6b79bda8b66b891079f81c9f821e0",
+        "workspaceSha256": "5a25f81e67067836fd629d0381945442e6f6b79bda8b66b891079f81c9f821e0",
+        "matchesWorkspace": true
+      },
+      "app/security.py": {
+        "runtimeSha256": "378f586d96b9d020ea6c62a34defdb3544f44c16360a6d200e8dd88da0a70ed7",
+        "workspaceSha256": "378f586d96b9d020ea6c62a34defdb3544f44c16360a6d200e8dd88da0a70ed7",
+        "matchesWorkspace": true
+      },
+      "app/repositories/postgres.py": {
+        "runtimeSha256": "16c61ff3f9087aec622030ad1b689d3a57c00553233aac642e74a334a746effa",
+        "workspaceSha256": "16c61ff3f9087aec622030ad1b689d3a57c00553233aac642e74a334a746effa",
+        "matchesWorkspace": true
+      },
+      "app/api/data.py": {
+        "runtimeSha256": "a5c9ab9aa20d2a3c8170681696310e8748b504657a082d2eee2584e1931a76d8",
+        "workspaceSha256": "a5c9ab9aa20d2a3c8170681696310e8748b504657a082d2eee2584e1931a76d8",
+        "matchesWorkspace": true
+      },
+      "app/worker_pool.py": {
+        "runtimeSha256": "0e8ea9e3b3ec4336d80e778e41dbe0acd862dfd505899f689bb9a0ba6761f197",
+        "workspaceSha256": "0e8ea9e3b3ec4336d80e778e41dbe0acd862dfd505899f689bb9a0ba6761f197",
+        "matchesWorkspace": true
+      }
+    },
+    "packages": {
+      "fastapi": "0.143.0",
+      "starlette": "1.7.0",
+      "python-multipart": "0.0.32",
+      "cryptography": "46.0.7",
+      "uvicorn": "0.54.0",
+      "python-socketio": "5.17.0",
+      "sqlalchemy": "2.1.4",
+      "asyncpg": "0.32.0"
+    }
+  },
+  "runnerStateSharedCredentialProbes": [
+    {
+      "claimedIdentity": "playwright-1",
+      "status": 200
+    },
+    {
+      "claimedIdentity": "playwright-2",
+      "status": 200
+    }
+  ],
+  "legacyControllerRunnerCredentialProbe": {
+    "status": 200,
+    "runningCount": 6
+  },
+  "httpProbes": [
+    {
+      "port": 8000,
+      "path": "/api/health",
+      "invalidToken": false,
+      "status": 200,
+      "headers": {
+        "server": "uvicorn",
+        "content-type": "application/json",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": "true",
+        "www-authenticate": null
+      },
+      "publicBody": {
+        "status": "ok"
+      }
+    },
+    {
+      "port": 8000,
+      "path": "/api/ready",
+      "invalidToken": false,
+      "status": 200,
+      "headers": {
+        "server": "uvicorn",
+        "content-type": "application/json",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": "true",
+        "www-authenticate": null
+      },
+      "publicBody": {
+        "status": "ok",
+        "storage": "postgresql"
+      }
+    },
+    {
+      "port": 8000,
+      "path": "/api/auth/status",
+      "invalidToken": false,
+      "status": 200,
+      "headers": {
+        "server": "uvicorn",
+        "content-type": "application/json",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": "true",
+        "www-authenticate": null
+      },
+      "publicBody": {
+        "configured": true,
+        "tokenTtlSeconds": 43200,
+        "idleTimeoutSeconds": 3600
+      }
+    },
+    {
+      "port": 8000,
+      "path": "/api/users",
+      "invalidToken": false,
+      "status": 401,
+      "headers": {
+        "server": "uvicorn",
+        "content-type": "application/json",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": null,
+        "www-authenticate": "Bearer"
+      }
+    },
+    {
+      "port": 8000,
+      "path": "/api/jobs",
+      "invalidToken": true,
+      "status": 401,
+      "headers": {
+        "server": "uvicorn",
+        "content-type": "application/json",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": null,
+        "www-authenticate": "Bearer"
+      }
+    },
+    {
+      "port": 8000,
+      "path": "/api/audit",
+      "invalidToken": false,
+      "status": 401,
+      "headers": {
+        "server": "uvicorn",
+        "content-type": "application/json",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": null,
+        "www-authenticate": "Bearer"
+      }
+    },
+    {
+      "port": 8000,
+      "path": "/docs",
+      "invalidToken": false,
+      "status": 200,
+      "headers": {
+        "server": "uvicorn",
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": "true",
+        "www-authenticate": null
+      }
+    },
+    {
+      "port": 8000,
+      "path": "/openapi.json",
+      "invalidToken": false,
+      "status": 200,
+      "headers": {
+        "server": "uvicorn",
+        "content-type": "application/json",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": "true",
+        "www-authenticate": null
+      }
+    },
+    {
+      "port": 8000,
+      "path": "/socket.io/?EIO=4&transport=polling",
+      "invalidToken": false,
+      "status": 200,
+      "headers": {
+        "server": "uvicorn",
+        "content-type": "text/plain; charset=UTF-8",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": "https://security-audit.invalid",
+        "access-control-allow-credentials": "true",
+        "www-authenticate": null
+      }
+    },
+    {
+      "port": 5173,
+      "path": "/",
+      "invalidToken": false,
+      "status": 200,
+      "headers": {
+        "server": "nginx/1.28.3",
+        "content-type": "text/html",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": null,
+        "www-authenticate": null
+      }
+    },
+    {
+      "port": 5173,
+      "path": "/api/users",
+      "invalidToken": false,
+      "status": 401,
+      "headers": {
+        "server": "nginx/1.28.3",
+        "content-type": "application/json",
+        "cache-control": null,
+        "content-security-policy": null,
+        "strict-transport-security": null,
+        "x-content-type-options": null,
+        "x-frame-options": null,
+        "referrer-policy": null,
+        "permissions-policy": null,
+        "access-control-allow-origin": null,
+        "access-control-allow-credentials": null,
+        "www-authenticate": "Bearer"
+      }
+    }
+  ],
+  "database": {
+    "database": "vahan",
+    "appRole": {
+      "superuser": true,
+      "createRole": true,
+      "createDb": true,
+      "bypassRls": true
+    },
+    "ssl": "off",
+    "hba": [
+      {
+        "type": "local",
+        "address": null,
+        "method": "trust"
+      },
+      {
+        "type": "host",
+        "address": "127.0.0.1",
+        "method": "trust"
+      },
+      {
+        "type": "host",
+        "address": "::1",
+        "method": "trust"
+      },
+      {
+        "type": "local",
+        "address": null,
+        "method": "trust"
+      },
+      {
+        "type": "host",
+        "address": "127.0.0.1",
+        "method": "trust"
+      },
+      {
+        "type": "host",
+        "address": "::1",
+        "method": "trust"
+      },
+      {
+        "type": "host",
+        "address": "all",
+        "method": "scram-sha-256"
+      }
+    ],
+    "schemaVersion": "0012_auth_session_limits",
+    "jobStatusCounts": {
+      "CANCELLED": 556,
+      "FAILED": 1437,
+      "COMPLETED": 31208,
+      "NO_DATA": 11110
+    },
+    "userRoleCounts": {
+      "admin": 1,
+      "user": 1
+    },
+    "auditEventCount": 176174,
+    "auditTypes": {
+      "http.mutation": 145496,
+      "reports.delete-year": 1,
+      "runner.log": 28403,
+      "runner.options": 2274
+    },
+    "browserStateCount": 10,
+    "databaseSizeBytes": 5075774611
+  },
+  "verification": {
+    "sourcePermissionTests": {
+      "passed": 5,
+      "command": ".venv/bin/python -m pytest verification/test_permissions.py -q",
+      "usesLiveDatabase": false
+    },
+    "sourceTokenAssertions": {
+      "passed": 7,
+      "scope": "isolated signing secret; valid, expired and malformed/tampered tokens"
+    },
+    "liveSocketInvalidCredentials": [
+      {
+        "namespace": "/ui",
+        "accepted": false
+      },
+      {
+        "namespace": "/runner",
+        "accepted": false
+      }
+    ],
+    "databaseMigrationOrDestructiveTestsRun": false,
+    "runtimeConfigurationChanged": false
+  },
+  "multiTenantDatabaseMetadata": {
+    "tenantColumns": null,
+    "rlsTables": [
+      {
+        "table": "users",
+        "enabled": false,
+        "forced": false
+      },
+      {
+        "table": "browser_states",
+        "enabled": false,
+        "forced": false
+      },
+      {
+        "table": "jobs",
+        "enabled": false,
+        "forced": false
+      },
+      {
+        "table": "report_update_history",
+        "enabled": false,
+        "forced": false
+      },
+      {
+        "table": "stored_files",
+        "enabled": false,
+        "forced": false
+      },
+      {
+        "table": "main_reports",
+        "enabled": false,
+        "forced": false
+      },
+      {
+        "table": "auth_sessions",
+        "enabled": false,
+        "forced": false
+      }
+    ]
+  },
+  "businessScope": "Service for multiple enterprises, confirmed by user on 2026-10-08",
+  "auditScriptValidation": {
+    "completed": true,
+    "errors": [],
+    "tenantColumnCount": 0,
+    "snapshotTimeUtc": "2026-10-08T13:59:46.319668+00:00"
+  }
+}

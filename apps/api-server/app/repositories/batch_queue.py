@@ -196,16 +196,17 @@ class BatchQueueRepository:
     async def _settle(self, connection, row):
         if row['status'] != 'PROCESSING' or not row['job_id']:
             return row
-        job_row = (await connection.execute(select(db.jobs.c.payload).where(
-            db.jobs.c.id == row['job_id']))).scalar_one_or_none()
+        job_row = (await connection.execute(select(db.jobs.c.status,
+            db.jobs.c.payload['error'].as_string().label('error')).where(
+            db.jobs.c.id == row['job_id']))).mappings().first()
         if not job_row:
             return row
-        job = Job.model_validate(job_row)
-        if job.status not in {JobStatus.COMPLETED, JobStatus.NO_DATA, JobStatus.FAILED, JobStatus.CANCELLED}:
+        job_status = job_row['status']
+        if job_status not in {'COMPLETED', 'NO_DATA', 'FAILED', 'CANCELLED'}:
             return row
-        if job.status in {JobStatus.COMPLETED, JobStatus.NO_DATA}:
-            status, failures = job.status.value, row['failures']
-        elif job.status == JobStatus.CANCELLED:
+        if job_status in {'COMPLETED', 'NO_DATA'}:
+            status, failures = job_status, row['failures']
+        elif job_status == 'CANCELLED':
             status, failures = 'PENDING', row['failures']
         else:
             failures = row['failures'] + 1
@@ -213,7 +214,7 @@ class BatchQueueRepository:
                 db.app_settings.c.key == RETRY_KEY + row['session_id']))
             final_attempt = policy and policy['phase'] == 'FINAL' and row['position'] in policy['finalTargets']
             status = 'FAILED' if final_attempt or failures >= MAX_FAILURES else 'PENDING'
-        error = row['error'] if job.status == JobStatus.CANCELLED and row['failures'] else job.error
+        error = row['error'] if job_status == 'CANCELLED' and row['failures'] else job_row['error']
         values = dict(status=status, failures=failures, error=error, updated_at=now())
         await connection.execute(update(db.batch_queue_tasks).where(
             db.batch_queue_tasks.c.session_id == row['session_id'],
@@ -225,17 +226,17 @@ class BatchQueueRepository:
         if not failed:
             return rows
         retry_rows = (await connection.execute(select(db.jobs.c.id, db.jobs.c.runner_id,
-            db.jobs.c.status, db.jobs.c.filters, db.jobs.c.payload).where(
+            db.jobs.c.status, db.jobs.c.filters, db.jobs.c.retry_of_job_id, db.jobs.c.scenario_name).where(
             db.jobs.c.session_id == rows[0]['session_id'],
             db.jobs.c.status.in_(['COMPLETED', 'NO_DATA']),
-            db.jobs.c.payload['retry_of_job_id'].as_string().in_(list(failed))
+            db.jobs.c.retry_of_job_id.in_(list(failed))
         ).order_by(db.jobs.c.updated_at.desc()))).mappings().all()
         replacements = {}
         for retry in retry_rows:
-            previous_id = retry['payload'].get('retry_of_job_id')
+            previous_id = retry['retry_of_job_id']
             task = failed.get(previous_id)
             if (not task or task['position'] in replacements or retry['filters'] != task['filters']
-                    or retry['payload'].get('scenario_name') != task['scenario_name']):
+                    or retry['scenario_name'] != task['scenario_name']):
                 continue
             values = dict(status=retry['status'], attempts=task['attempts'] + 1,
                 runner_id=retry['runner_id'], job_id=retry['id'], error=None, updated_at=now())
@@ -251,11 +252,19 @@ class BatchQueueRepository:
     async def snapshot(self, session_id: UUID, owner: str):
         async with engine.begin() as connection:
             session = await self._session(connection, session_id, owner, lock=True)
-            rows = (await connection.execute(select(db.batch_queue_tasks).where(
-                db.batch_queue_tasks.c.session_id == str(session_id)).order_by(
-                db.batch_queue_tasks.c.position).with_for_update())).mappings().all()
-            rows = await self._reconcile_successful_retries(connection, rows)
-            rows = [await self._settle(connection, row) for row in rows]
+            # Only unsettled cases need row locks/full filters. Completed and
+            # pending rows remain cheap projections even in a 100,000-case queue.
+            mutable = (await connection.execute(select(db.batch_queue_tasks).where(
+                db.batch_queue_tasks.c.session_id == str(session_id),
+                db.batch_queue_tasks.c.status.in_(['PROCESSING', 'FAILED']))
+                .order_by(db.batch_queue_tasks.c.position).with_for_update())).mappings().all()
+            mutable = await self._reconcile_successful_retries(connection, mutable)
+            for row in mutable:
+                await self._settle(connection, row)
+            tasks_table = db.batch_queue_tasks
+            rows = (await connection.execute(select(*[column for column in tasks_table.c
+                if column.name != 'filters']).where(tasks_table.c.session_id == str(session_id))
+                .order_by(tasks_table.c.position))).mappings().all()
             policy, rows = await self._advance_policy(connection, session, rows)
             tasks = [task_document(row, policy) for row in rows]
         return {'sessionId': str(session_id), 'status': session['status'], 'maxWorkers': session['max_workers'],
@@ -263,7 +272,7 @@ class BatchQueueRepository:
 
     async def settle(self, session_id: UUID, owner: str, position: int):
         async with engine.begin() as connection:
-            session = await self._session(connection, session_id, owner)
+            session = await self._session(connection, session_id, owner, lock=True)
             row = (await connection.execute(select(db.batch_queue_tasks).where(
                 db.batch_queue_tasks.c.session_id == str(session_id),
                 db.batch_queue_tasks.c.position == position).with_for_update())).mappings().first()

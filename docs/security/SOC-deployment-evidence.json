@@ -1,0 +1,66 @@
+{
+  "implementedInSource": true,
+  "stagedTenant": "soc-validation",
+  "productionSocDeployment": "blocked_by_automatic_approval_review",
+  "productionRestartPerformed": false,
+  "controllerRemoved": true,
+  "tests": {
+    "unitAndPermissions": 14,
+    "socIntegration": 8,
+    "sessionIntegration": 8,
+    "liveStagedChecks": 10,
+    "liveMfaBrowser": true,
+    "uiPlatform": true,
+    "workerSandbox": true
+  },
+  "restoreVerified": {
+    "jobs": 47079,
+    "main_reports": 64638,
+    "users": 2,
+    "stored_files": 75588
+  },
+  "imageScans": [
+    {
+      "role": "api",
+      "critical": 0,
+      "high": 44,
+      "fixableHighCritical": 0
+    },
+    {
+      "role": "web",
+      "critical": 0,
+      "high": 0,
+      "fixableHighCritical": 0
+    },
+    {
+      "role": "runner",
+      "critical": 0,
+      "high": 2,
+      "fixableHighCritical": 0
+    },
+    {
+      "role": "postgres",
+      "critical": 3,
+      "high": 63,
+      "fixableHighCritical": 0
+    },
+    {
+      "role": "soc",
+      "critical": 0,
+      "high": 44,
+      "fixableHighCritical": 0
+    },
+    {
+      "role": "backup",
+      "critical": 3,
+      "high": 95,
+      "fixableHighCritical": 0
+    }
+  ],
+  "limitations": [
+    "No external HTTPS/IdP/SIEM/offsite connection requested.",
+    "Remaining unfixed vendor advisories need triage.",
+    "Hosted Windows/Ubuntu CI and HA are not verified."
+  ],
+  "approvalRejection": "Live/main stack drain, backup and restart need explicit approval for this exact deployment and service-disruption risk."
+}

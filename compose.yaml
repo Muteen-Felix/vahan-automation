@@ -1,4 +1,7 @@
-name: vahan-automation
+name: ${COMPOSE_PROJECT_NAME:-vahan-automation}
+x-logging: &logging
+  driver: local
+  options: {max-size: '10m', max-file: '5'}
 x-extra-runner: &extra-runner
   image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/runner:${VAHAN_IMAGE_TAG:-local}
   build:
@@ -6,10 +9,18 @@ x-extra-runner: &extra-runner
     dockerfile: apps/browser-runner/Dockerfile
   init: true
   shm_size: 1gb
-  security_opt: ["seccomp=./docker/seccomp_profile.json"]
+  security_opt: ["seccomp=./docker/seccomp_profile.json", "no-new-privileges:true"]
+  cap_drop: [ALL]
+  read_only: true
+  tmpfs: ['/tmp:rw,size=768m', '/home/pwuser/.cache:rw,size=128m,uid=1000,gid=1000']
+  mem_limit: ${RUNNER_MEMORY_LIMIT:-1g}
+  cpus: ${RUNNER_CPU_LIMIT:-1.0}
+  pids_limit: 512
+  logging: *logging
+  networks: [workers]
   environment: &extra-runner-environment
     VAHAN_API_URL: http://api:8000
-    VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token in .docker.env}
+    VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
     VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
   depends_on:
     api: {condition: service_healthy}
@@ -21,7 +32,14 @@ x-extra-runner: &extra-runner
   restart: unless-stopped
 services:
   postgres:
-    image: postgres:17.7-bookworm
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/postgres:${VAHAN_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: docker/postgres/Dockerfile}
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-2g}
+    cpus: ${POSTGRES_CPU_LIMIT:-2.0}
+    pids_limit: 256
+    logging: *logging
+    networks: [database]
     environment:
       POSTGRES_DB: vahan
       POSTGRES_USER: vahan
@@ -39,17 +57,46 @@ services:
       context: .
       dockerfile: apps/api-server/Dockerfile
     environment:
-      DATABASE_URL: postgresql+asyncpg://vahan:${POSTGRES_PASSWORD}@postgres:5432/vahan
-      VAHAN_UI_AUTH_USERNAME: ${VAHAN_UI_AUTH_USERNAME:-admin}
-      VAHAN_UI_AUTH_PASSWORD: ${VAHAN_UI_AUTH_PASSWORD:?Configure bootstrap password}
+      DATABASE_URL: postgresql+asyncpg://vahan_app:${VAHAN_DB_RUNTIME_PASSWORD:?Configure runtime role}@postgres:5432/vahan
+      VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
+      VAHAN_PRODUCTION: 'true'
+      VAHAN_COOKIE_SECURE: ${VAHAN_COOKIE_SECURE:-false}
+      VAHAN_REQUIRE_ADMIN_MFA: 'true'
+      VAHAN_MFA_ENCRYPTION_KEY: ${VAHAN_MFA_ENCRYPTION_KEY:?Configure MFA encryption key}
+      VAHAN_RUNNER_TOKENS: ${VAHAN_RUNNER_TOKENS:?Configure unique worker identities}
+      VAHAN_SOC_URL: http://soc:3100
+      VAHAN_SOC_INGEST_KEY: ${VAHAN_SOC_INGEST_KEY:?Configure SOC key}
+      VAHAN_TRUSTED_PROXY_HOST: web
+      VAHAN_DOCUMENT_SERVICE_URL: http://documents:3101
+      VAHAN_MAX_EXPORT_ROWS: ${VAHAN_MAX_EXPORT_ROWS:-100000}
+      VAHAN_DB_POOL_SIZE: ${VAHAN_DB_POOL_SIZE:-10}
+      VAHAN_DB_MAX_OVERFLOW: ${VAHAN_DB_MAX_OVERFLOW:-5}
+      VAHAN_DB_POOL_TIMEOUT_SECONDS: ${VAHAN_DB_POOL_TIMEOUT_SECONDS:-5}
+      VAHAN_DB_STATEMENT_TIMEOUT_MS: ${VAHAN_DB_STATEMENT_TIMEOUT_MS:-60000}
+      VAHAN_DB_LOCK_TIMEOUT_MS: ${VAHAN_DB_LOCK_TIMEOUT_MS:-5000}
+      VAHAN_DB_IDLE_TRANSACTION_TIMEOUT_MS: ${VAHAN_DB_IDLE_TRANSACTION_TIMEOUT_MS:-30000}
+      VAHAN_BULK_OPERATION_CONCURRENCY: ${VAHAN_BULK_OPERATION_CONCURRENCY:-2}
       VAHAN_UI_AUTH_TOKEN_SECRET: ${VAHAN_UI_AUTH_TOKEN_SECRET:?Configure signing secret}
-      VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token}
       VAHAN_API_RUNNER_HEALTH_CHECKS: 'true'
       VAHAN_BROWSER_STATE_KEY: ${VAHAN_BROWSER_STATE_KEY:?Configure encryption key}
-      VAHAN_API_CORS_ORIGINS: http://localhost:${WEB_PORT:-5173},http://127.0.0.1:${WEB_PORT:-5173}
+      VAHAN_API_CORS_ORIGINS: ${VAHAN_ALLOWED_ORIGINS:?Configure trusted origins}
+      VAHAN_API_SOCKETIO_CORS_ORIGINS: ${VAHAN_ALLOWED_ORIGINS:?Configure trusted origins}
+    command: [python, -m, uvicorn, "app.main:application", --host, "0.0.0.0", --port, "8000"]
     ports: ["${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8000}:8000"]
     depends_on:
       postgres: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+      soc: {condition: service_healthy}
+      documents: {condition: service_healthy}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ['/tmp:rw,size=256m,uid=10001,gid=10001']
+    mem_limit: ${API_MEMORY_LIMIT:-1536m}
+    cpus: ${API_CPU_LIMIT:-2.0}
+    pids_limit: 256
+    logging: *logging
+    networks: [ingress, database, workers, audit, processing]
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/ready')"]
       interval: 5s
@@ -63,10 +110,19 @@ services:
       dockerfile: apps/browser-runner/Dockerfile
     init: true
     shm_size: 1gb
-    security_opt: ["seccomp=./docker/seccomp_profile.json"]
+    security_opt: ["seccomp=./docker/seccomp_profile.json", "no-new-privileges:true"]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ['/tmp:rw,size=768m', '/home/pwuser/.cache:rw,size=128m,uid=1000,gid=1000']
+    mem_limit: ${RUNNER_MEMORY_LIMIT:-1g}
+    cpus: ${RUNNER_CPU_LIMIT:-1.0}
+    pids_limit: 512
+    logging: *logging
+    networks: [workers]
     environment:
       VAHAN_API_URL: http://api:8000
-      VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token in .docker.env}
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_1:?Configure worker 1}
+      VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
       VAHAN_RUNNER_ID: playwright-1
       VAHAN_RUNNER_NAME: Chromium Playwright 1
       VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
@@ -85,10 +141,19 @@ services:
       dockerfile: apps/browser-runner/Dockerfile
     init: true
     shm_size: 1gb
-    security_opt: ["seccomp=./docker/seccomp_profile.json"]
+    security_opt: ["seccomp=./docker/seccomp_profile.json", "no-new-privileges:true"]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ['/tmp:rw,size=768m', '/home/pwuser/.cache:rw,size=128m,uid=1000,gid=1000']
+    mem_limit: ${RUNNER_MEMORY_LIMIT:-1g}
+    cpus: ${RUNNER_CPU_LIMIT:-1.0}
+    pids_limit: 512
+    logging: *logging
+    networks: [workers]
     environment:
       VAHAN_API_URL: http://api:8000
-      VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN}
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_2:?Configure worker 2}
+      VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
       VAHAN_RUNNER_ID: playwright-2
       VAHAN_RUNNER_NAME: Chromium Playwright 2
       VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
@@ -105,11 +170,20 @@ services:
     build:
       context: .
       dockerfile: apps/web-ui/Dockerfile
-    ports: ["${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-5173}:80"]
+    ports: ["${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-5173}:8080"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ['/tmp:rw,size=16m,uid=101,gid=101', '/var/cache/nginx:rw,size=256m,uid=101,gid=101', '/var/run:rw,size=8m,uid=101,gid=101']
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    logging: *logging
+    networks: [ingress]
     depends_on:
       api: {condition: service_healthy}
     healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/]
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -119,48 +193,157 @@ services:
     environment:
       <<: *extra-runner-environment
       VAHAN_RUNNER_ID: playwright-3
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_3:?Configure worker 3}
       VAHAN_RUNNER_NAME: Chromium Playwright 3
   runner-4:
     <<: *extra-runner
     environment:
       <<: *extra-runner-environment
       VAHAN_RUNNER_ID: playwright-4
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_4:?Configure worker 4}
       VAHAN_RUNNER_NAME: Chromium Playwright 4
   runner-5:
     <<: *extra-runner
     environment:
       <<: *extra-runner-environment
       VAHAN_RUNNER_ID: playwright-5
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_5:?Configure worker 5}
       VAHAN_RUNNER_NAME: Chromium Playwright 5
   runner-6:
     <<: *extra-runner
     environment:
       <<: *extra-runner-environment
       VAHAN_RUNNER_ID: playwright-6
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_6:?Configure worker 6}
       VAHAN_RUNNER_NAME: Chromium Playwright 6
   runner-7:
     <<: *extra-runner
     environment:
       <<: *extra-runner-environment
       VAHAN_RUNNER_ID: playwright-7
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_7:?Configure worker 7}
       VAHAN_RUNNER_NAME: Chromium Playwright 7
   runner-8:
     <<: *extra-runner
     environment:
       <<: *extra-runner-environment
       VAHAN_RUNNER_ID: playwright-8
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_8:?Configure worker 8}
       VAHAN_RUNNER_NAME: Chromium Playwright 8
   runner-9:
     <<: *extra-runner
     environment:
       <<: *extra-runner-environment
       VAHAN_RUNNER_ID: playwright-9
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_9:?Configure worker 9}
       VAHAN_RUNNER_NAME: Chromium Playwright 9
   runner-10:
     <<: *extra-runner
     environment:
       <<: *extra-runner-environment
       VAHAN_RUNNER_ID: playwright-10
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_RUNNER_TOKEN_10:?Configure worker 10}
       VAHAN_RUNNER_NAME: Chromium Playwright 10
+  migrate:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/api:${VAHAN_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: apps/api-server/Dockerfile}
+    command: [python, -m, app.initialize_database]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://vahan:${POSTGRES_PASSWORD}@postgres:5432/vahan
+      VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
+      VAHAN_UI_AUTH_USERNAME: ${VAHAN_UI_AUTH_USERNAME:-admin}
+      VAHAN_UI_AUTH_PASSWORD: ${VAHAN_UI_AUTH_PASSWORD:?Configure bootstrap password}
+      VAHAN_DB_RUNTIME_PASSWORD: ${VAHAN_DB_RUNTIME_PASSWORD:?Configure runtime role}
+      VAHAN_DB_MIGRATION_PASSWORD: ${VAHAN_DB_MIGRATION_PASSWORD:?Configure migration role}
+      VAHAN_DB_BACKUP_PASSWORD: ${VAHAN_DB_BACKUP_PASSWORD:?Configure backup role}
+    depends_on:
+      postgres: {condition: service_healthy}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ['/tmp:rw,size=64m,uid=10001,gid=10001']
+    mem_limit: 512m
+    pids_limit: 128
+    logging: *logging
+    networks: [database]
+  soc:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/soc:${VAHAN_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: docker/soc/Dockerfile}
+    environment:
+      VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
+      VAHAN_SOC_INGEST_KEY: ${VAHAN_SOC_INGEST_KEY:?Configure SOC key}
+      VAHAN_SOC_BACKUP_KEY: ${VAHAN_SOC_BACKUP_KEY:?Configure backup publisher}
+    volumes: [soc_data:/data]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ['/tmp:rw,size=16m,uid=10002,gid=10002']
+    mem_limit: 256m
+    pids_limit: 64
+    logging: *logging
+    networks: [audit]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3100/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  backup:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/backup:${VAHAN_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: docker/backup/Dockerfile}
+    environment:
+      PGHOST: postgres
+      PGUSER: vahan_backup
+      PGDATABASE: vahan
+      PGPASSWORD: ${VAHAN_DB_BACKUP_PASSWORD:?Configure backup role}
+      VAHAN_TENANT_ID: ${VAHAN_TENANT_ID:-legacy}
+      VAHAN_BACKUP_RECIPIENT: ${VAHAN_BACKUP_RECIPIENT:-}
+      VAHAN_SOC_BACKUP_KEY: ${VAHAN_SOC_BACKUP_KEY:?Configure backup publisher}
+      VAHAN_BACKUP_INTERVAL_SECONDS: ${VAHAN_BACKUP_INTERVAL_SECONDS:-3600}
+      VAHAN_BACKUP_MAX_BYTES: ${VAHAN_BACKUP_MAX_BYTES:-21474836480}
+    volumes: [backup_data:/data]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      soc: {condition: service_healthy}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ['/tmp:rw,size=16m,uid=10003,gid=10003']
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
+    logging: *logging
+    networks: [database, audit]
+    restart: unless-stopped
+  documents:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/api:${VAHAN_IMAGE_TAG:-local}
+    build: {context: ., dockerfile: apps/api-server/Dockerfile}
+    command: [python, -m, app.document_worker]
+    environment:
+      VAHAN_PARSER_TIMEOUT_SECONDS: '120'
+      VAHAN_MAX_EXPORT_ROWS: ${VAHAN_MAX_EXPORT_ROWS:-100000}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ['/tmp:rw,size=512m,uid=10001,gid=10001']
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 64
+    logging: *logging
+    networks: [processing]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3101/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 volumes:
   postgres_data:
+  soc_data:
+  backup_data:
+networks:
+  ingress: {}
+  database: {internal: true}
+  audit: {internal: true}
+  processing: {internal: true}
+  workers: {}

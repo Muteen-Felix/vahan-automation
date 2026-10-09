@@ -1,5 +1,5 @@
 import {currentReportYear, type MatrixPlan} from './matrix-plan';
-import {API_URL, getAccessToken, ApiError} from './services/api-client';
+import {API_URL, csrfHeaders, ApiError} from './services/api-client';
 
 export const FILTER_PROFILE_STORAGE_KEY = 'vahanSelectedFilterProfileV1';
 export const PROFILE_FIELDS = [
@@ -37,9 +37,8 @@ export function parentContext(definition:ProfileDefinition) {
 }
 
 export async function previewFilterProfile(id:string,runnerId:string,year:number,onProgress:(message:string)=>void,signal?:AbortSignal):Promise<MatrixPlan> {
-  const token=getAccessToken();
-  const response=await fetch(`${API_URL}/api/filter-profiles/${id}/preview`,{method:'POST',signal,
-    headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({runnerId,year})});
+  const response=await fetch(`${API_URL}/api/filter-profiles/${id}/preview`,{method:'POST',signal,credentials:'include',
+    headers:{'Content-Type':'application/json',...csrfHeaders()},body:JSON.stringify({runnerId,year})});
   if(!response.ok){const body=await response.json().catch(()=>({}));throw new ApiError(response.status,body.detail||'Could not preview filters.');}
   if(!response.body)throw new Error('The filter preview stream is unavailable.');
   const reader=response.body.getReader(),decoder=new TextDecoder();let pending='';let plan:MatrixPlan|null=null;

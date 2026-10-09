@@ -28,6 +28,7 @@ def issue_access_token(username: str, session_id: str | None = None, *, expires_
         "exp": expires_at if expires_at is not None else now + ABSOLUTE_TTL_SECONDS,
         "aud": "vahan-rpa-ui",
         "typ": "access",
+        "tenant": settings.tenant_id,
     }
     if session_id:
         payload["sid"] = session_id
@@ -69,6 +70,7 @@ def _verified_payload(token: str) -> dict[str, Any] | None:
         if (
             payload.get("aud") != "vahan-rpa-ui"
             or payload.get("typ") != "access"
+            or payload.get("tenant") != settings.tenant_id
             or not isinstance(username, str)
             or type(issued_at) is not int
             or type(expires_at) is not int
@@ -93,10 +95,33 @@ def access_token_expiry(token: str) -> int | None:
     return expires_at if isinstance(expires_at, int) else None
 
 
-def runner_token_matches(candidate: str | None) -> bool:
-    if not candidate or len(settings.runner_token) < 24 or settings.runner_token == 'change-me':
+def runner_token_matches(candidate: str | None, runner_id: str | None = None) -> bool:
+    if not candidate:
+        return False
+    if settings.runner_tokens:
+        configured = json.loads(settings.runner_tokens)
+        expected = configured.get(runner_id or '', '')
+        return len(expected) >= 32 and secrets.compare_digest(candidate.encode(), expected.encode())
+    # Compatibility only for non-production development. Production never
+    # accepts the old shared credential, even when it remains in the env file.
+    if settings.production or len(settings.runner_token) < 24 or settings.runner_token == 'change-me':
         return False
     return secrets.compare_digest(candidate.encode(), settings.runner_token.encode())
+
+
+def csrf_token(session_id: str) -> str:
+    return hmac.new(settings.ui_auth_token_secret.encode(),
+                    f'csrf:{settings.tenant_id}:{session_id}'.encode(), hashlib.sha256).hexdigest()
+
+
+def cookie_token(environ: dict) -> str:
+    from http.cookies import SimpleCookie
+    try:
+        cookies = SimpleCookie(environ.get('HTTP_COOKIE', ''))
+        value = cookies.get(settings.session_cookie_name)
+        return value.value if value else ''
+    except Exception:
+        return ''
 
 
 async def authenticate_access_token(token: str, *, activity: bool = False):

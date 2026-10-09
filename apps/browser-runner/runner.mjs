@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import {saveWithBackpressure} from './save-pressure.mjs';
 import { io } from 'socket.io-client';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -37,7 +38,13 @@ const socket = io(`${API}/runner`, {autoConnect: false, transports: ['websocket'
 const headers = {'X-VAHAN-RUNNER-TOKEN': TOKEN, 'X-VAHAN-RUNNER-ID': ID};
 async function http(path, init = {}) {
   const response = await fetch(`${API}${path}`, {...init, headers: {...headers, ...init.headers}, signal: AbortSignal.timeout(60_000)});
-  if (!response.ok) throw new Error(`API ${response.status}: ${await response.text()}`);
+  if (!response.ok) {
+    const message=await response.text();let body={};
+    try{body=JSON.parse(message);}catch{}
+    throw Object.assign(new Error(`API ${response.status}: ${message}`),{
+      status:response.status,code:body.code,retryAfter:response.headers.get('retry-after'),
+    });
+  }
   return response.json();
 }
 async function ack(event, payload, timeout = 15_000) {
@@ -125,8 +132,7 @@ async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
 
     const rawText = stdout.trim();
     const text = rawText.replace(/[^A-Z0-9]/ig, '').toUpperCase();
-    console.log(`OCR raw output: ${rawText}`);
-    console.log(`Auto-OCR result: ${text}`);
+    console.log('Image recognition finished. Validation text is excluded from logs.');
     if (text.length === 6) {
       console.log('Valid captcha detected, auto-submitting...');
       await submitCaptchaInternal(job, captchaId, text);
@@ -288,7 +294,10 @@ async function finalizeResult(job, operation) {
   job.finishing = true;
   job.finishPromise = new Promise(resolve => { job.finish = resolve; });
   try {
-    const saved = await operation();
+    const saved = await saveWithBackpressure(operation, {
+      check: () => assertCurrent(job),
+      onWait: (attempt, seconds) => console.log('DATABASE_BACKPRESSURE', JSON.stringify({jobId:job.jobId,attempt,waitSeconds:seconds})),
+    });
     assertCurrent(job);
     if (!['COMPLETED', 'NO_DATA'].includes(saved.status)) throw new Error('MAIN_REPORT_SAVE_NOT_CONFIRMED');
     job.status = saved.status;
@@ -392,9 +401,11 @@ socket.on('connect', async () => {
 socket.on('connect_error', error => console.error('API connection:', error.message));
 const originalError = console.error.bind(console);
 console.error = (...parts) => {
-  originalError(...parts);
+  const safeParts=parts.map(value=>String(value).replaceAll(TOKEN,'[redacted]')
+    .replace(/Bearer\s+[^\s"']+/ig,'Bearer [redacted]'));
+  originalError(...safeParts);
   if (socket.connected) {
-    const message = parts.map(String).join(' ').slice(0, 8000).replaceAll(TOKEN, '[redacted]');
+    const message = safeParts.join(' ').slice(0, 8000);
     http('/api/runner-logs', {method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({level: 'error', message, jobId: active?.jobId || null})}).catch(() => {});
   }

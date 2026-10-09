@@ -2,8 +2,15 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.security import issue_access_token, ABSOLUTE_TTL_SECONDS, IDLE_TIMEOUT_SECONDS
+from app.security import issue_access_token, ABSOLUTE_TTL_SECONDS, IDLE_TIMEOUT_SECONDS, csrf_token
 from app.services import services
+from app.repositories.postgres import audit
+from app.security_limits import consume
+from app import mfa
+import asyncio
+import secrets
+
+_password_slots = asyncio.Semaphore(4)
 
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -12,46 +19,75 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 class LoginRequest(BaseModel):
     username: str = Field(min_length=1, max_length=128)
     password: str = Field(min_length=1, max_length=1024)
+    otp: str = Field(default='', max_length=64)
+    browser_session: bool = Field(default=False, alias='browserSession')
 
 
 @router.get("/status")
-async def auth_status() -> dict[str, bool | int | None]:
+async def auth_status() -> dict:
     return {
         "configured": settings.ui_auth_configured and bool(await services.users.list()),
         "tokenTtlSeconds": ABSOLUTE_TTL_SECONDS,
         "idleTimeoutSeconds": IDLE_TIMEOUT_SECONDS,
+        'tenantId': settings.tenant_id,
+        'adminMfaRequired': settings.require_admin_mfa,
     }
 
 
 @router.post("/login")
-async def login(command: LoginRequest, response: Response) -> dict[str, str | int | None]:
+async def login(command: LoginRequest, response: Response, request: Request) -> dict:
     if not settings.ui_auth_configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication is not configured on the API server.",
         )
-    user = await services.users.authenticate(command.username, command.password)
+    ip = getattr(request.state, 'security_client_ip', request.client.host if request.client else 'unknown')
+    await consume('login:global', 120, 60)
+    await consume(f'login:ip:{ip}', 20, 60)
+    await consume(f'login:account:{command.username}', 5, 600)
+    async with _password_slots:
+        user = await services.users.authenticate(command.username, command.password)
     if not user:
+        await audit(command.username, 'auth.login_failed', {'reason': 'credentials'})
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="The username or password is incorrect.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    has_mfa = await mfa.enabled(user['username'])
+    if user['role'] == 'admin' and settings.require_admin_mfa and not has_mfa:
+        await audit(user['username'], 'auth.mfa_enrollment_required', {})
+        return {'mfaSetupToken': mfa.setup_challenge(user), 'username': user['username'],
+                'accessToken': None, 'mfaRequired': True}
+    if has_mfa and not await mfa.verify(user['username'], command.otp):
+        await audit(user['username'], 'auth.login_failed', {'reason': 'second_factor'})
+        raise HTTPException(401, 'The username, password or verification code is incorrect.')
+    return await establish_session(user, response, browser=command.browser_session or settings.production)
+
+
+async def establish_session(user, response, *, browser=True):
+    username = user['username']
     try:
-        session = await services.users.create_session(command.username, expected_password_hash=user['password_hash'])
+        session = await services.users.create_session(username, expected_password_hash=user['password_hash'], expected_role=user['role'])
     except ValueError as error:
         raise HTTPException(401, 'Credentials changed. Please sign in again.') from error
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
-    user = await services.users.session_user(command.username, session)
+    user = await services.users.session_user(username, session)
     deadlines = session_deadlines(user)
+    token = issue_access_token(username, session, expires_at=deadlines['expiresAt'])
+    response.set_cookie(settings.session_cookie_name, token, httponly=True, secure=settings.cookie_secure,
+                        samesite='strict', max_age=ABSOLUTE_TTL_SECONDS, path='/')
+    await audit(username, 'auth.login_success', {'role': user['role']})
     return {
-        "accessToken": issue_access_token(command.username, session, expires_at=deadlines['expiresAt']),
-        "tokenType": "Bearer",
+        "accessToken": None if browser else token,
+        'sessionMarker': secrets.token_hex(16),
+        'csrfToken': csrf_token(session),
+        "tokenType": "Cookie" if browser else "Bearer",
         "expiresIn": ABSOLUTE_TTL_SECONDS,
         "idleTimeoutSeconds": IDLE_TIMEOUT_SECONDS,
         **deadlines,
-        "username": command.username,
+        "username": username,
     }
 
 
@@ -69,7 +105,9 @@ async def current_user(request: Request) -> dict[str, str | int]:
     if not username:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
     user = await services.users.session_user(username, request.state.token_session)
-    return {"username": username, "role": request.state.authenticated_role, **session_deadlines(user)}
+    return {"username": username, "role": request.state.authenticated_role,
+            'tenantId': settings.tenant_id, 'csrfToken': csrf_token(request.state.token_session),
+            'mfaEnabled': await mfa.enabled(username), **session_deadlines(user)}
 
 
 @router.post('/activity')
@@ -81,11 +119,37 @@ async def session_activity(request: Request, response: Response):
 
 
 @router.post("/logout")
-async def logout(request: Request):
+async def logout(request: Request, response: Response):
     from app.realtime.ui_events import invalidate_session
     await services.users.revoke(request.state.token_session)
     await invalidate_session(request.state.token_session)
+    response.delete_cookie(settings.session_cookie_name, path='/', secure=settings.cookie_secure,
+                           httponly=True, samesite='strict')
+    await audit(request.state.authenticated_user, 'auth.logout', {})
     return {"ok": True}
+
+
+class MfaEnrollment(BaseModel):
+    challenge: str = Field(min_length=1, max_length=4096)
+    code: str = Field(default='', max_length=6)
+
+
+@router.post('/mfa/enroll')
+async def mfa_enroll(command: MfaEnrollment):
+    user = await mfa.setup_user(command.challenge)
+    await consume(f'mfa-enroll:{user["username"]}', 3, 300)
+    result = await mfa.enroll(user)
+    await audit(user['username'], 'auth.mfa_enrollment_started', {})
+    return result
+
+
+@router.post('/mfa/confirm')
+async def mfa_confirm(command: MfaEnrollment, response: Response):
+    user = await mfa.setup_user(command.challenge)
+    await consume(f'mfa-confirm:{user["username"]}', 5, 300)
+    codes = await mfa.confirm(user, command.code)
+    await audit(user['username'], 'auth.mfa_enabled', {})
+    return {**await establish_session(user, response), 'recoveryCodes': codes}
 
 
 class ChangePasswordRequest(BaseModel):

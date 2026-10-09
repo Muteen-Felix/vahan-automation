@@ -302,6 +302,8 @@ async def import_rows(connection, *, source_key, name, rows, filters, owner, obs
         states=sorted({r['state'] for r in entries}) or filters.get('states', []),
         rtos=sorted({r['rto'] + (' - ' + r['rto_code'] if r['rto_code'] else '') for r in entries}) or filters.get('rtos', []),
         details=details))
+    from app.db.read_cache import invalidate_annual_reports
+    invalidate_annual_reports()
     return True
 
 

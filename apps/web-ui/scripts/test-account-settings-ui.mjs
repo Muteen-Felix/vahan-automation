@@ -29,6 +29,11 @@ try {
  assert.equal(await page.getByRole('button',{name:'Log out',exact:true}).count(),0);
  await page.getByRole('button',{name:'Account',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Account settings'});
  await dialog.locator('.account-identity strong').waitFor();assert.equal(await dialog.locator('.account-identity strong').innerText(),'admin-fixture');
+ assert.equal(await dialog.getByRole('tab').count(),3,'Admins get separate profile, password and user-management sections');
+ assert.equal(await dialog.getByRole('button',{name:'Log out',exact:true}).isVisible(),true);
+ const desktopFrame=await dialog.boundingBox();
+ await dialog.getByRole('tab',{name:'Change password'}).click();
+ const passwordFrame=await dialog.boundingBox();assert.equal(passwordFrame.width,desktopFrame.width);assert.equal(passwordFrame.height,desktopFrame.height,'Switching sections must not resize the dialog');
  await dialog.getByLabel('Current password',{exact:true}).fill('Wrong password fixture');
  await dialog.getByLabel('New password',{exact:true}).fill('New password fixture');
  await dialog.getByLabel('Confirm new password',{exact:true}).fill('Mismatch password fixture');
@@ -39,7 +44,9 @@ try {
  await dialog.getByRole('button',{name:'Update password'}).click();await dialog.getByRole('status').getByText(/Password changed/).waitFor();
  assert.equal(await dialog.getByLabel('New password',{exact:true}).inputValue(),'');
  assert.equal(changed.length,2);
- await dialog.getByText('Manage user accounts',{exact:true}).click();await dialog.getByText('member-fixture',{exact:true}).waitFor();
+ await dialog.getByRole('tab',{name:'Manage users'}).click();
+ const usersFrame=await dialog.boundingBox();assert.equal(usersFrame.width,desktopFrame.width);assert.equal(usersFrame.height,desktopFrame.height,'Long user-management content stays inside the fixed dialog');
+ await dialog.getByText('member-fixture',{exact:true}).waitFor();
  assert.equal(await dialog.getByRole('button',{name:'Reset password',exact:true}).count(),1,'Admin must use verified current-password flow for own account');
  await dialog.getByRole('button',{name:'Reset password',exact:true}).click();
  await dialog.getByLabel('Reset password',{exact:true}).fill('Admin reset fixture password');await dialog.getByLabel('Confirm reset password',{exact:true}).fill('Admin reset fixture password');
@@ -51,10 +58,15 @@ try {
  await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Account',exact:true}).click();
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  assert.ok(await dialog.evaluate(d=>d.scrollWidth<=d.clientWidth+1),'Account modal fits mobile');
+ const mobileFrame=await dialog.boundingBox();
+ await dialog.getByRole('tab',{name:'Change password'}).click();let changedFrame=await dialog.boundingBox();
+ assert.equal(changedFrame.width,mobileFrame.width);assert.equal(changedFrame.height,mobileFrame.height,'Mobile section changes keep the same dialog frame');
+ await dialog.getByRole('tab',{name:'Manage users'}).click();changedFrame=await dialog.boundingBox();
+ assert.equal(changedFrame.width,mobileFrame.width);assert.equal(changedFrame.height,mobileFrame.height);
  await dialog.screenshot({path:testArtifactPath('account-settings-mobile.png')});
  await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
  role='user';await page.getByRole('button',{name:'Account',exact:true}).click();await dialog.getByText('Workspace member',{exact:true}).waitFor();
  assert.equal(await dialog.getByText('Manage user accounts',{exact:true}).count(),0);
  assert.deepEqual(errors,[]);
- console.log('Account UI: hidden account controls, own password mismatch/error/success, admin reset, self-reset restriction, Escape and mobile layout passed.');
+ console.log('Account UI: section tabs, fixed dialog dimensions, password flows, admin user management, Escape and mobile layout passed.');
 }finally{await browser.close();}

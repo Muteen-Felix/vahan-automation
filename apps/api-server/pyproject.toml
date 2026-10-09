@@ -14,7 +14,8 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.0.40,<3",
   "asyncpg>=0.30,<1",
   "alembic>=1.15,<2",
-  "cryptography>=44,<47",
+  "cryptography>=50.0.2,<51",
+  "pyotp>=2.10,<3",
   "tzdata>=2025.1; sys_platform == 'win32'",
 ]
 

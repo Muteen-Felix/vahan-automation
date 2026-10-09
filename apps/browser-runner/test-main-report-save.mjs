@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {saveWithBackpressure} from './save-pressure.mjs';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 const source = readFileSync(new URL('./runner.mjs', import.meta.url), 'utf8');
@@ -13,7 +14,7 @@ function fixture(type = 'DATA_READY', downloadReady = true) {
   const job = {jobId:'first',status:'WAITING_RESULT',filters:{rtos:['Port Blair DTO - AN1']},retries:0};
   const download = {failure:async()=>null,path:async()=>'/temporary/report.xlsx',suggestedFilename:()=> 'report.xlsx',
     delete:async()=>calls.push('delete-temporary-export')};
-  const context = {active:job,optionsBusy:false,authRequired:false,RESULT_TIMEOUT:5000,FormData,Blob,URL,target:new URL('https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en'),
+  const context = {saveWithBackpressure,active:job,optionsBusy:false,authRequired:false,RESULT_TIMEOUT:5000,FormData,Blob,URL,target:new URL('https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en'),
     page:{url:()=> 'https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en',
       waitForLoadState:async()=>{},waitForEvent:async()=>download,evaluate:async fn=>{
       const code=fn.toString();

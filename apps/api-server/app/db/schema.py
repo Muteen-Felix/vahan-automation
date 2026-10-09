@@ -1,7 +1,7 @@
 """Durable PostgreSQL schema. JSONB retains complete versioned application payloads."""
 from sqlalchemy import (
     MetaData, Table, Column, String, Text, Boolean, Integer, BigInteger,
-    DateTime, LargeBinary, ForeignKey, JSON, Index, UniqueConstraint, CheckConstraint, text,
+    DateTime, LargeBinary, ForeignKey, JSON, Index, UniqueConstraint, CheckConstraint, text, func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -32,6 +32,10 @@ jobs = Table("jobs", metadata,
     Column("session_id", ForeignKey("report_sessions.id"), nullable=False, index=True),
     Column("runner_id", String(128), nullable=False, index=True),
     Column("status", String(32), nullable=False, index=True),
+    Column('case_id', String(36)),
+    Column('retry_of_job_id', String(36)),
+    Column('scenario_name', Text),
+    Column('source', String(16), nullable=False, server_default=text("'new'")),
     Column("filters", document, nullable=False),
     Column("payload", document, nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False),
@@ -116,6 +120,29 @@ audit_events = Table('audit_events', metadata,
     Column('payload', document, nullable=False),
     Column('created_at', DateTime(timezone=True), nullable=False))
 Index("ix_jobs_filters_gin", jobs.c.filters, postgresql_using="gin")
+deployment_identity = Table('deployment_identity', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('tenant_id', String(64), nullable=False),
+    CheckConstraint('id = 1', name='ck_single_deployment_identity'))
+user_mfa = Table('user_mfa', metadata,
+    Column('username', ForeignKey('users.username', ondelete='CASCADE'), primary_key=True),
+    Column('secret', LargeBinary), Column('pending_secret', LargeBinary),
+    Column('pending_expires_at', DateTime(timezone=True)),
+    Column('last_counter', BigInteger, nullable=False, server_default='-1'),
+    Column('recovery_hashes', document, nullable=False, server_default='[]'))
+security_rate_limits = Table('security_rate_limits', metadata,
+    Column('key', String(64), primary_key=True),
+    Column('started_at', DateTime(timezone=True), nullable=False),
+    Column('hits', Integer, nullable=False))
+soc_outbox = Table('soc_outbox', metadata,
+    Column('id', String(36), primary_key=True), Column('payload', document, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False),
+    Column('delivered', Boolean, nullable=False, server_default='false'),
+    Column('delivered_at', DateTime(timezone=True)),
+    Column('attempts', Integer, nullable=False, server_default='0'),
+    Column('next_attempt_at', DateTime(timezone=True), nullable=False))
+Index('ix_soc_delivery', soc_outbox.c.next_attempt_at,
+      postgresql_where=text('NOT delivered'))
 MONTH_COLUMNS = ('jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec')
 main_reports = Table('main_reports', metadata,
     Column('id', String(64), primary_key=True),
@@ -200,3 +227,25 @@ ui_preflight_checks = Table('ui_preflight_checks', metadata,
     Column('runner_ids', document, nullable=False), Column('version_id', String(36)),
     Column('status', String(24), nullable=False), Column('reports', document, nullable=False),
     Column('created_at', DateTime(timezone=True), nullable=False))
+
+# Query keys stay relational; large JSON/bytea values are never index INCLUDE columns.
+Index('ix_jobs_session_created', jobs.c.session_id, jobs.c.created_at, jobs.c.id)
+Index('ix_jobs_owner_created', jobs.c.owner_username, jobs.c.created_at.desc(), jobs.c.id)
+Index('ix_jobs_retry_of', jobs.c.retry_of_job_id,
+      postgresql_where=text('retry_of_job_id IS NOT NULL'))
+Index('ix_jobs_active', jobs.c.runner_id, jobs.c.session_id,
+      postgresql_where=text("status NOT IN ('COMPLETED','NO_DATA','FAILED','CANCELLED')"))
+Index('ix_queue_session_status_position', batch_queue_tasks.c.session_id,
+      batch_queue_tasks.c.status, batch_queue_tasks.c.position)
+Index('ix_main_reports_scope_year_order', main_reports.c.scope_key, main_reports.c.year,
+      func.lower(main_reports.c.state), func.lower(main_reports.c.rto),
+      func.lower(main_reports.c.maker), main_reports.c.id)
+Index('ix_report_history_scope_imported', report_update_history.c.scope_key,
+      report_update_history.c.imported_at.desc(), report_update_history.c.source_key)
+Index('ix_report_history_years', report_update_history.c.years, postgresql_using='gin')
+Index('ix_job_events_job_created', job_events.c.job_id, job_events.c.created_at)
+Index('ix_audit_events_created', audit_events.c.created_at.desc(), audit_events.c.id)
+Index('ix_report_sessions_owner_created', report_sessions.c.owner_username,
+      report_sessions.c.created_at.desc(), report_sessions.c.id)
+Index('ix_stored_files_kind_job_created', stored_files.c.kind, stored_files.c.job_id,
+      stored_files.c.created_at.desc())

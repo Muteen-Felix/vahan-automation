@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {AccountSettings} from './components/AccountSettings';
+import {SecurityStatus} from './components/SecurityStatus';
 import {AnnualReports} from './components/AnnualReports';
 import {AutomaticRunSettings} from './components/AutomaticRunSettings';
 import {ConnectionBanner} from './components/ConnectionBanner';
@@ -216,6 +217,7 @@ export default function App() {
             <AccountSettings signingOut={signingOut} onSignOut={signOut}/>
           </div>
           <UiHealthContract refreshToken={healthRefresh} scrollIntoView={routeHash === '#settings-ui-health'} />
+          <SecurityStatus />
           <AutomaticRunSettings profiles={profiles} selectedProfileId={selectedProfileId}
             workerCount={runDefaults.workerCount} year={runDefaults.year} schedules={scheduledRuns.schedules}
             loading={scheduledRuns.loading} loadError={scheduledRuns.error}

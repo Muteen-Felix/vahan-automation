@@ -6,7 +6,7 @@ from socketio.exceptions import TimeoutError as SocketIOTimeoutError
 
 from app.models.job import JobStatus, can_transition
 from app.realtime.server import sio
-from app.security import access_token_expiry, authenticate_access_token
+from app.security import access_token_expiry, authenticate_access_token, cookie_token
 from app.services import services
 from app.repositories.postgres import audit
 
@@ -58,7 +58,7 @@ async def _forward_captcha_submission(job_id: UUID, runner_id: str, runner_socke
 @sio.event(namespace="/ui")
 async def connect(_sid: str, _environ: dict, auth: dict | None) -> bool:
     auth = auth or {}
-    token = str(auth.get("token", ""))
+    token = cookie_token(_environ) or str(auth.get("token", ""))
     user = await authenticate_access_token(token)
     expires_at = access_token_expiry(token)
     if not user or user['role'] != 'admin':

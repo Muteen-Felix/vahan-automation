@@ -1,16 +1,16 @@
-import {api, getAccessToken, type SessionDeadlines} from './api-client';
+import {api, getSessionMarker, type SessionDeadlines} from './api-client';
 
 const ACTIVITY_INTERVAL_MS = 30_000;
 
 /** Send activity only after user input; polling and socket traffic never touch idle TTL. */
 export function observeSessionActivity() {
-  const token = getAccessToken();
+  const token = getSessionMarker();
   let live = true;
   let lastSent = 0;
   let pending: ReturnType<typeof setTimeout> | undefined;
   let expiry: ReturnType<typeof setTimeout> | undefined;
   let inFlight = false;
-  const sameSession = () => live && !!token && getAccessToken() === token;
+  const sameSession = () => live && !!token && getSessionMarker() === token;
 
   function applyDeadlines(value: SessionDeadlines) {
     if (!sameSession() || !value.expiresAt || !value.idleExpiresAt) return;
