@@ -70,8 +70,6 @@ class Settings:
     captcha_image_path_template: str = DEFAULT_CAPTCHA_IMAGE_PATH_TEMPLATE
     max_excel_upload_bytes: int = 50 * 1024 * 1024  # 50 MB
     database_url: str = "postgresql+asyncpg://vahan@127.0.0.1:5432/vahan"
-    redis_url: str = "redis://127.0.0.1:6379/0"
-    redis_reclaim_ms: int = 60_000
     browser_state_key: str = ""
     runner_health_checks: bool = False
 
@@ -110,8 +108,6 @@ class Settings:
         )
         return cls(
             database_url=os.getenv("DATABASE_URL", "postgresql+asyncpg://vahan@127.0.0.1:5432/vahan"),
-            redis_url=os.getenv("VAHAN_REDIS_URL", "redis://127.0.0.1:6379/0"),
-            redis_reclaim_ms=max(1000, int(os.getenv("VAHAN_REDIS_RECLAIM_MS", "60000"))),
             browser_state_key=os.getenv("VAHAN_BROWSER_STATE_KEY", ""),
             runner_health_checks=_as_bool(os.getenv('VAHAN_API_RUNNER_HEALTH_CHECKS')),
             host=os.getenv("VAHAN_API_HOST", "127.0.0.1"),

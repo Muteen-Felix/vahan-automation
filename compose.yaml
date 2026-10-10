@@ -13,16 +13,6 @@ services:
       timeout: 5s
       retries: 20
     restart: unless-stopped
-  redis:
-    image: redis:8.2.1-bookworm
-    command: [redis-server, --appendonly, "yes", --appendfsync, everysec]
-    volumes: [redis_data:/data]
-    healthcheck:
-      test: [CMD, redis-cli, ping]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    restart: unless-stopped
   api:
     image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/api:${VAHAN_IMAGE_TAG:-local}
     build:
@@ -30,8 +20,6 @@ services:
       dockerfile: apps/api-server/Dockerfile
     environment:
       DATABASE_URL: postgresql+asyncpg://vahan:${POSTGRES_PASSWORD}@postgres:5432/vahan
-      VAHAN_REDIS_URL: redis://redis:6379/0
-      VAHAN_REDIS_RECLAIM_MS: ${VAHAN_REDIS_RECLAIM_MS:-60000}
       VAHAN_UI_AUTH_USERNAME: ${VAHAN_UI_AUTH_USERNAME:-admin}
       VAHAN_UI_AUTH_PASSWORD: ${VAHAN_UI_AUTH_PASSWORD:?Configure bootstrap password}
       VAHAN_UI_AUTH_TOKEN_SECRET: ${VAHAN_UI_AUTH_TOKEN_SECRET:?Configure signing secret}
@@ -42,7 +30,6 @@ services:
     ports: ["${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8000}:8000"]
     depends_on:
       postgres: {condition: service_healthy}
-      redis: {condition: service_healthy}
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/ready')"]
       interval: 5s
@@ -59,13 +46,10 @@ services:
     security_opt: ["seccomp=./docker/seccomp_profile.json"]
     environment:
       VAHAN_API_URL: http://api:8000
-      VAHAN_REDIS_URL: redis://redis:6379/0
-      VAHAN_REDIS_RECLAIM_MS: ${VAHAN_REDIS_RECLAIM_MS:-60000}
       VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token in .docker.env}
       VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
     depends_on:
       api: {condition: service_healthy}
-      redis: {condition: service_healthy}
     healthcheck:
       test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
@@ -90,4 +74,3 @@ services:
     restart: unless-stopped
 volumes:
   postgres_data:
-  redis_data:

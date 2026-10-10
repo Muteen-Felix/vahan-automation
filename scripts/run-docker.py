@@ -80,7 +80,7 @@ def main() -> int:
         print(f"Using the manually configured worker count: {worker_count}.")
     # Remove the retired controller when upgrading an existing deployment.
     run([*COMPOSE, "up", "-d", "--no-build", "--remove-orphans", "--scale",
-         f"runner={worker_count}", "postgres", "redis", "api", "web", "runner"])
+         f"runner={worker_count}", "postgres", "api", "web", "runner"])
     run([*COMPOSE, "ps"])
     return 0
 

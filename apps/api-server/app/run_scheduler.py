@@ -190,7 +190,7 @@ async def prepare_run(value):
                 gate = await automatic_preflight(value, runner_ids)
             if not await still_current(value):
                 return
-            await checkpoint(value, {'stage': 'Publishing report queue', 'message': f'Publishing {len(tasks)} cases for workers.'})
+            await checkpoint(value, {'stage': 'Adding cases to PostgreSQL queue', 'message': f'Adding {len(tasks)} cases for workers.'})
             await queue.start(UUID(session_id), value['owner'], [QueueTaskInput.model_validate(task) for task in tasks], value['workerCount'])
             await bind_gate(session_id, gate)
         else:
@@ -290,8 +290,7 @@ async def dispatch_run(value):
                 return
             await checkpoint(value, {'stage': 'UI Health gate', 'operationError': str(check_error), 'message': f'Waiting for a successful UI health check: {check_error}'})
             return
-    # Redis Stream consumers claim tasks themselves. The scheduler updates the
-    # run state and UI Health gate, but does not select or notify a worker.
+    # Browser workers claim cases directly from the durable PostgreSQL queue.
 
 
 async def scheduler_tick():

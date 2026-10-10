@@ -21,7 +21,7 @@ Hệ thống tự động hóa phần lặp lại đó: lưu bộ lọc thành p
 1. Admin tạo hoặc chọn profile, năm báo cáo, múi giờ, lịch và hạn mức concurrency.
 2. Hệ thống tải options cần thiết từ VAHAN, preview các case và kiểm tra profile.
 3. Trước khi tạo hàng đợi, UI Health kiểm tra giao diện VAHAN trên các worker được chọn. Nếu selector hoặc cấu trúc trang không xác minh được, hệ thống chặn lượt chạy mới và lưu diagnostics.
-4. Scheduler/API lưu task và PostgreSQL outbox trong cùng transaction; publisher chuyển tín hiệu task sang Redis Streams. Worker rảnh tự claim task qua API.
+4. Scheduler/API ghi từng case vào bảng task PostgreSQL. Worker rảnh hỏi API và claim trực tiếp một case bằng transaction SQL.
 5. Worker mở trang báo cáo, điền các bộ lọc phụ thuộc, xác minh giá trị trên DOM rồi mới bấm Apply.
 6. Worker dùng Tesseract OCR để thử đọc CAPTCHA; VAHAN vẫn là nơi xác nhận mã và trả kết quả.
 7. Nếu VAHAN báo **No record found**, case hoàn tất ở trạng thái `NO_DATA`. Nếu có workbook, API đọc dữ liệu và ghi vào bảng chính trong transaction SQL.
@@ -33,7 +33,7 @@ Các lỗi được xử lý theo checkpoint: lượt ban đầu, retry tại ch
 
 - **Filter profiles:** lưu profile có revision, cố định hoặc lặp qua giá trị, áp dụng include/exclude và quy tắc kết hợp, preview số case.
 - **Chạy tự động:** lịch một lần, hằng ngày hoặc hằng tháng; theo dõi trạng thái, worker, tiến độ, pause/resume và tiếp tục cùng hàng đợi.
-- **Browser workers:** một service Chromium có thể nhân bản theo cấu hình local. Worker có ID tự sinh, browser context riêng và tự nhận task từ Redis Streams.
+- **Browser workers:** một service Chromium có thể nhân bản theo cấu hình local. Worker có ID tự sinh, browser context riêng và tự nhận task từ hàng đợi PostgreSQL.
 - **UI Health:** kiểm tra trang và selector trước khi tải Maker hoặc bắt đầu/tiếp tục hàng đợi; chặn thao tác mới nếu không thể xác minh trang.
 - **OCR CAPTCHA:** browser runner gửi ảnh trong bộ nhớ trực tiếp vào Tesseract. Nếu OCR không đọc được mã hoặc VAHAN từ chối mã, worker làm mới CAPTCHA và thử lại. OCR không đảm bảo mọi challenge sẽ được chấp nhận.
 - **Exported Reports:** bảng tổng hợp dùng chung cho tài khoản đăng nhập, tìm kiếm State/RTO, phân trang, xem coverage và xuất Excel.
@@ -47,8 +47,7 @@ flowchart LR
   U[Trình duyệt người dùng] --> W[React dashboard + Nginx]
   W --> A[FastAPI + Socket.IO]
   A <--> P[(PostgreSQL)]
-  A --> S[Scheduler + SQL outbox]
-  S --> Q[Redis Streams]
+  A --> Q[(PostgreSQL task rows)]
   Q --> R[N Playwright workers]
   R --> C[Chromium + Tesseract OCR]
   C --> V[VAHAN Public Report]
@@ -62,7 +61,6 @@ flowchart LR
 | `apps/api-server` | FastAPI, xác thực/phân quyền, Socket.IO, scheduler, queue, migration và đọc/ghi báo cáo. |
 | `apps/browser-runner` | Worker Node.js, Playwright, Chromium, thao tác DOM VAHAN, tải workbook và OCR CAPTCHA. |
 | `postgres` | PostgreSQL 17.7; volume `postgres_data` giữ dữ liệu qua restart container. |
-| `redis` | Redis Streams consumer group; volume `redis_data` và AOF giữ tín hiệu giao task. |
 | `docker` | Compose, cấu hình Nginx, seccomp và CA nội bộ tùy chọn. |
 
 Các container nằm trên cùng một host; số worker do cấu hình khởi chạy quyết định. Hạn mức concurrency trong API độc lập với số browser container đang chạy.
@@ -82,7 +80,7 @@ Clone repository vào thư mục bất kỳ, mở PowerShell tại thư mục g�
 .\run-vahan-rpa.ps1
 ```
 
-Lệnh này tạo `.docker.env` nếu chưa có, chuẩn bị thư mục chứng chỉ tùy chọn, kiểm tra Compose, build các image API/web/runner rồi khởi động PostgreSQL, Redis, API, dashboard và số browser worker phù hợp với tài nguyên máy. Mặc định launcher đánh giá CPU/RAM Docker, RAM còn trống trên host và mức dùng thực tế của runner; replica đang chạy được giữ nguyên để tránh ngắt job. Compose chạy nền (`-d`), nên có thể đóng cửa sổ PowerShell sau khi lệnh hoàn tất; Docker Desktop phải tiếp tục hoạt động. Dùng `--workers 3` để ghi đè thủ công. Chạy `py -3 scripts/run-docker.py --assess-only` để xem đánh giá mà không thay đổi container.
+Lệnh này tạo `.docker.env` nếu chưa có, chuẩn bị thư mục chứng chỉ tùy chọn, kiểm tra Compose, build các image API/web/runner rồi khởi động PostgreSQL, API, dashboard và số browser worker phù hợp với tài nguyên máy. Mặc định launcher đánh giá CPU/RAM Docker, RAM còn trống trên host và mức dùng thực tế của runner; replica đang chạy được giữ nguyên để tránh ngắt job. Compose chạy nền (`-d`), nên có thể đóng cửa sổ PowerShell sau khi lệnh hoàn tất; Docker Desktop phải tiếp tục hoạt động. Dùng `--workers 3` để ghi đè thủ công. Chạy `py -3 scripts/run-docker.py --assess-only` để xem đánh giá mà không thay đổi container.
 
 Lần build đầu có thể mất thời gian vì cần tải Chromium và dependency. Docker dùng cache cho các lần build sau. Script giữ nguyên `.docker.env` hiện có và không in giá trị bí mật ra log. Trên Ubuntu/macOS, tại thư mục repository chạy một lệnh tương đương:
 

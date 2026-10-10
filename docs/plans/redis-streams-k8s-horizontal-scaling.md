@@ -4,6 +4,8 @@
 - **Nhánh đối chiếu:** `ocr`
 - **Trạng thái:** Smoke run local đã qua với API, PostgreSQL, Redis, dashboard và 3 runner; chưa chạy task VAHAN.
 
+**Ghi chú cập nhật 10/10/2026:** Đây là tài liệu lịch sử của phương án Redis Streams. Source hiện chuyển queue báo cáo sang claim trực tiếp từ PostgreSQL, có migration riêng để bỏ outbox và Compose không còn service Redis. Stack Docker đang chạy cần được chuyển phiên bản sau khi các job hiện tại kết thúc.
+
 ## 1. Mục tiêu và phạm vi
 
 Thay cơ chế khai báo sẵn 10 runner và API/scheduler chọn worker theo tên bằng **Redis Streams + Consumer Groups**. Worker tự đăng ký và tự nhận task khi rảnh. Kiểm chứng trên một máy local trước.
@@ -127,4 +129,3 @@ Kiểm chứng thêm luồng VAHAN thực tế:
 - Ghi nhận ready/busy/offline, task chờ, pending, lease hết hạn, retry, thời gian xử lý và CPU/RAM để chọn cấu hình local.
 
 Phạm vi hoàn tất khi worker động và Redis Streams đạt tiêu chí local trên. Không lập tiếp các giai đoạn hạ tầng khác.
-

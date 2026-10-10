@@ -1,0 +1,9 @@
+flowchart TB
+ G["Run initial attempts in current checkpoint group"] --> C["Retry failed cases in this group"]
+ C --> M{"More new cases?"}
+ M -->|"Yes"| G
+ M -->|"No"| F["One final pass for remaining failures"]
+ F --> D["Finish and retain unresolved failures"]
+ OK["Committed data or confirmed NO_DATA"] --> KEEP["Keep success - exclude from retry"]
+ C -.-> HEALTH["UI Health required before new assignments"]
+ F -.-> HEALTH

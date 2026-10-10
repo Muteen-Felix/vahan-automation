@@ -1,0 +1,10 @@
+flowchart TB
+ P["Profiles, schedule snapshots and users"] --> Q["Queue sessions, cases and worker leases"]
+ Q --> J["Jobs, attempts, status and errors"]
+ J --> R{"Accepted result?"}
+ R -->|"Valid workbook"| T["Atomic SQL transaction"]
+ R -->|"Confirmed no data"| T
+ R -->|"Invalid or failed"| E["Persist diagnostics and recovery state"]
+ T --> D[("Monthly report values<br/>Import history and source references<br/>Terminal job state")]
+ D --> U["Shared reports, coverage and Excel export"]
+ B["Encrypted browser state<br/>Files and UI preflight evidence"] -.-> J

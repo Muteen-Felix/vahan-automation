@@ -2,10 +2,11 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import case, func, insert, select, update
+from sqlalchemy import case, exists, func, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.db import engine, schema as db
+from app.config import settings
 from app.models.job import Job, JobStatus
 from app.models.runner import Runner, RunnerStatus
 from app.repositories.postgres import PostgresJobRepository, release_runner, runner_document, save_job
@@ -59,6 +60,19 @@ class BatchQueueRepository:
                     db.batch_queue_tasks.c.status == 'FAILED').limit(1))) is not None
             return False
 
+    async def candidate_sessions(self, limit=32):
+        """Return running SQL queues with work that an available runner can claim."""
+        sessions, tasks = db.batch_queue_sessions, db.batch_queue_tasks
+        has_work = exists(select(tasks.c.position).where(
+            tasks.c.session_id == sessions.c.session_id,
+            tasks.c.status.in_(['PENDING', 'PROCESSING', 'FAILED'])))
+        async with engine.connect() as connection:
+            rows = (await connection.execute(select(
+                sessions.c.session_id, sessions.c.owner_username
+            ).where(sessions.c.status == 'RUNNING', has_work)
+                .order_by(sessions.c.created_at, sessions.c.session_id).limit(limit))).all()
+        return [(UUID(session_id), owner) for session_id, owner in rows]
+
     async def _policy_rows(self, connection, session, policy):
         tasks = db.batch_queue_tasks
         condition = tasks.c.position.in_(policy['finalTargets']) if policy['phase'] in {'FINAL', 'DONE'} else (
@@ -108,10 +122,6 @@ class BatchQueueRepository:
                     db.batch_queue_tasks.c.session_id == session['session_id'],
                     db.batch_queue_tasks.c.position.in_(positions),
                     db.batch_queue_tasks.c.status == 'FAILED').values(status='PENDING', updated_at=now()))
-                await connection.execute(insert(db.queue_outbox), [{
-                    'session_id': session['session_id'], 'position': position,
-                    'created_at': now(), 'published_at': None,
-                } for position in positions])
                 rows = [{**row, 'status': 'PENDING'} if row['position'] in positions else row for row in rows]
                 if not complete_rows:
                     rows = await self._policy_rows(connection, session, policy)
@@ -184,9 +194,6 @@ class BatchQueueRepository:
                 'status': 'PENDING', 'attempts': 0, 'failures': 0,
                 'runner_id': None, 'job_id': None, 'error': None, 'updated_at': now(),
             } for position, task in enumerate(tasks)])
-            await connection.execute(insert(db.queue_outbox), [{
-                'session_id': session_key, 'position': position, 'created_at': now(), 'published_at': None,
-            } for position in range(len(tasks))])
             await self._save_policy(connection, {'session_id': session_key}, {
                 'version': 1, 'phase': 'PRIMARY', 'windowStart': 0,
                 'windowEnd': min(max(10, max_workers), len(tasks)), 'lastCheckpoint': 0,
@@ -210,15 +217,16 @@ class BatchQueueRepository:
             return row
         job = Job.model_validate(job_row)
         if job.status not in {JobStatus.COMPLETED, JobStatus.NO_DATA, JobStatus.FAILED, JobStatus.CANCELLED}:
-            runner_connected = await connection.scalar(select(db.runners.c.connected).where(
-                db.runners.c.id == job.runner_id))
-            if runner_connected:
-                return row
-            from app.redis_queue import queue_stream
-            if await queue_stream.worker_has_live_task(job.runner_id):
-                return row
+            runner_row = (await connection.execute(select(
+                db.runners.c.connected, db.runners.c.payload
+            ).where(db.runners.c.id == job.runner_id))).mappings().first()
+            if runner_row:
+                runner = Runner.model_validate(runner_row['payload'])
+                heartbeat_age = (now() - runner.last_seen_at).total_seconds()
+                if runner_row['connected'] or heartbeat_age <= settings.runner_disconnect_grace_seconds + 15:
+                    return row
             job.status = JobStatus.FAILED
-            job.error = 'Worker task lease expired. The report will be retried from its saved filters.'
+            job.error = 'Worker stopped responding. The report will be retried from its saved filters.'
             job.touch()
             await save_job(connection, job, event='worker-lease-expired')
             await release_runner(connection, job.runner_id, job.id)
@@ -237,9 +245,6 @@ class BatchQueueRepository:
         await connection.execute(update(db.batch_queue_tasks).where(
             db.batch_queue_tasks.c.session_id == row['session_id'],
             db.batch_queue_tasks.c.position == row['position']).values(**values))
-        if status == 'PENDING':
-            await connection.execute(insert(db.queue_outbox).values(
-                session_id=row['session_id'], position=row['position'], created_at=now(), published_at=None))
         return {**row, **values}
 
     async def _reconcile_successful_retries(self, connection, rows):
@@ -319,16 +324,6 @@ class BatchQueueRepository:
                         await self._save_policy(connection, session, {**policy, 'windowEnd': expanded_end})
             await connection.execute(update(db.batch_queue_sessions).where(
                 db.batch_queue_sessions.c.session_id == str(session_id)).values(**values))
-            if status == 'RUNNING' and session['status'] == 'PAUSED':
-                pending = list(await connection.scalars(select(db.batch_queue_tasks.c.position).where(
-                    db.batch_queue_tasks.c.session_id == str(session_id),
-                    db.batch_queue_tasks.c.status == 'PENDING')))
-                if pending:
-                    await connection.execute(insert(db.queue_outbox), [{
-                        'session_id': str(session_id), 'position': position,
-                        'created_at': now(), 'published_at': None,
-                    } for position in pending])
-
     async def claim(self, session_id: UUID, owner: str, runner_id: str):
         async with engine.begin() as connection:
             preliminary = await self._session(connection, session_id, owner)

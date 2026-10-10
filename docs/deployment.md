@@ -62,7 +62,7 @@ Build trên Linux production hoặc CI cùng kiến trúc CPU với máy đích.
 - Giữ `API_BIND_ADDRESS=127.0.0.1`. API chỉ được publish trên loopback của host; Nginx trong Compose vẫn truy cập API nội bộ.
 - Đặt `WEB_BIND_ADDRESS=127.0.0.1` nếu một reverse proxy trên host kết thúc HTTPS và chuyển tiếp tới cổng web. Nếu cần truy cập trực tiếp trong mạng riêng, đặt `0.0.0.0` và giới hạn cổng bằng firewall; Compose không tự cấp TLS.
 - Dùng tên miền HTTPS, VPN hoặc firewall để giới hạn người truy cập dashboard. Không công khai Docker socket, PostgreSQL hoặc cổng worker.
-- Giữ volume `postgres_data`, sao lưu thường xuyên bằng `python3 scripts/backup-docker.py`. Bản backup chứa database và `.docker.env`, do đó chỉ tài khoản vận hành được đọc. Redis giữ AOF trong volume `redis_data` để bảo toàn stream khi container khởi động lại; script backup hiện tại chưa xuất volume Redis.
+- Giữ volume `postgres_data`, sao lưu thường xuyên bằng `python3 scripts/backup-docker.py`. Bản backup chứa database và `.docker.env`, do đó chỉ tài khoản vận hành được đọc. PostgreSQL lưu cả task queue và trạng thái run; backup database bao gồm hàng đợi.
 - Giữ `.docker.env`, backup, signing key và browser-state key ngoài Git. Sao lưu các khóa cùng database để có thể khôi phục cookie mã hóa và phiên đăng nhập.
 - Số browser worker do operator cấu hình; API giữ hạn mức task đồng thời trong PostgreSQL. Không mount Docker socket vào container. Các browser container nhàn rỗi vẫn dùng tài nguyên host.
 
@@ -82,4 +82,4 @@ Phiên UI hết hạn sau 12 giờ kể từ lúc đăng nhập hoặc 60 phút 
 
 Migration `0012_auth_session_limits` thu hồi các phiên cũ không có thời hạn, vì vậy người dùng cần đăng nhập lại sau triển khai. Logout/hết phiên chỉ kết thúc quyền truy cập UI; scheduler và job đã tiếp nhận vẫn chạy bằng xác thực riêng của runner. Job cần CAPTCHA thủ công có thể phải chờ đăng nhập lại. Khóa tài khoản chủ sở hữu vẫn dừng lịch chạy theo chính sách hiện có.
 
-Với lượt triển khai local này, nên để các báo cáo VAHAN đang chạy hoàn tất trước khi thay runner nếu có thể. Nếu worker dừng giữa task, message pending trong Redis và trạng thái queue trong PostgreSQL sẽ phục hồi sau khi lease hết hạn. Launcher dùng `--remove-orphans` để gỡ controller cũ cùng mount Docker socket. Không dùng `down -v`; giữ nguyên các volume dữ liệu.
+Trước khi thay API hoặc runner, để các báo cáo VAHAN đang chạy hoàn tất. Worker claim trực tiếp từ PostgreSQL; nếu runner ngắt kết nối quá thời gian heartbeat/disconnect grace, case được đưa vào luồng retry từ filter đã lưu. Launcher dùng `--remove-orphans` để gỡ service Redis cũ sau khi chuyển phiên bản. Không dùng `down -v`; giữ nguyên các volume dữ liệu.

@@ -1,6 +1,5 @@
 import { chromium } from 'playwright';
 import { io } from 'socket.io-client';
-import { createClient } from 'redis';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import {retireReportPage, stableDocumentRead, isConnectionError} from './page-recovery.mjs';
@@ -13,9 +12,8 @@ import { normalizeJobFilters, VAHAN_OPTION_SELECTORS } from './config.mjs';
 const API = process.env.VAHAN_API_URL || 'http://api:8000';
 const TOKEN = process.env.VAHAN_API_RUNNER_TOKEN;
 const ID = process.env.VAHAN_RUNNER_ID || `worker-${randomUUID()}`;
-const STREAM = 'vahan:report-tasks';
-const GROUP = 'vahan:browser-workers';
-const REDIS_RECLAIM_MS = Number(process.env.VAHAN_REDIS_RECLAIM_MS || 60_000);
+const QUEUE_IDLE_POLL_MS = 1500;
+const QUEUE_BLOCKED_POLL_MS = 2500;
 const URL = process.env.VAHAN_URL || 'https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en';
 const LOCAL_FIXTURE = process.env.VAHAN_ALLOW_LOCAL_FIXTURE === 'true';
 const DRIVER = fileURLToPath(new globalThis.URL('./page-driver.js', import.meta.url));
@@ -38,12 +36,8 @@ const socket = io(`${API}/runner`, {autoConnect: false, transports: ['websocket'
   runnerId: ID, runnerName: process.env.VAHAN_RUNNER_NAME || 'Chromium Playwright', token: TOKEN,
   source: 'new', engine: 'playwright', version: '0.2.0',
 }});
-const redis = createClient({url: process.env.VAHAN_REDIS_URL || 'redis://127.0.0.1:6379/0'});
-redis.on('error', error => console.error('Redis connection:', error.message));
 const headers = {'X-VAHAN-RUNNER-TOKEN': TOKEN, 'X-VAHAN-RUNNER-ID': ID};
-let activeQueueEntryId = null;
 let queueConsumerPromise = null;
-let autoClaimCursor = '0-0';
 async function http(path, init = {}) {
   const response = await fetch(`${API}${path}`, {...init, headers: {...headers, ...init.headers}, signal: AbortSignal.timeout(60_000)});
   if (!response.ok) throw new Error(`API ${response.status}: ${await response.text()}`);
@@ -54,72 +48,32 @@ async function ack(event, payload, timeout = 15_000) {
   if (!response?.ok) throw new Error(response?.error || `${event} was rejected.`);
   return response;
 }
-async function ackQueueEntry(jobId) {
-  if (!activeQueueEntryId || (jobId && active?.jobId && active.jobId !== jobId)) return;
-  const entryId = activeQueueEntryId;
-  activeQueueEntryId = null;
-  if (redis.isOpen) await ackAndDeleteQueueEntry(entryId);
-}
-async function ackAndDeleteQueueEntry(entryId) {
-  await redis.sendCommand(['XACK', STREAM, GROUP, entryId]);
-  await redis.sendCommand(['XDEL', STREAM, entryId]);
-}
 function sleep(milliseconds) {return new Promise(resolve => setTimeout(resolve, milliseconds));}
-function streamMessage(entry) {
-  if (!Array.isArray(entry) || entry.length < 2) return null;
-  const [id, pairs] = entry;
-  const fields = {};
-  for (let index = 0; index < pairs.length; index += 2) fields[pairs[index]] = pairs[index + 1];
-  return {id, fields};
-}
-async function nextQueueEntry() {
-  const reclaimed = await redis.sendCommand(['XAUTOCLAIM', STREAM, GROUP, ID,
-    String(REDIS_RECLAIM_MS), autoClaimCursor, 'COUNT', '1']);
-  autoClaimCursor = reclaimed?.[0] || '0-0';
-  const oldEntry = streamMessage(reclaimed?.[1]?.[0]);
-  if (oldEntry) return oldEntry;
-  const available = await redis.sendCommand(['XREADGROUP', 'GROUP', GROUP, ID,
-    'COUNT', '1', 'BLOCK', '5000', 'STREAMS', STREAM, '>']);
-  return streamMessage(available?.[0]?.[1]?.[0]);
-}
-async function requeueEntry(entry, delay = 1500) {
-  await sleep(delay);
-  await redis.sendCommand(['XADD', STREAM, '*', 'sessionId', entry.fields.sessionId,
-    'position', entry.fields.position || '', 'requeuedFrom', entry.id]);
-  await ackAndDeleteQueueEntry(entry.id);
-}
 async function consumeQueue() {
   if (queueConsumerPromise) return queueConsumerPromise;
   queueConsumerPromise = (async () => {
     while (!stopping) {
       try {
-        if (!redis.isOpen) await redis.connect();
-        const entry = await nextQueueEntry();
-        if (!entry) continue;
         while (!stopping && (!socket.connected || !context || !browser?.isConnected() || active || optionsBusy)) {
           await sleep(500);
         }
         if (stopping) break;
         const result = await http('/api/runner/queue/claim', {method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({sessionId: entry.fields.sessionId})});
+          headers: {'Content-Type': 'application/json'}, body: '{}'});
         if (result.type === 'assigned' && result.job) {
           const jobId = result.job.jobId || result.job.id || result.jobId;
           if (!jobId) throw new Error('Queue claim returned an assigned job without an ID.');
           const job = {...result.job, jobId: String(jobId)};
-          activeQueueEntryId = entry.id;
           await execute(job);
           while (!stopping && active && active.jobId === jobId) await sleep(500);
-          await ackQueueEntry(jobId);
-        } else if (['waiting', 'runner_unavailable', 'pool_updating', 'gate_required'].includes(result.type)) {
-          await requeueEntry(entry);
         } else {
-          await ackAndDeleteQueueEntry(entry.id);
+          await sleep(['waiting', 'gate_required', 'runner_unavailable', 'pool_updating', 'network_paused']
+            .includes(result.type) ? QUEUE_BLOCKED_POLL_MS : QUEUE_IDLE_POLL_MS);
         }
       } catch (error) {
         if (!stopping) {
-          console.error('Redis queue consumer:', error.message);
-          await sleep(1000);
+          console.error('PostgreSQL queue polling:', error.message);
+          await sleep(QUEUE_BLOCKED_POLL_MS);
         }
       }
     }
@@ -337,7 +291,6 @@ async function fail(error, job = active) {
     await retireReportPage(page);
     try { await status('FAILED', error.message, job); }
     catch (failure) { statusLost = true; console.error(failure.message); }
-    if (!statusLost) await ackQueueEntry(job.jobId).catch(error => console.error(error.message));
     if (active === job) active = null;
     await saveState().catch(error => console.error(error.message));
     if (statusLost && !stopping) {
@@ -374,7 +327,6 @@ async function finalizeResult(job, operation) {
     assertCurrent(job);
     if (!['COMPLETED', 'NO_DATA'].includes(saved.status)) throw new Error('MAIN_REPORT_SAVE_NOT_CONFIRMED');
     job.status = saved.status;
-    await ackQueueEntry(job.jobId);
     if (active === job) active = null;
     return saved;
   } finally { job.finishing = false; job.finish(); }
@@ -503,7 +455,7 @@ socket.on('captcha:refresh', async (payload, respond) => {
   respond(await refreshCaptchaInternal(job, payload.captchaId));
 });
 socket.on('job:cancelled', async ({jobId}) => {
-  if (active?.jobId === jobId) { const cancelled = active; cancelled.cancelled = true; pageNeedsReset = true; await retireReportPage(page); await ackQueueEntry(jobId).catch(error => console.error(error.message)); if (active === cancelled) active = null; }
+  if (active?.jobId === jobId) { const cancelled = active; cancelled.cancelled = true; pageNeedsReset = true; await retireReportPage(page); if (active === cancelled) active = null; }
 });
 async function runnerOptions(request, respond) {
   if (active?.finishing) await active.finishPromise;
@@ -594,10 +546,6 @@ socket.on('ui-health:preflight',async(request,respond)=>{
 });
 socket.on('ui-health:run-now', request => healthCheck(request).catch(error => console.error(error.message)));
 const timer = setInterval(async () => {
-  if (activeQueueEntryId && redis.isOpen) {
-    try {await redis.sendCommand(['XCLAIM', STREAM, GROUP, ID, '0', activeQueueEntryId, 'JUSTID']);}
-    catch (error) {console.error('Redis task heartbeat:', error.message);}
-  }
   if (!socket.connected || stopping) return;
   try {
     await ack('runner:heartbeat', {});
@@ -605,14 +553,13 @@ const timer = setInterval(async () => {
   } catch (error) { console.error('Worker heartbeat:', error.message); }
 }, 15_000);
 createServer((request, response) => {
-  const ready = socket.connected && context && browser?.isConnected() && redis.isReady;
+  const ready = socket.connected && context && browser?.isConnected();
   response.writeHead(ready ? 200 : 503, {'Content-Type': 'application/json'});
-  response.end(JSON.stringify({connected: socket.connected, browserReady: !!context && !!browser?.isConnected(), redisReady: redis.isReady, activeJobId: active?.jobId || null, optionsBusy}));
+  response.end(JSON.stringify({connected: socket.connected, browserReady: !!context && !!browser?.isConnected(), activeJobId: active?.jobId || null, optionsBusy}));
 }).listen(3001, '0.0.0.0');
 async function stop() {
   if (stopping) return; stopping = true; clearInterval(timer);
   await saveState().catch(() => {}); socket.disconnect(); await browser?.close();
-  if (redis.isOpen) await redis.quit().catch(() => {});
   process.exit(0);
 }
 process.on('SIGTERM', stop); process.on('SIGINT', stop);

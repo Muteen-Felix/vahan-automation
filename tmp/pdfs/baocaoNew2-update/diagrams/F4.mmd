@@ -1,0 +1,10 @@
+flowchart TB
+ E["Create or edit a filter profile"] --> O["Load current VAHAN options"]
+ O --> F["Select year, geography and vehicle filters"]
+ F --> R["Apply fixed / iterated values<br/>Include / exclude and combination rules"]
+ R --> P["Preview valid cases - maximum 3,000"]
+ P --> S["Save profile revision"]
+ S --> SET["Use in Settings<br/>Set time zone, repeat and parallel limit"]
+ SET --> SNAP["Persist schedule profile snapshot"]
+ SNAP --> CHECK["When due, recheck options and UI Health"]
+ CHECK --> Q["Create and execute the durable queue"]

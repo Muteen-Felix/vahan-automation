@@ -1,0 +1,14 @@
+flowchart TB
+ P["Saved profile and report year"] --> PRE["Preview cases + selected-worker preflight"]
+ PRE --> Q["Persist PostgreSQL queue"]
+ Q --> W["Ready workers claim cases"]
+ W --> F["Fill and verify source filters"]
+ F --> V["Submit and wait for VAHAN result"]
+ V --> R{"Source outcome?"}
+ R -->|"Workbook"| C["Validate full workbook"]
+ C --> S["Commit data and terminal job state"]
+ R -->|"Confirmed no records"| N["Commit NO_DATA"]
+ R -->|"Error"| E["Keep failure and diagnostics"]
+ S --> D["Update saved reports and progress"]
+ N --> D
+ E --> RET["Checkpoint and final recovery"]

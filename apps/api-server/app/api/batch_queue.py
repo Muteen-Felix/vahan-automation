@@ -123,41 +123,55 @@ async def claim_task(session_id: UUID, command: ClaimInput, request: Request):
     return result
 
 
-class StreamClaimInput(BaseModel):
+class QueueClaimRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
-    session_id: UUID = Field(alias='sessionId')
+    session_id: UUID | None = Field(default=None, alias='sessionId')
 
 
 @worker_router.post('/queue/claim')
-async def claim_stream_task(command: StreamClaimInput, request: Request):
-    """Let an authenticated stream consumer claim the next durable queue task."""
+async def claim_queue_task(request: Request, command: QueueClaimRequest | None = None):
+    """Let a ready runner claim the next case directly from a PostgreSQL queue."""
     runner_id = request.headers.get('x-vahan-runner-id', '').strip()
     if not getattr(request.state, 'authenticated_runner', False) or not runner_id:
         raise HTTPException(401, 'Runner authentication is required.')
-    async with engine.connect() as connection:
-        owner = await connection.scalar(select(db.batch_queue_sessions.c.owner_username).where(
-            db.batch_queue_sessions.c.session_id == str(command.session_id)))
-    if not owner:
-        return {'type': 'done'}
     from app.repositories.ui_contract import require_gate
-    try:
-        if await queue.needs_work(command.session_id, owner):
-            await require_gate(owner, [runner_id], session_id=command.session_id, bound=True)
-    except ValueError as error:
-        if str(error).startswith(('UI_PREFLIGHT_REQUIRED:', 'UI_HEALTH_BLOCKED:')):
-            return {'type': 'gate_required'}
-        raise HTTPException(409, str(error)) from error
-    result = await queue.claim(command.session_id, owner, runner_id)
-    job = result.pop('job', None)
-    if result['type'] == 'assigned' and job is None:
-        from app.services import services
-        job = await services.jobs.get(UUID(result['jobId']))
-    if job:
-        job_payload = job.model_dump(mode='json', by_alias=True)
-        # The browser-runner job protocol uses `jobId`; the shared Job model
-        # exposes its primary key as `id` for the dashboard API.
-        job_payload['jobId'] = str(job.id)
-        result['job'] = job_payload
+    if command and command.session_id:
+        async with engine.connect() as connection:
+            owner = await connection.scalar(select(db.batch_queue_sessions.c.owner_username).where(
+                db.batch_queue_sessions.c.session_id == str(command.session_id)))
+        candidates = [(command.session_id, owner)] if owner else []
     else:
-        result['job'] = None
-    return result
+        candidates = await queue.candidate_sessions()
+    if not candidates:
+        return {'type': 'done' if command and command.session_id else 'idle'}
+
+    gate_required = waiting = False
+    for session_id, owner in candidates:
+        try:
+            if await queue.needs_work(session_id, owner):
+                await require_gate(owner, [runner_id], session_id=session_id, bound=True)
+        except ValueError as error:
+            if str(error).startswith(('UI_PREFLIGHT_REQUIRED:', 'UI_HEALTH_BLOCKED:')):
+                gate_required = True
+                continue
+            raise HTTPException(409, str(error)) from error
+        result = await queue.claim(session_id, owner, runner_id)
+        if result['type'] == 'assigned':
+            job = result.pop('job', None)
+            if job is None:
+                from app.services import services
+                job = await services.jobs.get(UUID(result['jobId']))
+            job_payload = job.model_dump(mode='json', by_alias=True) if job else None
+            if job_payload:
+                job_payload['jobId'] = str(job.id)
+            result['job'] = job_payload
+            return result
+        if result['type'] == 'waiting':
+            waiting = True
+        elif result['type'] in {'runner_unavailable', 'network_paused', 'pool_updating'}:
+            return result
+        elif command and command.session_id:
+            return result
+    if gate_required:
+        return {'type': 'gate_required'}
+    return {'type': 'waiting' if waiting else 'idle'}

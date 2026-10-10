@@ -25,9 +25,11 @@ def upgrade():
     op.create_index('ix_queue_outbox_pending', 'queue_outbox', ['published_at', 'id'])
     op.execute("""
         INSERT INTO queue_outbox (session_id, position, created_at)
-        SELECT session_id, position, CURRENT_TIMESTAMP
-        FROM batch_queue_tasks
-        WHERE status IN ('PENDING', 'PROCESSING')
+        SELECT task.session_id, task.position, CURRENT_TIMESTAMP
+        FROM batch_queue_tasks AS task
+        JOIN batch_queue_sessions AS session USING (session_id)
+        WHERE session.status = 'RUNNING'
+          AND task.status IN ('PENDING', 'PROCESSING')
     """)
 
 

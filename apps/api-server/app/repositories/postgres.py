@@ -480,7 +480,7 @@ class PostgresUsers:
                 set_={"value": value, "updated_at": now()}))
 
 async def recover_after_restart():
-    """Preserve queue jobs with a live Redis consumer lease across API restarts."""
+    """Keep queued jobs recoverable; runner heartbeats determine task liveness."""
     repository = PostgresJobRepository()
     async with engine.connect() as connection:
         live_queue_jobs = set(await connection.scalars(select(db.batch_queue_tasks.c.job_id).where(

@@ -67,13 +67,6 @@ Index('ix_batch_queue_claim', batch_queue_tasks.c.session_id, batch_queue_tasks.
       postgresql_where=text("status = 'PENDING'"))
 Index('ix_batch_queue_job', batch_queue_tasks.c.job_id, unique=True,
       postgresql_where=text('job_id IS NOT NULL'))
-queue_outbox = Table('queue_outbox', metadata,
-    Column('id', BigInteger, primary_key=True, autoincrement=True),
-    Column('session_id', String(36), nullable=False),
-    Column('position', Integer, nullable=False),
-    Column('created_at', DateTime(timezone=True), nullable=False),
-    Column('published_at', DateTime(timezone=True)))
-Index('ix_queue_outbox_pending', queue_outbox.c.published_at, queue_outbox.c.id)
 job_events = Table("job_events", metadata,
     Column("id", String(36), primary_key=True),
     Column("job_id", ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True),

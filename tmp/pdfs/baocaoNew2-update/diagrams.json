@@ -1,0 +1,56 @@
+[
+  {
+    "id": "F1",
+    "title": "Figure 1. Current system architecture",
+    "note": "Current single-host Compose architecture. The PostgreSQL task queue is part of the database; workers claim tasks through the API. No Redis or separate CAPTCHA service is deployed.",
+    "code": "flowchart TB\n  U[\"Signed-in user\"] --> WEB[\"React dashboard + Nginx<br/>Exported Reports | Filters | Settings\"]\n  WEB <-->|\"API and live updates\"| API[\"FastAPI + Socket.IO<br/>Authentication and report services\"]\n  SCH[\"Backend scheduler<br/>Once | Daily | Monthly\"] --> API\n  API --> GATE[\"Selected-worker UI Health<br/>Profile and case planning\"]\n  GATE --> SQL[(\"PostgreSQL 17.7<br/>Profiles | Schedules | Task queue<br/>Jobs | Monthly data | History\")]\n  API <--> SQL\n  API <-->|\"Task claims, state and workbooks\"| POOL[\"Browser worker pool: 1 ... N<br/>Node.js + Playwright + Chromium<br/>One active case per worker\"]\n  POOL <--> V[\"VAHAN Public Report<br/>Source filters, verification and workbooks\"]\n  API --> SAVE[\"Workbook validation<br/>Atomic SQL commit and Excel export\"]\n  SAVE --> SQL"
+  },
+  {
+    "id": "F2",
+    "title": "Figure 2. Current collection flow",
+    "note": "A successful case requires committed workbook data or committed, explicitly confirmed no data.",
+    "code": "flowchart TB\n P[\"Saved profile and report year\"] --> PRE[\"Preview cases + selected-worker preflight\"]\n PRE --> Q[\"Persist PostgreSQL queue\"]\n Q --> W[\"Ready workers claim cases\"]\n W --> F[\"Fill and verify source filters\"]\n F --> V[\"Submit and wait for VAHAN result\"]\n V --> R{\"Source outcome?\"}\n R -->|\"Workbook\"| C[\"Validate full workbook\"]\n C --> S[\"Commit data and terminal job state\"]\n R -->|\"Confirmed no records\"| N[\"Commit NO_DATA\"]\n R -->|\"Error\"| E[\"Keep failure and diagnostics\"]\n S --> D[\"Update saved reports and progress\"]\n N --> D\n E --> RET[\"Checkpoint and final recovery\"]"
+  },
+  {
+    "id": "F3",
+    "title": "Figure 3. Administration interface functions",
+    "note": "The hierarchy preserves Exported Reports on the left, Filters in the middle and Settings on the right. The main branches have two downward levels.",
+    "code": "flowchart TB\n A[\"Administration interface\"] --> R[\"Exported Reports\"]\n A --> F[\"Filters\"]\n A --> S[\"Settings\"]\n R --> RD[\"Yearly table and search<br/>Monthly values and Excel export<br/>Run history and data coverage\"]\n F --> FD[\"Saved profiles and revisions<br/>Dependent filter choices<br/>Include / exclude rules<br/>Case preview\"]\n S --> SD[\"Once / daily / monthly schedules<br/>Progress, speed and recovery<br/>Worker limit and diagnostics<br/>UI Health errors<br/>Account administration\"]"
+  },
+  {
+    "id": "F4",
+    "title": "Figure 4. Current profile configuration and case selection",
+    "note": "Profiles are implemented. A schedule captures the saved revision and year; later profile edits do not change an existing schedule.",
+    "code": "flowchart TB\n E[\"Create or edit a filter profile\"] --> O[\"Load current VAHAN options\"]\n O --> F[\"Select year, geography and vehicle filters\"]\n F --> R[\"Apply fixed / iterated values<br/>Include / exclude and combination rules\"]\n R --> P[\"Preview valid cases - maximum 3,000\"]\n P --> S[\"Save profile revision\"]\n S --> SET[\"Use in Settings<br/>Set time zone, repeat and parallel limit\"]\n SET --> SNAP[\"Persist schedule profile snapshot\"]\n SNAP --> CHECK[\"When due, recheck options and UI Health\"]\n CHECK --> Q[\"Create and execute the durable queue\"]"
+  },
+  {
+    "id": "F5",
+    "title": "Figure 5. Checkpoint retry and final recovery",
+    "note": "Checkpoint groups contain at least 10 cases and can grow with concurrency. Confirmed NO_DATA is not retried.",
+    "code": "flowchart TB\n G[\"Run initial attempts in current checkpoint group\"] --> C[\"Retry failed cases in this group\"]\n C --> M{\"More new cases?\"}\n M -->|\"Yes\"| G\n M -->|\"No\"| F[\"One final pass for remaining failures\"]\n F --> D[\"Finish and retain unresolved failures\"]\n OK[\"Committed data or confirmed NO_DATA\"] --> KEEP[\"Keep success - exclude from retry\"]\n C -.-> HEALTH[\"UI Health required before new assignments\"]\n F -.-> HEALTH"
+  },
+  {
+    "id": "F6",
+    "title": "Figure 6. Database and data lifecycle",
+    "note": "Operational records and report values meet at the successful SQL commit boundary; the database remains the durable source for lookup and export.",
+    "code": "flowchart TB\n P[\"Profiles, schedule snapshots and users\"] --> Q[\"Queue sessions, cases and worker leases\"]\n Q --> J[\"Jobs, attempts, status and errors\"]\n J --> R{\"Accepted result?\"}\n R -->|\"Valid workbook\"| T[\"Atomic SQL transaction\"]\n R -->|\"Confirmed no data\"| T\n R -->|\"Invalid or failed\"| E[\"Persist diagnostics and recovery state\"]\n T --> D[(\"Monthly report values<br/>Import history and source references<br/>Terminal job state\")]\n D --> U[\"Shared reports, coverage and Excel export\"]\n B[\"Encrypted browser state<br/>Files and UI preflight evidence\"] -.-> J"
+  },
+  {
+    "id": "F7",
+    "title": "Figure 7. Current verification responsibility",
+    "note": "The existing processor runs locally in the worker. The current dashboard has no attended verification panel; VAHAN acceptance and committed data determine the result.",
+    "code": "flowchart TB\n C[\"VAHAN presents a challenge\"] --> W[\"Worker retains active job and challenge context\"]\n W --> P[\"Existing local recognition processor<br/>Challenge image remains in memory\"]\n P --> V[\"VAHAN validates the report request\"]\n V --> R{\"Confirmed source result?\"}\n R -->|\"Report or explicit no data\"| S[\"API validates and commits the result\"]\n R -->|\"Rejected, login required or timeout\"| E[\"Keep execution failure and diagnostics\"]\n NOTE[\"Current dashboard: status metadata only<br/>Attended verification UI remains incomplete\"] -.-> E"
+  },
+  {
+    "id": "F8",
+    "title": "Figure 8. Crawler worker execution",
+    "note": "A worker accepts one active case. Result reading can reattach after navigation within the same deadline without repeating Apply.",
+    "code": "flowchart TB\n C[\"Ready worker polls API and claims one case\"] --> O[\"Open official report page and restore context\"]\n O --> F[\"Fill dependent controls\"]\n F --> V[\"Verify expected and observed filters\"]\n V --> S[\"Submit once using current verification path\"]\n S --> W[\"Wait for result within one deadline\"]\n W --> R{\"Outcome?\"}\n R -->|\"Workbook\"| A[\"Upload full workbook to API\"]\n R -->|\"Confirmed no data\"| N[\"Send no-data result to API\"]\n A --> ACK[\"Wait for committed terminal acknowledgement\"]\n N --> ACK\n R -->|\"Failure\"| E[\"Keep error and retire failed document\"]\n ACK --> NEXT[\"Release worker for the next claim\"]\n E --> NEXT"
+  },
+  {
+    "id": "F9",
+    "title": "Figure 9. Excel processing and report aggregation",
+    "note": "Workbook processing is performed by the API. Exports include matching committed rows, not only the visible table page.",
+    "code": "flowchart TB\n V[\"Complete source Excel workbook\"] --> U[\"Worker uploads to API\"]\n U --> C[\"Integrity, sheet and reporting-context checks\"]\n C --> N[\"Normalize Maker and monthly values<br/>Keep OTHERS, blanks and zero\"]\n N --> OK{\"Valid source?\"}\n OK -->|\"Yes\"| T[\"Atomic SQL commit<br/>Values + source history + terminal job state\"]\n OK -->|\"No\"| E[\"Reject import and preserve error\"]\n T --> DB[(\"Shared report dataset\")]\n DB --> Q[\"Select dataset, year and State / RTO search\"]\n Q --> X[\"Generate Excel from all matching rows\"]"
+  }
+]

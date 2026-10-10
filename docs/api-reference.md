@@ -278,7 +278,7 @@ Danh mục dưới đây gồm đủ **81 method + path** đăng ký trong sourc
 | `POST` | `/api/batch-queue/sessions/{session_id}/pause`<br>Pause queue cấp thấp | Bearer; owner hiện tại | path `session_id` (string, bắt buộc) | JSON: status=PAUSED.<br><br>Ngừng claim mới, không hủy job hiện tại. Không đồng bộ đầy đủ trạng thái run-schedules; với lịch dùng /run-schedules/{id}/pause. | 200, 422 validation |
 | `POST` | `/api/batch-queue/sessions/{session_id}/resume`<br>Resume queue cấp thấp | Bearer; owner hiện tại | path `session_id` (string, bắt buộc); body `application/json` → `ResumeQueueInput hoặc null` (tùy chọn) | JSON: status=RUNNING.<br><br>Body tùy chọn; cần fresh preflight cho worker count hiện tại/mới. 409 nếu đổi workers khi case chưa dừng; với lịch dùng endpoint resume của lịch. | 200, 422 validation |
 | `POST` | `/api/batch-queue/sessions/{session_id}/tasks/{position}/settle`<br>Reconcile một vị trí case | Bearer; owner hiện tại | path `session_id` (string, bắt buộc); path `position` (integer, bắt buộc) | QueueTask: position, name, status, attempts, failures, runnerId, jobId, error; có metadata retry theo policy.<br><br>position là zero-based; 404 nếu không có queue/case. Không đồng nghĩa xác nhận dữ liệu chưa được commit. | 200, 422 validation |
-| `POST` | `/api/runner/queue/claim`<br>Worker claim task từ Redis Stream | Runner token + `X-VAHAN-RUNNER-ID` | body `application/json` → `{ "sessionId": "<uuid>" }` | Worker yêu cầu API cấp task kế tiếp sau khi nhận message trong consumer group. API kiểm tra gate, trạng thái session và concurrency trong PostgreSQL trước khi tạo job; trả `assigned`, `waiting`, `done`, `paused` hoặc trạng thái chờ phù hợp. Chỉ worker đã xác thực được dùng endpoint này. | 200, 401/409 |
+| `POST` | `/api/runner/queue/claim`<br>Worker claim task từ PostgreSQL | Runner token + `X-VAHAN-RUNNER-ID` | body `application/json` tùy chọn → `{}`; có thể truyền `sessionId` khi cần giới hạn một queue | Runner sẵn sàng hỏi API lấy case tiếp theo. API tìm queue đang chạy, kiểm tra UI Health gate, trạng thái worker và concurrency, rồi claim task trong PostgreSQL bằng khóa hàng; trả `assigned`, `waiting`, `idle`, `gate_required` hoặc trạng thái chờ phù hợp. Chỉ worker đã xác thực được dùng endpoint này. | 200, 401/409 |
 | `GET` | `/api/worker-pool`<br>Giới hạn worker toàn hệ thống | Bearer; admin | Không có tham số/body. | JSON: enabled=true, mode=logical, runningCount (runner kết nối), activeCount (job hoặc reservation), desiredCount, phase, workers. Container do deployment quản lý. | 200 |
 | `PUT` | `/api/worker-pool`<br>Thay giới hạn worker nhận việc | Bearer; admin | body `application/json` → `WorkerCount` (bắt buộc) | Worker pool sau khi áp dụng count.<br><br>count là số nguyên dương; 409 nếu job/reservation đang chạy không phù hợp giới hạn mới. Không dừng container hoặc hủy job. Giới hạn toàn hệ thống, ngoài giới hạn riêng của từng queue. | 200, 422 validation |
 
@@ -331,7 +331,7 @@ Một số endpoint trả `dict` động nên OpenAPI không mô tả được c
 
 Profile public được trả dạng `{id, name, revision, definition, updatedAt}`. `revision` tăng khi sửa; lịch đã lưu giữ profile snapshot nên sửa/xóa profile không thay đổi lịch cũ.
 
-Queue snapshot có `sessionId`, `status`, `maxWorkers`, `tasks`, `retry`. Task có `position` zero-based, `name`, `status`, `attempts`, `failures`, `runnerId`, `jobId`, `error`, `recoveryPending`. Claim response là union phân biệt bằng `type`: `assigned`, `waiting`, `done`, `paused`, `runner_unavailable`, `pool_updating`, `worker_disabled`, `network_paused`. Chỉ `assigned` có dữ liệu task/job. `GET` queue có thể reconcile trạng thái task trong SQL.
+Queue snapshot có `sessionId`, `status`, `maxWorkers`, `tasks`, `retry`. Task có `position` zero-based, `name`, `status`, `attempts`, `failures`, `runnerId`, `jobId`, `error`, `recoveryPending`. Claim response là union phân biệt bằng `type`: `assigned`, `waiting`, `idle`, `done`, `paused`, `gate_required`, `runner_unavailable`, `pool_updating`, `worker_disabled`, `network_paused`. Chỉ `assigned` có dữ liệu task/job. `GET` queue có thể reconcile trạng thái task trong SQL.
 
 ### 6.4. UI Health, network và users
 
@@ -867,7 +867,7 @@ Giá trị: `new, old`.
 | `startsAt` | `string` | Có | — |
 | `workerCount` | `integer` | Có | min=1.0, max=10.0 |
 | `year` | `integer` | Có | min=1900.0 |
-| `repeat` | `string` | Không | enum=["once", "daily"], default="once" |
+| `repeat` | `string` | Không | enum=["once", "daily", "monthly"], default="once" |
 
 #### `RunScheduleResume`
 

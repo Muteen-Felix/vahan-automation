@@ -25,23 +25,18 @@ async def lifespan(_app: FastAPI):
         await connection.execute(text("SELECT 1 FROM users LIMIT 1"))
     await services.users.bootstrap(settings.ui_auth_username, settings.ui_auth_password)
     await recover_after_restart()
-    from app.redis_queue import queue_stream
-    await queue_stream.start()
     from app.worker_pool import initialize_pool
     await initialize_pool(reset_phase=True)
     from app.run_scheduler import run_scheduler
     scheduler_task = asyncio.create_task(run_scheduler())
     from app.network_guard import monitor
     network_task = asyncio.create_task(monitor())
-    outbox_task = asyncio.create_task(queue_stream.publish_forever())
     try:
         yield
     finally:
         network_task.cancel()
-        outbox_task.cancel()
         scheduler_task.cancel()
-        await asyncio.gather(scheduler_task, network_task, outbox_task, return_exceptions=True)
-        await queue_stream.close()
+        await asyncio.gather(scheduler_task, network_task, return_exceptions=True)
         await engine.dispose()
 
 
