@@ -1,8 +1,0 @@
-flowchart TB
- C["VAHAN presents a challenge"] --> W["Worker retains active job and challenge context"]
- W --> P["Existing local recognition processor<br/>Challenge image remains in memory"]
- P --> V["VAHAN validates the report request"]
- V --> R{"Confirmed source result?"}
- R -->|"Report or explicit no data"| S["API validates and commits the result"]
- R -->|"Rejected, login required or timeout"| E["Keep execution failure and diagnostics"]
- NOTE["Current dashboard: status metadata only<br/>Attended verification UI remains incomplete"] -.-> E
