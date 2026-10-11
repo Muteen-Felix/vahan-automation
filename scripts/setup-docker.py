@@ -58,6 +58,13 @@ else:
 
 restrict_permissions(path)
 
+existing = read_env_file(path)
+if not existing.get('DB_APP_PASSWORD'):
+    with path.open('a') as output:
+        output.write('\nDB_APP_USERNAME=vahan_app\nDB_APP_PASSWORD='+secrets.token_hex(24)+'\n')
+    restrict_permissions(path)
+    print('Added a separate database runtime credential; existing keys were preserved.')
+
 runner_token = read_env_file(path).get('VAHAN_API_RUNNER_TOKEN', '')
 if len(runner_token) < 24 or runner_token == 'change-me':
     raise SystemExit(f'{path} must contain a private VAHAN_API_RUNNER_TOKEN (at least 24 characters).')

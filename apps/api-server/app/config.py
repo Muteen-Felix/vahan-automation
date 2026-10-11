@@ -53,6 +53,7 @@ def _local_ui_auth_values() -> dict[str, str]:
 
 @dataclass(frozen=True, slots=True)
 class Settings:
+    environment: str = 'development'
     app_name: str = "VAHAN RPA API"
     host: str = "127.0.0.1"
     port: int = 8000
@@ -79,6 +80,25 @@ class Settings:
             len(self.ui_auth_token_secret) >= 32
         )
 
+    def validate_startup(self) -> None:
+        if self.environment not in {'development','test','production'}:
+            raise RuntimeError('VAHAN_ENVIRONMENT must be development, test or production.')
+        if not self.ui_auth_configured:
+            raise RuntimeError('VAHAN_UI_AUTH_TOKEN_SECRET must contain at least 32 characters.')
+        if self.environment != 'production':
+            return
+        if self.debug:
+            raise RuntimeError('Debug mode must be disabled in production.')
+        if len(self.runner_token) < 24 or self.runner_token == 'change-me':
+            raise RuntimeError('A private VAHAN_API_RUNNER_TOKEN of at least 24 characters is required.')
+        from cryptography.fernet import Fernet
+        try:
+            Fernet(self.browser_state_key.encode())
+        except (ValueError, TypeError) as error:
+            raise RuntimeError('VAHAN_BROWSER_STATE_KEY must be a valid Fernet key; preserve the existing key on upgrades.') from error
+        if not self.cors_origins or '*' in self.cors_origins or not self.socketio_cors_origins or '*' in self.socketio_cors_origins:
+            raise RuntimeError('Production requires explicit HTTP and Socket.IO dashboard origins.')
+
     @classmethod
     def from_env(cls) -> "Settings":
         local_auth = _local_ui_auth_values()
@@ -96,7 +116,7 @@ class Settings:
             if origin.strip()
         )
         origins = web_origins
-        socketio_origins_value = os.getenv("VAHAN_API_SOCKETIO_CORS_ORIGINS", "*").strip()
+        socketio_origins_value = os.getenv("VAHAN_API_SOCKETIO_CORS_ORIGINS", ','.join(web_origins)).strip()
         socketio_origins: str | tuple[str, ...] = (
             "*"
             if socketio_origins_value == "*"
@@ -107,6 +127,7 @@ class Settings:
             )
         )
         return cls(
+            environment=os.getenv('VAHAN_ENVIRONMENT', 'development').strip().lower(),
             database_url=os.getenv("DATABASE_URL", "postgresql+asyncpg://vahan@127.0.0.1:5432/vahan"),
             browser_state_key=os.getenv("VAHAN_BROWSER_STATE_KEY", ""),
             runner_health_checks=_as_bool(os.getenv('VAHAN_API_RUNNER_HEALTH_CHECKS')),

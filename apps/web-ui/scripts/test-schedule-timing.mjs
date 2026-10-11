@@ -10,7 +10,7 @@ function moduleUrl(file, dependencies = {}) {
 }
 const {observeScheduleTiming, estimateScheduleTiming, formatScheduleDuration} = await import(
   moduleUrl('../src/schedule-timing.ts', {'./batch-timing': moduleUrl('../src/batch-timing.ts')}));
-const {formatScheduledTime} = await import(moduleUrl('../src/run-schedules.ts'));
+const {formatScheduledTime} = await import(moduleUrl('../src/run-schedules.ts', {'./services/persistent-state': moduleUrl('../src/services/persistent-state.ts', {'./api-client': 'data:text/javascript,export const api = {}; export const getAccessToken = () => null;'})}));
 const start = Date.parse('2026-10-07T16:18:00Z');
 const schedule = {status:'RUNNING', sessionId:'run-1', lastRunAt:new Date(start).toISOString(),
   total:100, done:20, workerCount:7};

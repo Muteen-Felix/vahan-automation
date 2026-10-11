@@ -27,7 +27,7 @@ try {
   else if(['/api/runners','/api/jobs','/api/maker-updates'].includes(p))body=[];
   else if(p==='/api/worker-pool')body={enabled:true,desiredCount:8,runningCount:8,phase:'ready',workers:[]};
   else if(p==='/api/ui-health/status')body=sqlState();
-  else if(['/api/ui-health/schedule','/api/ui-health/run-now','/api/ui-health/reports'].includes(p))extraHealthRequests.push(p);
+  else if(['/api/ui-health/run-now','/api/ui-health/reports'].includes(p))extraHealthRequests.push(p);
   await r.fulfill({contentType:'application/json',body:JSON.stringify(body)});
  });
  await page.goto(url+'#settings');await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
@@ -40,16 +40,16 @@ try {
  assert.ok((await page.locator('.run-schedule-card').boundingBox()).height<240);
  await page.getByRole('button',{name:'Show form',exact:true}).click();
  await page.getByLabel('Start time',{exact:true}).fill('11:51');
- await page.getByLabel('Active workers',{exact:true}).selectOption('7');
+ await page.getByLabel('Reports at a time',{exact:true}).fill('7');
  assert.equal(await page.getByRole('link',{name:'UI Health' ,exact:true}).count(),0,'UI Health lives inside Settings');
  assert.equal(await page.getByRole('link',{name:'Settings',exact:true}).getAttribute('aria-current'),'page');
  assert.equal(await page.locator('.settings-ui-health').count(),0,'A healthy check does not render any UI Health section');
- assert.equal(await page.getByRole('button',{name:'Copy all errors',exact:true}).count(),0);
+ assert.equal(await page.getByRole('button',{name:'Copy all issues',exact:true}).count(),0);
  assert.equal(await page.getByLabel('Check again after').count(),0);
  assert.equal(await page.getByRole('button',{name:'Check now',exact:true}).count(),0);
  assert.equal(await page.getByText('Check history and CSV reports',{exact:true}).count(),0);
  blocked=true;uiSocket.send('42/ui,'+JSON.stringify(['ui-health:blocked',sqlState()]));
- await page.locator('.website-alert-table tbody').getByText(report.title,{exact:true}).waitFor();
+ await page.locator('.website-alert-table tbody').getByText('The VAHAN page has changed. Some report choices could not be found or used. Support needs to review the page before collection can continue.',{exact:true}).waitFor();
  assert.deepEqual(await scheduleBounds(),healthyBounds,'An error cannot shrink or move the schedule into another column');
  const layout=async()=>{
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Settings has no horizontal page overflow');
@@ -61,17 +61,19 @@ try {
  };
  await layout();
  assert.equal(await page.getByLabel('Start time',{exact:true}).inputValue(),'11:51');
- assert.equal(await page.getByLabel('Active workers',{exact:true}).inputValue(),'7','Showing an error preserves the schedule draft');
+ assert.equal(await page.getByLabel('Reports at a time',{exact:true}).inputValue(),'7','Showing an error preserves the schedule draft');
  assert.equal(await page.locator('.website-alert-table tbody tr').count(),1,'the same SQL error across workers/retries appears once');
- assert.match(await page.locator('.website-alert-table tbody').innerText(),/playwright-1, playwright-2/);
- await page.getByRole('button',{name:'Copy for dev',exact:true}).click();await page.getByRole('button',{name:'Copied',exact:true}).waitFor();
+ assert.match(await page.locator('.website-alert-table tbody').innerText(),/2 browsers/);
+ assert.equal(await page.locator('.website-alert-table tbody').getByText(report.title,{exact:true}).isVisible(),false,'Raw website errors are kept inside support details');
+ await page.getByRole('button',{name:'Hide form',exact:true}).click();
+ await page.locator('.website-alert-table').getByRole('button',{name:'Copy for support',exact:true}).click();await page.getByRole('button',{name:'Copied',exact:true}).waitFor();
  const copied=JSON.parse(await page.evaluate(()=>navigator.clipboard.readText()));
  assert.equal(copied.alerts[0].code,report.code);assert.deepEqual(copied.alerts[0].workers,['playwright-1','playwright-2']);
  assert.deepEqual(copied.alerts[0].expected,report.expected);assert.deepEqual(copied.alerts[0].actual,report.actual);assert.equal(copied.alerts[0].checks[0].attempts,2);assert.equal(copied.preflight.id,'gate-failed');
  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('denied');}}}));
- await page.getByRole('button',{name:'Copy all errors',exact:true}).click();await page.getByText('Could not copy the report. Allow clipboard access and try again.',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Copy all issues',exact:true}).click();await page.getByText('Could not copy the report. Allow clipboard access and try again.',{exact:true}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Copied',exact:true}).count(),0,'denied clipboard access is not reported as success');
- await page.reload();await page.locator('.website-alert-table tbody').getByText(report.title,{exact:true}).waitFor();
+ await page.reload();await page.locator('.website-alert-table tbody').getByText('The VAHAN page has changed. Some report choices could not be found or used. Support needs to review the page before collection can continue.',{exact:true}).waitFor();
  for(const width of [1920,1440,1024,768,390,320]){
    await page.setViewportSize({width,height:1000});
    await layout();
@@ -83,9 +85,18 @@ try {
    if(width===1440||width===390)await page.screenshot({path:testArtifactPath(`vahan-ui-health-fixed-${width}.png`),fullPage:true});
  }
  const blockedBounds=await scheduleBounds();
+ report.code='CHECK_ERROR';report.title='page.goto: Timeout 30000ms exceeded. Call log: navigating to VAHAN';report.target='';
+ uiSocket.send('42/ui,'+JSON.stringify(['ui-health:blocked',sqlState()]));
+ const issueCell=page.locator('.website-alert-table [data-label="Website issue"]');
+ await issueCell.getByText('The website or system could not be reached in time. Check the connection and try again. If it happens again, contact support.',{exact:true}).waitFor();
+ assert.doesNotMatch(await issueCell.innerText(),/page\.goto|CHECK_ERROR|30000ms/,'Operators see a clear connection issue rather than automation errors');
+ await page.locator('.website-alert-table').getByRole('button',{name:'Copy for support',exact:true}).click();
+ const timeoutEvidence=JSON.parse(await page.evaluate(()=>navigator.clipboard.readText()));
+ assert.equal(timeoutEvidence.alerts[0].title,report.title,'Support still receives the original timeout evidence');
+ assert.equal(timeoutEvidence.alerts[0].code,'CHECK_ERROR');
  blocked=false;uiSocket.send('42/ui,'+JSON.stringify(['ui-health:verified',sqlState()]));
  await page.locator('.settings-ui-health').waitFor({state:'detached'});
- assert.equal(await page.getByRole('button',{name:'Copy all errors',exact:true}).count(),0);
+ assert.equal(await page.getByRole('button',{name:'Copy all issues',exact:true}).count(),0);
  assert.deepEqual(await scheduleBounds(),blockedBounds,'Recovery keeps the schedule width and alignment');
  await page.goto(url+'#health');await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
  assert.equal(await page.locator('.settings-ui-health').count(),0);

@@ -62,10 +62,10 @@ try {
       await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
       await page.getByRole('button',{name:'Account',exact:true}).click();
       await page.getByText('Manage user accounts',{exact:true}).click();
-      await page.getByRole('button',{name:'Grant admin',exact:true}).click();
-      await page.getByRole('button',{name:'Revoke admin',exact:true}).waitFor();
-      await page.getByRole('button',{name:'Revoke admin',exact:true}).click();
-      await page.getByRole('button',{name:'Grant admin',exact:true}).waitFor();
+      await page.getByRole('button',{name:'Make administrator',exact:true}).click();
+      await page.getByRole('button',{name:'Make report viewer',exact:true}).waitFor();
+      await page.getByRole('button',{name:'Make report viewer',exact:true}).click();
+      await page.getByRole('button',{name:'Make administrator',exact:true}).waitFor();
       assert.deepEqual(roleChanges,[{role:'admin'},{role:'user'}]);
     }
     assert.deepEqual(errors,[]);

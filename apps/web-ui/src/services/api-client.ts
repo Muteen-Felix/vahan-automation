@@ -2,9 +2,7 @@ import type {
   ExportedReportItem,
   ExportedReportSession,
   Runner,
-  UiHealthCheckNowResponse,
   UiHealthReportsResponse,
-  UiHealthSchedule,
 } from "../contracts";
 import type {FilterProfile, ProfileDefinition, ProfileOptions} from '../filter-profiles';
 import type {CurrentCaptcha, RunSchedule, RunScheduleInput, RunTimeZone} from '../run-schedules';
@@ -181,17 +179,6 @@ export const api = {
   runners: () => request<Runner[]>("/api/runners"),
   uiHealthStatus: () => request<Record<string,unknown>>('/api/ui-health/status'),
   uiPreflight: (runnerIds:string[]) => request<{allowed:boolean;preflightId:string;revision:number;reports:unknown[]}>('/api/ui-health/preflight',{method:'POST',body:JSON.stringify({runnerIds})}),
-  uiHealthSchedule: () => request<UiHealthSchedule>("/api/ui-health/schedule"),
-  updateUiHealthSchedule: (intervalDays: number) =>
-    request<UiHealthSchedule>("/api/ui-health/schedule", {
-      method: "PUT",
-      body: JSON.stringify({ intervalDays }),
-    }),
-  runUiHealthCheckNow: (runnerId?: string) =>
-    request<UiHealthCheckNowResponse>("/api/ui-health/run-now", {
-      method: "POST",
-      body: JSON.stringify(runnerId ? { runnerId } : {}),
-    }),
   uiHealthReports: (date?: string) => request<UiHealthReportsResponse>(
     `/api/ui-health/reports${date ? `?date=${encodeURIComponent(date)}` : ""}`,
   ),

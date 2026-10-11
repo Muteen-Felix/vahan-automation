@@ -2,7 +2,7 @@
 """Back up SQL and its encryption/signing configuration without printing secrets."""
 from datetime import datetime, timezone
 from pathlib import Path
-import shutil, subprocess
+import shutil, subprocess, hashlib, json
 from secure_permissions import restrict_permissions
 
 root = Path(__file__).resolve().parents[1]
@@ -15,9 +15,20 @@ try:
         subprocess.run(['docker', 'compose', '--env-file', '.docker.env', 'exec', '-T',
             'postgres', 'pg_dump', '-U', 'vahan', '-d', 'vahan', '-Fc'], cwd=root, stdout=output, check=True)
     restrict_permissions(dump)
+    with dump.open('rb') as source:
+        subprocess.run(['docker','compose','--env-file','.docker.env','exec','-T','postgres',
+            'pg_restore','--list'], cwd=root, stdin=source, stdout=subprocess.DEVNULL, check=True)
     config = destination / '.docker.env'
     shutil.copyfile(root / '.docker.env', config)
     restrict_permissions(config)
+    manifest = destination / 'manifest.json'
+    checksums = {}
+    for artifact in (dump, config):
+        with artifact.open('rb') as source:
+            checksums[artifact.name] = hashlib.file_digest(source, 'sha256').hexdigest()
+    manifest.write_text(json.dumps({'createdAt':datetime.now(timezone.utc).isoformat(),
+        'archiveListingVerified':True,'sha256':checksums},indent=2)+'\n')
+    restrict_permissions(manifest)
 except Exception:
     dump.unlink(missing_ok=True)
     raise

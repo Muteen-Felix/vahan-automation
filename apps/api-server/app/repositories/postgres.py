@@ -215,10 +215,16 @@ class PostgresJobRepository:
             return True
         return await self._change(job_id, operation, 'filters-verified')
 
-    async def list_all(self, owner=None):
-        query = select(db.jobs.c.payload).order_by(db.jobs.c.created_at.desc())
+    async def list_all(self, owner=None, *, offset=0, limit=None, session_ids=None, job_ids=None):
+        query = select(db.jobs.c.payload).order_by(db.jobs.c.created_at.desc(), db.jobs.c.id.desc())
         if owner:
             query = query.where(db.jobs.c.owner_username == owner)
+        if session_ids is not None:
+            query = query.where(db.jobs.c.session_id.in_(session_ids))
+        if job_ids is not None:
+            query = query.where(db.jobs.c.id.in_(job_ids))
+        if limit is not None:
+            query = query.offset(offset).limit(limit)
         async with engine.connect() as connection:
             return [Job.model_validate(value) for value in (await connection.execute(query)).scalars()]
 
@@ -341,25 +347,12 @@ class PostgresStateStore:
             await connection.execute(pg_insert(db.app_settings).values(key=key, value=value).on_conflict_do_update(
                 index_elements=[db.app_settings.c.key], set_={"value": value}))
 
+
 class PostgresScheduleRepository:
-    async def get(self):
+    async def get(self) -> UiHealthSchedule:
         value = await PostgresStateStore().get("ui-health-schedule")
-        if value is None:
-            return await self.update(3)
-        return UiHealthSchedule.model_validate(value)
+        return UiHealthSchedule.model_validate(value) if value is not None else UiHealthSchedule.default()
 
-    async def update(self, interval_days):
-        schedule = UiHealthSchedule.for_interval(interval_days)
-        await PostgresStateStore().put("ui-health-schedule", schedule.model_dump(mode="json"))
-        return schedule
-
-    async def record_check(self):
-        schedule = await self.get()
-        return await self.update(schedule.interval_days)
-
-    async def clear(self):
-        require_test_database()
-        await self.update(3)
 
 def hash_password(password, salt=None):
     salt = salt or secrets.token_hex(16)

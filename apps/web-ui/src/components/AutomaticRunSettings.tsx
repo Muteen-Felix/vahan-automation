@@ -1,3 +1,4 @@
+import {operatorMessage} from '../operator-language';
 import {useEffect, useRef, useState, type FormEvent} from 'react';
 import type {FilterProfile} from '../filter-profiles';
 import {api} from '../services/api-client';
@@ -12,8 +13,8 @@ import {FailedBatchCases} from './FailedBatchCases';
 
 const STATUS_LABELS: Record<RunSchedule['status'], string> = {
   WAITING: 'Scheduled', PREPARING: 'Preparing', RUNNING: 'Running', COMPLETED: 'Completed',
-  PAUSING: 'Pausing', PAUSED: 'Paused', RESUMING: 'Resuming',
-  COMPLETED_WITH_ERRORS: 'Completed with errors', ERROR: 'Error', STOPPED: 'Stopped',
+  PAUSING: 'Pausing', PAUSED: 'Paused', RESUMING: 'Continuing',
+  COMPLETED_WITH_ERRORS: 'Some reports unfinished', ERROR: 'Needs attention', STOPPED: 'Stopped',
 };
 
 interface Props {
@@ -96,7 +97,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
     event.preventDefault();
     const startsAt = scheduleDateTimeIso(date, time, timeZone);
     if (!profile || !date || !time || !Number.isFinite(Date.parse(startsAt)) || Date.parse(startsAt) <= Date.now()) {
-      setError('Choose a report profile and a future date and time.');
+      setError('Choose saved filters and a future date and time.');
       return;
     }
     setSaving(true); setError(''); setNotice('');
@@ -150,18 +151,18 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
         onClose={() => setFormOpen(false)}
         onClick={event => {if (event.target === event.currentTarget && !saving) setFormOpen(false);}}>
         <div className="schedule-form-dialog-header"><div><span className="settings-eyebrow">AUTOMATIC RUN</span><h3 id="new-schedule-title">Schedule a report</h3>
-          <p>Choose when the saved report profile should run.</p></div>
+          <p>Choose saved filters and when to collect the reports.</p></div>
           <button type="button" className="schedule-form-dialog-close" aria-label="Hide form" title="Hide form" disabled={saving} onClick={() => setFormOpen(false)}>×</button></div>
         <div className="schedule-form-dialog-body">
-          {error && <p className="schedule-dialog-error" role="alert">{error}</p>}
+          {error && <p className="schedule-dialog-error" role="alert">{operatorMessage(error)}</p>}
           <form className="automatic-run-form" onSubmit={save}>
-            <label className="schedule-profile-label">Report / filter profile
-              <select aria-label="Report / filter profile" value={profileId} onChange={event => setProfileId(event.target.value)} required disabled={saving || !profiles.length}>
-                {!profiles.length && <option value="">No saved profiles</option>}
+            <label className="schedule-profile-label">Saved filters
+              <select aria-label="Saved filters" value={profileId} onChange={event => setProfileId(event.target.value)} required disabled={saving || !profiles.length}>
+                {!profiles.length && <option value="">No saved filters</option>}
                 {profiles.map(item => <option key={item.id} value={item.id}>{item.name} · {item.definition.report?.year ?? reportYear}</option>)}
               </select>
             </label>
-            <label>Parallel task limit<input aria-label="Parallel task limit" type="number" min="1" step="1" value={workers}
+            <label title="Maximum number of reports collected at the same time.">Reports at a time<input aria-label="Reports at a time" type="number" min="1" step="1" value={workers}
               onChange={event => setWorkers(Math.max(1, Math.floor(Number(event.target.value) || 1)))} disabled={saving} /></label>
             <label>Start date<input aria-label="Start date" type="date" value={date} onChange={event => setDate(event.target.value)} required disabled={saving} /></label>
             <label>Start time<input aria-label="Start time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={saving} /></label>
@@ -174,15 +175,16 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
               <button className="primary-button" type="submit" disabled={saving || loading || !profile}>{saving ? 'Saving…' : 'Add schedule'}</button>
             </div>
           </form>
+          <p className="schedule-help">Reports at a time is the maximum number collected together. More report browsers may be prepared to meet this number.</p>
           <div className="schedule-help-slot"><p className="schedule-help">{repeat === 'monthly'
             ? `Runs on day ${Number(date.slice(-2))} each month; shorter months use their last day.`
             : !profiles.length
-            ? <>Create a <a href="#filters">filter profile</a> to select a report.</>
-            : 'Saved schedules keep the selected profile. View collected data in Exported Reports.'}</p></div>
+            ? <><a href="#filters">Save your filters</a> before adding a schedule.</>
+            : 'Saved schedules use these filters. View collected data in Exported Reports.'}</p></div>
         </div>
       </dialog>
       <div className={`schedule-feedback${loadError || (!formOpen && (error || notice)) ? ' has-feedback' : ''}`}>
-        {(loadError || (!formOpen && error)) ? <p className="schedule-error" role="alert" title={loadError || error}>{loadError || error}</p>
+        {(loadError || (!formOpen && error)) ? <p className="schedule-error" role="alert" title={operatorMessage(loadError || error)}>{operatorMessage(loadError || error)}</p>
           : <p className="schedule-notice" role="status" title={notice}>{notice || '\u00a0'}</p>}
       </div>
       <div className="run-schedule-list-heading" id="saved-schedules"><h3>Saved schedules</h3><span>{schedules.length} {schedules.length === 1 ? 'schedule' : 'schedules'}</span></div>
@@ -200,21 +202,21 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
               <div className="run-schedule-start"><dt>{schedule.nextRunAt ? 'Next start' : 'Scheduled start'}</dt><dd title={formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}>{formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}</dd><small>{runTimeZoneLabel(schedule.timeZone)}</small></div>
               <div><dt>Repeat</dt><dd>{schedule.repeat === 'monthly' ? 'Every month' : schedule.repeat === 'daily' ? 'Every day' : 'Once'}</dd>
                 <small>{schedule.repeat === 'monthly' ? `Day ${scheduledDayOfMonth(schedule.startsAt, runTimeZone(schedule.timeZone))} · month-end if needed` : schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
-              <div className="schedule-worker-setting"><dt>Parallel tasks</dt><dd>
-                <input aria-label={`Parallel tasks for ${schedule.profileName}`} type="number" min="1" step="1" value={workerChoices[schedule.id] ?? schedule.workerCount}
+              <div className="schedule-worker-setting"><dt>Reports at a time</dt><dd>
+                <input aria-label={`Reports at a time for ${schedule.profileName}`} type="number" min="1" step="1" value={workerChoices[schedule.id] ?? schedule.workerCount}
                   disabled={Boolean(actionId) || !canResumeSchedule(schedule)}
                   onChange={event => setWorkerChoices(current => ({...current, [schedule.id]: Math.max(1, Math.floor(Number(event.target.value) || 1))}))} />
-              </dd><small>{canResumeSchedule(schedule) ? 'Applied on continue' : schedule.status === 'PAUSING' ? 'Waiting for cases to save' : 'Pause to change task limit'}</small></div>
+              </dd><small>{canResumeSchedule(schedule) ? 'Used when you continue' : schedule.status === 'PAUSING' ? 'Waiting for reports to save' : 'Pause to change this number'}</small></div>
             </dl>
             <RunScheduleProgress schedule={schedule} statusLabel={!schedule.enabled && !schedule.sessionId && schedule.nextRunAt ? 'Disabled' : schedule.networkPaused ? 'Waiting for network' : STATUS_LABELS[schedule.status]} />
             <div className="schedule-retry-slot">
               {schedule.message && (['PREPARING','RESUMING','PAUSING','ERROR'].includes(schedule.status)
                   || /^(Waiting|Could not|A worker|Docker)/i.test(schedule.message))
                 ? <p className={`schedule-retry-note schedule-run-message${schedule.status==='ERROR'?' has-error':''}`}
-                    role={schedule.status==='ERROR'?'alert':'status'} title={schedule.message}>{schedule.message}</p>
+                    role={schedule.status==='ERROR'?'alert':'status'} title={operatorMessage(schedule.message)}>{operatorMessage(schedule.message)}</p>
                 : schedule.retryProgress&&schedule.retryProgress.phase!=='PRIMARY'&&!(schedule.retryProgress.phase==='DONE'&&!schedule.failed)
                 ?<BatchRetryStatus progress={schedule.retryProgress} running={schedule.status==='RUNNING'}/>
-                :<p className="schedule-retry-note">Errors are checked after each report group, then all remaining failures receive a final recovery pass.</p>}
+                :<p className="schedule-retry-note">Unfinished reports are tried again after each group, with one final check at the end.</p>}
             </div>
             <div className="run-schedule-actions">
               <button type="button" className="secondary-button"
@@ -226,7 +228,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
                 onClick={() => void action(schedule, 'pause')}>{schedule.networkPaused ? 'Keep paused' : schedule.status === 'PAUSING' ? 'Pausing…' : 'Pause run'}</button>
                 : <button type="button" className="secondary-button" disabled>No active run</button>}
               <button type="button" className="secondary-button schedule-delete-button"
-                title="Delete this schedule and its remaining cases. Collected report data is kept."
+                title="Delete this schedule and its unfinished reports. Collected report data is kept."
                 disabled={Boolean(actionId) || ['PREPARING','RUNNING','PAUSING','RESUMING'].includes(schedule.status)
                   || Boolean(schedule.sessionId && !['PAUSED','STOPPED'].includes(schedule.status))}
                 onClick={() => void action(schedule, 'delete')}>Delete schedule</button>

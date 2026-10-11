@@ -21,6 +21,7 @@ class PoolTest(unittest.IsolatedAsyncioTestCase):
             await connection.run_sync(db.metadata.create_all)
         await services.users.create('worker-test', 'Worker test password')
         await initialize_pool()
+        await apply_pool(10)
         for number in range(1, 11):
             await services.runners.register(runner_id=f'playwright-{number}', name='Fixture', socket_id=f'fixture-{number}')
 
@@ -31,29 +32,28 @@ class PoolTest(unittest.IsolatedAsyncioTestCase):
         return Job(runnerId=runner, sessionId=uuid4(), filters={'states': ['State'], 'rtos': ['Office']})
 
     async def test_limits_one_five_ten_keep_containers_connected(self):
-        for count in (1, 5, 10):
+        for count in (1, 5, 10, 25):
             state = await apply_pool(count)
             self.assertEqual(state['mode'], 'logical')
             self.assertEqual(state['runningCount'], 10)
-            self.assertEqual(len(await services.runners.list()), count)
+            self.assertEqual(len(await services.runners.list()), 10)
             async with engine.begin() as connection:
-                self.assertTrue(await assignment_allowed(connection, f'playwright-{count}'))
-                self.assertFalse(await assignment_allowed(connection, 'playwright-11'))
-                if count < 10:
-                    self.assertFalse(await assignment_allowed(connection, f'playwright-{count + 1}'))
-        for value in (0, 11, True, 1.5, '2'):
+                self.assertTrue(await assignment_allowed(connection, 'playwright-10'))
+            self.assertIsNone(await services.jobs.assign(self.job('missing-worker')))
+        for value in (0, True, 1.5, '2'):
             with self.assertRaises(PoolError):
                 await apply_pool(value)
 
     async def test_shrink_preserves_busy_job_and_can_grow(self):
-        assigned = await services.jobs.assign(self.job('playwright-8'))
+        jobs = [await services.jobs.assign(self.job(f'playwright-{i}')) for i in range(1, 7)]
         with self.assertRaises(PoolError):
             await apply_pool(5)
         self.assertEqual((await pool_status())['desiredCount'], 10)
-        self.assertEqual((await services.jobs.get(assigned.id)).status, JobStatus.QUEUED)
-        await services.jobs.transition_status(assigned.id, JobStatus.CANCELLED)
-        await services.runners.release_job('playwright-8', str(assigned.id))
-        await apply_pool(5)
+        for job in jobs:
+            self.assertEqual((await services.jobs.get(job.id)).status, JobStatus.QUEUED)
+        await services.jobs.transition_status(jobs[0].id, JobStatus.CANCELLED)
+        await services.runners.release_job(jobs[0].runner_id, str(jobs[0].id))
+        self.assertEqual((await apply_pool(5))['activeCount'], 5)
         self.assertEqual((await apply_pool(8))['desiredCount'], 8)
 
     async def test_parallel_direct_jobs_cannot_bypass_global_limit_with_custom_ids(self):
@@ -80,20 +80,18 @@ class PoolTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sum(result['type'] == 'assigned' for result in results), 1)
         self.assertEqual((await pool_status())['activeCount'], 1)
 
-    async def test_disabled_worker_and_planning_reservations_obey_limit(self):
+    async def test_any_worker_id_and_planning_reservations_obey_limit(self):
         await apply_pool(1)
-        with self.assertRaises(ValueError):
-            await services.jobs.assign(self.job('playwright-2'))
-        with self.assertRaises(PreflightUnavailable):
-            async with reserve_options_runner('playwright-2', 'worker-test'):
-                self.fail('Disabled worker reserved')
         await services.runners.register(runner_id='external', name='Fixture', socket_id='external')
-        async with reserve_options_runner('playwright-1', 'worker-test'):
+        async with reserve_options_runner('playwright-10', 'worker-test'):
             self.assertIsNone(await services.jobs.assign(self.job('external')))
+            with self.assertRaises(PreflightUnavailable):
+                async with reserve_options_runner('playwright-2', 'worker-test'):
+                    self.fail('Concurrent options must respect capacity')
         self.assertIsNotNone(await services.jobs.assign(self.job('external')))
 
     async def test_preflight_reservation_blocks_unsafe_shrink(self):
-        async with reserve_preflight_runners(['playwright-8'], 'worker-test'):
+        async with reserve_preflight_runners([f'playwright-{i}' for i in range(1, 7)], 'worker-test'):
             with self.assertRaises(PoolError):
                 await apply_pool(5)
         self.assertEqual((await apply_pool(5))['desiredCount'], 5)

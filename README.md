@@ -80,7 +80,7 @@ Clone repository vào thư mục bất kỳ, mở PowerShell tại thư mục g�
 .\run-vahan-rpa.ps1
 ```
 
-Lệnh này tạo `.docker.env` nếu chưa có, chuẩn bị thư mục chứng chỉ tùy chọn, kiểm tra Compose, build các image API/web/runner rồi khởi động PostgreSQL, API, dashboard và số browser worker phù hợp với tài nguyên máy. Mặc định launcher đánh giá CPU/RAM Docker, RAM còn trống trên host và mức dùng thực tế của runner; replica đang chạy được giữ nguyên để tránh ngắt job. Compose chạy nền (`-d`), nên có thể đóng cửa sổ PowerShell sau khi lệnh hoàn tất; Docker Desktop phải tiếp tục hoạt động. Dùng `--workers 3` để ghi đè thủ công. Chạy `py -3 scripts/run-docker.py --assess-only` để xem đánh giá mà không thay đổi container.
+Lệnh này tạo `.docker.env` nếu chưa có, chuẩn bị thư mục chứng chỉ tùy chọn, kiểm tra Compose, build các image API/web/runner/PostgreSQL rồi khởi động PostgreSQL, API, dashboard và số browser worker phù hợp với tài nguyên máy. Mặc định launcher đánh giá CPU/RAM Docker, RAM còn trống trên host và mức dùng thực tế của runner; replica đang chạy được giữ nguyên để tránh ngắt job. Compose chạy nền (`-d`), nên có thể đóng cửa sổ PowerShell sau khi lệnh hoàn tất; Docker Desktop phải tiếp tục hoạt động. Dùng `--workers 3` để ghi đè thủ công. Chạy `py -3 scripts/run-docker.py --assess-only` để xem đánh giá mà không thay đổi container.
 
 Lần build đầu có thể mất thời gian vì cần tải Chromium và dependency. Docker dùng cache cho các lần build sau. Script giữ nguyên `.docker.env` hiện có và không in giá trị bí mật ra log. Trên Ubuntu/macOS, tại thư mục repository chạy một lệnh tương đương:
 

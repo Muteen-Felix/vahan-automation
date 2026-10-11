@@ -22,14 +22,14 @@ try{
  });
  await page.goto(process.env.HISTORY_UI_URL||'http://127.0.0.1:5184/#reports');await page.getByRole('heading',{name:'Exported Reports',exact:true}).waitFor();
  assert.equal(calls,0,'history reads only after opening');
- await page.getByRole('button',{name:'Update history',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Dataset update status'});
+ await page.getByRole('button',{name:'Update history',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Report update history'});
  await dialog.getByText('Partially refreshed',{exact:true}).first().waitFor();assert.equal(await dialog.locator('progress').first().getAttribute('value'),'1');
- assert.ok(await dialog.getByText('1 cases not refreshed on this day',{exact:true}).isVisible());assert.ok(await dialog.getByText('State A · Office 2',{exact:true}).isVisible());
+ assert.ok(await dialog.getByText('1 reports not updated on this day',{exact:true}).isVisible());assert.ok(await dialog.getByText('State A · Office 2',{exact:true}).isVisible());
  await dialog.getByText('2 days',{exact:true}).click();assert.ok(await dialog.getByText('06/10/2026',{exact:true}).isVisible());
  await page.screenshot({path:testArtifactPath('vahan-update-history-desktop.png')});
  complete=true; // Ordinary report readers refresh through polling, without admin sockets.
- await dialog.getByText('0 cases not refreshed on this day',{exact:true}).waitFor({timeout:18000});
- assert.equal(await dialog.locator('progress').first().getAttribute('value'),'2');assert.equal(await dialog.getByText('First case not refreshed',{exact:true}).count(),0);
+ await dialog.getByText('0 reports not updated on this day',{exact:true}).waitFor({timeout:18000});
+ assert.equal(await dialog.locator('progress').first().getAttribute('value'),'2');assert.equal(await dialog.getByText('First report not updated',{exact:true}).count(),0);
  await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
  await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Update history',exact:true}).click();await dialog.waitFor();
  const box=await dialog.boundingBox();assert.ok(box.x>=0&&box.x+box.width<=390);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));

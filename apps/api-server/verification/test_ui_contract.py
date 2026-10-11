@@ -71,21 +71,26 @@ class ContractTests(unittest.IsolatedAsyncioTestCase):
         changed=observation();changed['observedControls'][0].update(selector='#impostor',matchedBy='name',name='other',label='other')
         self.assertFalse((await ui_contract.evaluate(changed,self.runner))['allowed'])
 
-    async def test_disabled_worker_error_is_retained_without_blocking_selected_pool(self):
+    async def test_disconnected_worker_error_is_retained_and_reconnect_requires_check(self):
         from sqlalchemy.dialects.postgresql import insert as pg_insert
         async with engine.begin() as c:
             await c.execute(pg_insert(db.app_settings).values(key='docker-worker-pool',
                 value={'desiredCount':1,'phase':'ready'}).on_conflict_do_update(
                 index_elements=['key'],set_={'value':{'desiredCount':1,'phase':'ready'}}))
         try:
+            await services.runners.register(runner_id='playwright-2',name='Fixture',socket_id='old-socket')
             broken=observation();broken['observedControls'][0]['found']=False
             await ui_contract.evaluate(broken,'playwright-2')
-            await ui_contract.evaluate(observation(),'playwright-1')
+            self.assertTrue((await ui_contract.current())['blocked'])
+            await services.runners.remove_by_socket('old-socket')
+            await ui_contract.evaluate(observation(),self.runner)
             state=await ui_contract.current()
             self.assertFalse(state['blocked'])
-            self.assertIn('playwright-2',state['runnerErrors'],'keep disabled-worker diagnostic')
-            await ui_contract.evaluate(broken,'playwright-1')
-            self.assertTrue((await ui_contract.current())['blocked'],'selected worker still blocks')
+            self.assertIn('playwright-2',state['runnerErrors'],'keep disconnected-worker diagnostic')
+            await services.runners.register(runner_id='playwright-2',name='Reconnected',socket_id='reconnected-socket')
+            self.assertTrue((await ui_contract.current())['blocked'],'reconnected worker retains its failed evidence')
+            await ui_contract.evaluate(observation(),'playwright-2')
+            self.assertFalse((await ui_contract.current())['blocked'])
         finally:
             async with engine.begin() as c:
                 await c.execute(delete(db.app_settings).where(db.app_settings.c.key=='docker-worker-pool'))

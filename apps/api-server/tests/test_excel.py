@@ -1,334 +1,182 @@
-from io import BytesIO
+"""Main-table upload contract: no duplicate report files are produced."""
 import asyncio
 from dataclasses import replace
+from io import BytesIO
 from uuid import uuid4
 from zipfile import ZipFile
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from openpyxl import Workbook
+from sqlalchemy import func, select
 
-from app import excel_storage
 from app.api import excel as excel_api
 from app.config import settings
+from app.db import engine, schema as db
 from app.main import application
-from app.models.filters import VahanFilters
 from app.models.job import Job, JobStatus
 from app.realtime.runner_events import job_status
+from app.repositories import file_store
 from app.services import services
-from app.security import issue_access_token
+
+RUNNER_HEADERS = {"X-VAHAN-RUNNER-ID": "test-runner", "X-VAHAN-RUNNER-TOKEN": settings.runner_token}
+FILTERS = {"states": ["Fixture State"], "rtos": ["Office - TS1"], "fromYear": "2025", "toYear": "2025", "yAxis": "Maker"}
 
 
-RUNNER_HEADERS = {
-    "X-VAHAN-RUNNER-ID": "test-runner",
-    "X-VAHAN-RUNNER-TOKEN": settings.runner_token,
-}
-UI_HEADERS = {"Authorization": f"Bearer {issue_access_token(settings.ui_auth_username)}"}
+def workbook_bytes():
+    workbook = Workbook()
+    workbook.active.append(["Maker", "JAN", "FEB", "TOTAL"])
+    workbook.active.append(["Fixture Maker", 5, 7, 12])
+    buffer = BytesIO()
+    workbook.save(buffer)
+    workbook.close()
+    return buffer.getvalue()
 
 
-@pytest.fixture(autouse=True)
-def isolated_excel_reports(tmp_path, monkeypatch):
-    monkeypatch.setattr(excel_api, "_report_dir", tmp_path)
-    monkeypatch.setattr(excel_storage, "settings", replace(excel_storage.settings, excel_report_dir=str(tmp_path)))
-
-
-async def test_upload_and_download_excel_flow() -> None:
-    # 1. Create a mock job with scenario name
-    job = Job(
-        id=uuid4(),
-        runnerId="test-runner",
-        scenarioName="Delhi EV / 2024: Two-Wheeler",
-        status=JobStatus.WAITING_RESULT,
-        filters=VahanFilters(yAxis="State Name"),
-    )
-    await services.jobs.create(job)
-
-    # 2. Upload an Excel file
-    excel_buffer = BytesIO()
-    with ZipFile(excel_buffer, "w") as workbook:
-        workbook.writestr("xl/workbook.xml", "<workbook/>")
-    fake_excel_bytes = excel_buffer.getvalue()
-    file_payload = {
-        "file": ("temp.xlsx", BytesIO(fake_excel_bytes), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    }
-
-    async with AsyncClient(
-        transport=ASGITransport(app=application),
-        base_url="http://test",
-    ) as client:
-        upload_resp = await client.post(
-            f"/api/jobs/{job.id}/upload-excel",
-            files=file_payload,
-            headers=RUNNER_HEADERS,
-        )
-        assert upload_resp.status_code == 200
-        upload_data = upload_resp.json()
-        assert upload_data["ok"] is True
-        # Filename should be sanitized from scenarioName and have timestamp
-        dt = job.created_at.astimezone() if job.created_at.tzinfo else job.created_at
-        expected_name = f"Delhi EV _ 2024_ Two-Wheeler_{dt.strftime('%Y%m%d_%H%M%S')}_{str(job.id)[:8]}.xlsx"
-        assert upload_data["fileName"] == expected_name
-        assert upload_data["sizeBytes"] == len(fake_excel_bytes)
-
-        # Update job to COMPLETED so it appears in reports list
-        await services.jobs.update_status(job.id, JobStatus.COMPLETED)
-
-        # Verify job updated in repo
-        updated_job = await services.jobs.get(job.id)
-        assert updated_job.excel_file_name == expected_name
-        assert updated_job.excel_file_size == len(fake_excel_bytes)
-
-        # 3. Download the Excel file
-        from urllib.parse import unquote
-
-        download_resp = await client.get(f"/api/jobs/{job.id}/excel", headers=UI_HEADERS)
-        assert download_resp.status_code == 200
-        assert download_resp.content == fake_excel_bytes
-        assert expected_name in unquote(download_resp.headers.get("content-disposition", ""))
-
-        # 4. List reports
-        reports_resp = await client.get("/api/jobs/reports", headers=UI_HEADERS)
-        assert reports_resp.status_code == 200
-        reports = reports_resp.json()
-        assert len(reports) >= 1
-        found = next((r for r in reports if r["jobId"] == str(job.id)), None)
-        assert found is not None
-        assert found["scenarioName"] == "Delhi EV / 2024: Two-Wheeler"
-        assert found["fileName"] == expected_name
-        assert found["fileSize"] == len(fake_excel_bytes)
-
-        verify_resp = await client.post("/api/jobs/reports/verify", json={"fileNames": [expected_name]}, headers=UI_HEADERS)
-        assert verify_resp.status_code == 200
-        assert verify_resp.json()["files"][expected_name] == len(fake_excel_bytes)
-
-        stored_download = await client.get(f"/api/jobs/reports/file/{expected_name}", headers=UI_HEADERS)
-        assert stored_download.status_code == 200
-        assert stored_download.content == fake_excel_bytes
-
-
-async def test_upload_rejects_non_excel_bytes() -> None:
-    job = Job(
-        id=uuid4(), runnerId="test-runner", status=JobStatus.WAITING_RESULT,
-        filters=VahanFilters(yAxis="State Name"),
-    )
-    await services.jobs.create(job)
-    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
-        response = await client.post(
-            f"/api/jobs/{job.id}/upload-excel",
-            files={"file": ("report.xlsx", BytesIO(b"<html>error</html>"),
-                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-            headers=RUNNER_HEADERS,
-        )
-    assert response.status_code == 400
-    assert (await services.jobs.get(job.id)).excel_file_name is None
-
-
-async def test_job_cannot_complete_without_saved_excel() -> None:
-    job = Job(
-        id=uuid4(), runnerId="test-runner", status=JobStatus.WAITING_RESULT,
-        filters=VahanFilters(yAxis="State Name"),
-    )
-    await services.jobs.create(job)
-    await services.runners.register(runner_id="test-runner", name="Test runner", socket_id="test-socket")
+async def pending_job():
+    job = await services.jobs.create(Job(runnerId="test-runner", ownerUsername="test-admin",
+        status=JobStatus.WAITING_RESULT, scenarioName="Fixture report", filters=FILTERS))
+    await services.runners.register(runner_id="test-runner", name="Fixture", socket_id="test-socket")
     await services.runners.set_job("test-runner", str(job.id))
+    return job
 
+
+async def upload(client, job_id, content, headers=None, **data):
+    return await client.post(f"/api/jobs/{job_id}/main-report", headers=headers or RUNNER_HEADERS,
+        files={"file": ("report.xlsx", content, "application/octet-stream")}, data=data)
+
+
+async def assert_no_commit(job):
+    assert (await services.jobs.get(job.id)).main_report_saved_at is None
+    async with engine.connect() as connection:
+        assert await connection.scalar(select(func.count()).select_from(db.report_update_history)
+            .where(db.report_update_history.c.job_id == str(job.id))) == 0
+
+
+async def test_upload_commits_main_table_and_releases_worker(admin_headers):
+    job = await pending_job()
+    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test", headers=admin_headers) as client:
+        response = await upload(client, job.id, workbook_bytes(), observedAt="2025-03-02T08:00:00+07:00")
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == "COMPLETED"
+        result = await client.get(f"/api/jobs/{job.id}/report-result")
+        assert result.json()["scope"] == "main-table"
+        assert result.json()["states"] == FILTERS["states"]
+        annual = await client.get("/api/annual-reports", params={"year": 2025})
+        assert annual.json()["rows"][0]["months"][:2] == [5, 7]
+        # Legacy downloads describe stored historic files only.
+        assert (await client.get(f"/api/jobs/{job.id}/excel")).status_code == 404
+        assert (await client.get("/api/jobs/reports")).json() == []
+    stored = await services.jobs.get(job.id)
+    assert stored.main_report_checksum
+    assert stored.excel_file_name is None
+    assert (await services.runners.get("test-runner")).current_job_id is None
+    async with engine.connect() as connection:
+        assert await connection.scalar(select(func.count()).select_from(db.stored_files)) == 0
+
+
+@pytest.mark.parametrize("content", [b"<html>error</html>", b"", b"PK-not-a-workbook"])
+async def test_upload_rejects_invalid_or_empty_file(content):
+    job = await pending_job()
+    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
+        response = await upload(client, job.id, content)
+    assert response.status_code == 400
+    await assert_no_commit(job)
+
+
+async def test_upload_rejects_malformed_workbook_xml():
+    job = await pending_job()
+    buffer = BytesIO()
+    with ZipFile(buffer, "w") as archive:
+        archive.writestr("xl/workbook.xml", "<broken")
+        archive.writestr("[Content_Types].xml", "<broken")
+    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
+        response = await upload(client, job.id, buffer.getvalue())
+    assert response.status_code == 400
+    await assert_no_commit(job)
+
+
+async def test_job_cannot_complete_without_saved_main_report():
+    job = await pending_job()
     response = await job_status("test-socket", {"jobId": str(job.id), "status": "COMPLETED"})
-
     assert response["ok"] is False
     assert (await services.jobs.get(job.id)).status == JobStatus.WAITING_RESULT
 
 
-async def test_no_data_keeps_state_and_rto_without_creating_excel(tmp_path) -> None:
-    title = "Maker Month Wise Data  of Baratang - AN201 , Andaman & Nicobar Island (2026)"
-    job = Job(
-        id=uuid4(), runnerId="test-runner", status=JobStatus.WAITING_RESULT,
-        scenarioName=title,
-        filters=VahanFilters(states=["Andaman & Nicobar Island"], rtos=["Baratang - AN201"], yAxis="Maker"),
-    )
-    await services.jobs.create(job)
-    await services.runners.register(runner_id="test-runner", name="Test runner", socket_id="test-socket")
-    await services.runners.set_job("test-runner", str(job.id))
-
+async def test_raw_no_data_status_cannot_skip_confirmed_result():
+    job = await pending_job()
     response = await job_status("test-socket", {"jobId": str(job.id), "status": "NO_DATA"})
+    assert response["ok"] is False and "report-result" in response["error"]
+    assert (await services.jobs.get(job.id)).status == JobStatus.WAITING_RESULT
+    await assert_no_commit(job)
 
-    stored = await services.jobs.get(job.id)
-    runner = await services.runners.get("test-runner")
-    assert response == {"ok": True}
-    assert stored.status == JobStatus.NO_DATA
-    assert stored.filters.states == ["Andaman & Nicobar Island"]
-    assert stored.filters.rtos == ["Baratang - AN201"]
-    assert stored.excel_file_name is None
-    assert stored.no_data_file_name == f"{title}.txt"
-    assert runner.current_job_id is None
-    assert list(tmp_path.rglob("*.xlsx")) == []
-    marker = next(tmp_path.rglob("*.txt"))
-    assert marker.parent.name == "Andaman & Nicobar Island"
-    assert marker.read_text(encoding="utf-8") == f"{title}\n"
+
+async def test_no_data_commits_context_without_report_copy(admin_headers):
+    job = await pending_job()
+    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test", headers=admin_headers) as client:
+        response = await client.post(f"/api/jobs/{job.id}/report-result", headers=RUNNER_HEADERS,
+            json={"result": "NO_RECORD", "message": "No record found", "observedAt": "2025-03-02T08:00:00+07:00", "pageUrl": "https://fixture.test/report", "tables": []})
+        assert response.status_code == 200, response.text
+        stored = await services.jobs.get(job.id)
+        assert stored.status == JobStatus.NO_DATA and stored.main_report_saved_at
+        assert stored.filters.states == FILTERS["states"] and stored.filters.rtos == FILTERS["rtos"]
+        assert stored.no_data_file_name is None
+        assert (await client.get(f"/api/jobs/{job.id}/no-data")).status_code == 404
+    assert (await services.runners.get("test-runner")).current_job_id is None
+
+
+async def test_cancelled_job_rejects_late_empty_result_and_upload(admin_headers):
+    job = await pending_job()
+    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test", headers=admin_headers) as client:
+        assert (await client.post(f"/api/jobs/{job.id}/cancel")).status_code == 200
+        assert (await upload(client, job.id, workbook_bytes())).status_code == 409
+    assert (await job_status("test-socket", {"jobId": str(job.id), "status": "NO_DATA"}))["ok"] is False
+    await assert_no_commit(job)
+
+
+async def test_upload_nonexistent_job():
     async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
-        downloaded = await client.get(f"/api/jobs/{job.id}/no-data", headers=UI_HEADERS)
-    assert downloaded.status_code == 200
-    assert downloaded.text == f"{title}\n"
+        assert (await upload(client, uuid4(), workbook_bytes())).status_code == 404
 
 
-async def test_cancelled_job_cannot_become_no_data_or_write_text(tmp_path) -> None:
-    job = Job(
-        id=uuid4(), runnerId="test-runner", status=JobStatus.WAITING_RESULT,
-        scenarioName="Maker Month Wise Data  of Baratang - AN201 , Andaman & Nicobar Island (2026)",
-        filters=VahanFilters(states=["Andaman & Nicobar Island"], rtos=["Baratang - AN201"]),
-    )
-    await services.jobs.create(job)
-    await services.runners.register(runner_id="test-runner", name="Test runner", socket_id="test-socket")
-    await services.runners.set_job("test-runner", str(job.id))
-
-    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
-        cancelled = await client.post(f"/api/jobs/{job.id}/cancel", headers=UI_HEADERS)
-    late_result = await job_status("test-socket", {"jobId": str(job.id), "status": "NO_DATA"})
-
-    assert cancelled.status_code == 200
-    assert (await services.jobs.get(job.id)).status == JobStatus.CANCELLED
-    assert late_result["ok"] is False
-    assert list(tmp_path.rglob("*.txt")) == []
-
-
-async def test_upload_excel_non_existent_job() -> None:
-    fake_job_id = uuid4()
-    file_payload = {
-        "file": ("report.xlsx", BytesIO(b"data"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    }
-    async with AsyncClient(
-        transport=ASGITransport(app=application),
-        base_url="http://test",
-    ) as client:
-        resp = await client.post(f"/api/jobs/{fake_job_id}/upload-excel", files=file_payload, headers=RUNNER_HEADERS)
-        assert resp.status_code == 404
-
-
-async def test_upload_excel_rejects_empty_file() -> None:
-    job = Job(
-        id=uuid4(),
-        runnerId="test-runner",
-        status=JobStatus.WAITING_RESULT,
-        filters=VahanFilters(yAxis="State Name"),
-    )
-    await services.jobs.create(job)
-    file_payload = {
-        "file": ("empty.xlsx", BytesIO(b""), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    }
-
-    async with AsyncClient(
-        transport=ASGITransport(app=application),
-        base_url="http://test",
-    ) as client:
-        resp = await client.post(f"/api/jobs/{job.id}/upload-excel", files=file_payload, headers=RUNNER_HEADERS)
-
-    assert resp.status_code == 400
-    assert resp.json()["detail"] == "Excel file is empty."
-
-
-async def test_download_excel_not_found() -> None:
-    job = Job(
-        id=uuid4(),
-        runnerId="test-runner",
-        status=JobStatus.COMPLETED,
-        filters=VahanFilters(yAxis="State Name"),
-    )
-    await services.jobs.create(job)
-
-    async with AsyncClient(
-        transport=ASGITransport(app=application),
-        base_url="http://test",
-    ) as client:
-        resp = await client.get(f"/api/jobs/{job.id}/excel", headers=UI_HEADERS)
-        assert resp.status_code == 404
-
-
-async def test_repeat_and_concurrent_uploads_save_one_readable_workbook(tmp_path) -> None:
-    from openpyxl import Workbook, load_workbook
-
-    job = await services.jobs.create(Job(
-        runnerId="test-runner", status=JobStatus.WAITING_RESULT,
-        scenarioName="Maker Month Wise Data  of Adoni RTO - AP221 , Andhra Pradesh (2026)",
-        filters=VahanFilters(states=["Andhra Pradesh"], rtos=["Adoni RTO - AP221"], yAxis="Maker"),
-    ))
-    workbook = Workbook()
-    workbook.active.append(["Maker", "2026-Jan", "Total"])
-    workbook.active.append(["ATHER ENERGY LTD", 38, 487])
-    buffer = BytesIO()
-    workbook.save(buffer)
-    data = buffer.getvalue()
-    await services.runners.register(runner_id="test-runner", name="Test runner", socket_id="test-socket")
-    await services.runners.set_job("test-runner", str(job.id))
-    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
-        async def upload(headers=RUNNER_HEADERS):
-            return await client.post(
-                f"/api/jobs/{job.id}/upload-excel", headers=headers,
-                files={"file": ("report.xlsx", data, "application/octet-stream")},
-            )
-
-        first, second = await asyncio.gather(upload(), upload())
+async def test_repeat_and_concurrent_uploads_commit_once(admin_headers):
+    job = await pending_job()
+    content = workbook_bytes()
+    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test", headers=admin_headers) as client:
+        first, second = await asyncio.gather(upload(client, job.id, content), upload(client, job.id, content))
         assert first.status_code == second.status_code == 200
         assert first.json() == second.json()
-        assert len(list(tmp_path.rglob("*.xlsx"))) == 1
-        assert not list(tmp_path.rglob("*.tmp"))
-        acknowledgement = await job_status("test-socket", {"jobId": str(job.id), "status": "COMPLETED"})
-        assert acknowledgement == {"ok": True}
-        assert (await services.runners.get("test-runner")).current_job_id is None
-        retry = await upload()
-        assert retry.status_code == 200 and retry.json() == first.json()
-        wrong_runner = await upload({**RUNNER_HEADERS, "X-VAHAN-RUNNER-ID": "another-runner"})
-        assert wrong_runner.status_code == 403
-        downloaded = await client.get(f"/api/jobs/{job.id}/excel", headers=UI_HEADERS)
-        assert downloaded.content == data
-        readback = load_workbook(BytesIO(downloaded.content), read_only=True)
-        assert list(readback.active.values)[1] == ("ATHER ENERGY LTD", 38, 487)
-        readback.close()
-        # A lost completion ACK can be retried after the next case is assigned.
+        assert (await upload(client, job.id, content)).json() == first.json()
+        wrong = {**RUNNER_HEADERS, "X-VAHAN-RUNNER-ID": "another-runner"}
+        assert (await upload(client, job.id, content, wrong)).status_code == 403
         next_job = await services.jobs.create(Job(runnerId="test-runner", status=JobStatus.ASSIGNED, filters={}))
         await services.runners.set_job("test-runner", str(next_job.id))
-        duplicate = await job_status("test-socket", {"jobId": str(job.id), "status": "COMPLETED"})
-        assert duplicate == {"ok": True}
+        assert await job_status("test-socket", {"jobId": str(job.id), "status": "COMPLETED"}) == {"ok": True}
         assert (await services.runners.get("test-runner")).current_job_id == str(next_job.id)
+    async with engine.connect() as connection:
+        assert await connection.scalar(select(func.count()).select_from(db.report_update_history)) == 1
 
 
-async def test_storage_failure_returns_useful_error_with_cors(monkeypatch) -> None:
-    job = await services.jobs.create(Job(
-        runnerId="test-runner", status=JobStatus.WAITING_RESULT, filters={},
-    ))
-
-    def cannot_create(*_args, **_kwargs):
-        raise PermissionError("disk permission denied")
-
-    monkeypatch.setattr(excel_api, "report_session_dir", cannot_create)
+async def test_upload_limit_and_naive_timestamp_reject_before_commit(monkeypatch):
+    job = await pending_job()
+    content = workbook_bytes()
     async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
-        response = await client.post(
-            f"/api/jobs/{job.id}/upload-excel",
-            headers={**RUNNER_HEADERS, "Origin": "http://127.0.0.1:5173"},
-            files={"file": ("report.xlsx", b"test", "application/octet-stream")},
-        )
-    assert response.status_code == 500
-    assert "storage and permissions" in response.json()["detail"]
-    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5173"
-    assert (await services.jobs.get(job.id)).excel_file_name is None
+        naive = await upload(client, job.id, content, observedAt="2025-03-02T08:00:00")
+        assert naive.status_code == 422
+        monkeypatch.setattr(excel_api, "settings", replace(settings, max_excel_upload_bytes=1))
+        assert (await upload(client, job.id, content)).status_code == 413
+    await assert_no_commit(job)
 
 
-async def test_cancellation_during_workbook_validation_leaves_no_report(tmp_path, monkeypatch) -> None:
-    job = await services.jobs.create(Job(
-        runnerId="test-runner", status=JobStatus.WAITING_RESULT, filters={},
-    ))
-    original_to_thread = asyncio.to_thread
-
+async def test_cancellation_during_workbook_validation_leaves_no_report(monkeypatch):
+    job = await pending_job()
+    original = file_store.asyncio.to_thread
     async def cancel_during_validation(function, *args):
-        await original_to_thread(function, *args)
-        await services.jobs.transition_status(job.id, JobStatus.CANCELLED)
-
-    monkeypatch.setattr(excel_api.asyncio, "to_thread", cancel_during_validation)
-    buffer = BytesIO()
-    with ZipFile(buffer, "w") as workbook:
-        workbook.writestr("xl/workbook.xml", "<workbook/>")
+        result = await original(function, *args)
+        if function is file_store.extract_file:
+            await services.jobs.transition_status(job.id, JobStatus.CANCELLED)
+        return result
+    monkeypatch.setattr(file_store.asyncio, "to_thread", cancel_during_validation)
     async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
-        response = await client.post(
-            f"/api/jobs/{job.id}/upload-excel", headers=RUNNER_HEADERS,
-            files={"file": ("report.xlsx", buffer.getvalue(), "application/octet-stream")},
-        )
-    assert response.status_code == 409
-    assert not list(tmp_path.rglob("*.xlsx"))
-    assert not list(tmp_path.rglob("*.tmp"))
+        assert (await upload(client, job.id, workbook_bytes())).status_code == 409
+    await assert_no_commit(job)

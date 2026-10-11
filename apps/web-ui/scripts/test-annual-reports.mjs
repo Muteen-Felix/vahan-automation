@@ -77,8 +77,8 @@ try {
   });
   await page.goto(process.env.ANNUAL_UI_URL || 'http://127.0.0.1:5174/#reports');
   await page.getByLabel('Year',{exact:true}).waitFor();
-  assert.equal(await page.getByLabel('Year',{exact:true}).inputValue(),String(new Date().getFullYear()),'reports default to the current year even when crawl settings use a historical year');
   await page.getByRole('rowheader', {name:'OLA ELECTRIC TECHNOLOGIES PVT LTD', exact:true}).waitFor();
+  assert.equal(await page.getByLabel('Year',{exact:true}).inputValue(),String(new Date().getFullYear()),'reports default to the current year even when crawl settings use a historical year');
   assert.deepEqual(await page.getByLabel('Report filters',{exact:true}).locator('option').allTextContents(),
     ['Two Wheeler · Electric','Two Wheeler · Petrol']);
   assert.ok(await page.getByRole('heading',{name:'Exported Reports',exact:true}).isVisible());
@@ -93,11 +93,11 @@ try {
     manufacturerRows:1,newRows:0,newMonthValues:1,alreadySavedMonthValues:10,conflicts:0};
   reportSocket.send('42/ui,'+JSON.stringify(['reports:updated',lastSaved]));
   await page.waitForFunction(()=>document.querySelector('.annual-table tbody tr')?.querySelectorAll('td')[14]?.textContent==='7',{},{timeout:2_000});
-  await page.getByRole('status').filter({hasText:'Saved to main table'}).waitFor();
+  await page.getByRole('status').filter({hasText:'Report saved'}).waitFor();
   assert.match(await page.locator('.annual-save-confirmation').innerText(),/1 new month values/);
   lastSaved={...lastSaved,status:'unchanged',newMonthValues:0,alreadySavedMonthValues:11,savedAt:'2026-10-02T09:12:15Z'};
   reportSocket.send('42/ui,'+JSON.stringify(['reports:updated',lastSaved]));
-  await page.getByRole('status').filter({hasText:'Already saved in main table'}).waitFor({timeout:2_000});
+  await page.getByRole('status').filter({hasText:'Report already saved'}).waitFor({timeout:2_000});
   assert.equal(await page.locator('.annual-table tbody tr').count(),100,'repeat filter does not duplicate rows');
   // A slow table read must finish even while ten workers keep committing data.
   // The next read must then include changes received during that slow read.

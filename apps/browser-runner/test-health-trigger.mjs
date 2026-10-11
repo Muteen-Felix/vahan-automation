@@ -6,7 +6,7 @@ const source=readFileSync(new URL('./runner.mjs',import.meta.url),'utf8');
 const events=new Map();
 const calls=[];
 const context={socket:{connected:true,on:(name,handler)=>events.set(name,handler)},
-  active:null,optionsBusy:false,stopping:false,launch:async()=>calls.push('launch'),
+  consumeQueue:()=>{},active:null,optionsBusy:false,stopping:false,launch:async()=>calls.push('launch'),
   ack:async name=>{calls.push(name);return {};},saveState:async()=>calls.push('save'),
   http:async path=>{throw new Error(`Unexpected health schedule request: ${path}`);},console,
   healthCheck:async request=>{assert.equal(context.optionsBusy,true);calls.push(request);return {validation:{allowed:true}};},

@@ -1359,7 +1359,7 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .schedule-progress-numbers small { font-size:11px; }
 .schedule-progress-speed strong { font-size:18px; }
 .schedule-progress-speed span { font-size:9px; }
-.schedule-retry-slot { grid-area:retry; }
+.schedule-retry-slot { grid-area:retry; height:38px; }
 .schedule-retry-note { min-height:0; padding:6px 8px; font-size:10px!important; line-height:13px!important; }
 .schedule-retry-slot .batch-retry-status { padding:4px 8px; }
 .schedule-retry-slot .batch-retry-status p { margin:2px 0; }
@@ -1470,4 +1470,10 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
   .schedule-form-dialog .automatic-run-form { grid-template-columns:minmax(0,1fr); gap:12px; padding-top:14px; }
   .schedule-form-dialog .automatic-run-form .schedule-profile-label { grid-column:auto; }
   .schedule-form-dialog .automatic-run-form-footer { flex-wrap:wrap; }
+}
+
+.run-diagnostics-dialog pre {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  max-width:100%;
 }

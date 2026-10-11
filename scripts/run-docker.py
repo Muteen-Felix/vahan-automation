@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from worker_capacity import assess_worker_capacity, print_assessment
+from deployment_guard import check_release
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +23,10 @@ def run(command: list[str]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check-release", action="store_true",
+        help="read-only check that the current stack can be updated without interrupting work",
+    )
     parser.add_argument(
         "--config-only",
         action="store_true",
@@ -64,6 +69,11 @@ def main() -> int:
         print_assessment(assess_worker_capacity())
         return 0
 
+    evidence = check_release()
+    if args.check_release:
+        print(f"Deployment safety check passed: {evidence}")
+        return 0
+
     if not args.no_build:
         run([*COMPOSE, "build"])
     if worker_count is None:
@@ -78,8 +88,10 @@ def main() -> int:
             return 2
     else:
         print(f"Using the manually configured worker count: {worker_count}.")
-    # Remove the retired controller when upgrading an existing deployment.
-    run([*COMPOSE, "up", "-d", "--no-build", "--remove-orphans", "--scale",
+    # Work may have started while the images were building.
+    check_release()
+    # Remove the retired controller only after the safety check passes.
+    run([*COMPOSE, "up", "-d", "--wait", "--wait-timeout", "180", "--no-build", "--remove-orphans", "--scale",
          f"runner={worker_count}", "postgres", "api", "web", "runner"])
     run([*COMPOSE, "ps"])
     return 0
@@ -90,3 +102,6 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except subprocess.CalledProcessError as error:
         raise SystemExit(error.returncode) from error
+    except RuntimeError as error:
+        print(str(error), file=sys.stderr)
+        raise SystemExit(2) from error

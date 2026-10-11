@@ -12,21 +12,6 @@ export interface Runner {
   lastSeenAt: string;
 }
 
-export interface UiHealthSchedule {
-  intervalDays: number;
-  updatedAt: string;
-  nextCheckAt: string;
-}
-
-export interface UiHealthCheckNowResponse {
-  ok: boolean;
-  requestId: string;
-  runnerId: string;
-  runnerName: string;
-  requestedAt: string;
-  status: "REQUESTED";
-}
-
 export interface PendingUiHealthCheck {
   requestId: string;
   requestedAt: string;

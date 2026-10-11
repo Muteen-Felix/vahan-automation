@@ -10,6 +10,7 @@ import {
 } from "../services/api-client";
 import { hydratePersistentState, resetPersistentState } from '../services/persistent-state';
 import {observeSessionActivity} from '../services/session-activity';
+import {operatorMessage} from '../operator-language';
 
 type GateState = "checking" | "setup" | "login" | "unavailable" | "authenticated";
 
@@ -33,7 +34,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       clearAccessToken();
       setPassword("");
       setGate("login");
-      setError("Your session is no longer valid. Please sign in again.");
+      setError("Your sign-in has ended. Please sign in again.");
     };
     const signOut = () => {
       generation.current++;
@@ -118,7 +119,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (gate === "authenticated") return children;
 
   if (gate === "checking") {
-    return <main className="auth-shell"><p>Checking your session…</p></main>;
+    return <main className="auth-shell"><p>Checking your sign-in…</p></main>;
   }
 
   return (
@@ -126,24 +127,24 @@ export function AuthGate({ children }: { children: ReactNode }) {
       <section className="auth-card">
         {gate === "setup" ? (
           <>
-            <p className="eyebrow dark">DASHBOARD SECURITY</p>
-            <h1>Sign-in is not configured</h1>
+            <p className="eyebrow dark">ACCOUNT SETUP</p>
+            <h1>Sign-in is not ready yet</h1>
             <p className="auth-description">
-              Set a username, a password of at least 12 characters, and a random token secret of at least 32 characters in the API terminal, then restart the backend.
+              Ask the person managing this system to set up your sign-in account.
             </p>
-            <pre className="auth-setup-code">{`export VAHAN_UI_AUTH_USERNAME="admin"
+            <details><summary>Setup instructions for support</summary><p>Set the account and signing secret, then restart the system.</p><pre className="auth-setup-code">{`export VAHAN_UI_AUTH_USERNAME="admin"
 export VAHAN_UI_AUTH_PASSWORD="password-at-least-12-characters"
 export VAHAN_UI_AUTH_TOKEN_SECRET="$(python -c 'import secrets; print(secrets.token_hex(32))')"
-python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</pre>
+python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</pre></details>
             <p className="auth-footnote">
-              Keep the password and token secret on the server. Sessions end after 12 hours or 60 minutes without activity.
+              For account security, you may need to sign in again after 12 hours or 60 minutes without activity.
             </p>
           </>
         ) : gate === "unavailable" ? (
           <>
-            <p className="eyebrow dark">API CONNECTION</p>
+            <p className="eyebrow dark">SYSTEM CONNECTION</p>
             <h1>Could not connect</h1>
-            <p className="auth-description">{error || "Could not check the sign-in configuration."}</p>
+            <p className="auth-description">{operatorMessage(error) || "Could not check your sign-in. Check the connection and try again."}</p>
             <button className="primary-button" type="button" onClick={() => window.location.reload()}>
               Try again
             </button>
@@ -152,7 +153,7 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
           <>
             <p className="eyebrow dark">ACCOUNT SIGN-IN</p>
             <h1>Welcome back</h1>
-            <p className="auth-description">Sign in to open the VAHAN RPA dashboard.</p>
+            <p className="auth-description">Sign in to collect and view VAHAN reports.</p>
             <form className="auth-form" onSubmit={handleLogin}>
               <label>
                 Username
@@ -176,12 +177,12 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
                   required
                 />
               </label>
-              {error && <p className="auth-error" role="alert">{error}</p>}
+              {error && <p className="auth-error" role="alert">{operatorMessage(error)}</p>}
               <button className="primary-button" type="submit" disabled={submitting}>
                 {submitting ? "Signing in…" : "Sign in"}
               </button>
             </form>
-            <p className="auth-footnote">Your sign-in stays active until you log out, your account is disabled or the server signing secret changes.</p>
+            <p className="auth-footnote">You may be asked to sign in again after a period of inactivity or an account security change.</p>
           </>
         )}
       </section>

@@ -29,6 +29,8 @@ class RetryCheckpoints(unittest.IsolatedAsyncioTestCase):
             await c.execute(insert(db.users).values(username='queue-test',password_hash='fixture',role='admin',active=True,profile={},created_at=now()))
         for number in range(1,4):
             await services.runners.register(runner_id=f'playwright-{number}',name=f'Worker {number}',socket_id=f'fixture-{number}')
+        from app.worker_pool import apply_pool
+        await apply_pool(3)
         self.repo=BatchQueueRepository();self.owner='queue-test';self.assignments=[]
     async def asyncTearDown(self):await engine.dispose()
     async def start(self,count):

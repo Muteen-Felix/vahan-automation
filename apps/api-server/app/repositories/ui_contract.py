@@ -20,8 +20,12 @@ async def current(connection=None):
     version=await connection.scalar(select(db.ui_contract_versions.c.controls).where(db.ui_contract_versions.c.id==state.get('versionId','')))
     # Data hashes are the latest observation; version rows remain immutable.
     controls=[{**item,'optionsHash':state.get('optionHashes',{}).get(item['field'],item.get('optionsHash'))} for item in (version or SEEDS)]
+    connected_ids=set(await connection.scalars(select(db.runners.c.id).where(db.runners.c.connected.is_(True))))
+    active_errors={key:value for key,value in state.get('runnerErrors',{}).items() if key in connected_ids}
+    blocked=bool(active_errors) if state.get('runnerErrors') else state.get('blocked',False)
     return {**state,'versionId':state.get('versionId'),'revision':state.get('revision',0),
-        'blocked':state.get('blocked',False),'controls':controls,'lastError':state.get('lastError')}
+        'blocked':blocked,'controls':controls,
+        'lastError':next(iter(active_errors.values()))['reports'][0]['title'] if active_errors else state.get('lastError') if blocked else None}
 
 async def evaluate(observation,runner_id):
     """An incompatible observation is stored; it never replaces the active version."""
@@ -73,8 +77,7 @@ async def evaluate(observation,runner_id):
         if allowed:runner_errors.pop(runner_id,None)
         else:runner_errors[runner_id]=details
         connected_ids=set(await c.scalars(select(db.runners.c.id).where(db.runners.c.connected.is_(True))))
-        runner_errors={key:value for key,value in runner_errors.items() if key in connected_ids}
-        active_errors=runner_errors
+        active_errors={key:value for key,value in runner_errors.items() if key in connected_ids}
         blocked=bool(active_errors)
         details['blocked']=blocked
         value={'versionId':version_id,'revision':revision,'blocked':blocked,'runnerErrors':runner_errors,
@@ -123,7 +126,7 @@ async def reclassify_legacy_availability_preflights():
 async def require_gate(owner,runner_ids,gate_id=None,fresh=False,session_id=None,bound=False):
     await reclassify_legacy_availability_preflights()
     async with engine.connect() as c:
-        state=await c.scalar(select(db.app_settings.c.value).where(db.app_settings.c.key==ACTIVE_KEY)) or {}
+        state=await current(c)
         if state.get('blocked') or not state.get('versionId'):raise ValueError('UI_HEALTH_BLOCKED: UI contract requires a successful check. Open UI Health and copy the diagnostic error for dev.')
         if session_id:
             binding=await c.scalar(select(db.app_settings.c.value).where(db.app_settings.c.key=='ui_gate:'+str(session_id)))

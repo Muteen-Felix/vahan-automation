@@ -40,6 +40,9 @@ class RetrySessionsTest(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         # Connections cannot be shared across IsolatedAsyncioTestCase loops.
         await engine.dispose()
+        async with engine.begin() as connection:
+            await connection.run_sync(db.metadata.drop_all)
+            await connection.run_sync(db.metadata.create_all)
         self.user = 'retry-fixture'
         await services.users.bootstrap(self.user, 'fixture-password-only')
         self.session_id = uuid4()

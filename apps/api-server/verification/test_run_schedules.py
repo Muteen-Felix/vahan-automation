@@ -29,8 +29,20 @@ from app.repositories.filter_profiles import FilterProfileRepository
 from app.repositories.postgres import job_document, release_runner
 from app.repositories.run_schedules import RunScheduleRepository, next_daily_run, next_monthly_run, now
 from app.repositories import ui_contract
-from app.run_scheduler import automatic_preflight, scheduler_tick, stop_scheduled_run, still_current, checkpoint, queue, LEADER_LOCK
+from app.run_scheduler import automatic_preflight, scheduler_tick as control_tick, stop_scheduled_run, still_current, checkpoint, queue, LEADER_LOCK
 from app.services import services
+
+
+async def scheduler_tick():
+    await control_tick()
+    from starlette.requests import Request
+    from app.api.batch_queue import claim_queue_task
+    for runner in sorted(await services.runners.list(), key=lambda item: item.id):
+        if runner.current_job_id or runner.status.value != 'ONLINE':
+            continue
+        request = Request({'type':'http','headers':[(b'x-vahan-runner-id',runner.id.encode())]})
+        request.state.authenticated_runner = True
+        await claim_queue_task(request)
 
 
 async def finish(job_id, status):
@@ -63,7 +75,8 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.tasks = [{'name': f'Office {i}', 'filters': {'states': ['State'], 'rtos': [f'Office {i}'],
             'fromYear': str(now().year), 'toYear': str(now().year), 'autoApply': True}} for i in range(3)]
         self.planner = AsyncMock(return_value={'scenarios': self.tasks})
-        self.pool = AsyncMock(return_value={'enabled': False})
+        from app.worker_pool import apply_pool
+        self.pool = AsyncMock(wraps=apply_pool)
         self.events = AsyncMock()
         observed = [{**seed, 'tag': 'button' if seed['tag'] == 'action' else seed['tag'],
             'found': True, 'count': 1, 'inputType': 'text', 'optionsHash': 'fixture'} for seed in ui_contract.SEEDS]
@@ -170,32 +183,25 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(changed['operation']['error'])
         self.assertNotEqual(first['operation']['startedAt'], changed['operation']['startedAt'])
 
-    async def test_diagnostics_show_stuck_step_and_busy_unselected_worker(self):
+    async def test_diagnostics_show_stuck_step_and_dynamic_connected_workers(self):
         from app.run_diagnostics import attach_diagnostics
         from app.repositories.run_schedules import public_schedule
-        from types import SimpleNamespace
         saved = await self.start()
-        timestamp = (now() - timedelta(minutes=8)).isoformat()
-        saved = await self.repo.patch(saved['id'], {'status': 'PREPARING',
-            'operation': {'stage': 'Docker worker pool', 'startedAt': timestamp,
-                'heartbeatAt': now().isoformat(), 'progressAt': timestamp, 'error': 'Worker busy.'}})
-        async with engine.begin() as connection:
-            await connection.execute(update(db.app_settings).where(db.app_settings.c.key == 'docker-worker-pool')
-                .values(value={'desiredCount': 3, 'phase': 'ready'}))
-        health = AsyncMock(return_value={'connected': True, 'browserReady': True, 'optionsBusy': True})
-        with patch('app.run_diagnostics.settings', SimpleNamespace(runner_health_checks=True)), patch('app.run_diagnostics.read_health', health):
-            values = await attach_diagnostics([public_schedule(saved)])
+        saved = await self.repo.patch(saved['id'], {'status':'PREPARING', 'operation':{
+            'stage':'Worker pool','startedAt':(now()-timedelta(minutes=8)).isoformat(),
+            'heartbeatAt':now().isoformat(),'progressAt':now().isoformat(),'error':'Worker busy.'}})
+        await services.runners.mark_reconnecting('socket-3')
+        values = await attach_diagnostics([public_schedule(saved)])
         diagnostics = values[0]['diagnostics']
-        self.assertIn('over 5 minutes', diagnostics['warning'])
-        self.assertEqual(len(diagnostics['workers']), 3)
-        self.assertFalse(diagnostics['workers'][2]['selected'])
-        self.assertTrue(diagnostics['workers'][2]['optionsBusy'])
-        self.assertEqual(len([worker for worker in diagnostics['workers'] if worker['jobId']]), 2)
-        self.assertNotIn('definition', values[0])
-        # Endpoint failures are diagnostic information, never a reason to stop work.
-        with patch('app.run_diagnostics.settings', SimpleNamespace(runner_health_checks=True)), patch('app.run_diagnostics.read_health', AsyncMock(return_value={'reachable': False})):
-            values = await attach_diagnostics([public_schedule(saved)])
-        self.assertFalse(values[0]['diagnostics']['workers'][0]['reachable'])
+        self.assertIn('over 5 minutes',diagnostics['warning'])
+        self.assertEqual(len(diagnostics['workers']),3)
+        self.assertTrue(all(worker['selected'] for worker in diagnostics['workers']))
+        self.assertTrue(all('browserReady' not in worker and 'reachable' not in worker for worker in diagnostics['workers']))
+        reconnecting=next(worker for worker in diagnostics['workers'] if worker['id']=='playwright-3')
+        self.assertFalse(reconnecting['connected'])
+        self.assertEqual(reconnecting['status'],'RECONNECTING')
+        self.assertEqual(len([worker for worker in diagnostics['workers'] if worker['jobId']]),2)
+        self.assertNotIn('definition',values[0])
 
     async def test_unexpected_dispatch_error_is_visible_and_queue_is_preserved(self):
         saved = await self.start()
@@ -245,7 +251,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
             workerCount=8, year=now().year, repeat='monthly')
         self.assertEqual(monthly.repeat, 'monthly')
         for starts_at, workers in [(future.replace(tzinfo=None), 8), (now()-timedelta(minutes=1), 8),
-            (future, 0), (future, 11), (future, True)]:
+            (future, 0), (future, True), (future, 1.5)]:
             with self.assertRaises(ValidationError):
                 RunScheduleCreate(profileId=self.profile['id'], startsAt=starts_at, workerCount=workers, year=now().year)
         next_run = next_daily_run('2026-10-07T09:30:00+07:00', datetime.fromisoformat('2026-10-10T18:00:00+07:00'))
@@ -324,21 +330,19 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
             session_ids = list(await connection.scalars(select(db.report_sessions.c.id)))
         self.assertEqual(session_ids, [saved['sessionId']])
 
-    async def test_committed_assignment_is_redelivered_after_socket_failure(self):
-        saved = await self.schedule()
-        await scheduler_tick(); await scheduler_tick()
-        self.events.side_effect = RuntimeError('Fixture delivery failure')
-        await scheduler_tick()
-        self.assertEqual((await self.repo.get(saved['id']))['operation']['error'], 'Fixture delivery failure')
+    async def test_committed_assignment_is_recovered_after_lost_claim_response(self):
+        saved = await self.start()
         first = (await self.jobs())[0]
-        self.events.side_effect = None
-        await self.repo.patch(saved['id'], {'retryAfter': None})
+        from app.api.batch_queue import claim_queue_task
+        from starlette.requests import Request
+        request = Request({'type':'http','headers':[(b'x-vahan-runner-id',first.runner_id.encode())]})
+        request.state.authenticated_runner = True
+        recovered = await claim_queue_task(request)
+        self.assertTrue(recovered['recovered'])
+        self.assertEqual(recovered['jobId'],str(first.id))
         await scheduler_tick()
-        jobs = await self.jobs()
-        self.assertEqual(len(jobs), 2)
-        self.assertIn(first.id, [job.id for job in jobs])
-        delivered = [call.args[1]['jobId'] for call in self.events.await_args_list if call.args[0] == 'job:assigned']
-        self.assertGreaterEqual(delivered.count(str(first.id)), 2)
+        self.assertEqual(len(await self.jobs()),2)
+        self.assertEqual((await self.repo.get(saved['id']))['status'],'RUNNING')
 
     async def test_stop_cancels_active_jobs_and_retains_history(self):
         saved = await self.start()
@@ -553,7 +557,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         for job in await self.jobs(): await finish(str(job.id), JobStatus.NO_DATA)
         await scheduler_tick()
         with self.assertRaises(LookupError): await self.repo.resume(saved['id'], 'another-user', 2)
-        for count in [0,11,True,1.5]:
+        for count in [0,True,1.5]:
             with self.assertRaises(ValueError): await self.repo.resume(saved['id'], 'schedule-test', count)
             with self.assertRaises(ValidationError): RunScheduleResume(workerCount=count)
 
@@ -663,9 +667,15 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_automatic_preflight_records_all_selected_workers_without_ui(self):
         value = await self.schedule()
+        from app.worker_pool import apply_pool
+        await apply_pool(1)
+        leases=[]
         async def inspected(_event, payload, **kwargs):
             async with engine.connect() as connection:
                 runner_id=await connection.scalar(select(db.runners.c.id).where(db.runners.c.socket_id==kwargs['to']))
+            async with engine.connect() as connection:
+                leases.append(len(list(await connection.scalars(select(db.runner_planning_leases.c.runner_id)
+                    .where(db.runner_planning_leases.c.expires_at>now())))))
             current=await ui_contract.current()
             observed=[{**control,'found':True,'count':1,'matchedBy':'selector'} for control in current['controls']]
             validation=await ui_contract.evaluate({'status':'PASS','observedControls':observed},runner_id)
@@ -674,6 +684,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         with patch('app.api.ui_health.sio.call', side_effect=inspected) as calls:
             gate = await automatic_preflight(value, ['playwright-1', 'playwright-2'])
         self.assertEqual(calls.await_count, 2)
+        self.assertEqual(leases,[1,1],'Check every worker without exceeding the one-task limit')
         async with engine.connect() as connection:
             record = (await connection.execute(select(db.ui_preflight_checks).where(db.ui_preflight_checks.c.id == gate))).mappings().one()
         self.assertEqual(record['runner_ids'], ['playwright-1', 'playwright-2'])

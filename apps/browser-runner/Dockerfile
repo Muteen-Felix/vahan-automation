@@ -1,6 +1,7 @@
 FROM node:22-bookworm-slim
 COPY docker/certs/ /usr/local/share/ca-certificates/vahan/
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && /usr/sbin/update-ca-certificates
@@ -23,6 +24,9 @@ RUN npx playwright install --with-deps chromium \
     && if [ -d /home/node/.pki ]; then chown -R node:node /home/node/.pki; fi \
     && chown -R node:node /ms-playwright /app
 COPY --chown=node:node apps/browser-runner/ ./
+# The running worker uses node directly; npm/npx are build tools only.
+RUN rm -rf /usr/local/lib/node_modules/npm /opt/yarn* \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg
 USER node
 EXPOSE 3001
 CMD ["node", "runner.mjs"]

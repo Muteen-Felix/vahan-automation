@@ -5,6 +5,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from openpyxl import load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 from app.db import engine
 from app.db import schema as db
 from app.models.job import Job, JobStatus, UpdateKind
@@ -12,6 +13,8 @@ from app.repositories.postgres import now, save_job, release_runner
 
 MAX_EXPANDED_BYTES = 250 * 1024 * 1024
 MAX_EXTRACTED_ROWS = 500_000
+MAX_EXTRACTED_COLUMNS = 512
+MAX_EXTRACTED_CELLS = 5_000_000
 
 class ExtractionLimit(ValueError):
     pass
@@ -22,8 +25,16 @@ def cell_value(value):
     return value if isinstance(value, (str, int, float, bool)) or value is None else str(value)
 
 def extract_file(content, name):
+    try:
+        return _extract_file(content, name)
+    except (zipfile.BadZipFile, zipfile.LargeZipFile, RuntimeError, NotImplementedError, EOFError,
+            IndexError, csv.Error) as error:
+        raise ValueError('Invalid or unsupported report file.') from error
+
+
+def _extract_file(content, name):
     """Read every worksheet in memory before committing the main report."""
-    rows, info = [], {}
+    rows, info, cell_count = [], {}, 0
     if name.lower().endswith(".xlsx"):
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             if "xl/workbook.xml" not in archive.namelist():
@@ -32,21 +43,41 @@ def extract_file(content, name):
                 raise ExtractionLimit("Expanded workbook exceeds the parser limit.")
             if archive.testzip() is not None:
                 raise ValueError("The workbook is damaged.")
-        workbook = load_workbook(io.BytesIO(content), read_only=True, data_only=False)
+        try:
+            workbook = load_workbook(io.BytesIO(content), read_only=True, data_only=False)
+        except (SyntaxError, InvalidFileException, KeyError) as error:
+            raise ValueError('Invalid Excel workbook.') from error
         try:
             info["sheets"] = []
             for sheet in workbook:
+                # A tiny XML file can declare millions of empty cells. Check
+                # dimensions before openpyxl expands that rectangle in memory.
+                if (sheet.max_column or 0) > MAX_EXTRACTED_COLUMNS:
+                    raise ExtractionLimit('Workbook exceeds 512 columns.')
+                if (sheet.max_row or 0) > MAX_EXTRACTED_ROWS:
+                    raise ExtractionLimit('Workbook exceeds 500,000 extracted rows.')
+                declared_cells = (sheet.max_row or 0) * (sheet.max_column or 0)
+                if declared_cells > MAX_EXTRACTED_CELLS - cell_count:
+                    raise ExtractionLimit('Workbook exceeds 5,000,000 extracted cells.')
                 count = 0
                 for index, cells in enumerate(sheet.iter_rows(values_only=True), 1):
+                    cell_count += len(cells)
+                    if len(cells) > MAX_EXTRACTED_COLUMNS or cell_count > MAX_EXTRACTED_CELLS:
+                        raise ExtractionLimit('Workbook exceeds the parser cell limit.')
                     rows.append({"sheet": sheet.title, "row_number": index, "cells": [cell_value(v) for v in cells]})
                     count += 1
                     if len(rows) > MAX_EXTRACTED_ROWS:
                         raise ExtractionLimit("Workbook exceeds 500,000 extracted rows.")
                 info["sheets"].append({"name": sheet.title, "rows": count})
+        except (SyntaxError, InvalidFileException, KeyError) as error:
+            raise ValueError('Invalid Excel workbook.') from error
         finally:
             workbook.close()
     elif name.lower().endswith(".csv"):
         for index, values in enumerate(csv.reader(io.StringIO(content.decode("utf-8-sig"))), 1):
+            cell_count += len(values)
+            if len(values) > MAX_EXTRACTED_COLUMNS or cell_count > MAX_EXTRACTED_CELLS:
+                raise ExtractionLimit('CSV exceeds the parser cell limit.')
             rows.append({"sheet": "CSV", "row_number": index, "cells": values})
             if len(rows) > MAX_EXTRACTED_ROWS:
                 raise ExtractionLimit("CSV exceeds the parser row limit.")
@@ -155,12 +186,16 @@ class PostgresFileStore:
                 db.stored_files.c.kind == kind).order_by(db.stored_files.c.created_at.desc()).limit(1))).mappings().first()
         return dict(row) if row else None
 
-    async def list(self, owner=None, kind=None):
+    async def list(self, owner=None, kind=None, *, job_ids=None, names=None):
         query = select(*[c for c in db.stored_files.c if c.name != "content"]).order_by(db.stored_files.c.created_at.desc())
         if owner:
             query = query.where(db.stored_files.c.owner_username == owner)
         if kind:
             query = query.where(db.stored_files.c.kind == kind)
+        if job_ids is not None:
+            query = query.where(db.stored_files.c.job_id.in_(job_ids))
+        if names is not None:
+            query = query.where(db.stored_files.c.name.in_(names))
         async with engine.connect() as connection:
             return [dict(row) for row in (await connection.execute(query)).mappings()]
 

@@ -32,7 +32,7 @@ class PermissionTests(unittest.IsolatedAsyncioTestCase):
                                  ('POST', f'/api/run-schedules/{uuid4()}/resume'),
                                  ('DELETE', f'/api/run-schedules/{uuid4()}'),
                                  ('PATCH', '/api/users/admin'), ('GET', '/api/users'),
-                                 ('PUT', '/api/ui-health/schedule'), ('POST', '/api/jobs'),
+                                 ('POST', '/api/jobs'),
                                  ('GET', '/api/runners'), ('PUT', '/api/user-state/filter-cache')]:
                 response = client.request(method, path, headers={'Authorization': 'Bearer fixture'})
                 self.assertEqual(response.status_code, 403, (method, path, response.text))

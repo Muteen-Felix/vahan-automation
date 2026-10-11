@@ -10,7 +10,6 @@ from app.models.filter_profile import StrictModel
 from pydantic import Field
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
-from app.access import require_admin
 from fastapi.responses import Response
 
 from app.models.ui_health import (
@@ -20,7 +19,6 @@ from app.models.ui_health import (
     UiHealthLogResponse,
     UiHealthReportsResponse,
     UiHealthSchedule,
-    UiHealthScheduleUpdate,
 )
 from app.models.runner import Runner, RunnerStatus
 from app.realtime.server import sio
@@ -49,22 +47,6 @@ def _normalise_date(value: str | None) -> str | None:
 )
 async def get_ui_health_schedule() -> UiHealthSchedule:
     return await services.ui_health.get()
-
-
-@router.put(
-    "/schedule",
-    response_model=UiHealthSchedule,
-    response_model_by_alias=True,
-)
-async def update_ui_health_schedule(command: UiHealthScheduleUpdate, request: Request) -> UiHealthSchedule:
-    require_admin(request)
-    schedule = await services.ui_health.update(command.interval_days)
-    await sio.emit(
-        "ui-health:schedule-updated",
-        schedule.model_dump(mode="json", by_alias=True),
-        namespace="/runner",
-    )
-    return schedule
 
 
 def _select_runner(runners: list[Runner], requested_runner_id: str | None) -> Runner | None:
@@ -148,8 +130,6 @@ async def receive_ui_health_log(command: UiHealthLogRequest, request: Request) -
     if validation:
         state=await ui_contract.current()
         await sio.emit('ui-health:blocked' if state['blocked'] else 'ui-health:verified',state,namespace='/ui')
-    if command.health_check.get('trigger') == 'scheduled':
-        await services.ui_health.record_check()
     await sio.emit(
         "ui-health:log-received",
         {
@@ -209,50 +189,56 @@ async def contract_status():
 async def preflight(command:PreflightInput,request:Request):
     ids=list(dict.fromkeys(command.runner_ids))
     if len(ids)!=len(command.runner_ids):raise HTTPException(400,'Worker IDs must be unique.')
-    check_id=str(uuid4());semaphore=asyncio.Semaphore(2)
+    from app.worker_pool import pool_value
+    async with engine.connect() as connection:
+        concurrency = (await pool_value(connection))['desiredCount']
+    check_id=str(uuid4());semaphore=asyncio.Semaphore(min(2, max(1, concurrency)))
     waiting=False
 
     def deferred(runner_id,code,title):
         return {'allowed':False,'waiting':True,'runnerId':runner_id,'reports':[{'code':code,'title':title}]}
 
-    async def check(runner_id,reservations):
-        async with semaphore:
-            socket_id,_token=reservations[runner_id]
-            last=None
-            for attempt in range(2):
-                request_id=str(uuid4())
-                try:
-                    result=await sio.call('ui-health:preflight',{'requestId':request_id,'trigger':'preflight'},to=socket_id,namespace='/runner',timeout=55)
-                except Exception as error:
-                    return deferred(runner_id,'WORKER_NO_RESPONSE',
-                        f'{runner_id} did not answer the website check. The check will retry automatically.')
-                if isinstance(result,dict) and result.get('code') in {'RUNNER_BUSY','WORKER_OFFLINE'}:
-                    return deferred(runner_id,result.get('code'),'The worker is finishing another operation. The check will retry automatically.')
-                if not isinstance(result,dict) or not result.get('ok'):
-                    return deferred(runner_id,'PREFLIGHT_NO_ACK',
-                        f'{runner_id} did not return a completed SQL-backed website check. The check will retry automatically.')
-                try:
-                    async with engine.connect() as c:
-                        evidence=await c.scalar(select(db.ui_health_checks.c.payload).where(db.ui_health_checks.c.id==request_id))
-                except Exception:
-                    return deferred(runner_id,'PREFLIGHT_SQL_UNAVAILABLE',
-                        'The SQL evidence could not be read. The website check will retry automatically.')
-                last=((evidence or {}).get('healthCheck') or {}).get('contractValidation')
-                if not isinstance(last,dict) or last.get('runnerId')!=runner_id:
-                    return deferred(runner_id,'PREFLIGHT_NO_SQL_EVIDENCE',
-                        f'{runner_id} did not provide matching SQL-validated website evidence. The check will retry automatically.')
-                if last.get('allowed'):
-                    return {**last,'attempts':attempt+1}
-            return {**last,'attempts':2}
+    async def inspect(runner_id,reservations):
+        socket_id,_token=reservations[runner_id]
+        last=None
+        for attempt in range(2):
+            request_id=str(uuid4())
+            try:
+                result=await sio.call('ui-health:preflight',{'requestId':request_id,'trigger':'preflight'},to=socket_id,namespace='/runner',timeout=55)
+            except Exception as error:
+                return deferred(runner_id,'WORKER_NO_RESPONSE',
+                    f'{runner_id} did not answer the website check. The check will retry automatically.')
+            if isinstance(result,dict) and result.get('code') in {'RUNNER_BUSY','WORKER_OFFLINE'}:
+                return deferred(runner_id,result.get('code'),'The worker is finishing another operation. The check will retry automatically.')
+            if not isinstance(result,dict) or not result.get('ok'):
+                return deferred(runner_id,'PREFLIGHT_NO_ACK',
+                    f'{runner_id} did not return a completed SQL-backed website check. The check will retry automatically.')
+            try:
+                async with engine.connect() as c:
+                    evidence=await c.scalar(select(db.ui_health_checks.c.payload).where(db.ui_health_checks.c.id==request_id))
+            except Exception:
+                return deferred(runner_id,'PREFLIGHT_SQL_UNAVAILABLE',
+                    'The SQL evidence could not be read. The website check will retry automatically.')
+            last=((evidence or {}).get('healthCheck') or {}).get('contractValidation')
+            if not isinstance(last,dict) or last.get('runnerId')!=runner_id:
+                return deferred(runner_id,'PREFLIGHT_NO_SQL_EVIDENCE',
+                    f'{runner_id} did not provide matching SQL-validated website evidence. The check will retry automatically.')
+            if last.get('allowed'):
+                return {**last,'attempts':attempt+1}
+        return {**last,'attempts':2}
 
-    try:
-        async with reserve_preflight_runners(ids,request.state.authenticated_user) as reservations:
-            reports=await asyncio.gather(*(check(runner,reservations) for runner in ids))
-    except PreflightUnavailable as error:
-        waiting=True
-        reports=[deferred(runner,error.code,str(error)) if runner==error.runner_id else
-            deferred(runner,'PREFLIGHT_NOT_RUN','Waiting for all selected workers to be idle before checking the website.')
-            for runner in ids]
+    async def check(runner_id):
+        async with semaphore:
+            try:
+                # The connected pool can be larger than the task concurrency.
+                # Reserve only workers currently being checked, while requiring
+                # matching SQL evidence for the entire requested pool below.
+                async with reserve_preflight_runners([runner_id],request.state.authenticated_user) as reservations:
+                    return await inspect(runner_id,reservations)
+            except PreflightUnavailable as error:
+                return deferred(runner_id,error.code,str(error))
+
+    reports=await asyncio.gather(*(check(runner) for runner in ids))
     state=await ui_contract.current()
     for report in reports:
         if report.get('allowed') and report.get('versionId')!=state['versionId']:

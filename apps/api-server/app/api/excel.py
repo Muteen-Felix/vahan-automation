@@ -1,8 +1,9 @@
 from uuid import UUID
+from typing import Annotated
 from pathlib import Path
 import json
 import re
-from fastapi import APIRouter, HTTPException, UploadFile, Header, Request, Form
+from fastapi import APIRouter, HTTPException, UploadFile, Header, Request, Form, Query
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, AwareDatetime
 from sqlalchemy import select, update
@@ -10,7 +11,7 @@ from app.db import engine, schema as db
 from app.repositories.postgres import now, TERMINAL
 from app.access import owner_filter, require_owner
 from app.config import settings
-from app.models.job import JobStatus
+from app.models.job import Job, JobStatus
 from app.services import services
 
 router = APIRouter(prefix='/jobs', tags=['reports'])
@@ -45,31 +46,45 @@ class VerifyReportsRequest(BaseModel):
     session_ids: dict[str, UUID] = Field(default_factory=dict, alias='sessionIds')
 
 @router.get('/reports')
-async def list_exported_reports(request: Request):
-    jobs = {str(j.id): j for j in await services.jobs.list_all(owner_filter(request))}
+async def list_exported_reports(request: Request,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100):
+    query = select(*[c for c in db.stored_files.c if c.name != 'content'],
+        db.jobs.c.payload.label('job_payload')).join(db.jobs, db.jobs.c.id == db.stored_files.c.job_id).where(
+            db.stored_files.c.kind == 'excel', db.jobs.c.status == JobStatus.COMPLETED.value)
+    owner = owner_filter(request)
+    if owner is not None:
+        query = query.where(db.jobs.c.owner_username == owner, db.stored_files.c.owner_username == owner)
+    query = query.order_by(db.stored_files.c.created_at.desc(), db.stored_files.c.id.desc()).offset(offset).limit(limit)
+    async with engine.connect() as connection:
+        files = (await connection.execute(query)).mappings().all()
     reports = []
-    for file in await services.files.list(owner_filter(request), kind='excel'):
-        job = jobs.get(file['job_id'])
-        if not job or job.status != JobStatus.COMPLETED:
-            continue
+    for file in files:
+        job = Job.model_validate(file['job_payload'])
         reports.append(dict(jobId=str(job.id), scenarioName=job.scenario_name or file['name'],
             fileName=file['name'], fileSize=file['size'], createdAt=job.created_at.isoformat(),
             sessionFolder=str(job.session_id), downloadUrl=f'/api/jobs/{job.id}/excel', source=job.source.value))
     return reports
 
 @router.get('/reports/sessions')
-async def list_exported_report_sessions(request: Request, deleted: bool = False):
+async def list_exported_report_sessions(request: Request, deleted: bool = False,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=20)] = 5):
     query = select(db.report_sessions).where(
         db.report_sessions.c.deleted_at.is_not(None) if deleted else db.report_sessions.c.deleted_at.is_(None))
     owner = owner_filter(request)
     if owner is not None:
         query = query.where(db.report_sessions.c.owner_username == owner)
+    query = query.where(select(db.jobs.c.id).where(
+        db.jobs.c.session_id == db.report_sessions.c.id).exists()).order_by(
+            db.report_sessions.c.created_at.desc(), db.report_sessions.c.id.desc()).offset(offset).limit(limit)
     async with engine.connect() as connection:
         session_records = {row['id']: row for row in (await connection.execute(query)).mappings()}
-    files = {(f['job_id'], f['kind']): f for f in await services.files.list(owner_filter(request))}
     sessions = {}
-    attempts = sorted((job for job in await services.jobs.list_all(owner_filter(request))
-        if str(job.session_id) in session_records), key=lambda j: (j.created_at, str(j.id)))
+    attempts = sorted(await services.jobs.list_all(owner, session_ids=list(session_records)),
+        key=lambda j: (j.created_at, str(j.id)))
+    files = {(f['job_id'], f['kind']): f for f in await services.files.list(owner,
+        job_ids=[str(job.id) for job in attempts])}
     attempts_by_id = {job.id: job for job in attempts}
     legacy_roots = {}
     legacy_case_ids = {}
@@ -153,8 +168,9 @@ async def restore_report_session(session_id: UUID, request: Request):
 
 @router.post('/reports/verify')
 async def verify_exported_reports(command: VerifyReportsRequest, request: Request):
-    jobs = {str(j.id): j for j in await services.jobs.list_all(owner_filter(request))}
-    files = await services.files.list(owner_filter(request), 'excel')
+    owner = owner_filter(request)
+    files = await services.files.list(owner, 'excel', names=command.file_names)
+    jobs = {str(j.id): j for j in await services.jobs.list_all(owner, job_ids=[f['job_id'] for f in files])}
     result = {}
     for name in command.file_names:
         matches = [f for f in files if f['name'] == name and f['job_id'] in jobs
@@ -164,14 +180,13 @@ async def verify_exported_reports(command: VerifyReportsRequest, request: Reques
 
 @router.get('/reports/file/{file_name}')
 async def download_stored_report(file_name: str, request: Request):
-    matches = [f for f in await services.files.list(owner_filter(request), 'excel') if f['name'] == file_name]
+    matches = await services.files.list(owner_filter(request), 'excel', names=[file_name])
     if not matches:
         raise HTTPException(404, 'Report not found.')
     if len(matches) > 1:
         raise HTTPException(409, 'Multiple reports share this name. Download using the job or file ID.')
     return attachment(await services.files.get(matches[0]['id']))
 
-@router.post('/{job_id}/upload-excel', deprecated=True)
 @router.post('/{job_id}/main-report')
 async def upload_excel(job_id: UUID, file: UploadFile, request: Request,
     runner_id: str | None = Header(default=None, alias='X-VAHAN-RUNNER-ID'),

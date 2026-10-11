@@ -19,10 +19,15 @@ from app.repositories.postgres import audit
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    if not settings.ui_auth_configured:
-        raise RuntimeError("VAHAN_UI_AUTH_TOKEN_SECRET must contain at least 32 characters.")
+    settings.validate_startup()
     async with engine.connect() as connection:
         await connection.execute(text("SELECT 1 FROM users LIMIT 1"))
+        if settings.environment == 'production':
+            elevated = await connection.scalar(text('SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls FROM pg_roles WHERE rolname=current_user'))
+            can_create = await connection.scalar(text("SELECT has_schema_privilege(current_user,'public','CREATE')"))
+            owns_objects = await connection.scalar(text("SELECT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relowner=(SELECT oid FROM pg_roles WHERE rolname=current_user))"))
+            if elevated or can_create or owns_objects:
+                raise RuntimeError('Production API must use the restricted runtime database role, separate from migrations.')
     await services.users.bootstrap(settings.ui_auth_username, settings.ui_auth_password)
     await recover_after_restart()
     from app.worker_pool import initialize_pool
@@ -45,6 +50,9 @@ fastapi_app = FastAPI(
     version="0.1.0",
     debug=settings.debug,
     lifespan=lifespan,
+    docs_url=None if settings.environment == 'production' else '/docs',
+    redoc_url=None if settings.environment == 'production' else '/redoc',
+    openapi_url=None if settings.environment == 'production' else '/openapi.json',
 )
 fastapi_app.add_middleware(
     CORSMiddleware,
@@ -60,9 +68,9 @@ def _runner_auth_is_allowed(request: Request) -> bool:
     path = request.url.path
     method = request.method.upper()
     allowed_path = (
-        (method == "GET" and path in {"/api/ui-health/schedule","/api/ui-health/contract"})
+        (method == "GET" and path in {"/api/ui-health/schedule", "/api/ui-health/contract"})
         or (method == "POST" and path == "/api/ui-health/logs")
-        or (method == "POST" and path.startswith("/api/jobs/") and (path.endswith("/upload-excel") or path.endswith("/main-report")))
+        or (method == "POST" and path.startswith("/api/jobs/") and path.endswith("/main-report"))
         or (method == "POST" and path.startswith("/api/jobs/") and path.endswith("/report-result"))
         or (method == "POST" and path.startswith("/api/jobs/") and path.endswith("/artifacts"))
         or (method in {"GET", "PUT"} and path.startswith("/api/runner-state/"))
@@ -118,6 +126,9 @@ async def root() -> dict[str, str]:
 async def audit_mutations(request: Request, call_next):
     started = time.monotonic()
     response = await call_next(request)
+    if request.url.path.startswith('/api/'):
+        response.headers.setdefault('Cache-Control', 'no-store')
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
     if request.url.path.startswith('/api/') and request.method in {'POST', 'PUT', 'PATCH', 'DELETE'}:
         if request.url.path not in {'/api/runner-logs'} and not request.url.path.startswith('/api/runner-state/'):
             try:

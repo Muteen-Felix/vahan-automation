@@ -9,7 +9,6 @@ from app.models.ui_health import (
     UiHealthReportFile,
     UiHealthReportsResponse,
     UiHealthSchedule,
-    UiHealthScheduleUpdate,
 )
 
 __all__ = [
@@ -18,10 +17,9 @@ __all__ = [
     "JobStatus",
     "Runner",
     "RunnerStatus",
-    "UiHealthSchedule",
-    "UiHealthScheduleUpdate",
     "UiHealthCheckNowRequest",
     "UiHealthCheckNowResponse",
+    "UiHealthSchedule",
     "UiHealthDaySummary",
     "UiHealthLogRequest",
     "UiHealthLogResponse",

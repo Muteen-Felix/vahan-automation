@@ -23,6 +23,11 @@ from app.services import services
 class RunControlsTest(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         await engine.dispose()
+        async with engine.begin() as connection:
+            await connection.run_sync(db.metadata.drop_all)
+            await connection.run_sync(db.metadata.create_all)
+        from app.worker_pool import apply_pool
+        await apply_pool(10)
         self.owner = 'controls-' + str(uuid4())
         await services.users.bootstrap(self.owner, 'fixture-only-password')
         self.runners = [self.owner + '-' + str(index) for index in range(10)]

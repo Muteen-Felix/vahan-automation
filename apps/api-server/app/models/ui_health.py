@@ -7,47 +7,26 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 DEFAULT_UI_HEALTH_INTERVAL_DAYS = 3
-MIN_UI_HEALTH_INTERVAL_DAYS = 1
-MAX_UI_HEALTH_INTERVAL_DAYS = 365
 
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class UiHealthScheduleUpdate(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    interval_days: int = Field(
-        alias="intervalDays",
-        ge=MIN_UI_HEALTH_INTERVAL_DAYS,
-        le=MAX_UI_HEALTH_INTERVAL_DAYS,
-    )
-
-
 class UiHealthSchedule(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    interval_days: int = Field(
-        default=DEFAULT_UI_HEALTH_INTERVAL_DAYS,
-        alias="intervalDays",
-        ge=MIN_UI_HEALTH_INTERVAL_DAYS,
-        le=MAX_UI_HEALTH_INTERVAL_DAYS,
-    )
+    interval_days: int = Field(default=DEFAULT_UI_HEALTH_INTERVAL_DAYS, alias="intervalDays", ge=1, le=365)
     updated_at: datetime = Field(default_factory=utc_now, alias="updatedAt")
     next_check_at: datetime = Field(alias="nextCheckAt")
 
     @classmethod
     def default(cls) -> "UiHealthSchedule":
-        return cls.for_interval(DEFAULT_UI_HEALTH_INTERVAL_DAYS)
-
-    @classmethod
-    def for_interval(cls, interval_days: int) -> "UiHealthSchedule":
         updated_at = utc_now()
         return cls(
-            intervalDays=interval_days,
+            intervalDays=DEFAULT_UI_HEALTH_INTERVAL_DAYS,
             updatedAt=updated_at,
-            nextCheckAt=updated_at + timedelta(days=interval_days),
+            nextCheckAt=updated_at + timedelta(days=DEFAULT_UI_HEALTH_INTERVAL_DAYS),
         )
 
 

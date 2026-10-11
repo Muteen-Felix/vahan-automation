@@ -64,7 +64,7 @@ async function drain() {
     if (current === generation) notify('');
   } catch (error) {
     if (current === generation) {
-      notify(`Your latest changes have not been saved yet: ${error instanceof Error ? error.message : 'API unavailable'}`);
+      notify('Your latest changes have not been saved yet. Keep this page open while the system tries again automatically.');
       retry = setTimeout(() => { retry = undefined; void flush(); }, 5_000);
     }
   } finally {

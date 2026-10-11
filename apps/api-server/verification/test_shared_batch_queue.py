@@ -39,18 +39,20 @@ async def main():
             await connection.execute(insert(db.runners).values(id=runner.id, socket_id=runner.socket_id,
                 connected=True, current_job_id=None, payload=runner_document(runner)))
     queue = BatchQueueRepository()
+    from app.worker_pool import apply_pool
+    await apply_pool(10)
     session = uuid4()
     tasks = [QueueTaskInput(name=f'Office {number}', filters={'states': ['State'],
         'rtos': [f'RTO {number}']}) for number in range(20)]
-    await queue.start(session, 'queue-test', tasks)
-    await queue.start(session, 'queue-test', tasks)  # Retry after a lost start response.
+    await queue.start(session, 'queue-test', tasks, 10)
+    await queue.start(session, 'queue-test', tasks, 10)  # Retry after a lost start response.
     first = await asyncio.gather(*(queue.claim(session, 'queue-test', f'queue-runner-{number}')
         for number in range(10)))
     assert all(item['type'] == 'assigned' for item in first)
     assert sorted(item['task']['position'] for item in first) == list(range(10))
     assert len({item['jobId'] for item in first}) == 10
     assert (await queue.claim(session, 'queue-test', 'queue-runner-10'))['type'] == 'waiting', \
-        'The backend must cap a session at ten concurrent tasks even with an eleventh runner.'
+        'The configured session/global limit must cap this run at ten concurrent tasks.'
     repeated = await queue.claim(session, 'queue-test', 'queue-runner-0')
     assert repeated['jobId'] == first[0]['jobId'] and repeated['recovered']
 
@@ -103,6 +105,8 @@ async def main():
     recovered = await queue.claim(orphan_session, 'queue-test', 'queue-runner-10')
     assert recovered['type'] == 'assigned' and recovered['task']['attempts'] == 2, \
         'Another worker must recover a finished job after its coordinator disappears.'
+    await finish(recovered['jobId'], JobStatus.COMPLETED)
+    await queue.settle(orphan_session, 'queue-test', recovered['task']['position'])
     await queue.set_status(orphan_session, 'queue-test', 'PAUSED')
     assert (await queue.claim(orphan_session, 'queue-test', 'queue-runner-2'))['type'] == 'paused'
     large_session = uuid4()
@@ -114,7 +118,7 @@ async def main():
                 socketId=f'load-socket-{number}')
             await connection.execute(insert(db.runners).values(id=runner.id, socket_id=runner.socket_id,
                 connected=True, current_job_id=None, payload=runner_document(runner)))
-    await queue.start(large_session, 'queue-test', large_tasks)
+    await queue.start(large_session, 'queue-test', large_tasks, 10)
     started = time.monotonic()
     claimed_positions = set()
     counts = [0] * 10

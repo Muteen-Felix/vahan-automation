@@ -15,6 +15,9 @@ const testFiles = [
   'scripts/test-navigation-ui.mjs',
   'scripts/test-run-schedules-ui.mjs',
   'scripts/test-update-history-ui.mjs',
+  'scripts/test-account-settings-ui.mjs',
+  'scripts/test-network-ui.mjs',
+  'scripts/test-permissions-ui.mjs',
 ];
 
 function runNode(args, env = process.env) {
@@ -60,6 +63,9 @@ try {
     HEALTH_UI_URL: `${baseUrl}/#settings-ui-health`,
     SCHEDULE_UI_URL: `${baseUrl}/#settings`,
     NAV_UI_URL: `${baseUrl}/`,
+    ACCOUNT_UI_URL: `${baseUrl}/`,
+    NETWORK_UI_URL: `${baseUrl}/`,
+    PERMISSIONS_UI_URL: `${baseUrl}/`,
   };
   for (const file of testFiles) await runNode([file], env);
   console.log('Web UI platform tests passed.');

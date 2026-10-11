@@ -7,6 +7,7 @@ import {StateSyncStatus} from './components/DataManagement';
 import {FilterProfiles} from './components/FilterProfiles';
 import {UiHealthContract} from './components/UiHealthContract';
 import type {ConnectionState, Runner} from './contracts';
+import {operatorMessage} from './operator-language';
 import {FILTER_PROFILE_STORAGE_KEY, type FilterProfile} from './filter-profiles';
 import {MATRIX_STORAGE_KEY, readMatrixPlan} from './matrix-plan';
 import {readRunSettings} from './run-settings';
@@ -177,7 +178,7 @@ export default function App() {
     finally {setSigningOut(false);}
   }
 
-  if (!role) return <main className="auth-shell"><p role={error ? 'alert' : 'status'}>{error || 'Loading permissions…'}</p></main>;
+  if (!role) return <main className="auth-shell"><p role={error ? 'alert' : 'status'}>{operatorMessage(error) || 'Checking your account access…'}</p></main>;
   const forbidden = activeSection === 'forbidden' || (!isAdmin && activeSection !== 'reports');
   return <div className="app-shell" data-view={activeSection}>
     <header className="site-header">
@@ -199,12 +200,12 @@ export default function App() {
     <div className="app-layout"><div className="app-main">
       <NetworkNotice network={network}/>
       <StateSyncStatus />
-      {error && <div className="global-error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></div>}
+      {error && <div className="global-error" role="alert">{operatorMessage(error)}<button type="button" aria-label="Dismiss message" onClick={() => setError('')}>×</button></div>}
       {isAdmin && healthBlock && activeSection !== 'settings' && <div className="ui-health-block" role="alert">
-        <strong>UI Health blocked — new crawl work cannot start.</strong>
-        <p>Review the website change alert in Settings and copy the diagnostic error for dev.</p>
-        <a href="#settings-ui-health">Open UI Health in Settings</a>
-        <button type="button" onClick={() => void navigator.clipboard.writeText(healthBlock).catch(() => setError('Could not copy the diagnostic error.'))}>Copy error</button>
+        <strong>The VAHAN website check needs attention. New reports cannot start yet.</strong>
+        <p>Open Website check in Settings. Copy the issue for support, then try again after it is fixed.</p>
+        <a href="#settings-ui-health">Open Website check in Settings</a>
+        <button type="button" onClick={() => void navigator.clipboard.writeText(healthBlock).catch(() => setError('Could not copy the issue. Allow clipboard access and try again.'))}>Copy for support</button>
       </div>}
       {forbidden ? <main className="page-content"><h2>Bạn không có quyền truy cập trang này.</h2><a href="#reports">Về Exported Reports</a></main> : activeSection === 'filters' ? <FilterProfiles profiles={profiles} runners={runners} knownPlan={knownPlan}
         busy={network.offline || scheduledRuns.schedules.some(schedule => Boolean(schedule.sessionId) && ['PREPARING', 'RUNNING', 'PAUSING', 'RESUMING'].includes(schedule.status))}

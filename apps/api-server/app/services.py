@@ -18,6 +18,7 @@ class Services:
 
 services = Services(
     jobs=PostgresJobRepository(), runners=PostgresRunnerRegistry(),
-    ui_health=PostgresScheduleRepository(), ui_health_logs=PostgresHealthLogStore(),
+    ui_health=PostgresScheduleRepository(),
+    ui_health_logs=PostgresHealthLogStore(),
     captcha_images=PostgresCaptchaStore(), files=PostgresFileStore(), users=PostgresUsers(),
 )

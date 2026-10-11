@@ -512,9 +512,14 @@ async function healthCheck(request = {}) {
     const contract=await http('/api/ui-health/contract');
     isolated=await browser.newContext({storageState:await context.storageState(),viewport:{width:1440,height:1000}});
     const healthPage=await isolated.newPage();
-    const response=await healthPage.goto(URL,{waitUntil:'domcontentloaded',timeout:30000});
+    // Preflight only needs the document response committed. Waiting for
+    // DOMContentLoaded can time out on slow VAHAN assets even when the report
+    // document is already available; a bounded control probe follows, then SQL
+    // evaluates the observed controls and blocks any incomplete or changed UI.
+    const response=await healthPage.goto(URL,{waitUntil:'commit',timeout:30000});
     const location=new globalThis.URL(healthPage.url());
     if(response?.status()===401||location.origin!==target.origin||location.pathname!==target.pathname)throw new Error('Health check did not reach the expected public report page.');
+    if(response && response.status()>=400)throw new Error(`Health check received HTTP ${response.status()} from VAHAN.`);
     // Allow asynchronous controls to settle, including uniquely renamed controls.
     // This reads option metadata only; Maker requests and report jobs start later.
     await healthPage.waitForFunction(controls=>controls.every(control=>{

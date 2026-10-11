@@ -2,6 +2,7 @@ import {useEffect,useState} from 'react';
 import {api} from '../services/api-client';
 import {uiSocket} from '../services/socket-client';
 import {websiteCheckAlerts,websiteCheckBlocked,websiteCheckReport,websiteTargetLabel} from '../ui-health-alerts';
+import {operatorMessage,websiteIssueMessage} from '../operator-language';
 
 function checkedTime(value: unknown) {
   const date = new Date(typeof value === 'string' ? value : '');
@@ -39,25 +40,25 @@ export function UiHealthContract({refreshToken=0,scrollIntoView=false}:{refreshT
   if (!blocked && !error) return null;
   return <section className="panel website-check-alerts settings-ui-health" id="settings-ui-health" aria-labelledby="website-check-alerts-title">
     <div className="website-alert-heading">
-      <div><h2 id="website-check-alerts-title">UI Health</h2><p>The check before starting a run found an issue that needs attention.</p></div>
-      <button type="button" className="secondary-button" disabled={!alerts.length} onClick={()=>void copy('all',websiteCheckReport(status!,alerts))}>{copied==='all'?'Copied':'Copy all errors'}</button>
+      <div><h2 id="website-check-alerts-title">Website check</h2><p>The VAHAN website must be ready before reports can be collected.</p></div>
+      <button type="button" className="secondary-button" disabled={!alerts.length} onClick={()=>void copy('all',websiteCheckReport(status!,alerts))}>{copied==='all'?'Copied':'Copy all issues'}</button>
     </div>
-    {error&&<p className="error-message" role="alert">{error}</p>}
+    {error&&<p className="error-message" role="alert">{operatorMessage(error)}</p>}
     {blocked&&status&&<>
       <div className="website-alert-status" data-blocked={blocked}>
-        <strong>Run blocked</strong>
+        <strong>Cannot start yet</strong>
         <span>{alerts.length} {alerts.length===1?'issue requires':'issues require'} attention</span>
       </div>
-      <p className="website-alert-notice" role="alert">The run could not start. Copy the error for dev, then retry the run after the issue is fixed.</p>
+      <p className="website-alert-notice" role="alert">The run could not start. Copy the issue for support, then try again after it is fixed.</p>
       <div className="website-alert-scroll">
         <table className="website-alert-table" role="table" aria-label="Website changes blocking a run">
-          <thead><tr role="row"><th scope="col" role="columnheader">Detected (UTC+7)</th><th scope="col" role="columnheader">Worker</th><th scope="col" role="columnheader">Website issue</th><th scope="col" role="columnheader">Result</th><th scope="col" role="columnheader">Report to dev</th></tr></thead>
+          <thead><tr role="row"><th scope="col" role="columnheader">Detected (Vietnam time)</th><th scope="col" role="columnheader">Report browsers</th><th scope="col" role="columnheader">Website issue</th><th scope="col" role="columnheader">Result</th><th scope="col" role="columnheader">Share with support</th></tr></thead>
           <tbody>{alerts.map(alert=><tr key={alert.id} role="row">
-            <td role="cell" data-label="Detected (UTC+7)">{checkedTime(alert.checkedAt)}</td>
-            <td role="cell" data-label="Worker">{alert.workers.length?alert.workers.join(', '):'—'}</td>
-            <td role="cell" data-label="Website issue"><strong>{websiteTargetLabel(alert.target)}</strong><p>{alert.title}</p><small>{alert.code}</small></td>
-            <td role="cell" data-label="Result"><span className="website-alert-blocked">Run blocked</span></td>
-            <td role="cell" data-label="Report to dev"><button type="button" className="secondary-button" onClick={()=>void copy(alert.id,websiteCheckReport(status,[alert]))}>{copied===alert.id?'Copied':'Copy for dev'}</button><details><summary>Technical details</summary><pre>{websiteCheckReport(status,[alert])}</pre></details></td>
+            <td role="cell" data-label="Detected (Vietnam time)">{checkedTime(alert.checkedAt)}</td>
+            <td role="cell" data-label="Report browsers">{alert.workers.length ? `${alert.workers.length} ${alert.workers.length===1?'browser':'browsers'}` : '—'}</td>
+            <td role="cell" data-label="Website issue"><strong>{websiteTargetLabel(alert.target)}</strong><p>{websiteIssueMessage(alert.code,alert.title)}</p></td>
+            <td role="cell" data-label="Result"><span className="website-alert-blocked">Cannot start yet</span></td>
+            <td role="cell" data-label="Share with support"><button type="button" className="secondary-button" onClick={()=>void copy(alert.id,websiteCheckReport(status,[alert]))}>{copied===alert.id?'Copied':'Copy for support'}</button><details><summary>Details for support</summary><pre>{websiteCheckReport(status,[alert])}</pre></details></td>
           </tr>)}</tbody>
         </table>
       </div>

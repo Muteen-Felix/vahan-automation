@@ -1,3 +1,4 @@
+import {operatorMessage} from '../operator-language';
 import {useEffect, useRef, useState, type FormEvent, type KeyboardEvent} from 'react';
 import {api, request} from '../services/api-client';
 import {UserManagement} from './DataManagement';
@@ -27,7 +28,7 @@ export function AccountSettings({signingOut, onSignOut}: {signingOut: boolean; o
     setBusy(true);
     try {
       await request('/api/auth/password', {method:'POST',body:JSON.stringify({currentPassword:current,newPassword:password})});
-      setCurrent('');setPassword('');setConfirm('');setNotice('Password changed. Other sessions have been signed out.');
+      setCurrent('');setPassword('');setConfirm('');setNotice('Password changed. You have been signed out on other devices.');
     } catch (reason) {setError(reason instanceof Error ? reason.message : 'Could not change password.');}
     finally {setBusy(false);}
   }
@@ -64,7 +65,7 @@ export function AccountSettings({signingOut, onSignOut}: {signingOut: boolean; o
               <label>Current password<input type="password" autoComplete="current-password" required maxLength={1024} value={current} onChange={event => setCurrent(event.target.value)} disabled={busy}/></label>
               <label>New password<input type="password" autoComplete="new-password" required minLength={12} maxLength={1024} value={password} onChange={event => setPassword(event.target.value)} disabled={busy}/></label>
               <label>Confirm new password<input type="password" autoComplete="new-password" required minLength={12} maxLength={1024} value={confirm} onChange={event => setConfirm(event.target.value)} disabled={busy}/></label>
-              {error && <p className="account-feedback account-feedback-error" role="alert">{error}</p>}
+              {error && <p className="account-feedback account-feedback-error" role="alert">{operatorMessage(error)}</p>}
               {notice && <p className="account-feedback" role="status">{notice}</p>}
               <button type="submit" className="primary-button" disabled={busy || !user}>{busy ? 'Saving…' : 'Update password'}</button>
             </form>

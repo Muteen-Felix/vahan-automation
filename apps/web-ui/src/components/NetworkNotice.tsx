@@ -36,6 +36,6 @@ export function NetworkNotice({network}: {network:ReturnType<typeof useNetworkSt
   const upstream=network.browserOnline&&network.reachable&&network.server?.online===false;
   return <div className="network-notice" role="alert"><span aria-hidden="true">⚠</span><div>
     <strong>{upstream?'Network unavailable · reports paused':!network.browserOnline?'Your browser is offline':'Connection to the system was lost'}</strong>
-    <p>{upstream?'Interrupted cases are saved in the queue. Work resumes automatically after the connection is stable.':'Trying to reconnect. Saved report progress is preserved; live status will return when the connection is restored.'}</p>
+    <p>{upstream?'Unfinished reports are kept in the waiting list. Collection continues automatically after the connection is stable.':'Trying to reconnect. Your saved progress is kept. Current progress will appear when the connection returns.'}</p>
   </div><span className="network-notice-status">Reconnecting…</span></div>;
 }

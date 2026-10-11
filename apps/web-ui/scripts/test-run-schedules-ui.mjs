@@ -33,7 +33,6 @@ try {
     else if(['/api/runners','/api/jobs','/api/maker-updates'].includes(path)) body=[];
     else if(path==='/api/worker-pool') body={enabled:true,desiredCount:8,runningCount:8,phase:'ready',workers:[]};
     else if(path==='/api/ui-health/status') body={revision:2,versionId:'fixture',blocked:false,latestPreflight:null};
-    else if(path==='/api/ui-health/schedule') body={intervalDays:3,updatedAt:new Date().toISOString(),nextCheckAt:new Date(Date.now()+3*86400000).toISOString()};
     else if(path==='/api/ui-health/reports') body={selectedDate:null,availableDates:[],reports:[],rows:[]};
     else if(path==='/api/annual-reports') {
       annualReads++;
@@ -96,8 +95,9 @@ try {
   });
   await page.goto(process.env.SCHEDULE_UI_URL || 'http://127.0.0.1:5186/#settings');
   await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
-  await page.getByLabel('Report / filter profile',{exact:true}).selectOption(profile.id);
-  await page.getByLabel('Active workers',{exact:true}).selectOption('8');
+  await page.getByRole('button',{name:'Show form',exact:true}).click();
+  await page.getByLabel('Saved filters',{exact:true}).selectOption(profile.id);
+  await page.getByLabel('Reports at a time',{exact:true}).fill('8');
   const future=new Date(Date.now()+86400_000);
   await page.getByLabel('Start date',{exact:true}).fill(future.toISOString().slice(0,10));
   await page.getByLabel('Start time',{exact:true}).fill('09:30');
@@ -118,7 +118,8 @@ try {
       '.run-schedule-list-heading','.run-schedule-card','.run-schedule-title','.run-schedule-details','.run-schedule-actions',
       '.run-schedule-card .schedule-status','.run-schedule-progress','.schedule-progress-header','.schedule-progress-count','.schedule-progress-speed'];
     return Object.fromEntries(selectors.map(selector=>{const rect=root.querySelector(selector).getBoundingClientRect();
-      return [selector,[rect.x+scrollX,rect.y+scrollY,rect.width,rect.height].map(Math.round)];}));
+      return [selector,rect.width===0 && rect.height===0 ? [0,0,0,0] :
+        [rect.x+scrollX,rect.y+scrollY,rect.width,rect.height].map(Math.round)];}));
   });
   await page.getByRole('button',{name:'Disable future runs',exact:true}).click();
   await page.getByRole('button',{name:'Enable schedule',exact:true}).waitFor();
@@ -127,19 +128,17 @@ try {
   assert.ok(desktop['.run-schedule-card'][3] < 240,'Desktop schedule card is compact');
   schedules[0]={...schedules[0],enabled:true,profileName:'Long report name '.repeat(50),status:'COMPLETED_WITH_ERRORS',
     total:999999,done:888888,failed:111111,message:'A long processing error '.repeat(100)};
-  await card.locator('.schedule-status').getByText('Completed with errors',{exact:true}).waitFor();
+  await card.locator('.schedule-status').getByText('Some reports unfinished',{exact:true}).waitFor();
   assert.deepEqual(await bounds(),desktop,'Long names and counters preserve desktop geometry');
   assert.equal((await card.innerText()).includes('processing error'),false);
   schedules[0]={...schedules[0],profileName:profile.name,enabled:true,status:'RUNNING',sessionId:'session-1',lastSessionId:'session-1',
     total:10,done:2,withData:1,noData:1,failed:0,lastRunAt:new Date(Date.now()-120_000).toISOString(),message:'Collected 2/10 cases.'};
   await card.locator('.schedule-status').getByText('Running',{exact:true}).waitFor();
   assert.deepEqual(await bounds(),desktop);
-  await page.getByRole('button',{name:'Hide form',exact:true}).click();
   await page.locator('.settings-page').screenshot({path:testArtifactPath('settings-compact-desktop.png')});
-  await page.getByRole('button',{name:'Show form',exact:true}).click();
   assert.equal(await page.getByRole('button',{name:'Delete schedule',exact:true}).isDisabled(),true);
-  assert.match(await card.locator('.schedule-progress-numbers').innerText(),/2\s*\/\s*10 cases/);
-  assert.match(await card.locator('.schedule-progress-speed').innerText(),/\d+\.\d\s*cases\/min/);
+  assert.match(await card.locator('.schedule-progress-numbers').innerText(),/2\s*\/\s*10 reports/);
+  assert.match(await card.locator('.schedule-progress-speed').innerText(),/\d+\.\d\s*reports\/min/);
   const diagnosticsPanel=page.locator('.run-diagnostics').first();
   schedules[0]={...schedules[0],status:'PREPARING',message:'A worker is still busy.',
     operation:{stage:'Docker worker pool',detail:'A worker is still busy.',startedAt:new Date(Date.now()-360_000).toISOString(),
@@ -147,58 +146,60 @@ try {
     diagnostics:{checkedAt:new Date().toISOString(),heartbeatAgeSeconds:2,stageAgeSeconds:360,
       warning:'Preparation has remained at this step for over 5 minutes.',workers:[{id:'playwright-8',selected:false,connected:true,
         browserReady:true,optionsBusy:true,heartbeatAgeSeconds:3,jobId:null,status:'IDLE',case:null,error:null,jobAgeSeconds:null}]}};
-  await diagnosticsPanel.getByText('Docker worker pool',{exact:true}).waitFor();
-  await diagnosticsPanel.getByText('A worker is still busy.',{exact:true}).waitFor();
+  await diagnosticsPanel.getByText('Preparing report browsers',{exact:true}).waitFor();
+  await diagnosticsPanel.locator(':scope > .run-diagnostics-detail').filter({hasText:'A report browser is still busy.'}).waitFor();
   await diagnosticsPanel.getByRole('alert').waitFor();
-  await diagnosticsPanel.getByRole('button',{name:'View details',exact:true}).click();
-  await diagnosticsPanel.getByText('Loading options / checking website',{exact:true}).waitFor();
+
   await page.context().grantPermissions(['clipboard-read','clipboard-write'],{origin:new URL(process.env.SCHEDULE_UI_URL||'http://127.0.0.1:5186/').origin});
-  await diagnosticsPanel.getByRole('button',{name:'Copy diagnostics',exact:true}).click();
+  await diagnosticsPanel.getByRole('button',{name:'Copy for support',exact:true}).click();
   await diagnosticsPanel.getByText('Copied',{exact:true}).waitFor();
   const copiedDiagnostics=JSON.parse(await page.evaluate(()=>navigator.clipboard.readText()));
   assert.equal(copiedDiagnostics.operation.stage,'Docker worker pool');
   assert.equal(copiedDiagnostics.diagnostics.workers[0].optionsBusy,true);
   assert.deepEqual(await bounds(),desktop,'Operational diagnostics leave the schedule controls in place');
-  await diagnosticsPanel.locator('summary').click();
-  await diagnosticsPanel.getByRole('button',{name:'Hide details',exact:true}).click();
+  await diagnosticsPanel.getByRole('button',{name:'View details',exact:true}).click();
+  const activityDialog=diagnosticsPanel.getByRole('dialog',{name:'Activity details'});
+  await activityDialog.getByText('Loading choices / checking website',{exact:true}).waitFor();
+  await activityDialog.getByRole('button',{name:'Close details',exact:true}).click();
   schedules[0]={...schedules[0],status:'RUNNING',message:'Collected 2/10 cases.',operation:null,diagnostics:undefined};
   await card.locator('.schedule-status').getByText('Running',{exact:true}).waitFor();
   const savedTasks=tasks.map(task=>({...task}));
   const retry={phase:'CHECKPOINT',checkpointStart:0,checkpointEnd:10,lastCheckpoint:0,finalPassStarted:false,failedRemaining:2,pendingRetries:2,complete:false};
   schedules[0]={...schedules[0],failed:2,retryProgress:retry};
-  await card.getByText('10-case error checkpoint',{exact:true}).waitFor();
+  await card.getByText('Checking unfinished reports in this group (10)',{exact:true}).waitFor();
   assert.deepEqual(await bounds(),desktop,'Retry phases do not move the schedule card controls');
+  schedules[0]={...schedules[0],retryProgress:{...retry,checkpointEnd:25}};
+  await card.getByText('Checking unfinished reports in this group (25)',{exact:true}).waitFor();
+  assert.deepEqual(await bounds(),desktop,'Larger report groups preserve the same layout');
   Object.assign(tasks[1],{status:'PENDING',attempts:2,failures:2,error:'Original report timeout'});
   Object.assign(tasks[2],{status:'PROCESSING',attempts:3,failures:2,error:'Original RTO options error'});
   schedules[0]={...schedules[0],retryProgress:{...retry,phase:'FINAL',finalPassStarted:true}};
-  await card.getByText('Final failed-case recovery',{exact:true}).waitFor();
-  await page.getByText('Failed cases (2)',{exact:true}).click();
+  await card.getByText('Final check of unfinished reports',{exact:true}).waitFor();
+  await page.getByText('Reports needing attention (2)',{exact:true}).click();
   await page.getByText('Original report timeout',{exact:true}).waitFor();
   await page.getByText('Original RTO options error',{exact:true}).waitFor();
   assert.equal(await page.locator('.schedule-failed-scroll tbody tr').count(),2);
   await page.context().grantPermissions(['clipboard-read','clipboard-write'],{origin:new URL(process.env.SCHEDULE_UI_URL||'http://127.0.0.1:5186/').origin});
-  await page.getByRole('button',{name:'Copy failed cases',exact:true}).click();
+  await page.getByRole('button',{name:'Copy issues for support',exact:true}).click();
   await page.getByRole('button',{name:'Copied',exact:true}).waitFor();
   const recovery=JSON.parse(await page.evaluate(()=>navigator.clipboard.readText()));
   assert.equal(recovery.sessionId,'session-1');assert.deepEqual(recovery.cases.map(item=>item.error),['Original report timeout','Original RTO options error']);
   assert.deepEqual(await bounds(),desktop,'Viewing failures leaves the card itself stable');
-  await page.getByText('Failed cases (2)',{exact:true}).click();
+  await page.getByText('Reports needing attention (2)',{exact:true}).click();
   tasks.forEach((task,index)=>Object.assign(task,savedTasks[index]));
   schedules[0]={...schedules[0],failed:0,retryProgress:null};
-  await card.getByText('Errors are checked every 10 cases, then all remaining failures receive a final recovery pass.',{exact:true}).waitFor();
+  await card.getByText('Unfinished reports are tried again after each group, with one final check at the end.',{exact:true}).waitFor();
   await page.setViewportSize({width:390,height:844});
   const mobile=await bounds();
-  assert.ok(mobile['.run-schedule-card'][3] < 340,'Mobile schedule card is compact');
+  assert.ok(mobile['.run-schedule-card'][3] < 360,'Mobile schedule card is compact');
   assert.ok(await card.locator('.run-schedule-details').evaluate(node=>[...node.children].every(child=>child.getBoundingClientRect().bottom<=node.getBoundingClientRect().bottom+1)),'Mobile metadata fits its row');
-  await page.getByRole('button',{name:'Hide form',exact:true}).click();
   await page.locator('.settings-page').screenshot({path:testArtifactPath('settings-compact-mobile.png')});
-  await page.getByRole('button',{name:'Show form',exact:true}).click();
   schedules[0]={...schedules[0],profileName:'Extremely long name '.repeat(50),status:'PREPARING',message:'A worker is still busy. Stop its job before changing containers.'};
   await card.locator('.schedule-status').getByText('Preparing',{exact:true}).waitFor();
   assert.deepEqual(await bounds(),mobile,'Mobile layout stays fixed during status and text changes');
-  await card.locator('.schedule-run-message').getByText('A worker is still busy. Stop its job before changing containers.',{exact:true}).waitFor();
+  await card.locator('.schedule-run-message').getByText('A report browser is still working. Wait for its current report to finish before changing the number of browsers.',{exact:true}).waitFor();
   schedules[0]={...schedules[0],status:'RESUMING',message:'Waiting for 7 connected, idle workers.'};
-  await card.locator('.schedule-run-message').getByText('Waiting for 7 connected, idle workers.',{exact:true}).waitFor();
+  await card.locator('.schedule-run-message').getByText('Waiting for 7 connected, available report browsers.',{exact:true}).waitFor();
   assert.deepEqual(await bounds(),mobile,'A preparation reason occupies the existing fixed feedback slot');
   schedules[0]={...schedules[0],profileName:profile.name,status:'RUNNING',message:'Scheduled report collection is running.'};
   await card.locator('.schedule-status').getByText('Running',{exact:true}).waitFor();
@@ -221,19 +222,19 @@ try {
   assert.equal(await page.getByRole('button',{name:'Delete schedule',exact:true}).isEnabled(),true);
   assert.equal(await card.locator('.schedule-progress-speed strong').innerText(),'—');
   const paused=await bounds();
-  await page.getByLabel(`Workers for ${profile.name}`,{exact:true}).selectOption('10');
+  await page.getByLabel(`Reports at a time for ${profile.name}`,{exact:true}).fill('10');
   await page.getByRole('button',{name:'Disable future runs',exact:true}).click();
-  assert.equal(await page.getByLabel(`Workers for ${profile.name}`,{exact:true}).inputValue(),'10','Toggle preserves the paused worker draft');
+  assert.equal(await page.getByLabel(`Reports at a time for ${profile.name}`,{exact:true}).inputValue(),'10','Toggle preserves the paused worker draft');
   await page.getByRole('button',{name:'Continue run',exact:true}).click();
-  await card.locator('.schedule-worker-setting select:disabled').waitFor();
+  await card.locator('.schedule-worker-setting input:disabled').waitFor();
   await card.locator('.schedule-status').getByText('Running',{exact:true}).waitFor();
   assert.equal(schedules[0].workerCount,10);assert.equal(schedules[0].done,5);
   assert.deepEqual(await bounds(),paused,'Continuation preserves fixed card geometry');
   await page.getByRole('button',{name:'Pause run',exact:true}).click();
   await page.getByRole('button',{name:'Continue run',exact:true}).waitFor();
-  await page.getByLabel(`Workers for ${profile.name}`,{exact:true}).selectOption('3');
+  await page.getByLabel(`Reports at a time for ${profile.name}`,{exact:true}).fill('3');
   await page.getByRole('button',{name:'Continue run',exact:true}).click();
-  await card.locator('.schedule-worker-setting select:disabled').waitFor();
+  await card.locator('.schedule-worker-setting input:disabled').waitFor();
   await card.locator('.schedule-status').getByText('Running',{exact:true}).waitFor();
   assert.deepEqual(resumedWorkers,[10,3]);assert.equal(schedules[0].sessionId,'session-1');assert.equal(schedules[0].done,6);
   assert.deepEqual(queueWrites,[],'Only backend schedule controls dispatch work');
@@ -251,7 +252,7 @@ try {
   await card.screenshot({path:testArtifactPath('vahan-paused-delete-desktop.png')});
   deleteFails=true;
   await page.getByRole('button',{name:'Delete schedule',exact:true}).click();
-  await page.getByRole('alert').filter({hasText:'Wait for active cases to finish saving'}).waitFor();
+  await page.getByRole('alert').filter({hasText:'Wait for active reports to finish saving'}).waitFor();
   assert.equal(await card.count(),1,'A rejected delete retains the card and paused session');
   assert.equal(schedules[0].sessionId,'session-1');
   deleteFails=false;

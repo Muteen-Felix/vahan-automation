@@ -36,11 +36,12 @@ async def attach_diagnostics(records):
             payload = runner.get('payload') or {}
             job = jobs.get(runner.get('current_job_id'))
             selected = bool(runner.get('connected') or job)
+            reconnecting = payload.get('status') == 'RECONNECTING'
             workers.append({'id': runner_id, 'selected': selected,
-                'connected': runner.get('connected', False), 'browserReady': runner.get('connected', False),
+                'connected': bool(runner.get('connected') and not reconnecting),
                 'heartbeatAgeSeconds': age(payload.get('lastSeenAt') or payload.get('last_seen_at')),
-                'reachable': runner.get('connected', False), 'jobId': job['id'] if job else None,
-                'status': job['status'] if job else 'IDLE',
+                'jobId': job['id'] if job else None,
+                'status': job['status'] if job else 'RECONNECTING' if reconnecting else 'IDLE',
                 'case': (job['payload'].get('scenarioName') or job['payload'].get('scenario_name')) if job else None,
                 'error': job['payload'].get('error') if job else None,
                 'jobAgeSeconds': age(job['updated_at'].isoformat()) if job else None})

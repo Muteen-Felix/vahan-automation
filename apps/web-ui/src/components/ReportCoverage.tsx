@@ -1,3 +1,4 @@
+import {operatorMessage} from '../operator-language';
 import {useEffect, useMemo} from 'react';
 import type {MatrixPlan} from '../matrix-plan';
 import {useLiveQuery} from '../hooks/use-live-query';
@@ -28,30 +29,30 @@ export function ReportCoverage({context, plan, refreshTrigger}: {
   const percent = shown?.total ? 100 * shown.covered / shown.total : 0;
   const complete = Boolean(shown?.matrixLoaded && shown.total > 0 && shown.missing === 0);
   const status = shown?.matrixLoaded ? complete ? 'Complete' : 'In progress' : 'Loading';
-  return <section className="report-coverage" aria-label="Main table data coverage">
+  return <section className="report-coverage" aria-label="Report collection progress">
     <div className="report-coverage-heading">
-      <div><h3>Data coverage · {context.year}</h3>
+      <div><h3>Reports collected · {context.year}</h3>
         <span className="coverage-status" data-complete={complete}>{status}</span></div>
       <div className="report-coverage-count"><strong>{shown?.matrixLoaded ? shown.covered.toLocaleString('en-GB') : '—'}</strong>
         <span>/ {shown?.matrixLoaded ? shown.total.toLocaleString('en-GB') : '—'}</span>
         {shown?.matrixLoaded && shown.missing > 0 && <small>{shown.missing.toLocaleString('en-GB')} remaining</small>}</div>
     </div>
-    <div className="coverage-progress-track" role="progressbar" aria-label="Main table data coverage"
+    <div className="coverage-progress-track" role="progressbar" aria-label="Report collection progress"
       aria-valuemin={0} aria-valuemax={100} aria-valuenow={Number(percent.toFixed(1))}
-      aria-valuetext={shown ? `${shown.covered} of ${shown.total} reports covered` : 'Loading coverage'}>
+      aria-valuetext={shown ? `${shown.covered} of ${shown.total} reports collected` : 'Loading progress'}>
       <span style={{width: `${percent}%`}} /></div>
     {shown?.matrixLoaded && <div className="report-coverage-details">
       <p><span>Results</span><strong>{shown.withData} with data · {shown.noData} no data</strong></p>
       {shown.firstMissing && <p><span>Next</span><strong>#{shown.firstMissing.index + 1} · {shown.firstMissing.state} · {shown.firstMissing.rto}</strong></p>}
     </div>}
     {shown?.matrixLoaded && shown.lastSaved && <p className="report-coverage-updated">
-      <span>Last data saved · GMT+7</span>
+      <span>Last data saved · Vietnam time</span>
       <time dateTime={shown.lastSaved.savedAt}>{formatSavedAt(shown.lastSaved.savedAt)}</time>
     </p>}
     <details className="report-coverage-more"><summary>Details</summary>
       {shown?.matrixLoaded && <p>Last saved <strong>{shown.lastSaved ? `#${shown.lastSaved.index + 1} · ${shown.lastSaved.state} · ${shown.lastSaved.rto}` : 'No reports yet'}</strong></p>}
     </details>
-    {shown?.blockedReason && <p className="report-coverage-note">{shown.blockedReason}</p>}
-    {error && <p className="annual-error" role="alert">{error}</p>}
+    {shown?.blockedReason && <p className="report-coverage-note">{operatorMessage(shown.blockedReason)}</p>}
+    {error && <p className="annual-error" role="alert">{operatorMessage(error)}</p>}
   </section>;
 }

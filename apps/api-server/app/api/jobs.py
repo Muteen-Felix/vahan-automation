@@ -172,5 +172,5 @@ async def cancel_job(job_id: UUID, request: Request) -> Job:
 
 
 @router.get("", response_model=list[Job], response_model_by_alias=True)
-async def list_jobs(request: Request):
-    return await services.jobs.list_all(owner_filter(request))
+async def list_jobs(request: Request, offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=1000)):
+    return await services.jobs.list_all(owner_filter(request), offset=offset, limit=limit)

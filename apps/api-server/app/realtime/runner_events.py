@@ -116,6 +116,8 @@ async def job_status(sid: str, payload: dict) -> dict:
         return {"ok": False, "error": "Neither report tables nor Excel have been saved; job cannot be completed."}
     if status == JobStatus.NO_DATA and job.excel_file_name:
         return {"ok": False, "error": "A report file already exists; job cannot be marked as no data."}
+    if status == JobStatus.NO_DATA and job.status != JobStatus.NO_DATA:
+        return {"ok": False, "error": "Save the confirmed empty result through report-result before marking the job as no data."}
     try:
         updated = await services.jobs.transition_status(
             job_id,

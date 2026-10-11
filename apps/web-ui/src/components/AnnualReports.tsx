@@ -1,3 +1,4 @@
+import {operatorMessage} from '../operator-language';
 import { useEffect, useState } from 'react';
 import { api, request } from '../services/api-client';
 import { uiSocket } from '../services/socket-client';
@@ -112,13 +113,13 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
           aria-label="Refresh monthly data">↻ Refresh</button>
       </div>
     </div>
-    {error && <p className="annual-error" role="alert">{error}</p>}
+    {error && <p className="annual-error" role="alert">{operatorMessage(error)}</p>}
     {shownData?.lastSaved && <div className="annual-save-confirmation" role="status" aria-live="polite">
-      <strong>{shownData.lastSaved.status === 'no-data' ? 'No record found · Saved in SQL'
-        : shownData.lastSaved.status === 'unchanged' ? 'Already saved in main table'
-        : shownData.lastSaved.status === 'review' ? 'Saved in main table · Differences recorded'
-        : shownData.lastSaved.status === 'updated' ? 'Updated in main table'
-        : 'Saved to main table'}</strong>
+      <strong>{shownData.lastSaved.status === 'no-data' ? 'No records found · Result saved'
+        : shownData.lastSaved.status === 'unchanged' ? 'Report already saved'
+        : shownData.lastSaved.status === 'review' ? 'Report saved · Needs review'
+        : shownData.lastSaved.status === 'updated' ? 'Saved report updated'
+        : 'Report saved'}</strong>
       <span>{shownData.lastSaved.states.join(', ')} · {shownData.lastSaved.rtos.join(', ')} · {dateTime(shownData.lastSaved.savedAt)}</span>
       {shownData.lastSaved.status !== 'no-data' && <span>
         {shownData.lastSaved.newRows.toLocaleString()} new rows · {shownData.lastSaved.newMonthValues.toLocaleString()} new month values · {shownData.lastSaved.alreadySavedMonthValues.toLocaleString()} month values already saved
@@ -158,7 +159,7 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
             <div><strong>{shownData?.summary.offices.toLocaleString() ?? '—'}</strong><span>RTO offices</span></div></div>
           <p className="annual-summary-label">Months with data</p>
           <div className="annual-month-coverage">{MONTHS.map((month, i) => <span key={month} className={shownData?.coverage.includes(i + 1) ? 'available' : ''}>{month}</span>)}</div>
-          <p className="annual-summary-label">Last updated · GMT+7</p><time>{dateTime(shownData?.summary.updatedAt ?? null)}</time>
+          <p className="annual-summary-label">Last updated · Vietnam time</p><time>{dateTime(shownData?.summary.updatedAt ?? null)}</time>
         </section>
         {coveragePlan && <ReportCoverage context={{year, dataset: shownData?.datasetId || dataset, state: search.state, rto: search.rto}}
           plan={coveragePlan} refreshTrigger={(refreshTrigger ?? 0) + refresh} />}

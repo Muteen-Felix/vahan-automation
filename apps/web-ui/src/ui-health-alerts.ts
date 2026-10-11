@@ -84,6 +84,6 @@ export function websiteCheckReport(status: Evidence, alerts: WebsiteCheckAlert[]
 }
 
 export function websiteTargetLabel(target: string): string {
-  const labels: Record<string,string> = {makers:'Maker',states:'State',rtos:'RTO',apply:'Apply',categoryGroups:'Category group',subCategories:'Sub-category',classes:'Vehicle class',fuels:'Fuel',yAxis:'Y-Axis',xAxis:'X-Axis'};
+  const labels: Record<string,string> = {makers:'Manufacturer (Maker)',states:'State',rtos:'Registration office (RTO)',apply:'Show report',categoryGroups:'Category group',subCategories:'Sub-category',classes:'Vehicle class',fuels:'Fuel',yAxis:'Row grouping',xAxis:'Column grouping'};
   return labels[target] || target || 'Public Report page';
 }
