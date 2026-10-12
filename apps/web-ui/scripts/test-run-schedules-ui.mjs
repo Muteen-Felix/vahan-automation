@@ -97,7 +97,7 @@ try {
   await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
   await page.getByRole('button',{name:'Show form',exact:true}).click();
   await page.getByLabel('Saved filters',{exact:true}).selectOption(profile.id);
-  await page.getByLabel('Reports at a time',{exact:true}).fill('8');
+  assert.equal(await page.locator('#new-schedule-form input[type="number"]').count(),0,'The schedule form omits parallel task limit and report year');
   const future=new Date(Date.now()+86400_000);
   await page.getByLabel('Start date',{exact:true}).fill(future.toISOString().slice(0,10));
   await page.getByLabel('Start time',{exact:true}).fill('09:30');
@@ -106,7 +106,7 @@ try {
   await page.getByText(/Runs on day \d+ each month; shorter months use their last day\./).waitFor();
   await page.getByRole('button',{name:'Add schedule',exact:true}).click();
   await page.getByText(/Schedule saved for/).waitFor();
-  assert.equal(posted.workerCount,8);assert.equal(posted.year,2024);assert.equal(posted.repeat,'monthly');
+  assert.equal(posted.workerCount,20);assert.equal(posted.year,2024);assert.equal(posted.repeat,'monthly');
   assert.equal(posted.profileId,profile.id);assert.ok(posted.startsAt.endsWith('T09:30:00+07:00'));
   const card=page.locator('.run-schedule-card').first();
   const monthlyDay=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Ho_Chi_Minh',day:'numeric'}).format(new Date(posted.startsAt));

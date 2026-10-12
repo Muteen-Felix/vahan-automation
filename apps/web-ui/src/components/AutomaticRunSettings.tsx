@@ -35,8 +35,6 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
   const [profileId, setProfileId] = useState(selectedProfileId);
   const [date, setDate] = useState(initial.date);
   const [time, setTime] = useState(initial.time);
-  const [workers, setWorkers] = useState(workerCount);
-  const [reportYear, setReportYear] = useState(year);
   const [repeat, setRepeat] = useState<'once' | 'daily' | 'monthly'>('once');
   const [saving, setSaving] = useState(false);
   const [timeZoneSaving, setTimeZoneSaving] = useState(false);
@@ -53,7 +51,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const profile = profiles.find(item => item.id === profileId);
-  const selectedYear = profile?.definition.report?.year ?? reportYear;
+  const selectedYear = profile?.definition.report?.year ?? year;
 
   async function updateTimeZone(value: string) {
     if (!isRunTimeZone(value) || value === timeZone) return;
@@ -102,7 +100,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
     }
     setSaving(true); setError(''); setNotice('');
     try {
-      const saved = await api.createRunSchedule({profileId, year: selectedYear, workerCount: workers, startsAt, timeZone, repeat});
+      const saved = await api.createRunSchedule({profileId, year: selectedYear, workerCount, startsAt, timeZone, repeat});
       onUpsert(saved);
       const savedTimeZone = runTimeZone(saved.timeZone);
       setNotice(`Schedule saved for ${formatScheduledTime(saved.nextRunAt, savedTimeZone)} (${runTimeZoneLabel(savedTimeZone)}).`);
@@ -159,23 +157,18 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
             <label className="schedule-profile-label">Saved filters
               <select aria-label="Saved filters" value={profileId} onChange={event => setProfileId(event.target.value)} required disabled={saving || !profiles.length}>
                 {!profiles.length && <option value="">No saved filters</option>}
-                {profiles.map(item => <option key={item.id} value={item.id}>{item.name} · {item.definition.report?.year ?? reportYear}</option>)}
+                {profiles.map(item => <option key={item.id} value={item.id}>{item.name} · {item.definition.report?.year ?? year}</option>)}
               </select>
             </label>
-            <label title="Maximum number of reports collected at the same time.">Reports at a time<input aria-label="Reports at a time" type="number" min="1" step="1" value={workers}
-              onChange={event => setWorkers(Math.max(1, Math.floor(Number(event.target.value) || 1)))} disabled={saving} /></label>
             <label>Start date<input aria-label="Start date" type="date" value={date} onChange={event => setDate(event.target.value)} required disabled={saving} /></label>
             <label>Start time<input aria-label="Start time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={saving} /></label>
             <label>Repeat<select aria-label="Repeat" value={repeat} onChange={event => setRepeat(event.target.value as 'once' | 'daily' | 'monthly')} disabled={saving}>
               <option value="once">Once</option><option value="daily">Every day</option><option value="monthly">Every month</option>
             </select></label>
-            <label>Report year<input aria-label="Report year" type="number" min="1900" max={new Date().getFullYear()} value={selectedYear}
-              onChange={event => setReportYear(Number(event.target.value))} required disabled={saving || Boolean(profile?.definition.report)} /></label>
             <div className="automatic-run-form-footer"><span>{runTimeZoneLabel(timeZone)}</span>
               <button className="primary-button" type="submit" disabled={saving || loading || !profile}>{saving ? 'Saving…' : 'Add schedule'}</button>
             </div>
           </form>
-          <p className="schedule-help">Reports at a time is the maximum number collected together. More report browsers may be prepared to meet this number.</p>
           <div className="schedule-help-slot"><p className="schedule-help">{repeat === 'monthly'
             ? `Runs on day ${Number(date.slice(-2))} each month; shorter months use their last day.`
             : !profiles.length

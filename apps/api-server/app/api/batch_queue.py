@@ -9,6 +9,7 @@ from app.repositories.batch_queue import BatchQueueRepository
 from app.db import engine,schema as db
 from sqlalchemy import select
 from app.realtime.server import sio
+from app.worker_pool import DEFAULT_CONCURRENCY
 
 router = APIRouter(prefix='/batch-queue', tags=['batch-queue'])
 worker_router = APIRouter(prefix='/runner', tags=['runner-queue'])
@@ -25,7 +26,7 @@ class StartQueueInput(BaseModel):
     session_id: UUID = Field(alias='sessionId')
     tasks: list[QueueTaskInput] = Field(min_length=1, max_length=3000)
     preflight_id: UUID | None = Field(default=None,alias='preflightId')
-    max_workers: int = Field(default=1, alias='maxWorkers', ge=1, strict=True)
+    max_workers: int = Field(default=DEFAULT_CONCURRENCY, alias='maxWorkers', ge=1, strict=True)
 
 
 class ResumeQueueInput(BaseModel):

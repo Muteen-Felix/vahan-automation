@@ -45,7 +45,7 @@ def main() -> int:
     parser.add_argument(
         "--workers",
         default=os.environ.get("VAHAN_WORKER_REPLICAS", "auto"),
-        help="browser-worker instances to run, or 'auto' to assess this server (default: auto)",
+        help="browser-worker instances to run, or 'auto' for up to 20 based on server CPU/RAM (default: auto)",
     )
     args = parser.parse_args()
     worker_setting = str(args.workers).strip().lower()
@@ -59,14 +59,14 @@ def main() -> int:
         if worker_count < 1:
             parser.error("--workers must be 'auto' or a positive integer")
 
+    if args.assess_only:
+        print_assessment(assess_worker_capacity())
+        return 0
+
     run([sys.executable, "scripts/setup-docker.py"])
     run([*COMPOSE, "config", "--quiet"])
     if args.config_only:
         print("Docker Compose configuration is valid.")
-        return 0
-
-    if args.assess_only:
-        print_assessment(assess_worker_capacity())
         return 0
 
     evidence = check_release()

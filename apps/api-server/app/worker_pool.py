@@ -8,7 +8,7 @@ from app.state_codec import decode_user_state
 
 # Preserve the saved worker limit when upgrading from the Docker controller.
 KEY = 'docker-worker-pool'
-DEFAULT_CONCURRENCY = 1
+DEFAULT_CONCURRENCY = 20
 
 
 class PoolError(ValueError):

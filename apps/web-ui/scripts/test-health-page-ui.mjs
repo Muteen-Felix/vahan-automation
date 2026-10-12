@@ -40,7 +40,6 @@ try {
  assert.ok((await page.locator('.run-schedule-card').boundingBox()).height<240);
  await page.getByRole('button',{name:'Show form',exact:true}).click();
  await page.getByLabel('Start time',{exact:true}).fill('11:51');
- await page.getByLabel('Reports at a time',{exact:true}).fill('7');
  assert.equal(await page.getByRole('link',{name:'UI Health' ,exact:true}).count(),0,'UI Health lives inside Settings');
  assert.equal(await page.getByRole('link',{name:'Settings',exact:true}).getAttribute('aria-current'),'page');
  assert.equal(await page.locator('.settings-ui-health').count(),0,'A healthy check does not render any UI Health section');
@@ -60,8 +59,7 @@ try {
    assert.ok(sections[0].bottom<=sections[1].y,'Health and schedule stack in separate rows; accounts stay in their dialog');
  };
  await layout();
- assert.equal(await page.getByLabel('Start time',{exact:true}).inputValue(),'11:51');
- assert.equal(await page.getByLabel('Reports at a time',{exact:true}).inputValue(),'7','Showing an error preserves the schedule draft');
+ assert.equal(await page.getByLabel('Start time',{exact:true}).inputValue(),'11:51','Showing an error preserves the schedule draft');
  assert.equal(await page.locator('.website-alert-table tbody tr').count(),1,'the same SQL error across workers/retries appears once');
  assert.match(await page.locator('.website-alert-table tbody').innerText(),/2 browsers/);
  assert.equal(await page.locator('.website-alert-table tbody').getByText(report.title,{exact:true}).isVisible(),false,'Raw website errors are kept inside support details');

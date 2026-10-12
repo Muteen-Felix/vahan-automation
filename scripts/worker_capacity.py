@@ -1,4 +1,4 @@
-"""Estimate a safe browser-worker count for one Docker host."""
+"""Estimate browser-worker capacity from the server running this launcher."""
 
 from __future__ import annotations
 
@@ -15,18 +15,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ["docker", "compose", "--env-file", ".docker.env"]
 GIB = 1024**3
-DEFAULT_WORKER_MEMORY = int(1.25 * GIB)
+DEFAULT_WORKER_MEMORY = int(1.1 * GIB)
+WORKER_MEMORY_SAFETY_FACTOR = 1.4
 DEFAULT_WORKER_CPUS = 1.5
 ENGINE_MEMORY_RESERVE_RATIO = 0.25
 MIN_ENGINE_MEMORY_RESERVE = int(1.5 * GIB)
 MIN_HOST_HEADROOM = int(1.5 * GIB)
 HOST_HEADROOM_RATIO = 0.10
-CPU_RESERVE_RATIO = 0.20
+CPU_RESERVE_RATIO = 0.15
 MIN_CPU_RESERVE = 1
+DEFAULT_WORKER_TARGET = 20
 
 
 @dataclass(frozen=True)
 class WorkerCapacityAssessment:
+    host_cpus: int
     docker_cpus: int
     docker_memory_bytes: int
     host_total_memory_bytes: int | None
@@ -38,7 +41,9 @@ class WorkerCapacityAssessment:
     estimated_worker_cpu_cores: float
     cpu_worker_limit: int
     docker_memory_worker_limit: int
+    docker_cpu_worker_limit: int
     host_worker_limit: int
+    host_memory_for_next_worker_bytes: int | None
     recommended_workers: int
 
 
@@ -137,7 +142,7 @@ def _current_worker_stats() -> tuple[int, int | None, float | None]:
 
 
 def assess_worker_capacity() -> WorkerCapacityAssessment:
-    """Choose a worker count within Docker limits and current host memory headroom.
+    """Choose up to 20 workers from server CPU and available host memory.
 
     Existing replicas are never removed by the recommendation. This matters
     when the launcher is used to assess a live stack that still has active jobs.
@@ -156,20 +161,23 @@ def assess_worker_capacity() -> WorkerCapacityAssessment:
 
     current_workers, observed_worker_memory, observed_worker_cpu = _current_worker_stats()
     host_total, host_available = _host_memory()
+    host_cpus = os.cpu_count()
+    if not host_cpus or not host_total or host_available is None:
+        raise RuntimeError("Cannot read server CPU and available RAM. Run the launcher directly on the server.")
 
     estimated_worker_memory = max(
         DEFAULT_WORKER_MEMORY,
-        math.ceil((observed_worker_memory or 0) * 1.5),
+        math.ceil((observed_worker_memory or 0) * WORKER_MEMORY_SAFETY_FACTOR),
     )
     estimated_worker_cpu = max(
         DEFAULT_WORKER_CPUS,
-        (observed_worker_cpu or 0) * 1.25,
+        observed_worker_cpu or 0,
     )
 
-    cpu_reserve = max(MIN_CPU_RESERVE, math.ceil(docker_cpus * CPU_RESERVE_RATIO))
-    cpu_budget = max(0, docker_cpus - cpu_reserve)
+    cpu_reserve = max(MIN_CPU_RESERVE, math.ceil(host_cpus * CPU_RESERVE_RATIO))
+    cpu_budget = max(0, host_cpus - cpu_reserve)
     cpu_limit = math.floor(cpu_budget / estimated_worker_cpu)
-    if docker_cpus >= 2 and cpu_limit == 0:
+    if host_cpus >= 2 and cpu_limit == 0:
         cpu_limit = 1
 
     engine_memory_reserve = max(
@@ -178,24 +186,27 @@ def assess_worker_capacity() -> WorkerCapacityAssessment:
     )
     engine_memory_budget = max(0, docker_memory - engine_memory_reserve)
     docker_memory_limit = engine_memory_budget // estimated_worker_memory
+    docker_cpu_budget = max(0, docker_cpus - max(MIN_CPU_RESERVE, math.ceil(docker_cpus * CPU_RESERVE_RATIO)))
+    docker_cpu_limit = math.floor(docker_cpu_budget / estimated_worker_cpu)
+    if docker_cpus >= 2 and docker_cpu_limit == 0:
+        docker_cpu_limit = 1
 
-    if host_available is None:
-        host_limit = min(cpu_limit, docker_memory_limit)
-    else:
-        host_headroom = max(
-            MIN_HOST_HEADROOM,
-            math.ceil((host_total or 0) * HOST_HEADROOM_RATIO),
-        )
-        additional_memory = max(0, host_available - host_headroom)
-        additional_workers = additional_memory // estimated_worker_memory
-        # Host availability is measured after the current stack has consumed RAM.
-        host_limit = current_workers + additional_workers
+    host_headroom = max(
+        MIN_HOST_HEADROOM,
+        math.ceil(host_total * HOST_HEADROOM_RATIO),
+    )
+    host_memory_for_next_worker = host_headroom + estimated_worker_memory
+    additional_memory = max(0, host_available - host_headroom)
+    additional_workers = additional_memory // estimated_worker_memory
+    # Host availability is measured after the current stack has consumed RAM.
+    host_limit = current_workers + additional_workers
 
-    resource_limit = min(cpu_limit, docker_memory_limit, host_limit)
+    resource_limit = min(DEFAULT_WORKER_TARGET, cpu_limit, host_limit)
     # Preserve a live worker pool; the launcher may not disrupt active jobs by
     # scaling it down automatically when a fresh sample reports lower capacity.
     recommended = max(current_workers, resource_limit)
     return WorkerCapacityAssessment(
+        host_cpus=host_cpus,
         docker_cpus=docker_cpus,
         docker_memory_bytes=docker_memory,
         host_total_memory_bytes=host_total,
@@ -207,7 +218,9 @@ def assess_worker_capacity() -> WorkerCapacityAssessment:
         estimated_worker_cpu_cores=estimated_worker_cpu,
         cpu_worker_limit=cpu_limit,
         docker_memory_worker_limit=docker_memory_limit,
+        docker_cpu_worker_limit=docker_cpu_limit,
         host_worker_limit=host_limit,
+        host_memory_for_next_worker_bytes=host_memory_for_next_worker,
         recommended_workers=recommended,
     )
 
@@ -217,7 +230,8 @@ def _format_memory(value: int | None) -> str:
 
 
 def print_assessment(value: WorkerCapacityAssessment) -> None:
-    print("Single-server worker capacity assessment")
+    print(f"Server worker capacity assessment (automatic target: {DEFAULT_WORKER_TARGET})")
+    print(f"  Server CPU: {value.host_cpus} logical cores")
     print(
         f"  Docker Engine: {value.docker_cpus} vCPU, "
         f"{_format_memory(value.docker_memory_bytes)} RAM"
@@ -235,11 +249,27 @@ def print_assessment(value: WorkerCapacityAssessment) -> None:
         f"  Planning budget per runner: {_format_memory(value.estimated_worker_memory_bytes)} RAM, "
         f"{value.estimated_worker_cpu_cores:.2f} CPU"
     )
-    print(f"  Capacity limits: CPU={value.cpu_worker_limit}, "
-          f"Docker RAM={value.docker_memory_worker_limit}, host headroom={value.host_worker_limit}")
+    print(f"  Server capacity limits: CPU={value.cpu_worker_limit}, "
+          f"available RAM={value.host_worker_limit}, automatic target={DEFAULT_WORKER_TARGET}")
+    docker_limit = min(value.docker_cpu_worker_limit, value.docker_memory_worker_limit)
+    if value.recommended_workers > docker_limit:
+        print(f"  Docker allocation supports an estimated {docker_limit} runner(s), below the server selection. "
+              "Increase Docker CPU/RAM allocation before running the selected pool.")
+    if (value.host_available_memory_bytes is not None
+            and value.current_workers < min(DEFAULT_WORKER_TARGET, value.cpu_worker_limit)
+            and value.host_memory_for_next_worker_bytes is not None):
+        needed = value.host_memory_for_next_worker_bytes
+        if value.host_available_memory_bytes < needed:
+            shortfall = needed - value.host_available_memory_bytes
+            print(
+                f"  To safely add one runner: host should have {_format_memory(needed)} free; "
+                f"currently short by {_format_memory(shortfall)}."
+            )
+        else:
+            print("  Host RAM has headroom for at least one more runner.")
     resource_limit = min(
+        DEFAULT_WORKER_TARGET,
         value.cpu_worker_limit,
-        value.docker_memory_worker_limit,
         value.host_worker_limit,
     )
     if value.current_workers > resource_limit:
