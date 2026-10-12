@@ -17,6 +17,7 @@ export interface RunSchedule {
   lastSessionId: string | null;
   lastRunAt?: string | null;
   lastFinishedAt?: string | null;
+  createdAt?: string;
   canResume?: boolean;
   executionEpoch?: number;
   activeElapsedMs?: number;
@@ -35,6 +36,31 @@ export interface RunSchedule {
   noData: number;
   failed: number;
   retryProgress?: import('./services/api-client').BatchRetryProgress | null;
+}
+
+const ACTIVE_SCHEDULE_STATUSES = new Set<RunSchedule['status']>(['PREPARING', 'RUNNING', 'PAUSING', 'RESUMING']);
+const COMPLETED_SCHEDULE_STATUSES = new Set<RunSchedule['status']>(['COMPLETED', 'COMPLETED_WITH_ERRORS']);
+
+function schedulePriority(schedule: RunSchedule) {
+  if (ACTIVE_SCHEDULE_STATUSES.has(schedule.status)) return 0;
+  if (COMPLETED_SCHEDULE_STATUSES.has(schedule.status)) return 2;
+  return 1;
+}
+
+function scheduleActivityTime(schedule: RunSchedule) {
+  const priority = schedulePriority(schedule);
+  const value = priority === 0
+    ? schedule.lastRunAt ?? schedule.updatedAt ?? schedule.createdAt ?? schedule.startsAt
+    : priority === 1
+    ? schedule.createdAt ?? schedule.startsAt ?? schedule.updatedAt
+    : schedule.lastFinishedAt ?? schedule.lastRunAt ?? schedule.updatedAt ?? schedule.createdAt;
+  const timestamp = value ? Date.parse(value) : 0;
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+export function sortRunSchedules(schedules: RunSchedule[]) {
+  return [...schedules].sort((left, right) => schedulePriority(left) - schedulePriority(right)
+    || scheduleActivityTime(right) - scheduleActivityTime(left));
 }
 
 export function canResumeSchedule(value: RunSchedule) {

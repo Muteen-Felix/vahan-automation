@@ -5,7 +5,7 @@ import {api} from '../services/api-client';
 import {persistentState} from '../services/persistent-state';
 import {canResumeSchedule, formatScheduledTime, isRunTimeZone, readRunTimeZone, runTimeZone, runTimeZoneLabel,
   RUN_TIME_ZONE, INDIA_TIME_ZONE, RUN_TIME_ZONE_STORAGE_KEY, scheduleDateTime, scheduleDateTimeIso,
-  scheduledDayOfMonth, type RunSchedule} from '../run-schedules';
+  scheduledDayOfMonth, sortRunSchedules, type RunSchedule} from '../run-schedules';
 import {RunScheduleProgress} from './RunScheduleProgress';
 import {BatchRetryStatus} from './BatchRetryStatus';
 import {RunDiagnostics} from './RunDiagnostics';
@@ -183,7 +183,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
       <div className="run-schedule-list-heading" id="saved-schedules"><h3>Saved schedules</h3><span>{schedules.length} {schedules.length === 1 ? 'schedule' : 'schedules'}</span></div>
       <div className="run-schedule-list">
         {loading ? <p>Loading schedules…</p> : !schedules.length ? <p className="schedule-empty">No automatic report schedules yet.</p> :
-          schedules.map(schedule => <div className="schedule-run-entry" key={schedule.id}><article className="run-schedule-card" aria-label={`Schedule for ${schedule.profileName}`}>
+          sortRunSchedules(schedules).map(schedule => <div className="schedule-run-entry" key={schedule.id}><article className="run-schedule-card" aria-label={`Schedule for ${schedule.profileName}`}>
             <div className="run-schedule-title">
               <div className="run-schedule-identity"><span className="run-schedule-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h7"/></svg>
