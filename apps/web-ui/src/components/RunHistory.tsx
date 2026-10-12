@@ -28,9 +28,10 @@ export function RunHistory() {
   const [offset, setOffset] = useState(0);
   const [showSamples, setShowSamples] = useState(false);
   const query = useLiveQuery<History>(offset,
-    signal => request<History>(`/api/annual-reports/run-history?offset=${offset}&limit=${PAGE_SIZE}`, {signal}), 1000);
+    signal => request<History>(`/api/annual-reports/run-history?offset=${offset}&limit=${PAGE_SIZE}`, {signal}), 1000, !showSamples);
   const history = showSamples ? sampleRunHistory : query.data;
   useEffect(() => {
+    if (showSamples) return;
     const refresh = () => query.refresh();
     const timer = window.setInterval(refresh, 15000);
     uiSocket.on('job:status', refresh);
@@ -40,7 +41,7 @@ export function RunHistory() {
       uiSocket.off('job:status', refresh);
       uiSocket.off('connect', refresh);
     };
-  }, [query.refresh]);
+  }, [query.refresh, showSamples]);
   useEffect(() => {
     if (query.data && offset > 0 && offset >= query.data.total) setOffset(0);
   }, [query.data, offset]);
@@ -50,7 +51,7 @@ export function RunHistory() {
       <div><h2>Run History</h2><p>One row per run, newest first · {runTimeZoneLabel(timeZone)}</p></div>
       <div className="run-history-actions">
         <label><input type="checkbox" checked={showSamples} aria-label="Show sample data"
-          onChange={event => setShowSamples(event.target.checked)} /> Show sample data</label>
+          onChange={event => {setOffset(0);setShowSamples(event.target.checked);}} /> Show sample data</label>
         <button className="run-history-refresh" type="button" disabled={showSamples} onClick={() => query.refresh(true)}>Refresh history</button>
       </div>
     </div>

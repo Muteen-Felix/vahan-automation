@@ -29,11 +29,11 @@ export function RunScheduleProgress({schedule, statusLabel}: {schedule: RunSched
     </div>
     <progress max={total || 1} value={done} aria-label={`Report progress for ${schedule.profileName}`}
       aria-valuetext={total ? `${done} of ${total} reports` : 'Preparing the list of reports'} />
-    <div className="schedule-progress-eta" aria-label="Estimated finish">
+    {schedule.status !== 'COMPLETED' && schedule.status !== 'COMPLETED_WITH_ERRORS' && <div className="schedule-progress-eta" aria-label="Estimated finish">
       <span>ETA</span> {estimate.remainingMs === null || estimate.finishesAt === null ? <strong>{waiting}</strong>
         : <><strong>About {formatScheduleDuration(estimate.remainingMs)} remaining</strong>
           <time dateTime={estimate.finishesAt}>{formatScheduledTime(estimate.finishesAt, timeZone)}</time></>}
       <small>{runTimeZoneLabel(timeZone)}</small>
-    </div>
+    </div>}
   </div>;
 }

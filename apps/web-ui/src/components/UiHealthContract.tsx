@@ -51,13 +51,13 @@ export function UiHealthContract({refreshToken=0,scrollIntoView=false}:{refreshT
         <strong>Cannot start yet</strong>
         <span>{alerts.length} {alerts.length===1?'issue requires':'issues require'} attention</span>
       </div>
-      <p className="website-alert-notice" role="alert">The run could not start. Copy the issue for support, then try again after it is fixed.</p>
+      <p className="website-alert-notice" role="alert">The run could not start. A listed browser stays blocked until it reconnects and passes a valid UI Health check. Then rerun preflight; every selected browser must pass before work resumes. Copy the issue for support, then check again.</p>
       <div className="website-alert-scroll">
         <table className="website-alert-table" role="table" aria-label="Website changes blocking a run">
           <thead><tr role="row"><th scope="col" role="columnheader">Detected ({runTimeZoneLabel(timeZone)})</th><th scope="col" role="columnheader">Report browsers</th><th scope="col" role="columnheader">Website issue</th><th scope="col" role="columnheader">Result</th><th scope="col" role="columnheader">Share with support</th></tr></thead>
           <tbody>{alerts.map(alert=><tr key={alert.id} role="row">
             <td role="cell" data-label={`Detected (${runTimeZoneLabel(timeZone)})`}>{checkedTime(alert.checkedAt, timeZone)}</td>
-            <td role="cell" data-label="Report browsers">{alert.workers.length ? `${alert.workers.length} ${alert.workers.length===1?'browser':'browsers'}` : '—'}</td>
+            <td role="cell" data-label="Report browsers">{alert.workers.length ? alert.workers.join(', ') : '—'}</td>
             <td role="cell" data-label="Website issue"><strong>{websiteTargetLabel(alert.target)}</strong><p>{websiteIssueMessage(alert.code,alert.title)}</p></td>
             <td role="cell" data-label="Result"><span className="website-alert-blocked">Cannot start yet</span></td>
             <td role="cell" data-label="Share with support"><button type="button" className="secondary-button" onClick={()=>void copy(alert.id,websiteCheckReport(status,[alert]))}>{copied===alert.id?'Copied':'Copy for support'}</button><details><summary>Details for support</summary><pre>{websiteCheckReport(status,[alert])}</pre></details></td>

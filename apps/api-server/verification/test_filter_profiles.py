@@ -118,7 +118,8 @@ class ProfileTests(unittest.IsolatedAsyncioTestCase):
         await queue.start(session,self.owner,tasks,1)
         async with reserve_options_runner(self.runner,self.owner):
             self.assertEqual((await queue.claim(session,self.owner,self.runner))['type'],'waiting')
-            self.assertIsNone(await services.jobs.assign(Job(runnerId=self.runner,ownerUsername=self.owner,filters=tasks[0].filters)))
+            self.assertIsNone(await services.jobs.assign(Job(runnerId=self.runner,ownerUsername=self.owner,filters=tasks[0].filters)),
+                'A planning lease for this runner differs from the global execution limit.')
             self.assertEqual(next(r for r in await services.runners.list() if r.id==self.runner).status,'BUSY')
             with self.assertRaises(PreflightUnavailable) as blocked:
                 async with reserve_options_runner(self.runner,self.other):pass

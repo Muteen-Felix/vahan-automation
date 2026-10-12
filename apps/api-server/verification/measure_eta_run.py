@@ -23,7 +23,7 @@ from test_worker_lifecycle import httpx, socketio, settings, ReportResultRequest
 from sqlalchemy import select, func
 
 ROOT = Path(__file__).resolve().parents[3]
-OUTPUT = ROOT / 'outputs/audit-round3'
+OUTPUT = Path(os.environ.get('VAHAN_ETA_OUTPUT_DIR', str(ROOT / 'diagnostics/eta-measurement')))
 
 
 async def main():
@@ -134,10 +134,10 @@ async def main():
                 (OUTPUT / 'eta-progress.json').write_text(json.dumps(dict(sessionId=str(session),
                     startedAt=started.isoformat(), assigned=len(assigned), completed=len(completed),
                     peakConcurrent=peak, latest=sample), indent=2), encoding='utf-8')
-                if len(samples) % 12 == 1:
+                if samples:
                     print(f'ETA run: {done}/100 cases; elapsed={sample["elapsedSeconds"]:.1f}s; '
                           f'forecast={estimate["remainingMs"]}; peak={peak}', flush=True)
-                await asyncio.sleep(5)
+                await asyncio.sleep(60)
         async def worker(index):
             nonlocal peak
             await asyncio.sleep(index*18)
@@ -195,11 +195,21 @@ async def main():
                     absoluteErrorSeconds=abs(error), remainingErrorPercent=abs(error)/remaining*100,
                     totalDurationErrorPercent=abs(error)/duration*100))
         def metrics(values):
+            if not values:
+                return dict(samples=0, medianRemainingErrorPercent=None, maxRemainingErrorPercent=None)
             errors = sorted(v['absoluteErrorSeconds'] for v in values)
             return dict(samples=len(values), medianAbsoluteSeconds=statistics.median(errors),
+                medianRemainingErrorPercent=statistics.median(v['remainingErrorPercent'] for v in values),
+                maxRemainingErrorPercent=max(v['remainingErrorPercent'] for v in values),
                 meanAbsoluteSeconds=statistics.mean(errors), maxAbsoluteSeconds=max(errors),
                 p90AbsoluteSeconds=errors[min(len(errors)-1, int(len(errors)*.9))])
-        result = dict(status='PASS', workload='SYNTHETIC protocol workers, real wall clock/HTTP/Socket.IO/SQL',
+        bands={f'{lo}-{hi}%':metrics([v for v in forecasts if lo <= v['done'] < hi])
+               for lo,hi in [(0,25),(25,50),(50,75),(75,100)]}
+        passed=all(bands[key]['samples'] > 0 and bands[key]['medianRemainingErrorPercent'] <= limit
+                   for key,limit in [('50-75%',25),('75-100%',15)])
+        result = dict(status='PASS' if passed else 'FAIL', sampleIntervalSeconds=60, progressBands=bands,
+            thresholds={'50-75%':25,'75-100%':15},
+            workload='SYNTHETIC protocol workers, real wall clock/HTTP/Socket.IO/SQL',
             sessionId=str(session), startedAt=started.isoformat(), finishedAt=finished.isoformat(),
             elapsedSeconds=duration, uniqueAssigned=len(assigned), uniqueCompleted=len(completed),
             peakConcurrent=peak, cases=100, attempts=len(jobs), interruptions=interruptions,
@@ -207,6 +217,7 @@ async def main():
             after20Completed=metrics([v for v in forecasts if v['done'] >= 20]), predictions=forecasts)
         (OUTPUT / 'eta-measurement.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
         print(json.dumps({k:v for k,v in result.items() if k!='predictions'}), flush=True)
+        assert passed, 'ETA median relative remaining-time error exceeded required thresholds.'
     finally:
         if heartbeat_task:
             heartbeat_task.cancel()

@@ -3,7 +3,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 // Worker completions invalidate data while a read can still be in flight.
 // Finish that read, publish it, then read again for any queued invalidations.
 // Only changing the viewed filters or unmounting cancels a request.
-export function useLiveQuery<T>(key: unknown, load: (signal: AbortSignal) => Promise<T>, intervalMs = 1_000) {
+export function useLiveQuery<T>(key: unknown, load: (signal: AbortSignal) => Promise<T>, intervalMs = 1_000, enabled = true) {
   const [state, setState] = useState<{key: unknown; data: T | null; loading: boolean; error: string}>({
     key, data: null, loading: true, error: '',
   });
@@ -13,6 +13,11 @@ export function useLiveQuery<T>(key: unknown, load: (signal: AbortSignal) => Pro
   const refresh = useCallback((immediate = false) => invalidate.current(immediate), []);
 
   useEffect(() => {
+    if (!enabled) {
+      invalidate.current = () => {};
+      setState({key, data: null, loading: false, error: ''});
+      return;
+    }
     const read = loader.current;
     let disposed = false, running = false, dirty = false, nextAllowedAt = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -49,7 +54,7 @@ export function useLiveQuery<T>(key: unknown, load: (signal: AbortSignal) => Pro
     };
     void run();
     return () => {disposed = true; clearTimeout(timer); controller?.abort();};
-  }, [key, intervalMs]);
+  }, [key, intervalMs, enabled]);
 
   return {...state, data: Object.is(state.key, key) ? state.data : null, refresh};
 }
