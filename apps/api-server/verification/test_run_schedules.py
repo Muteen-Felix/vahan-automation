@@ -477,7 +477,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(list(await connection.scalars(select(db.report_sessions.c.id))), [original_session])
 
     async def test_delete_paused_run_discards_queue_and_retains_collected_data(self):
-        saved = await self.start('daily')
+        saved = await self.start('monthly')
         jobs = await self.jobs()
         await self.repo.pause(saved['id'], saved['owner'])
         await finish(str(jobs[0].id), JobStatus.COMPLETED)
@@ -642,7 +642,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len([job for job in await self.jobs() if job.status == JobStatus.ASSIGNED]), 1)
 
     async def test_future_toggle_and_resume_do_not_overwrite_execution_state(self):
-        saved = await self.start('daily')
+        saved = await self.start('monthly')
         await stop_scheduled_run(saved)
         await asyncio.gather(self.repo.resume(saved['id'], 'schedule-test'),
             self.repo.toggle(saved['id'], 'schedule-test', True))
@@ -694,8 +694,8 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn('connect', (await self.repo.get(saved['id']))['message'])
         self.assertEqual(await self.jobs(), [])
 
-    async def test_daily_run_finishes_with_next_future_slot(self):
-        saved = await self.start('daily')
+    async def test_monthly_run_finishes_with_next_future_slot(self):
+        saved = await self.start('monthly')
         for job in await self.jobs(): await finish(str(job.id), JobStatus.NO_DATA)
         await scheduler_tick()
         for job in await self.jobs():

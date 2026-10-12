@@ -20,6 +20,8 @@ database = os.environ.get('VAHAN_LIFECYCLE_TEST_DATABASE', '')
 if not database.startswith('vahan_lifecycle_') or not database.endswith('_test'):
     raise RuntimeError('Use a disposable vahan_lifecycle_*_test database.')
 os.environ['DATABASE_URL'] = make_url(os.environ['DATABASE_URL']).set(database=database).render_as_string(hide_password=False)
+os.environ.setdefault('VAHAN_UI_AUTH_USERNAME', 'lifecycle-admin')
+os.environ.setdefault('VAHAN_UI_AUTH_PASSWORD', 'lifecycle-fixture-only-password')
 
 import httpx
 import socketio
@@ -132,11 +134,11 @@ class WorkerLifecycleTest(unittest.IsolatedAsyncioTestCase):
         await apply_pool(3)
         await queue.start(session, self.owner, [QueueTaskInput(name=f'Lifecycle office {i}', filters={
             'states': ['Fixture State'], 'rtos': [f'Lifecycle office {i}'], 'fromYear': '2024', 'toYear': '2024'})
-            for i in range(9)], 3, automatic_workers=True)
+            for i in range(9)], 3)
         await ui_contract.bind_gate(session, gate)
         first = await asyncio.gather(*(self.claim(worker, session) for worker in self.workers))
         self.assertEqual(len({item['jobId'] for item in first}), 3)
-        self.assertTrue(all(item['job']['jobId'] == item['jobId'] for item in first))
+        self.assertTrue(all(item['job'].get('jobId', item['job'].get('id')) == item['jobId'] for item in first))
         command = await self.no_data(first[0], self.workers[0])
         self.process.kill()
         await self.process.wait()

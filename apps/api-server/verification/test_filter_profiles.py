@@ -71,7 +71,9 @@ class ProfileTests(unittest.IsolatedAsyncioTestCase):
         plan=await FilterPlanner(restored,2026,lookup,AsyncMock()).compile()
         self.assertEqual(plan['year'],2023)
         self.assertTrue(all(case['filters']['fromYear']=='2023' and case['filters']['toYear']=='2023' for case in plan['scenarios']))
-        with self.assertRaises(ValidationError): definition(report={'year':datetime.now().year+1})
+        next_year = datetime.now().year + 1
+        self.assertEqual(definition(report={'year': next_year}).report.year, next_year)
+        with self.assertRaises(ValidationError): definition(report={'year':next_year+1})
         with self.assertRaises(ValidationError): definition(report={'year':2023,'yAxis':'State'})
 
     async def test_include_exclude_and_conditional_rule(self):

@@ -1,6 +1,6 @@
 # Round 4 security and packaging verification
 
-Verified locally on 2026-10-12, using disposable Docker projects/databases.
+Verified locally on the `ocr` branch on 2026-10-12, using disposable Docker projects/databases.
 The running application stack was not redeployed.
 
 | Check | Result |
@@ -61,3 +61,18 @@ root through `--ca-cert PATH`; the certificate is not included in this commit.
 and `release/**`, all pull requests, and manual dispatch. It includes the new
 OCR, production boundary, restricted-role lifecycle and scan/SBOM checks.
 This report records local evidence; GitHub workflow status is separate.
+
+## CI completion audit
+
+The expanded database CI command set was exercised locally: 276 database-backed
+tests, plus restricted-role startup, the 1,600-case queue check and populated
+legacy/shared/workbook migration comparisons. Every command passed after
+correcting obsolete test expectations. The year-boundary test accepts next year
+and rejects the following year; schedule control tests use the supported monthly
+repeat; lifecycle tests supply explicit disposable administrator credentials.
+The worker-capacity and UI-drift diagnostic unit checks are also included.
+
+CI installs Docker Compose 5.6.0 explicitly and enables the containerd image
+store so SBOM/provenance builds do not depend on the GitHub runner's older
+Compose installation. Release validation ports only Round 4 changes and adapts
+fixtures to the release API; it does not merge the other `ocr` feature commits.
