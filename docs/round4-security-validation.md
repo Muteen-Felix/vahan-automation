@@ -76,3 +76,7 @@ CI installs Docker Compose 5.6.0 explicitly and enables the containerd image
 store so SBOM/provenance builds do not depend on the GitHub runner's older
 Compose installation. Release validation ports only Round 4 changes and adapts
 fixtures to the release API; it does not merge the other `ocr` feature commits.
+
+The scanner mounts the active Docker context socket, including the isolated CI
+daemon. Unit tests require reports for all four images before a fixable finding
+fails the gate and retain unfixed findings explicitly.
