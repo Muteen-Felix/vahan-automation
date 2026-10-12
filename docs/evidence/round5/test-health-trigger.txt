@@ -1,0 +1,2 @@
+Runner health checks: explicit preflight only, no connection/heartbeat schedule, and busy-job protection passed.
+

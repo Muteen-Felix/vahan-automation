@@ -1,0 +1,4 @@
+Restored 1000 synthetic reports, member account and persisted state; API lifespan works with DML-only role.
+
+ Container vahan-review-2d456f37b8d2-restore-api-run-9a8b870a1c4f Creating 
+ Container vahan-review-2d456f37b8d2-restore-api-run-9a8b870a1c4f Created 

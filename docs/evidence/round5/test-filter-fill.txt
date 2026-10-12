@@ -1,0 +1,15 @@
+  fill=1917ms, checked=26, peak dependencies=1
+PASS sequential filter mutations respect dependencies and verify every requested field
+PASS late period reset restores the requested year and other filters
+PASS maker names containing commas remain one label and searches overlap
+PASS omitted optional filters and old date ranges are cleared on reuse
+PASS Fitness NO default is accepted only when Fitness is omitted
+PASS slow X-Axis options reload once and wait for the settled list
+PASS X-Axis selection does not wait on an unrelated filter request
+PASS missing RTO options reload the selected State once and preserve all filters
+PASS RTO reload exhaustion stops the filter with a specific error
+PASS before-Apply verification rejects silent changes, disabled controls and duplicates
+PASS unknown fields fail explicitly and aborted sibling tasks cannot corrupt next case
+PASS a concurrent second fill is refused
+12 filter-fill checks passed.
+

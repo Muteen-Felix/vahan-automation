@@ -1,0 +1,17 @@
+PASS multiple axes, tables, exact cells and totals without Excel
+PASS fresh No record found with td headings
+PASS RTO names with parentheses accept confirmed no-data and populated reports
+PASS standalone no-data message
+PASS stale no-data from previous Apply is not accepted
+PASS stale populated table is not accepted
+PASS blank timeout is distinct from no data
+PASS wrong RTO is not accepted
+PASS invalid validation takes priority over data
+PASS hidden tables and filter tables are excluded
+PASS new identical no-data node is a fresh response
+PASS loading no-data followed by populated result saves data
+PASS result reader starts during navigation before body exists
+PASS category group with unchanged subcategory options
+PASS category group with delayed subcategory options
+15 result-flow checks passed.
+

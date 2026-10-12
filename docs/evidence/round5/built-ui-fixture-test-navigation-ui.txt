@@ -1,0 +1,2 @@
+Navigation: ordered tabs, default reports, retired routes, Settings-only logout, retry/sign-out and 320–1440px layouts passed.
+

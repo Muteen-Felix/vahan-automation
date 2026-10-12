@@ -1,0 +1,7 @@
+6 worker lifecycle checks passed: submission state, UI state, cancellation, stale challenge, duplicate submission and mismatched filters.
+Report navigation away is distinct from a genuine result timeout.
+5 page-readiness checks passed: navigation commit, usable timeout recovery, missing controls, authentication and redirect.
+CAPTCHA refresh stays single-flight, retries a lost ACK and fails a stalled job.
+A lost failure ACK reconnects the runner for server-side reconciliation.
+A recovered assignment does not fail or restart the active job.
+

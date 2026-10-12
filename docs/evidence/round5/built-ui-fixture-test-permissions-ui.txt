@@ -1,0 +1,2 @@
+Permissions UI passed: member reports-only navigation and direct-route denial, no private requests/socket, admin schedules, grant/revoke role.
+
