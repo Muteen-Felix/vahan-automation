@@ -24,7 +24,7 @@ class QueueTaskInput(BaseModel):
 class StartQueueInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     session_id: UUID = Field(alias='sessionId')
-    tasks: list[QueueTaskInput] = Field(min_length=1, max_length=3000)
+    tasks: list[QueueTaskInput] = Field(min_length=1)
     preflight_id: UUID | None = Field(default=None,alias='preflightId')
     max_workers: int = Field(default=DEFAULT_CONCURRENCY, alias='maxWorkers', ge=1, strict=True)
 

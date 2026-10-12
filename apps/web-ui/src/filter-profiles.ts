@@ -15,7 +15,7 @@ export const PROFILE_FIELDS = [
 export type ProfileField = typeof PROFILE_FIELDS[number]['id'];
 export type FilterPolicy = {mode:'fixed'|'iterate';values:string[];include:string[];exclude:string[]};
 export type CombinationRule = {whenField:ProfileField;whenValues:string[];targetField:ProfileField;targetValues:string[];action:'require'|'exclude'};
-export type ProfileDefinition = {report?:{year:number;period:'CALENDAR YEAR';yAxis:'Maker';xAxis:'Month Wise'};version:1;fields:Record<ProfileField,FilterPolicy>;rules:CombinationRule[];maxCases:number};
+export type ProfileDefinition = {report?:{year:number;period:'CALENDAR YEAR';yAxis:'Maker';xAxis:'Month Wise'};version:1;fields:Record<ProfileField,FilterPolicy>;rules:CombinationRule[]};
 export type FilterProfile = {id:string;name:string;revision:number;definition:ProfileDefinition;updatedAt:string};
 export type ProfileOptions = Partial<Record<ProfileField,string[]>>;
 
@@ -27,7 +27,7 @@ export function defaultProfile(year=currentReportYear()):ProfileDefinition {
   fields.categoryGroups.values=['Two Wheeler'];
   fields.subCategories.values=['TWO WHEELER (Invalid Carriage)','TWO WHEELER(NT)','TWO WHEELER(T)'];
   fields.fuels.values=['ELECTRIC(BOV)','PURE EV'];
-  return {version:1,report:{year,period:'CALENDAR YEAR',yAxis:'Maker',xAxis:'Month Wise'},fields,rules:[],maxCases:3000};
+  return {version:1,report:{year,period:'CALENDAR YEAR',yAxis:'Maker',xAxis:'Month Wise'},fields,rules:[]};
 }
 
 export function parentContext(definition:ProfileDefinition) {

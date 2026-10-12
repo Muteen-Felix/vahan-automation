@@ -93,7 +93,8 @@ class ProfileDefinition(StrictModel):
     report: ReportSettings | None = None
     fields: dict[str, FilterPolicy]
     rules: list[CombinationRule] = Field(default_factory=list, max_length=30)
-    max_cases: int = Field(default=3000, alias='maxCases', ge=1, le=3000, strict=True)
+    # Accept the old saved value during migration, but never use or persist it.
+    max_cases: int | None = Field(default=None, alias='maxCases', strict=True, exclude=True)
 
     @model_validator(mode='after')
     def valid_fields(self):

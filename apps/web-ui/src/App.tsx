@@ -33,7 +33,6 @@ function sectionFromHash(): AppSection {
 export default function App() {
   const [role, setRole] = useState<string | null>(null);
   const isAdmin = role === 'admin';
-  useEffect(() => {void api.currentUser().then(user => setRole(user.role)).catch(reason => setError(reason.message));}, []);
   const [activeSection, setActiveSection] = useState<AppSection>(sectionFromHash);
   const [routeHash, setRouteHash] = useState(() => window.location.hash);
   const [connection, setConnection] = useState<ConnectionState>('connecting');
@@ -55,6 +54,20 @@ export default function App() {
   const scheduledResults = JSON.stringify(scheduledRuns.schedules.map(schedule => [schedule.id,
     schedule.sessionId, schedule.lastSessionId, schedule.done, schedule.withData,
     schedule.noData, schedule.failed, schedule.status]));
+
+  useEffect(() => {
+    let active = true;
+    void api.currentUser().then(user => {
+      if (!active) return;
+      if (user.role !== 'admin' && sectionFromHash() !== 'reports') {
+        window.history.replaceState(null, '', '#reports');
+        setActiveSection('reports');
+        setRouteHash('#reports');
+      }
+      setRole(user.role);
+    }).catch(reason => {if (active) setError(reason.message);});
+    return () => {active = false;};
+  }, []);
 
   useEffect(() => {setReportsRefresh(value => value + 1);}, [scheduledResults]);
 
@@ -210,7 +223,15 @@ export default function App() {
         <a href="#settings-ui-health">Open Website check in Settings</a>
         <button type="button" onClick={() => void navigator.clipboard.writeText(healthBlock).catch(() => setError('Could not copy the issue. Allow clipboard access and try again.'))}>Copy for support</button>
       </div>}
-      {forbidden ? <main className="page-content"><h2>Bạn không có quyền truy cập trang này.</h2><a href="#reports">Về Exported Reports</a></main> : activeSection === 'filters' ? <FilterProfiles profiles={profiles} runners={runners} knownPlan={knownPlan}
+      {forbidden ? <main className="page-content access-denied-page">
+        <section className="access-denied-card" aria-labelledby="access-denied-title">
+          <span className="access-denied-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10M6.75 10h10.5A1.75 1.75 0 0 1 19 11.75v7.5A1.75 1.75 0 0 1 17.25 21H6.75A1.75 1.75 0 0 1 5 19.25v-7.5A1.75 1.75 0 0 1 6.75 10Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 14v3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span>
+          <p className="access-denied-kicker">ACCESS RESTRICTED</p>
+          <h2 id="access-denied-title">You don’t have access to this feature</h2>
+          <p className="access-denied-description">This section is available to administrators. You can still view and export reports with your account.</p>
+          <a className="access-denied-action" href="#reports">Go to Exported Reports <span aria-hidden="true">→</span></a>
+        </section>
+      </main> : activeSection === 'filters' ? <FilterProfiles profiles={profiles} runners={runners} knownPlan={knownPlan}
         busy={network.offline || scheduledRuns.schedules.some(schedule => Boolean(schedule.sessionId) && ['PREPARING', 'RUNNING', 'PAUSING', 'RESUMING'].includes(schedule.status))}
         onSaved={refreshProfiles} onSelect={(id, plan) => {
           setSelectedProfileId(id); persistentState.setItem(FILTER_PROFILE_STORAGE_KEY, JSON.stringify(id));

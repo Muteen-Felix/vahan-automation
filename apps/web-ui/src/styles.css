@@ -926,7 +926,6 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid rg
 .run-history-intro h2 { font-size:26px; }
 .run-history-intro p { margin:5px 0 0; color:#65736a; font-size:12px; }
 .run-history-actions { display:flex; flex-wrap:wrap; gap:8px; }
-.run-history-sample-notice { margin:0 0 10px; padding:8px 12px; border:1px solid #e7d2a6; border-radius:6px; background:#fff7e8; color:#79551f; font-size:12px; }
 .run-history-page button { width:auto; min-height:34px; padding:7px 12px; border:1px solid #dbe3dd; border-radius:4px; color:#354e3e; background:#fff; font-size:12px; }
 .run-history-page button:disabled { opacity:.5; cursor:default; }
 .run-history-page [role="alert"] { color:#a02f22; }
@@ -1268,7 +1267,8 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .account-dialog:not([open]) { display:none; }
 .account-dialog[open] { display:flex; flex-direction:column; width:min(560px,calc(100vw - 32px)); height:auto; max-height:calc(100dvh - 32px); padding:24px; border:1px solid #d8e4db; border-radius:18px; color:#2a3d30; background:#fff; box-shadow:0 24px 90px #122d2a33; overflow:hidden; }
 .account-dialog[open][data-admin="true"] { height:min(640px,calc(100dvh - 32px)); }
-.account-dialog[open][data-admin="false"] .account-panels { flex:0 0 auto; overflow:visible; }
+.account-dialog[open][data-admin="false"] { height:fit-content; min-height:0; }
+.account-dialog[open][data-admin="false"] .account-panels { flex:0 0 auto; height:auto; min-height:0; overflow:visible; }
 .account-dialog[open][data-admin="false"] .account-tab-panel { height:auto; overflow:visible; }
 .account-dialog::backdrop { background:#18302960; backdrop-filter:blur(4px); }
 .account-dialog-heading { display:flex; flex:0 0 auto; align-items:center; justify-content:space-between; gap:14px; }
@@ -1299,7 +1299,8 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .account-dialog .account-users-panel .data-table table { min-width:500px; }
 .account-dialog .account-users-panel .data-table th { position:sticky; top:0; z-index:1; background:#eef5ed; }
 .account-dialog .account-users-panel .data-table :is(th,td) { padding:8px; }
-.account-dialog .account-users-panel .data-table button { width:auto; max-width:none; min-height:28px; margin:2px 2px 2px 0; padding:5px 8px; border-radius:999px; font-size:10px; line-height:1.2; letter-spacing:0; text-transform:none; white-space:nowrap; }
+.account-user-actions { display:flex; width:max-content; align-items:center; flex-wrap:nowrap; gap:5px; white-space:nowrap; }
+.account-dialog .account-users-panel .data-table button { width:auto; max-width:none; min-height:28px; margin:0; padding:5px 8px; border-radius:999px; font-size:10px; line-height:1.2; letter-spacing:0; text-transform:none; white-space:nowrap; }
 .account-password-section h3 { margin:0; font-size:15px; }
 .account-password-section > p,.account-reset-form > p { margin:7px 0 16px; color:#748478; font-size:12px; line-height:1.6; }
 .account-password-form,.account-reset-form { display:grid; gap:13px; }
@@ -1502,4 +1503,20 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
   white-space:pre-wrap;
   overflow-wrap:anywhere;
   max-width:100%;
+}
+
+.access-denied-page { display:grid; min-height:calc(100dvh - 72px); place-items:center; padding-block:42px; }
+.access-denied-card { display:grid; justify-items:center; width:min(100%,620px); padding:44px 48px; border:1px solid #dce8dc; border-radius:20px; background:radial-gradient(circle at 50% 0,#f1f8f0 0,white 62%); box-shadow:0 18px 54px #294b3210; text-align:center; }
+.access-denied-icon { display:grid; width:58px; height:58px; place-items:center; border:1px solid #d3e5d4; border-radius:18px; background:#eaf4e9; color:#39724a; box-shadow:0 5px 14px #315c3c12; }
+.access-denied-icon svg { width:28px; height:28px; }
+.access-denied-kicker { margin:20px 0 8px; color:#66806b; font-size:10px; font-weight:750; letter-spacing:.16em; }
+.access-denied-card h2 { max-width:18ch; margin:0; color:#263b2d; font:650 clamp(24px,3.2vw,32px)/1.2 Manrope,Inter,sans-serif; letter-spacing:-.035em; }
+.access-denied-description { max-width:48ch; margin:12px 0 23px; color:#6b7b70; font-size:13px; line-height:1.7; }
+.access-denied-action { display:inline-flex; align-items:center; justify-content:center; gap:12px; min-height:42px; padding:10px 17px; border:1px solid #285d37; border-radius:999px; background:#285d37; color:#fff; font-size:12px; font-weight:650; text-decoration:none; transition:background .15s,border-color .15s,transform .15s; }
+.access-denied-action:hover { transform:translateY(-1px); border-color:#1f492b; background:#1f492b; }
+.access-denied-action span { font-size:17px; line-height:1; }
+@media(max-width:600px) {
+  .access-denied-page { min-height:calc(100dvh - 112px); padding-block:28px; }
+  .access-denied-card { padding:32px 22px; border-radius:16px; }
+  .access-denied-description { font-size:12px; }
 }

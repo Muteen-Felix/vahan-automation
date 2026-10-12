@@ -24,7 +24,7 @@ class CoverageQuery(BaseModel):
     dataset: str = Field(default='', max_length=64)
     state: str = Field(default='', max_length=200)
     rto: str = Field(default='', max_length=200)
-    scenarios: list[PlannedReport] = Field(max_length=5000)
+    scenarios: list[PlannedReport]
 
 
 def normalized(filters):
