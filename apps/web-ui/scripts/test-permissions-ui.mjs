@@ -43,7 +43,14 @@ try {
       await page.getByRole('heading',{name:'Exported Reports',exact:true}).waitFor();
       assert.equal(new URL(page.url()).hash,'#reports','Members landing on an administrative route are redirected to Exported Reports');
       for(const target of ['#filters','#run-history','#update-history','#settings','#settings-ui-health','#health','#configure?scheduled=fixture','filters','settings','#unknown']) {
-        await page.goto(origin+target);
+        if (!target.startsWith('#')) {
+          await page.goto(origin+target);
+          await page.getByRole('heading',{name:'Exported Reports',exact:true}).waitFor();
+          assert.equal(new URL(page.url()).hash,'#reports');
+          assert.equal(await page.locator('.settings-page, .filter-profiles').count(),0);
+          continue;
+        }
+        await page.evaluate(hash=>{window.location.hash=hash;},target);
         await page.getByRole('heading',{name:'You don’t have access to this feature',exact:true}).waitFor();
         await page.getByRole('link',{name:'Go to Exported Reports',exact:true}).waitFor();
         assert.equal(await page.locator('.settings-page, .filter-profiles').count(),0);

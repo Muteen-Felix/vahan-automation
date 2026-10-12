@@ -1,12 +1,12 @@
 # Round 4 security and packaging verification
 
-Verified locally on 2026-10-12, using disposable Docker projects/databases.
+Verified locally on the `release/pre-go-live` branch on 2026-10-12, using disposable Docker projects/databases.
 The running application stack was not redeployed.
 
 | Check | Result |
 | --- | --- |
-| API tests plus production/OCR/CAPTCHA verification | 133 passed, 8 subtests passed |
-| Browser runner: all package test scripts | Passed |
+| Release API core tests | 61 passed |
+| Runner syntax and OCR rate-limit test | Passed |
 | Dashboard type check, build and platform browser suite | Passed |
 | Production container security integration | Passed |
 | Restricted API role on fresh schema and upgrade from 0012 to head | Passed |
@@ -61,3 +61,18 @@ root through `--ca-cert PATH`; the certificate is not included in this commit.
 and `release/**`, all pull requests, and manual dispatch. It includes the new
 OCR, production boundary, restricted-role lifecycle and scan/SBOM checks.
 This report records local evidence; GitHub workflow status is separate.
+
+## CI completion audit
+
+The expanded database CI command set covers the release schema, restricted-role
+startup, the 1,600-case queue check and populated legacy/shared/workbook migration
+comparisons. Worker lifecycle checks use explicit disposable administrator
+credentials and the job identifier supported by the release API. Obsolete tests
+were corrected for the removed schedule year input, ignored legacy case cap,
+member navigation and normalized migration filters. The release retains its
+existing year and repeat rules; no other feature commits were merged.
+
+CI installs Docker Compose 5.6.0 explicitly and enables the containerd image
+store so SBOM/provenance builds do not depend on the GitHub runner's older
+Compose installation. Release validation ports only Round 4 changes and adapts
+fixtures to the release API; it does not merge the other `ocr` feature commits.

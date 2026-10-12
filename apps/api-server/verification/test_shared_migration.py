@@ -41,9 +41,11 @@ new_history = {r['source_key']: r for r in after['report_update_history']}
 assert old_history.keys() <= new_history.keys() if deployed else old_history.keys() == new_history.keys()
 for key, old in old_history.items():
     new = new_history[key]
-    assert new['scope_key'] == dataset(None, old['filters'])['id']
+    shared_scope = dataset(None, old['filters'])
+    assert new['scope_key'] == shared_scope['id']
+    assert new['filters'] == shared_scope['filters'], ('shared scope normalization changed', key)
     for field in old:
-        if field != 'scope_key':
+        if field not in {'scope_key', 'filters'}:
             assert new[field] == old[field], ('history changed', field, key)
 for table in ('stored_files','jobs','report_sessions'):
     key = lambda row: row['id']

@@ -143,7 +143,8 @@ try{
   await page.getByRole('button',{name:'Use in Settings'}).click();
   await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
   assert.equal(await page.getByLabel('Saved filters',{exact:true}).inputValue(),id);
-  assert.equal(await page.getByLabel('Report year',{exact:true}).inputValue(),'2023');
+  assert.equal(await page.getByLabel('Report year',{exact:true}).count(),0);
+  assert.match(await page.getByLabel('Saved filters',{exact:true}).locator('option:checked').innerText(),/2023/);
   assert.equal(previewCalls,1,'Selecting a schedule profile must not start another preview or manual run');
   assert.equal(queueBody,undefined,'The dashboard never publishes a manual queue');
   await page.reload();await page.getByRole('button',{name:'Show form',exact:true}).click();await page.getByLabel('Saved filters',{exact:true}).waitFor();

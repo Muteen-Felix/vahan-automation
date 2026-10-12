@@ -82,7 +82,7 @@ class ProfileTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(plan['scenarios']),3)
         self.assertTrue(all(case['filters']['rtos']==['A1'] for case in plan['scenarios']))
 
-    async def test_fixed_multi_values_remain_combined_and_case_limit_is_explicit(self):
+    async def test_fixed_multi_values_remain_combined_and_legacy_case_limit_is_ignored(self):
         spec=definition();spec.fields['classes'].mode='fixed';spec.fields['classes'].values=[]
         spec.fields['evTypes'].mode='fixed';spec.fields['evTypes'].values=[]
         spec.fields['fuels'].mode='fixed';spec.fields['fuels'].values=['Fuel 1','Fuel 2']
@@ -92,8 +92,9 @@ class ProfileTests(unittest.IsolatedAsyncioTestCase):
         plan=await FilterPlanner(spec,2024,source,AsyncMock()).compile()
         self.assertEqual(len(plan['scenarios']),6)
         self.assertTrue(all(case['filters']['fuels']==['Fuel 1','Fuel 2'] for case in plan['scenarios']))
-        with self.assertRaisesRegex(ValueError,'More than 2'):
-            await FilterPlanner(definition(maxCases=2),2024,lookup,AsyncMock()).compile()
+        unlimited = await FilterPlanner(definition(maxCases=2),2024,lookup,AsyncMock()).compile()
+        self.assertEqual(len(unlimited['scenarios']),12)
+        self.assertEqual(len({case_key(case['filters']) for case in unlimited['scenarios']}),12)
 
     async def test_sql_owner_revision_and_same_query_deduplication(self):
         saved=await self.repo.save(self.owner,ProfileWrite(name=' Historical EV ',definition=definition()))
