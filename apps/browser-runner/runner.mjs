@@ -153,7 +153,7 @@ async function refreshCaptchaInternal(job, captchaId) {
 async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
   try {
     if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
-        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
+        || job.captchaId !== captchaId || job.refreshingCaptchaId === captchaId) return;
     const reservation = await http('/api/runner/ocr/start', {method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({jobId: job.jobId, captchaId})});
@@ -166,12 +166,12 @@ async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
       return;
     }
     if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
-        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
+        || job.captchaId !== captchaId || job.refreshingCaptchaId === captchaId) return;
     const { stdout } = await runImageCommand('tesseract', ['stdin', 'stdout', '-l', 'eng', '--psm', '6'], imageBytes(imageDataUrl), {
       timeout: 3000, env: {...process.env, OMP_THREAD_LIMIT: '1'},
     });
     if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
-        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
+        || job.captchaId !== captchaId || job.refreshingCaptchaId === captchaId) return;
 
     const rawText = stdout.trim();
     const text = rawText.replace(/[^A-Z0-9]/ig, '').toUpperCase();
@@ -184,7 +184,7 @@ async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
     }
   } catch (err) {
     if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
-        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
+        || job.captchaId !== captchaId || job.refreshingCaptchaId === captchaId) return;
     console.error('Auto-OCR failed, auto-refreshing...', err.message);
     await refreshCaptchaInternal(job, captchaId);
   }
