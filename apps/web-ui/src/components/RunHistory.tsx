@@ -3,6 +3,7 @@ import {operatorMessage} from '../operator-language';
 import {request} from '../services/api-client';
 import {uiSocket} from '../services/socket-client';
 import {useLiveQuery} from '../hooks/use-live-query';
+import sampleHistory from '../fixtures/run-history.json';
 
 type Run = {
   sessionId: string; filterName: string; runNumber: number; totalRuns: number; startedAt: string;
@@ -25,9 +26,21 @@ const statusLabels: Record<string, string> = {
 
 export function RunHistory() {
   const [offset, setOffset] = useState(0);
-  const query = useLiveQuery<History>(offset, signal => request<History>(
-    `/api/annual-reports/run-history?offset=${offset}&limit=${PAGE_SIZE}`, {signal}), 1000);
+  const [sampleMode, setSampleMode] = useState(() => new URLSearchParams(window.location.search).get('mockRunHistory') === '1');
+  const query = useLiveQuery<History>(`${sampleMode}:${offset}`, async signal => sampleMode
+    ? {total: sampleHistory.total, runs: sampleHistory.runs.slice(offset, offset + PAGE_SIZE)}
+    : request<History>(`/api/annual-reports/run-history?offset=${offset}&limit=${PAGE_SIZE}`, {signal}), 1000);
+  const toggleSamples = () => {
+    const next = !sampleMode;
+    const url = new URL(window.location.href);
+    if (next) url.searchParams.set('mockRunHistory', '1');
+    else url.searchParams.delete('mockRunHistory');
+    window.history.replaceState(null, '', url);
+    setOffset(0);
+    setSampleMode(next);
+  };
   useEffect(() => {
+    if (sampleMode) return;
     const refresh = () => query.refresh();
     const timer = window.setInterval(refresh, 15000);
     uiSocket.on('job:status', refresh);
@@ -37,7 +50,7 @@ export function RunHistory() {
       uiSocket.off('job:status', refresh);
       uiSocket.off('connect', refresh);
     };
-  }, [query.refresh]);
+  }, [query.refresh, sampleMode]);
   useEffect(() => {
     if (query.data && offset > 0 && offset >= query.data.total) setOffset(0);
   }, [query.data, offset]);
@@ -45,12 +58,16 @@ export function RunHistory() {
   return <main className="page-content run-history-page" id="run-history">
     <div className="section-intro run-history-intro">
       <div><h2>Run History</h2><p>One row per run, newest first · Vietnam time (GMT+7)</p></div>
-      <button type="button" onClick={() => query.refresh(true)}>Refresh history</button>
+      <div className="run-history-actions">
+        <button type="button" onClick={toggleSamples}>{sampleMode ? 'Show actual runs' : 'Show sample data'}</button>
+        <button type="button" onClick={() => query.refresh(true)}>Refresh history</button>
+      </div>
     </div>
+    {sampleMode && <p className="run-history-sample-notice" role="status">Sample data · 51 example runs across 3 filters. These are not actual collection results.</p>}
     {query.error && <p role="alert">{operatorMessage(query.error)}</p>}
     <section className="run-history-panel" aria-label="Filter run history" aria-busy={query.loading}>
       <div className="run-history-summary"><strong>{total.toLocaleString()} runs</strong>
-        <span role="status">{query.loading ? 'Updating history…' : 'Auto-updated'}</span></div>
+        <span role="status">{query.loading ? 'Updating history…' : sampleMode ? 'Sample data' : 'Auto-updated'}</span></div>
       <table className="run-history-table">
         <thead><tr><th scope="col">Run</th><th scope="col">Filter</th><th scope="col">Progress</th>
           <th scope="col">Status</th><th scope="col">Results</th><th scope="col">Run time</th></tr></thead>

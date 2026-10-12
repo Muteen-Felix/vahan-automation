@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
+import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {chromium} from '../../browser-runner/node_modules/playwright/index.mjs';
 const browser = await chromium.launch({headless:true, channel:process.env.PLAYWRIGHT_CHANNEL || 'chrome'});
@@ -8,20 +9,8 @@ try {
   const errors = []; let calls=0, newest='Electric two-wheelers', fail=false;
   const artifacts = new URL('../../../outputs/', import.meta.url);
   await mkdir(artifacts, {recursive:true});
-  const mockRuns = () => Array.from({length:51}, (_,index) => ({
-    sessionId: String(51-index),
-    filterName: index === 0 ? newest : ['Electric two-wheelers','Petrol passenger cars','Commercial diesel vehicles'][index%3],
-    runNumber: 17-Math.floor(index/3), totalRuns: 17,
-    ...[
-      {status:'PAUSED',processed:24,totalCases:1676,withData:20,noData:3,failed:1,pending:1652,running:0,finishedAt:null},
-      {status:'COMPLETED',processed:240,totalCases:240,withData:218,noData:22,failed:0,pending:0,running:0,finishedAt:'2026-10-12T01:15:00Z'},
-      {status:'RUNNING',processed:1069,totalCases:1676,withData:1010,noData:55,failed:4,pending:604,running:3,finishedAt:null},
-      {status:'COMPLETED_WITH_ERRORS',processed:100,totalCases:100,withData:80,noData:18,failed:2,pending:0,running:0,finishedAt:'2026-10-11T10:00:00Z'},
-      {status:'STOPPED',processed:35,totalCases:600,withData:30,noData:5,failed:0,pending:565,running:0,finishedAt:null},
-    ][index%5],
-    lastActivityAt:new Date(Date.parse('2026-10-12T02:35:00Z')-index*6*60*60*1000).toISOString(),
-    startedAt: new Date(Date.parse('2026-10-12T02:30:00Z')-index*6*60*60*1000).toISOString(),
-  }));
+  const fixture = JSON.parse(readFileSync(new URL('../src/fixtures/run-history.json', import.meta.url), 'utf8'));
+  const mockRuns = () => fixture.runs.map((run,index) => index === 0 ? {...run,filterName:newest} : run);
   page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(() => localStorage.setItem('vahanUiAccessToken','fixture-token'));
   await page.route('https://fonts.googleapis.com/**', r => r.abort());
@@ -43,7 +32,7 @@ try {
       calls++;
       if(fail) return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({detail:'History temporarily unavailable'})});
       const offset=Number(url.searchParams.get('offset'));
-      body={total:51,runs:mockRuns().slice(offset,offset+50)};
+      body={total:fixture.total,runs:mockRuns().slice(offset,offset+50)};
     }
     await route.fulfill({contentType:'application/json',body:JSON.stringify(body)});
   });
@@ -89,6 +78,17 @@ try {
   newest='Electric two-wheelers';
   await page.getByRole('button',{name:'Refresh history',exact:true}).click();
   await panel.locator('tbody th').first().filter({hasText:'Electric two-wheelers'}).waitFor();
+  const callsBeforeSamples=calls;
+  await page.getByRole('button',{name:'Show sample data',exact:true}).click();
+  await page.locator('.run-history-sample-notice').filter({hasText:'51 example runs across 3 filters'}).waitFor();
+  assert.equal(new URL(page.url()).searchParams.get('mockRunHistory'),'1');
+  await panel.locator('tbody tr').first().getByText('Paused',{exact:true}).waitFor();
+  assert.equal(calls,callsBeforeSamples,'Sample mode uses bundled data, not the history API');
+  await panel.getByRole('button',{name:'Next',exact:true}).click();
+  await panel.getByRole('rowheader',{name:'Commercial diesel vehicles',exact:true}).waitFor();
+  assert.equal(await panel.locator('tbody tr').count(),1);
+  await panel.getByRole('button',{name:'Previous',exact:true}).click();
+  await panel.getByRole('rowheader',{name:'Electric two-wheelers',exact:true}).first().waitFor();
   for(const width of [1440,768,390,320]) {
     await page.setViewportSize({width,height:1000});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`No horizontal page overflow at ${width}px`);
@@ -100,6 +100,11 @@ try {
   await page.reload();
   await panel.locator('tbody th').first().filter({hasText:'Electric two-wheelers'}).waitFor();
   assert.equal(await nav.getByRole('link',{name:'Run History',exact:true}).getAttribute('aria-current'),'page');
+  assert.equal(await page.getByRole('button',{name:'Show actual runs',exact:true}).count(),1,'Sample mode survives reload');
+  await page.getByRole('button',{name:'Show actual runs',exact:true}).click();
+  await panel.locator('tbody th').first().filter({hasText:'Electric two-wheelers'}).waitFor();
+  assert.equal(new URL(page.url()).searchParams.has('mockRunHistory'),false);
+  assert.ok(calls>callsBeforeSamples,'Switching to actual runs restores API reads');
   await page.goto(origin+'#update-history');
   await page.waitForURL('**/#run-history');
   await page.getByRole('heading',{name:'Run History',exact:true}).waitFor();
