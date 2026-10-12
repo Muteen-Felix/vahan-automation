@@ -58,4 +58,15 @@ cancelled.context.http = async() => {
 await cancelled.run(cancelled.job, 'captcha-1', 'data:image/png;base64,AA==');
 assert.deepEqual(cancelled.calls, ['reserve']);
 
+const refreshed = fixture({allowed:true});
+refreshed.job.refreshingCaptchaId = 'previous-challenge';
+await refreshed.run(refreshed.job, 'captcha-1', 'data:image/png;base64,AA==');
+assert.ok(refreshed.calls.includes('ocr'));
+assert.ok(refreshed.calls.includes('submit:ABC123'));
+
+const refreshing = fixture({allowed:true});
+refreshing.job.refreshingCaptchaId = 'captcha-1';
+await refreshing.run(refreshing.job, 'captcha-1', 'data:image/png;base64,AA==');
+assert.deepEqual(refreshing.calls, []);
+
 console.log('OCR rate-limit runner checks passed: shared reservation precedes Tesseract, denied work stops without refreshing, and OCR text is not logged.');
