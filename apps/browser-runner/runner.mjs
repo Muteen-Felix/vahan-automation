@@ -152,6 +152,21 @@ async function refreshCaptchaInternal(job, captchaId) {
 
 async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
   try {
+    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
+        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
+    const reservation = await http('/api/runner/ocr/start', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({jobId: job.jobId, captchaId})});
+    if (!reservation.allowed) {
+      if (reservation.code === 'OCR_RATE_LIMIT') {
+        job.status = 'FAILED';
+        if (active === job) active = null;
+        await saveState().catch(error => console.error('Could not save browser state after OCR limit:', error.message));
+      }
+      return;
+    }
+    if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
+        || job.captchaId !== captchaId || job.refreshingCaptchaId) return;
     const { stdout } = await runImageCommand('tesseract', ['stdin', 'stdout', '-l', 'eng', '--psm', '6'], imageBytes(imageDataUrl), {
       timeout: 3000, env: {...process.env, OMP_THREAD_LIMIT: '1'},
     });
@@ -160,8 +175,6 @@ async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
 
     const rawText = stdout.trim();
     const text = rawText.replace(/[^A-Z0-9]/ig, '').toUpperCase();
-    console.log(`OCR raw output: ${rawText}`);
-    console.log(`Auto-OCR result: ${text}`);
     if (text.length === 6) {
       console.log('Valid captcha detected, auto-submitting...');
       await submitCaptchaInternal(job, captchaId, text);

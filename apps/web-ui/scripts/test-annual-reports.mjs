@@ -191,6 +191,12 @@ try {
   assert.equal(await page.getByRole('button',{name:'Download',exact:true}).count(),0);
   assert.equal(await page.getByRole('heading',{name:'Update history',exact:true}).count(),0);
   assert.equal(historyRequests,0,'the removed history panel makes no SQL history requests');
+  assert.ok(reportSocket,'the authenticated admin UI socket is connected');
+  reportSocket.send('42/ui,'+JSON.stringify(['job:error',{jobId:'fixture-job',code:'OCR_RATE_LIMIT',
+    message:'OCR_RATE_LIMIT: System-wide OCR limit reached (20 starts per 10 minutes). This job was stopped. Try again in about 1 minute.'}]));
+  const ocrAlert=page.getByRole('alert').filter({hasText:'Automatic CAPTCHA reading reached the system limit'});
+  await ocrAlert.waitFor();
+  assert.match(await ocrAlert.innerText(),/This report was stopped\. Try again in 1 minute\./);
   assert.deepEqual(errors,[]);
   console.log('Annual reports UI: live committed updates, slow reads under continuous worker updates, removed workspace absent, search, pagination, exports and responsive layout passed.');
 } finally { await browser.close(); }

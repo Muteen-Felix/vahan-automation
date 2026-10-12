@@ -76,6 +76,7 @@ def _runner_auth_is_allowed(request: Request) -> bool:
         or (method in {"GET", "PUT"} and path.startswith("/api/runner-state/"))
         or (method == 'POST' and path == '/api/runner-logs')
         or (method == 'POST' and path == '/api/runner/queue/claim')
+        or (method == 'POST' and path == '/api/runner/ocr/start')
     )
     return allowed_path and runner_token_matches(request.headers.get("x-vahan-runner-token"))
 

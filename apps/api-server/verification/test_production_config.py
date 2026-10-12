@@ -35,6 +35,28 @@ def test_socket_origins_default_to_configured_dashboard_origins(monkeypatch):
     assert values.socketio_cors_origins==values.cors_origins
 
 
+def test_http_cors_accepts_only_the_production_origin_allowlist():
+    import os, subprocess
+    program = '''
+from fastapi.testclient import TestClient
+from app.main import fastapi_app
+client = TestClient(fastapi_app)
+allowed = client.options('/api/health', headers={
+    'Origin':'https://dashboard.example', 'Access-Control-Request-Method':'GET'})
+blocked = client.options('/api/health', headers={
+    'Origin':'https://evil.example', 'Access-Control-Request-Method':'GET'})
+assert allowed.status_code == 200 and allowed.headers.get('access-control-allow-origin') == 'https://dashboard.example'
+assert blocked.status_code == 400 and 'access-control-allow-origin' not in blocked.headers
+read = client.get('/api/health', headers={'Origin':'https://evil.example'})
+assert read.status_code == 200 and 'access-control-allow-origin' not in read.headers
+'''
+    subprocess.run([sys.executable,'-c',program],cwd=Path(__file__).resolve().parents[1],
+        env={**os.environ,'VAHAN_ENVIRONMENT':'production',
+             'VAHAN_API_CORS_ORIGINS':'https://dashboard.example',
+             'VAHAN_API_SOCKETIO_CORS_ORIGINS':'https://dashboard.example'},
+        check=True,capture_output=True,text=True,timeout=30)
+
+
 @pytest.mark.parametrize('environment,expected', [('production',404),('test',200)])
 def test_api_reference_is_not_public_in_production(environment,expected):
     import os, subprocess
