@@ -34,7 +34,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, year, schedul
   const [profileId, setProfileId] = useState(selectedProfileId);
   const [date, setDate] = useState(initial.date);
   const [time, setTime] = useState(initial.time);
-  const [repeat, setRepeat] = useState<'once' | 'daily' | 'monthly'>('once');
+  const [repeat, setRepeat] = useState<'once' | 'monthly'>('once');
   const [saving, setSaving] = useState(false);
   const [timeZoneSaving, setTimeZoneSaving] = useState(false);
   const [actionId, setActionId] = useState('');
@@ -146,15 +146,15 @@ export function AutomaticRunSettings({profiles, selectedProfileId, year, schedul
             </label>
             <label>Start date<input aria-label="Start date" type="date" value={date} onChange={event => setDate(event.target.value)} required disabled={saving} /></label>
             <label>Start time<input aria-label="Start time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={saving} /></label>
-            <label>Repeat<select aria-label="Repeat" value={repeat} onChange={event => setRepeat(event.target.value as 'once' | 'daily' | 'monthly')} disabled={saving}>
-              <option value="once">Once</option><option value="daily">Every day</option><option value="monthly">Every month</option>
+            <label>Repeat<select aria-label="Repeat" value={repeat} onChange={event => setRepeat(event.target.value as 'once' | 'monthly')} disabled={saving}>
+              <option value="once">Once</option><option value="monthly">Every month</option>
             </select></label>
             <div className="automatic-run-form-footer"><span>{runTimeZoneLabel(timeZone)}</span>
               <button className="primary-button" type="submit" disabled={saving || loading || !profile}>{saving ? 'Saving…' : 'Add schedule'}</button>
             </div>
           </form>
           <div className="schedule-help-slot"><p className="schedule-help">{repeat === 'monthly'
-            ? `Runs on day ${Number(date.slice(-2))} each month; shorter months use their last day.`
+            ? `Runs on day ${Number(date.slice(-2))} each month; shorter months use their last day. At year-end, a separate filter and schedule are created for the following year.`
             : !profiles.length
             ? <><a href="#filters">Save your filters</a> before adding a schedule.</>
             : 'Saved schedules use these filters. View collected data in Exported Reports.'}</p></div>
@@ -177,8 +177,12 @@ export function AutomaticRunSettings({profiles, selectedProfileId, year, schedul
               </span></div>
             <dl className="run-schedule-details">
               <div className="run-schedule-start"><dt>{schedule.nextRunAt ? 'Next start' : 'Scheduled start'}</dt><dd title={formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}>{formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}</dd><small>{runTimeZoneLabel(schedule.timeZone)}</small></div>
-              <div><dt>Repeat</dt><dd>{schedule.repeat === 'monthly' ? 'Every month' : schedule.repeat === 'daily' ? 'Every day' : 'Once'}</dd>
-                <small>{schedule.repeat === 'monthly' ? `Day ${scheduledDayOfMonth(schedule.startsAt, runTimeZone(schedule.timeZone))} · month-end if needed` : schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
+              <div><dt>Repeat</dt><dd>{schedule.annualSuccessorScheduleId ? `Ended after ${schedule.year}`
+                : schedule.repeat === 'monthly' ? 'Every month' : schedule.repeat === 'daily' ? 'Every day' : 'Once'}</dd>
+                <small>{schedule.annualSuccessorScheduleId
+                  ? `A separate ${schedule.annualRolloverYear ?? schedule.year + 1} filter and schedule are active`
+                  : schedule.repeat === 'monthly' ? `Day ${scheduledDayOfMonth(schedule.startsAt, runTimeZone(schedule.timeZone))} · month-end if needed · new filter each year`
+                  : schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
               <div><dt>Report browsers</dt><dd>Automatic</dd><small>Uses connected browsers; waits when none are available</small></div>
             </dl>
             <RunScheduleProgress schedule={schedule} statusLabel={!schedule.enabled && !schedule.sessionId && schedule.nextRunAt ? 'Disabled' : schedule.networkPaused ? 'Waiting for network' : STATUS_LABELS[schedule.status]} />
@@ -193,8 +197,12 @@ export function AutomaticRunSettings({profiles, selectedProfileId, year, schedul
             </div>
             <div className="run-schedule-actions">
               <button type="button" className="secondary-button"
-                title="Enable or disable future starts. A running report continues until stopped."
-                disabled={Boolean(actionId) || (schedule.repeat === 'once' && !schedule.nextRunAt)} onClick={() => void action(schedule, 'toggle')}>{schedule.repeat === 'once' && !schedule.nextRunAt ? 'No future runs' : schedule.enabled ? 'Disable future runs' : 'Enable schedule'}</button>
+                title={schedule.annualSuccessorScheduleId
+                  ? `The ${schedule.year} filter has ended. Use the ${schedule.annualRolloverYear ?? schedule.year + 1} schedule.`
+                  : 'Enable or disable future starts. A running report continues until stopped.'}
+                disabled={Boolean(actionId) || Boolean(schedule.annualSuccessorScheduleId) || (schedule.repeat === 'once' && !schedule.nextRunAt)}
+                onClick={() => void action(schedule, 'toggle')}>{schedule.annualSuccessorScheduleId ? 'Year complete'
+                  : schedule.repeat === 'once' && !schedule.nextRunAt ? 'No future runs' : schedule.enabled ? 'Disable future runs' : 'Enable schedule'}</button>
               {canResumeSchedule(schedule) ? <button type="button" className="secondary-button schedule-continue-button" disabled={Boolean(actionId)}
                 onClick={() => void action(schedule, 'resume')}>Continue run</button>
                 : schedule.sessionId ? <button type="button" className="secondary-button schedule-stop-button" disabled={Boolean(actionId) || schedule.status === 'PAUSING' && !schedule.networkPaused}

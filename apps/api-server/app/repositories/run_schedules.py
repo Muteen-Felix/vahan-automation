@@ -1,5 +1,6 @@
 """Durable run schedules stored as versioned PostgreSQL application settings."""
 import calendar
+import re
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -47,6 +48,24 @@ def next_monthly_run(starts_at, current, time_zone=TIME_ZONE):
     if candidate <= current:
         candidate = in_month(month + 1)
     return candidate.astimezone(timezone.utc).isoformat()
+
+
+def monthly_start_for_year(starts_at, year, current, time_zone=TIME_ZONE):
+    """Start the new annual filter in January on the saved monthly day and time."""
+    zone = ZoneInfo(time_zone)
+    anchor = datetime.fromisoformat(starts_at).astimezone(zone)
+    first = anchor.replace(year=year, month=1, day=min(anchor.day, calendar.monthrange(year, 1)[1]))
+    current = current.astimezone(zone)
+    first_run = max(first, current)
+    return (first.astimezone(timezone.utc).isoformat(),
+            first_run.astimezone(timezone.utc).isoformat())
+
+
+def annual_profile_name(name, source_year, target_year):
+    """Give each annual filter a distinct, readable saved-profile name."""
+    base = re.sub(rf'\s+\(?{source_year}\)?$', '', name.strip()).strip() or 'Annual report filters'
+    suffix = f' ({target_year})'
+    return f'{base[:120 - len(suffix)].rstrip()}{suffix}'
 
 
 def public_schedule(value):
@@ -219,7 +238,11 @@ class RunScheduleRepository:
     async def create(self, owner, command):
         profile = await FilterProfileRepository().get(owner, command.profile_id)
         year = (profile['definition'].get('report') or {}).get('year', command.year)
-        value = {'version': 1, 'id': str(uuid4()), 'owner': owner,
+        scheduled_year = command.starts_at.astimezone(ZoneInfo(command.time_zone)).year
+        if year > scheduled_year:
+            raise ValueError('Schedule the report in its calendar year or later.')
+        schedule_id = str(uuid4())
+        value = {'version': 1, 'id': schedule_id, 'owner': owner,
             'profileId': profile['id'], 'profileName': profile['name'], 'profileRevision': profile['revision'],
             'definition': profile['definition'], 'year': year,
             'startsAt': command.starts_at.isoformat(), 'nextRunAt': command.starts_at.isoformat(),
@@ -229,6 +252,8 @@ class RunScheduleRepository:
             'withData': 0, 'noData': 0, 'failed': 0, 'preparationAttempts': 0, 'retryAfter': None,
             'createdAt': now().isoformat(), 'updatedAt': now().isoformat(),
             'activeElapsedMs': 0, 'activeSegmentStartedAt': None, 'pausedAt': None, 'executionEpoch': 0}
+        if command.repeat == 'monthly':
+            value['annualSeriesId'] = schedule_id
         async with engine.begin() as connection:
             await connection.execute(insert(db.app_settings).values(key=PREFIX + value['id'], value=value))
         return value
@@ -243,12 +268,45 @@ class RunScheduleRepository:
             time_zone = current.get('timeZone', TIME_ZONE)
             next_run = (next_daily_run(current['startsAt'], finished, time_zone) if current['repeat'] == 'daily'
                 else next_monthly_run(current['startsAt'], finished, time_zone) if current['repeat'] == 'monthly' else None)
+            rollover_year = None
+            successor_id = None
+            if (current['repeat'] == 'monthly' and current['enabled'] and next_run
+                    and datetime.fromisoformat(next_run).astimezone(ZoneInfo(time_zone)).year > current['year']):
+                rollover_year = current['year'] + 1
+                series_id = current.get('annualSeriesId') or current['id']
+                successor_id = str(uuid4())
+                next_starts_at, next_first_run = monthly_start_for_year(
+                    current['startsAt'], rollover_year, finished, time_zone)
+                next_profile = await FilterProfileRepository().create_annual_copy(connection,
+                    current['owner'], annual_profile_name(current['profileName'], current['year'], rollover_year),
+                    current['definition'], rollover_year, finished)
+                successor = {'version': 1, 'id': successor_id, 'owner': current['owner'],
+                    'profileId': next_profile['id'], 'profileName': next_profile['name'], 'profileRevision': 1,
+                    'definition': next_profile['definition'], 'year': rollover_year,
+                    'startsAt': next_starts_at, 'nextRunAt': next_first_run, 'timeZone': time_zone,
+                    'repeat': 'monthly', 'enabled': True, 'status': 'WAITING',
+                    'sessionId': None, 'lastSessionId': None, 'lastRunAt': None, 'lastFinishedAt': None,
+                    'message': 'Waiting for the next calendar year report schedule.',
+                    'total': 0, 'done': 0, 'withData': 0, 'noData': 0, 'failed': 0,
+                    'preparationAttempts': 0, 'retryAfter': None, 'createdAt': finished.isoformat(),
+                    'updatedAt': finished.isoformat(), 'activeElapsedMs': 0, 'activeSegmentStartedAt': None,
+                    'pausedAt': None, 'executionEpoch': 0, 'networkPaused': False, 'retryProgress': None,
+                    'operation': None, 'tasks': None, 'annualSeriesId': series_id,
+                    'annualSourceScheduleId': current['id']}
+                await connection.execute(insert(db.app_settings).values(
+                    key=PREFIX + successor_id, value=successor))
             current = {**current, **counts, 'status': 'COMPLETED_WITH_ERRORS' if counts['failed'] else 'COMPLETED',
-                'message': f"Finished {counts['done']}/{counts['total']} cases. {counts['failed']} failed.",
+                'message': (f"Finished {counts['done']}/{counts['total']} cases. {counts['failed']} failed." if rollover_year is None else
+                    f"Finished {counts['done']}/{counts['total']} cases. {counts['failed']} failed. "
+                    f"Year {current['year']} is complete; a separate {rollover_year} filter and monthly schedule were created."),
                 'sessionId': None, 'lastSessionId': value['sessionId'], 'lastFinishedAt': finished.isoformat(),
-                'nextRunAt': next_run, 'enabled': current['enabled'] and next_run is not None,
+                'nextRunAt': None if rollover_year is not None else next_run,
+                'enabled': False if rollover_year is not None else current['enabled'] and next_run is not None,
                 'activeElapsedMs': active_elapsed_ms(current, finished), 'activeSegmentStartedAt': None,
                 'pausedAt': None, 'networkPaused': False, 'preparationAttempts': 0, 'retryAfter': None, 'updatedAt': finished.isoformat()}
+            if rollover_year is not None:
+                current.update(annualSeriesId=current.get('annualSeriesId') or current['id'],
+                    annualSuccessorScheduleId=successor_id, annualRolloverYear=rollover_year)
             await connection.execute(update(db.app_settings).where(db.app_settings.c.key == key).values(value=current))
         return current
 
@@ -258,6 +316,8 @@ class RunScheduleRepository:
             value = await connection.scalar(select(db.app_settings.c.value).where(db.app_settings.c.key == key).with_for_update())
             if not value or value['owner'] != owner:
                 raise LookupError('Run schedule not found.')
+            if enabled and value.get('annualSuccessorScheduleId'):
+                raise ValueError(f"The {value['year']} schedule has ended. Enable the {value.get('annualRolloverYear', value['year'] + 1)} schedule instead.")
             if enabled and not value.get('sessionId') and value['repeat'] == 'once' and not value['nextRunAt']:
                 raise ValueError('This one-time schedule has ended. Create a schedule with a new date and time.')
             changes = {'enabled': enabled}

@@ -6,6 +6,10 @@ export interface RunSchedule {
   profileName: string;
   profileRevision: number;
   year: number;
+  annualSeriesId?: string;
+  annualSourceScheduleId?: string;
+  annualSuccessorScheduleId?: string;
+  annualRolloverYear?: number;
   startsAt: string;
   nextRunAt: string | null;
   repeat: 'once' | 'daily' | 'monthly';
@@ -72,7 +76,7 @@ export interface RunScheduleInput {
   profileId: string;
   year: number;
   startsAt: string;
-  repeat: 'once' | 'daily' | 'monthly';
+  repeat: 'once' | 'monthly';
   timeZone: RunTimeZone;
 }
 

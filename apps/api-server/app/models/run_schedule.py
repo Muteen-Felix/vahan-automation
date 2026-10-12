@@ -22,7 +22,7 @@ class RunScheduleCreate(AutomaticWorkersCommand):
     starts_at: datetime = Field(alias='startsAt')
     time_zone: Literal['Asia/Ho_Chi_Minh', 'Asia/Kolkata'] = Field(default='Asia/Ho_Chi_Minh', alias='timeZone')
     year: int = Field(ge=1900, strict=True)
-    repeat: Literal['once', 'daily', 'monthly'] = 'once'
+    repeat: Literal['once', 'monthly'] = 'once'
 
     @field_validator('starts_at')
     @classmethod
@@ -37,8 +37,8 @@ class RunScheduleCreate(AutomaticWorkersCommand):
     @field_validator('year')
     @classmethod
     def valid_year(cls, value):
-        if value > datetime.now().year:
-            raise ValueError('Choose the current calendar year or an earlier year.')
+        if value > datetime.now().year + 1:
+            raise ValueError('Choose the current calendar year or the following year.')
         return value
 
 

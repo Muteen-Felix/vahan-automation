@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta, timezone
 import asyncio
 from contextlib import asynccontextmanager
+from copy import deepcopy
 from uuid import uuid4
 
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.db import engine, schema as db
-from app.models.filter_profile import ProfileWrite
+from app.models.filter_profile import ProfileDefinition, ProfileWrite
 
 
 def now():
@@ -54,6 +55,17 @@ class FilterProfileRepository:
                     id=str(uuid4()), owner_username=owner, created_at=now(), revision=1, **values)
                     .returning(db.filter_profiles))
             return document(result.mappings().one())
+
+    async def create_annual_copy(self, connection, owner, name, definition, year, timestamp):
+        """Save an independent next-year filter inside its schedule rollover transaction."""
+        copied = deepcopy(definition)
+        report = copied.get('report') or {}
+        copied['report'] = {**report, 'year': year}
+        validated = ProfileDefinition.model_validate(copied).model_dump(mode='json', by_alias=True)
+        result = await connection.execute(insert(db.filter_profiles).values(
+            id=str(uuid4()), owner_username=owner, name=name, definition=validated,
+            revision=1, created_at=timestamp, updated_at=timestamp).returning(db.filter_profiles))
+        return document(result.mappings().one())
 
     async def delete(self, owner, profile_id, revision):
         async with engine.begin() as connection:
