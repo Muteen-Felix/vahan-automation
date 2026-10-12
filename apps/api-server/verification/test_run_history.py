@@ -91,6 +91,8 @@ class RunHistoryTests(unittest.IsolatedAsyncioTestCase):
         rows = (await list_runs())['runs']
         original = next(row for row in rows if row['sessionId'] == str(first))
         self.assertEqual(original['filterName'], 'Original filter')
+        self.assertEqual(original['status'], 'UNKNOWN')
+        self.assertIsNone(original['totalCases'], 'Do not invent counts for queues removed before progress was archived')
         self.assertEqual((original['runNumber'], original['totalRuns']), (1, 2))
         self.assertEqual(len(rows), 3)
 
@@ -98,6 +100,9 @@ class RunHistoryTests(unittest.IsolatedAsyncioTestCase):
         session_id = await self.start()
         profile, schedule_id = uuid4(), uuid4()
         async with engine.begin() as connection:
+            await connection.execute(update(db.batch_queue_tasks).where(
+                db.batch_queue_tasks.c.session_id == str(session_id), db.batch_queue_tasks.c.position == 0
+            ).values(status='COMPLETED', attempts=3))
             await connection.execute(update(db.batch_queue_sessions).where(
                 db.batch_queue_sessions.c.session_id == str(session_id)).values(status='PAUSED'))
             await connection.execute(insert(db.app_settings).values(key=SCHEDULE_PREFIX + str(schedule_id), value={
@@ -108,6 +113,52 @@ class RunHistoryTests(unittest.IsolatedAsyncioTestCase):
         result = await list_runs()
         self.assertEqual(result['total'], 1)
         self.assertEqual(result['runs'][0]['filterName'], 'Legacy saved filter')
+        row = result['runs'][0]
+        self.assertEqual((row['processed'], row['totalCases'], row['withData'], row['pending']), (1, 2, 1, 1))
+        self.assertEqual(row['status'], 'STOPPED')
+
+    async def test_live_progress_status_and_counts_do_not_count_retry_attempts(self):
+        profile = uuid4()
+        session_id = await self.start(profile, 'Same day filter')
+        second = await self.start(profile, 'Same day filter')
+        async with engine.begin() as connection:
+            await connection.execute(update(db.batch_queue_tasks).where(
+                db.batch_queue_tasks.c.session_id == str(session_id), db.batch_queue_tasks.c.position == 0
+            ).values(status='NO_DATA', attempts=4))
+            await connection.execute(update(db.batch_queue_tasks).where(
+                db.batch_queue_tasks.c.session_id == str(session_id), db.batch_queue_tasks.c.position == 1
+            ).values(status='PROCESSING', attempts=3))
+        rows = (await list_runs())['runs']
+        self.assertEqual(len(rows), 2, 'Two runs on one day stay separate')
+        row = next(row for row in rows if row['sessionId'] == str(session_id))
+        self.assertEqual((row['processed'], row['totalCases'], row['noData'], row['running']), (1, 2, 1, 1))
+        self.assertEqual(row['status'], 'RUNNING')
+        self.assertIsNone(row['finishedAt'])
+        async with engine.begin() as connection:
+            await connection.execute(update(db.batch_queue_tasks).where(
+                db.batch_queue_tasks.c.session_id == str(session_id), db.batch_queue_tasks.c.position == 1
+            ).values(status='FAILED'))
+            await connection.execute(update(db.app_settings).where(
+                db.app_settings.c.key == 'batch-retry-policy:' + str(session_id)
+            ).values(value={'phase':'DONE'}))
+            await connection.execute(update(db.batch_queue_tasks).where(
+                db.batch_queue_tasks.c.session_id == str(second)
+            ).values(status='COMPLETED'))
+        rows = (await list_runs())['runs']
+        row = next(row for row in rows if row['sessionId'] == str(session_id))
+        self.assertEqual((row['processed'], row['failed'], row['pending'], row['running']), (2, 1, 0, 0))
+        self.assertEqual(row['status'], 'COMPLETED_WITH_ERRORS')
+        self.assertIsNotNone(row['finishedAt'])
+        self.assertEqual(next(row for row in rows if row['sessionId'] == str(second))['status'], 'COMPLETED')
+
+    async def test_failed_cases_pending_recovery_do_not_mark_run_complete(self):
+        session_id = await self.start(uuid4(), 'Recovery filter')
+        async with engine.begin() as connection:
+            await connection.execute(update(db.batch_queue_tasks).where(
+                db.batch_queue_tasks.c.session_id == str(session_id)).values(status='FAILED'))
+        row = (await list_runs())['runs'][0]
+        self.assertEqual(row['status'], 'RUNNING')
+        self.assertIsNone(row['finishedAt'])
 
     async def test_unknown_old_run_is_not_given_an_invented_filter_name(self):
         session_id = await self.start()
