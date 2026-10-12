@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {AccountSettings} from './components/AccountSettings';
+import {Brand} from './components/Brand';
 import {AnnualReports} from './components/AnnualReports';
 import {AutomaticRunSettings} from './components/AutomaticRunSettings';
 import {ConnectionBanner} from './components/ConnectionBanner';
@@ -197,13 +198,7 @@ export default function App() {
   const forbidden = activeSection === 'forbidden' || (!isAdmin && activeSection !== 'reports');
   return <div className="app-shell" data-view={activeSection}>
     <header className="site-header">
-      <a className="brand-lockup" href="#reports" aria-label="VAHAN Report Automation">
-        <span className="brand-symbol" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" focusable="false">
-          <path d="M7 7L16 26L25 7" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M7 7L16 26L25 7" stroke="#346d43" strokeWidth="1.1" strokeDasharray="2 3" strokeLinecap="round" />
-        </svg></span>
-        <span className="brand-copy"><strong>VAHAN</strong><small>REPORT AUTOMATION</small></span>
-      </a>
+      <Brand />
       <nav className="main-nav" aria-label="Main navigation">
         <a className={activeSection === 'reports' ? 'active' : undefined} aria-current={activeSection === 'reports' ? 'page' : undefined} href="#reports">Exported Reports</a>
         {isAdmin && <><a className={activeSection === 'filters' ? 'active' : undefined} aria-current={activeSection === 'filters' ? 'page' : undefined} href="#filters">Filters</a>

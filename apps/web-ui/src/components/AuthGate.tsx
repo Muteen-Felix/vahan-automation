@@ -11,6 +11,7 @@ import {
 import { hydratePersistentState, resetPersistentState } from '../services/persistent-state';
 import {observeSessionActivity} from '../services/session-activity';
 import {operatorMessage} from '../operator-language';
+import {Brand} from './Brand';
 
 type GateState = "checking" | "setup" | "login" | "unavailable" | "authenticated";
 
@@ -118,17 +119,25 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (gate === "authenticated") return children;
 
-  if (gate === "checking") {
-    return <main className="auth-shell"><p>Checking your sign-in…</p></main>;
-  }
-
   return (
-    <main className="auth-shell">
-      <section className="auth-card">
-        {gate === "setup" ? (
+    <div className="auth-layout">
+      <header className="site-header auth-header">
+        <Brand />
+        <span className="auth-header-label">Account access</span>
+      </header>
+      <main className="auth-shell auth-content">
+      <section className="auth-card" aria-labelledby="auth-title" aria-busy={gate === "checking" || submitting}>
+        <span className="auth-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 10V7a4 4 0 0 1 8 0v3M7 10h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/><path d="M12 14v3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span>
+        {gate === "checking" ? (
+          <>
+            <p className="eyebrow dark">ACCOUNT ACCESS</p>
+            <h1 id="auth-title">Checking your sign-in…</h1>
+            <p className="auth-description" role="status">Please wait while we check your account access.</p>
+          </>
+        ) : gate === "setup" ? (
           <>
             <p className="eyebrow dark">ACCOUNT SETUP</p>
-            <h1>Sign-in is not ready yet</h1>
+            <h1 id="auth-title">Sign-in is not ready yet</h1>
             <p className="auth-description">
               Ask the person managing this system to set up your sign-in account.
             </p>
@@ -143,7 +152,7 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
         ) : gate === "unavailable" ? (
           <>
             <p className="eyebrow dark">SYSTEM CONNECTION</p>
-            <h1>Could not connect</h1>
+            <h1 id="auth-title">Could not connect</h1>
             <p className="auth-description">{operatorMessage(error) || "Could not check your sign-in. Check the connection and try again."}</p>
             <button className="primary-button" type="button" onClick={() => window.location.reload()}>
               Try again
@@ -152,7 +161,7 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
         ) : (
           <>
             <p className="eyebrow dark">ACCOUNT SIGN-IN</p>
-            <h1>Welcome back</h1>
+            <h1 id="auth-title">Welcome back</h1>
             <p className="auth-description">Sign in to collect and view VAHAN reports.</p>
             <form className="auth-form" onSubmit={handleLogin}>
               <label>
@@ -186,6 +195,7 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
           </>
         )}
       </section>
-    </main>
+      </main>
+    </div>
   );
 }
