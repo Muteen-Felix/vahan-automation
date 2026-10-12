@@ -153,11 +153,13 @@ try {
   assert.equal(await page.locator('.annual-table tbody tr').count(),100);
   await exportFiltered('andaman','');
   await page.getByLabel('Search RTO / code').fill('AN1');
-  await page.waitForTimeout(350);
+  // Wait for the debounced filter read to finish before checking rows/export.
+  await page.waitForFunction(() => document.querySelector('.annual-export-button')?.disabled === false);
   assert.equal(await page.locator('.annual-table tbody tr').count(),100);
   await exportFiltered('andaman','AN1');
   await page.getByLabel('Search State').fill('');
-  await page.waitForTimeout(350);
+  // Wait for the debounced filter read to finish before checking rows/export.
+  await page.waitForFunction(() => document.querySelector('.annual-export-button')?.disabled === false);
   assert.equal(await page.locator('.annual-table tbody tr').count(),100);
   await exportFiltered('','AN1');
   assert.equal(exportRequests.length,3,'State-only, combined and RTO-only exports use the applied filters');
