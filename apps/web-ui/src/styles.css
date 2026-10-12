@@ -901,6 +901,7 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid rg
 .run-history-intro p { margin:5px 0 0; color:#65736a; font-size:12px; }
 .run-history-actions { display:flex; flex-wrap:wrap; gap:8px; }
 .run-history-page button { width:auto; min-height:34px; padding:7px 12px; border:1px solid #dbe3dd; border-radius:4px; color:#354e3e; background:#fff; font-size:12px; }
+.run-history-actions .run-history-refresh { display:inline-flex; align-items:center; justify-content:center; height:32px; min-height:32px; padding:0 10px; font-size:11px; line-height:1.2; white-space:nowrap; }
 .run-history-page button:disabled { opacity:.5; cursor:default; }
 .run-history-page [role="alert"] { color:#a02f22; }
 .run-history-panel { overflow:hidden; border:1px solid #dbe3dd; border-radius:6px; background:#fff; }
@@ -1344,7 +1345,7 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .schedule-feedback { height:0; overflow:hidden; }
 .schedule-feedback.has-feedback { height:30px; }
 .run-schedule-list-heading { margin-top:12px; padding-top:10px; }
-.settings-page .run-schedule-card { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); grid-template-areas:'title progress' 'details details' 'retry actions'; grid-template-rows:52px minmax(78px,auto) minmax(38px,auto); padding:14px; gap:10px; }
+.settings-page .run-schedule-card { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); grid-template-areas:'title progress' 'details details' 'retry actions'; grid-template-rows:98px minmax(78px,auto) minmax(38px,auto); padding:14px; gap:10px; }
 .run-schedule-title { grid-area:title; grid-template-columns:minmax(0,1fr) 118px; gap:10px; font-size:13px; }
 .run-schedule-details { grid-area:details; padding:6px 0; gap:10px; }
 .run-schedule-details small { font-size:9px; }
@@ -1352,8 +1353,13 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .settings-page .run-schedule-card .schedule-worker-setting input:disabled { opacity:1; background:#f6f8f5; color:#65736a; }
 .settings-page .run-schedule-card .schedule-worker-setting small { margin-top:2px; line-height:12px; white-space:normal; overflow-wrap:anywhere; }
 .settings-page .run-schedule-card .schedule-worker-setting select { height:23px; min-height:23px; padding:1px 5px; }
-.run-schedule-progress { grid-area:progress; grid-template-rows:28px 4px; padding:7px 10px; gap:5px; }
-.schedule-progress-header { grid-template-columns:minmax(0,1fr) 100px; gap:8px; }
+.run-schedule-progress { grid-area:progress; grid-template-rows:28px 4px 42px; padding:7px 10px; gap:5px; }
+.schedule-progress-header { grid-template-columns:minmax(0,1fr) 100px; grid-template-rows:28px; gap:8px; }
+.schedule-progress-eta { display:grid; grid-template-columns:24px minmax(0,1fr); grid-template-rows:repeat(3,14px); column-gap:6px; font-size:10px; line-height:14px; }
+.schedule-progress-eta > span { grid-column:1; grid-row:1; color:#64786a; }
+.schedule-progress-eta strong { grid-column:2; grid-row:1; font-weight:600; }
+.schedule-progress-eta time { grid-column:2; grid-row:2; }
+.schedule-progress-eta small { grid-column:2; grid-row:3; font-size:9px; color:#64786a; }
 .schedule-progress-count { display:block; }
 .schedule-progress-label,.schedule-progress-state { display:none; }
 .schedule-progress-numbers strong { font-size:23px; }
@@ -1376,7 +1382,7 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
   .settings-page .schedule-timezone-setting { grid-template-columns:minmax(0,1fr); gap:8px; }
   .settings-page .automatic-run-form { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .settings-page .automatic-run-form .schedule-profile-label { grid-column:1/-1; }
-  .settings-page .run-schedule-card { grid-template-columns:minmax(0,1fr); grid-template-areas:'title' 'details' 'progress' 'retry' 'actions'; grid-template-rows:44px minmax(116px,auto) 52px 38px 38px; padding:12px; gap:8px; }
+  .settings-page .run-schedule-card { grid-template-columns:minmax(0,1fr); grid-template-areas:'title' 'details' 'progress' 'retry' 'actions'; grid-template-rows:44px minmax(116px,auto) 98px 38px 38px; padding:12px; gap:8px; }
   .run-schedule-details { grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1fr); }
   .run-schedule-details dd { font-size:11px; }
   .run-diagnostics-heading { flex-wrap:wrap; gap:7px; }

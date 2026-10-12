@@ -68,7 +68,7 @@ def _runner_auth_is_allowed(request: Request) -> bool:
     path = request.url.path
     method = request.method.upper()
     allowed_path = (
-        (method == "GET" and path in {"/api/ui-health/schedule", "/api/ui-health/contract"})
+        (method == "GET" and path == "/api/ui-health/contract")
         or (method == "POST" and path == "/api/ui-health/logs")
         or (method == "POST" and path.startswith("/api/jobs/") and path.endswith("/main-report"))
         or (method == "POST" and path.startswith("/api/jobs/") and path.endswith("/report-result"))
@@ -87,6 +87,11 @@ async def require_ui_authentication(request: Request, call_next):
         return await call_next(request)
     if path in {"/api/health", "/api/ready", "/api/auth/status", "/api/auth/login"}:
         return await call_next(request)
+    # Retired endpoints are absent for every caller, including old clients
+    # that no longer have a valid dashboard session.
+    if path.rstrip('/') in {'/api/ui-health/schedule', '/api/ui-health/run-now'} or (
+            path.rstrip('/') == '/api/maker-updates' or path.startswith('/api/maker-updates/')):
+        return JSONResponse(status_code=404, content={'detail': 'Not Found'})
     if _runner_auth_is_allowed(request):
         request.state.authenticated_runner = True
         return await call_next(request)

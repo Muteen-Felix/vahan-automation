@@ -549,7 +549,6 @@ socket.on('ui-health:preflight',async(request,respond)=>{
   catch(error){respond({ok:false,error:error.message});}
   finally{optionsBusy=false;}
 });
-socket.on('ui-health:run-now', request => healthCheck(request).catch(error => console.error(error.message)));
 const timer = setInterval(async () => {
   if (!socket.connected || stopping) return;
   try {

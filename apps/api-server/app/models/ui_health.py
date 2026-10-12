@@ -30,23 +30,6 @@ class UiHealthSchedule(BaseModel):
         )
 
 
-class UiHealthCheckNowRequest(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    runner_id: str | None = Field(default=None, alias="runnerId", max_length=128)
-
-
-class UiHealthCheckNowResponse(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    ok: bool = True
-    request_id: str = Field(alias="requestId")
-    runner_id: str = Field(alias="runnerId")
-    runner_name: str = Field(alias="runnerName")
-    requested_at: datetime = Field(alias="requestedAt")
-    status: str = "REQUESTED"
-
-
 class UiHealthLogRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 

@@ -182,3 +182,24 @@ async def test_late_terminal_ack_does_not_lock_runner_or_release_its_new_case(ad
         assert acknowledged.status == JobStatus.FAILED
         assert await connection.scalar(select(db.runners.c.current_job_id).where(db.runners.c.id == workers[0])) == newer['jobId']
     assert (await services.jobs.get(UUID(newer['jobId']))).status == JobStatus.ASSIGNED
+
+
+async def test_real_retry_keeps_one_run_and_one_case_in_admin_history(admin_token):
+    from app.repositories.run_history import list_runs
+    queue, session, workers = await setup_queue(count=1, total=1)
+    original = await queue.claim(session, 'test-admin', workers[0])
+    assert await services.jobs.transition_status(UUID(original['jobId']), JobStatus.FAILED)
+    retry = await queue.claim(session, 'test-admin', workers[0])
+    assert retry['type'] == 'assigned' and retry['jobId'] != original['jobId']
+    during = (await list_runs())['runs']
+    assert len(during) == 1 and during[0]['totalCases'] == 1 and during[0]['running'] == 1
+    command = await waiting_result(retry['jobId'])
+    await commit_report_result(UUID(retry['jobId']), workers[0], command)
+    settled = await queue.snapshot(session, 'test-admin')  # Settle the canonical case, as the scheduler does.
+    final = (await list_runs())['runs']
+    assert len(final) == 1 and final[0]['totalRuns'] == 1
+    assert (final[0]['totalCases'], final[0]['processed'], final[0]['noData'], final[0]['failed']) == (1, 1, 1, 0)
+    jobs = await services.jobs.list_all()
+    assert len(jobs) == 2 and len({job.case_id or job.id for job in jobs}) == 1
+    task = (await queue.snapshot(session, 'test-admin'))['tasks'][0]
+    assert task['attempts'] == 2 and task['status'] == 'NO_DATA'

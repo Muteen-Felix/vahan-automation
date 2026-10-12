@@ -18,13 +18,15 @@ try {
     });
     await page.route('**/api/**', async route=>{
       const req=route.request(), path=new URL(req.url()).pathname;
-      if (/^\/api\/(filter-profiles|run-schedules|runners|ui-health|users)/.test(path)) privateRequests.push(path);
+      if (/^\/api\/(filter-profiles|run-schedules|runners|ui-health|users)/.test(path)
+          || path==='/api/annual-reports/run-history') privateRequests.push(path);
       let body=[];
       if(path==='/api/auth/status')body={configured:true};
       else if(path==='/api/auth/me')body={username:'admin-fixture',role};
       else if(path==='/api/auth/activity')body={};
       else if(path==='/api/user-state')body={};
       else if(path==='/api/network/status')body={online:true};
+      else if(path==='/api/annual-reports/run-history')body={total:0,runs:[]};
       else if(path==='/api/ui-health/status')body={blocked:false,latestPreflight:null};
       else if(path==='/api/users')body=[{username:'admin-fixture',role:'admin',active:true},{username:'delegate',role:delegatedRole,active:true}];
       else if(path==='/api/users/delegate' && req.method()==='PATCH'){
@@ -68,6 +70,9 @@ try {
       assert.equal(await page.getByRole('button',{name:'Log out',exact:true}).count(),1);
       assert.deepEqual(privateRequests,[],'Members must not load profiles, schedules, workers, health or accounts');
     } else {
+      await nav.getByRole('link',{name:'Run History',exact:true}).click();
+      await page.getByRole('heading',{name:'Run History',exact:true}).waitFor();
+      assert.equal(await page.getByRole('checkbox',{name:'Show sample data'}).isChecked(),false);
       await nav.getByRole('link',{name:'Settings',exact:true}).click();
       await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
       await page.getByRole('button',{name:'Account',exact:true}).click();

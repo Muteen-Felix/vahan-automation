@@ -1,0 +1,17 @@
+{
+  "sessionId": "cd1e2f9f-2cf3-4012-94d2-76cb50eb9981",
+  "startedAt": "2026-10-12T09:07:47.695078+00:00",
+  "assigned": 50,
+  "completed": 49,
+  "peakConcurrent": 3,
+  "latest": {
+    "observedAt": "2026-10-12T09:27:18.681052+00:00",
+    "elapsedSeconds": 1171.0,
+    "done": 49,
+    "remainingMs": null,
+    "finishesAt": null,
+    "casesPerMinute": null,
+    "stale": false,
+    "stalled": true
+  }
+}

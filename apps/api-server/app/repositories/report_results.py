@@ -29,24 +29,16 @@ async def commit_report_result(job_id, runner_id, command):
             return job
         if job.main_report_checksum or job.status != JobStatus.WAITING_RESULT:
             raise ValueError('Job is not waiting for a report result.')
-        if job.update_kind == UpdateKind.GLOBAL:
-            raise ValueError('A global Maker baseline cannot be saved from a no-data result.')
-        if job.update_kind == UpdateKind.DISCOVER:
-            from app.repositories.maker_updates import commit_discovery
-            job.main_report_summary = await commit_discovery(connection, job, [],
-                command.observed_at.astimezone(timezone.utc), no_data=True)
-        elif job.update_kind == UpdateKind.REFRESH:
-            from app.repositories.maker_updates import clear_no_data_refresh
-            job.main_report_summary = await clear_no_data_refresh(connection, job)
-        else:
-            from app.repositories.annual_reports import import_rows
-            source_key = 'job:' + str(job.id)
-            await import_rows(connection, source_key=source_key, job_id=str(job.id),
-                name=job.scenario_name or 'No record found', rows=[],
-                filters=job.filters.model_dump(mode='json', by_alias=True), owner=job.owner_username,
-                observed_at=command.observed_at.astimezone(timezone.utc), no_data=True, checksum=checksum)
-            job.main_report_summary = await connection.scalar(select(db.report_update_history.c.details)
-                .where(db.report_update_history.c.source_key == source_key))
+        if job.update_kind != UpdateKind.NORMAL or job.update_run_id or job.update_task_id:
+            raise ValueError('Maker Update has been removed.')
+        from app.repositories.annual_reports import import_rows
+        source_key = 'job:' + str(job.id)
+        await import_rows(connection, source_key=source_key, job_id=str(job.id),
+            name=job.scenario_name or 'No record found', rows=[],
+            filters=job.filters.model_dump(mode='json', by_alias=True), owner=job.owner_username,
+            observed_at=command.observed_at.astimezone(timezone.utc), no_data=True, checksum=checksum)
+        job.main_report_summary = await connection.scalar(select(db.report_update_history.c.details)
+            .where(db.report_update_history.c.source_key == source_key))
         job.status, job.result_checksum, job.main_report_saved_at = JobStatus.NO_DATA, checksum, now()
         job.result_message, job.result_observed_at = command.message, command.observed_at
         job.report_table_count = job.report_row_count = 0

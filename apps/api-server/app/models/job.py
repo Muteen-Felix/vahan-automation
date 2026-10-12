@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.filters import VahanFilters
 
@@ -80,9 +80,16 @@ class CreateJobRequest(BaseModel):
     session_id: UUID | None = Field(default=None, alias="sessionId")
     retry_of_job_id: UUID | None = Field(default=None, alias="retryOfJobId")
     source: ReportSource = ReportSource.NEW
-    update_kind: UpdateKind = Field(default=UpdateKind.NORMAL, alias="updateKind")
-    update_run_id: UUID | None = Field(default=None, alias="updateRunId")
-    update_task_id: str | None = Field(default=None, alias="updateTaskId", max_length=64)
+    @model_validator(mode='before')
+    @classmethod
+    def reject_retired_maker_update(cls, value):
+        if isinstance(value, dict):
+            if value.get('updateKind', value.get('update_kind', 'NORMAL')) != 'NORMAL' or any(
+                    value.get(key) for key in ('updateRunId', 'update_run_id', 'updateTaskId', 'update_task_id')):
+                raise ValueError('Maker Update has been removed. Create a normal report job instead.')
+            return {key: item for key, item in value.items() if key not in {
+                'updateKind', 'update_kind', 'updateRunId', 'update_run_id', 'updateTaskId', 'update_task_id'}}
+        return value
 
 
 class Job(BaseModel):

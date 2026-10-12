@@ -30,7 +30,7 @@ try {
     else if(path==='/api/users') body=[{username:'fixture',role:'admin',active:true}];
     else if(path==='/api/filter-profiles') body=[profile];
     else if(path==='/api/user-state') body={vahanStateRtoMatrixV1:{year:2026,states:['State'],scenarios:[{name:'Fixture office',filters:{states:['State'],rtos:['Office']}}]}};
-    else if(['/api/runners','/api/jobs','/api/maker-updates'].includes(path)) body=[];
+    else if(['/api/runners','/api/jobs'].includes(path)) body=[];
     else if(path==='/api/worker-pool') body={enabled:true,desiredCount:8,runningCount:8,phase:'ready',workers:[]};
     else if(path==='/api/ui-health/status') body={revision:2,versionId:'fixture',blocked:false,latestPreflight:null};
     else if(path==='/api/ui-health/reports') body={selectedDate:null,availableDates:[],reports:[],rows:[]};
@@ -125,7 +125,7 @@ try {
   await page.getByRole('button',{name:'Enable schedule',exact:true}).waitFor();
   assert.equal(schedules[0].enabled,false);
   const desktop=await bounds();
-  assert.ok(desktop['.run-schedule-card'][3] < 240,'Desktop schedule card is compact');
+  assert.ok(desktop['.run-schedule-card'][3] < 290,'Desktop schedule card fits progress and the ETA');
   schedules[0]={...schedules[0],enabled:true,profileName:'Long report name '.repeat(50),status:'COMPLETED_WITH_ERRORS',
     total:999999,done:888888,failed:111111,message:'A long processing error '.repeat(100)};
   await card.locator('.schedule-status').getByText('Some reports unfinished',{exact:true}).waitFor();
@@ -139,6 +139,16 @@ try {
   assert.equal(await page.getByRole('button',{name:'Delete schedule',exact:true}).isDisabled(),true);
   assert.match(await card.locator('.schedule-progress-numbers').innerText(),/2\s*\/\s*10 reports/);
   assert.match(await card.locator('.schedule-progress-speed').innerText(),/\d+\.\d\s*reports\/min/);
+  await card.getByLabel('Estimated finish').getByText(/About \d+m remaining/).waitFor();
+  assert.ok(await card.getByLabel('Estimated finish').locator('time').getAttribute('datetime'));
+  assert.match(await card.getByLabel('Estimated finish').innerText(), /Vietnam time \(UTC\+07:00\)/);
+  schedules[0]={...schedules[0],timeZone:'Asia/Kolkata'};
+  await card.getByLabel('Estimated finish').getByText('India time (UTC+05:30)',{exact:true}).waitFor();
+  const finish=await card.getByLabel('Estimated finish').locator('time').getAttribute('datetime');
+  const indiaFinish=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',
+    year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(finish));
+  assert.equal(await card.getByLabel('Estimated finish').locator('time').innerText(),indiaFinish);
+  schedules[0]={...schedules[0],timeZone:'Asia/Ho_Chi_Minh'};
   const diagnosticsPanel=page.locator('.run-diagnostics').first();
   schedules[0]={...schedules[0],status:'PREPARING',message:'A worker is still busy.',
     operation:{stage:'Docker worker pool',detail:'A worker is still busy.',startedAt:new Date(Date.now()-360_000).toISOString(),
@@ -191,7 +201,7 @@ try {
   await card.getByText('Unfinished reports are tried again after each group, with one final check at the end.',{exact:true}).waitFor();
   await page.setViewportSize({width:390,height:844});
   const mobile=await bounds();
-  assert.ok(mobile['.run-schedule-card'][3] < 360,'Mobile schedule card is compact');
+  assert.ok(mobile['.run-schedule-card'][3] < 410,'Mobile schedule card fits progress, the ETA and actions compactly');
   assert.ok(await card.locator('.run-schedule-details').evaluate(node=>[...node.children].every(child=>child.getBoundingClientRect().bottom<=node.getBoundingClientRect().bottom+1)),'Mobile metadata fits its row');
   await page.locator('.settings-page').screenshot({path:testArtifactPath('settings-compact-mobile.png')});
   schedules[0]={...schedules[0],profileName:'Extremely long name '.repeat(50),status:'PREPARING',message:'A worker is still busy. Stop its job before changing containers.'};
@@ -221,6 +231,7 @@ try {
   assert.equal(schedules[0].sessionId,'session-1');assert.equal(schedules[0].done,5);
   assert.equal(await page.getByRole('button',{name:'Delete schedule',exact:true}).isEnabled(),true);
   assert.equal(await card.locator('.schedule-progress-speed strong').innerText(),'—');
+  assert.equal(await card.getByLabel('Estimated finish').locator('time').count(),0,'Paused schedules do not show a stale forecast');
   const paused=await bounds();
   assert.equal(await card.locator('input[type=number]').count(),0);
   await page.getByRole('button',{name:'Disable future runs',exact:true}).click();

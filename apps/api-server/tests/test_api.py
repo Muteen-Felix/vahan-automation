@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from unittest.mock import AsyncMock
 from uuid import uuid4
 from app.models.job import Job
@@ -10,7 +9,6 @@ from sqlalchemy import text
 from httpx import ASGITransport, AsyncClient
 
 from app.main import application, fastapi_app
-from app.models.ui_health import UiHealthSchedule
 from app.db import engine, schema as db
 from app.repositories.postgres import PostgresStateStore
 from app.services import services
@@ -45,85 +43,45 @@ async def test_readiness_requires_current_migration():
         assert (await client.get('/api/ready')).status_code==200
 
 
-def test_removed_methods_are_absent_and_legacy_read_remains() -> None:
+def test_retired_routes_and_maker_commands_are_absent_from_openapi():
     paths = fastapi_app.openapi()["paths"]
-
-    assert "get" in paths["/api/ui-health/schedule"]
-    assert "put" not in paths["/api/ui-health/schedule"]
+    assert "/api/ui-health/schedule" not in paths
+    assert "/api/ui-health/run-now" not in paths
+    assert not any(path.startswith('/api/maker-updates') for path in paths)
     assert "/api/jobs/{job_id}/upload-excel" not in paths
-    assert "post" in paths["/api/ui-health/run-now"]
     assert "post" in paths["/api/jobs/{job_id}/main-report"]
+    fields = fastapi_app.openapi()['components']['schemas']['CreateJobRequest']['properties']
+    assert not {'updateKind', 'updateRunId', 'updateTaskId'} & fields.keys()
 
 
-async def test_ui_health_schedule_remains_readable(admin_headers) -> None:
-    async with AsyncClient(
-        transport=ASGITransport(app=application),
-        base_url="http://test",
-        headers=admin_headers,
-    ) as client:
-        response = await client.get(
-            "/api/ui-health/schedule",
-            headers=admin_headers,
-        )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["intervalDays"] == 3
-    assert datetime.fromisoformat(body["nextCheckAt"]) - datetime.fromisoformat(body["updatedAt"]) == timedelta(days=3)
-    assert body["updatedAt"]
-    assert body["nextCheckAt"] > body["updatedAt"]
-    async with engine.connect() as connection:
-        assert await connection.scalar(select(db.app_settings.c.value)
-            .where(db.app_settings.c.key == "ui-health-schedule")) is None
-
-
-async def test_legacy_schedule_returns_saved_value_without_modifying_it(admin_headers):
-    schedule = UiHealthSchedule(intervalDays=7, updatedAt="2026-10-01T00:00:00Z", nextCheckAt="2026-10-08T00:00:00Z")
-    stored = schedule.model_dump(mode="json", by_alias=True)
-    await PostgresStateStore().put("ui-health-schedule", stored)
-    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test", headers=admin_headers) as client:
-        first = await client.get("/api/ui-health/schedule")
-        second = await client.get("/api/ui-health/schedule")
-        removed = await client.put("/api/ui-health/schedule", json={"intervalDays": 5})
-    assert first.status_code == second.status_code == 200
-    assert first.json() == second.json() == stored
-    assert removed.status_code == 405
-    assert await PostgresStateStore().get("ui-health-schedule") == stored
-
-
-@pytest.mark.parametrize("role,status", [(None,401),("user",403),("admin",202)])
-async def test_run_now_enforces_admin_and_preserves_runner_routing(role,status,admin_headers,monkeypatch):
-    await services.runners.register(runner_id="manual-runner", name="Manual", socket_id="manual-socket")
+@pytest.mark.parametrize('actor', ['anonymous', 'member', 'admin', 'runner'])
+@pytest.mark.parametrize('method,path', [
+    ('GET', '/api/ui-health/schedule'), ('POST', '/api/ui-health/run-now'),
+    ('GET', '/api/maker-updates?year=2026'), ('GET', '/api/maker-updates/00000000-0000-0000-0000-000000000001'),
+])
+async def test_retired_routes_return_404_for_every_actor(actor, method, path, admin_headers, monkeypatch):
+    from app.config import settings
     emit = AsyncMock()
-    monkeypatch.setattr("app.api.ui_health.sio.emit", emit)
-    if role == "user":
-        monkeypatch.setattr("app.main.authenticate_access_token", AsyncMock(return_value={
-            "username":"member", "role":"user", "session_id":"fixture"}))
-    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test") as client:
-        response = await client.post("/api/ui-health/run-now", json={}, headers=admin_headers if role else {})
-    assert response.status_code == status
-    if role == "admin":
-        assert response.json()["runnerId"] == "manual-runner"
-        assert emit.await_args.kwargs["room"] == "runner:manual-runner"
-        assert emit.await_args.args[1]["requestId"] == response.json()["requestId"]
-    else:
-        emit.assert_not_awaited()
+    monkeypatch.setattr('app.api.ui_health.sio.emit', emit)
+    if actor == 'member':
+        monkeypatch.setattr('app.main.authenticate_access_token', AsyncMock(return_value={
+            'username': 'test-member', 'role': 'user', 'session_id': 'fixture-member'}))
+    headers = admin_headers if actor in {'admin', 'member'} else (
+        {'X-VAHAN-RUNNER-TOKEN': settings.runner_token} if actor == 'runner' else {})
+    async with AsyncClient(transport=ASGITransport(app=application), base_url='http://test') as client:
+        response = await client.request(method, path, headers=headers)
+    assert response.status_code == 404
+    assert response.json() == {'detail': 'Not Found'}
+    emit.assert_not_awaited()
 
 
-async def test_run_now_missing_reconnecting_and_busy_workers(admin_headers,monkeypatch):
-    await services.runners.register(runner_id="manual-runner", name="Manual", socket_id="manual-socket")
-    monkeypatch.setattr("app.api.ui_health.sio.emit", AsyncMock())
-    async with AsyncClient(transport=ASGITransport(app=application), base_url="http://test", headers=admin_headers) as client:
-        assert (await client.post("/api/ui-health/run-now", json={"runnerId":"missing"})).status_code == 404
-        await services.runners.mark_reconnecting("manual-socket")
-        assert (await client.post("/api/ui-health/run-now", json={"runnerId":"manual-runner"})).status_code == 409
-        await services.runners.heartbeat("manual-socket")
-        # Manual checks use an isolated browser context and may inspect a busy worker.
-        await services.jobs.create(Job(
-            id=uuid4(), runnerId="manual-runner", filters={}))
-        jobs=await services.jobs.list_all()
-        await services.runners.set_job("manual-runner",str(jobs[0].id))
-        assert (await client.post("/api/ui-health/run-now", json={"runnerId":"manual-runner"})).status_code == 202
+async def test_retired_schedule_is_inaccessible_and_stored_data_is_preserved(admin_headers):
+    stored = {'intervalDays': 7, 'updatedAt': '2026-10-01T00:00:00Z', 'nextCheckAt': '2026-10-08T00:00:00Z'}
+    await PostgresStateStore().put('ui-health-schedule', stored)
+    async with AsyncClient(transport=ASGITransport(app=application), base_url='http://test', headers=admin_headers) as client:
+        for method in ('GET', 'PUT', 'POST', 'DELETE'):
+            assert (await client.request(method, '/api/ui-health/schedule')).status_code == 404
+    assert await PostgresStateStore().get('ui-health-schedule') == stored
 
 
 async def test_removed_upload_alias_is_unavailable_to_admin_and_runner(admin_headers):
@@ -132,22 +90,6 @@ async def test_removed_upload_alias_is_unavailable_to_admin_and_runner(admin_hea
         path=f"/api/jobs/{uuid4()}/upload-excel"
         assert (await client.post(path,headers=admin_headers)).status_code == 404
         assert (await client.post(path,headers={"X-VAHAN-RUNNER-TOKEN":settings.runner_token})).status_code == 401
-
-
-async def test_ui_health_run_now_requires_connected_runner(admin_headers) -> None:
-    async with AsyncClient(
-        transport=ASGITransport(app=application),
-        base_url="http://test",
-        headers=admin_headers,
-    ) as client:
-        response = await client.post(
-            "/api/ui-health/run-now",
-            json={},
-            headers=admin_headers,
-        )
-
-    assert response.status_code == 409
-    assert "runner" in response.json()["detail"].lower()
 
 
 async def test_ui_health_log_can_be_saved_reviewed_and_downloaded(admin_headers) -> None:

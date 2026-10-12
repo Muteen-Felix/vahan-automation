@@ -141,31 +141,17 @@ class PostgresFileStore:
                 raise ValueError('Job is not waiting for a main report.')
             source_key = 'job:' + str(job.id)
             observed_at = observed_at or now()
-            if job.update_kind == UpdateKind.GLOBAL:
-                from app.repositories.maker_updates import commit_global
-                summary = await commit_global(connection, job, rows, checksum, observed_at)
-            elif job.update_kind == UpdateKind.DISCOVER:
-                from app.repositories.maker_updates import commit_discovery
-                summary = await commit_discovery(connection, job, rows, observed_at)
-            else:
-                from app.repositories.annual_reports import import_rows
-                if job.update_kind == UpdateKind.REFRESH:
-                    from app.repositories.maker_updates import validate_refresh_workbook
-                    await validate_refresh_workbook(connection, job, rows)
-                await import_rows(connection, source_key=source_key, job_id=str(job.id), name=name, rows=rows,
-                    filters=job.filters.model_dump(mode='json', by_alias=True), owner=job.owner_username,
-                    observed_at=observed_at, strict=True, checksum=checksum,
-                    replace_existing=job.update_kind == UpdateKind.REFRESH,
-                    update_newer=job.update_kind == UpdateKind.NORMAL)
-                summary = await connection.scalar(select(db.report_update_history.c.details)
-                    .where(db.report_update_history.c.source_key == source_key))
-                if job.update_kind == UpdateKind.REFRESH:
-                    from app.repositories.maker_updates import finish_refresh
-                    await finish_refresh(connection, job)
+            if job.update_kind != UpdateKind.NORMAL or job.update_run_id or job.update_task_id:
+                raise ValueError('Maker Update has been removed.')
+            from app.repositories.annual_reports import import_rows
+            await import_rows(connection, source_key=source_key, job_id=str(job.id), name=name, rows=rows,
+                filters=job.filters.model_dump(mode='json', by_alias=True), owner=job.owner_username,
+                observed_at=observed_at, strict=True, checksum=checksum, update_newer=True)
+            summary = await connection.scalar(select(db.report_update_history.c.details)
+                .where(db.report_update_history.c.source_key == source_key))
             job.status = JobStatus.COMPLETED
             job.main_report_saved_at, job.main_report_checksum, job.main_report_summary = now(), checksum, summary
-            job.result_message, job.result_observed_at = (
-                'Maker update saved' if job.update_kind != UpdateKind.NORMAL else 'Data saved to main table'), observed_at
+            job.result_message, job.result_observed_at = 'Data saved to main table', observed_at
             job.report_row_count, job.report_table_count = summary['parsedRows'], 1
             job.excel_file_name = job.excel_file_size = job.no_data_file_name = None
             job.error = None

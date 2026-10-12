@@ -3,6 +3,7 @@ import socket
 from collections.abc import AsyncIterator
 
 import pytest_asyncio
+import pytest
 import socketio
 import uvicorn
 from httpx import AsyncClient
@@ -251,7 +252,7 @@ async def test_runner_job_and_captcha_round_trip(live_server_url: str, admin_tok
             await runner.disconnect()
 
 
-async def test_ui_health_manual_check_request_reaches_runner(live_server_url: str, admin_headers) -> None:
+async def test_retired_ui_health_request_does_not_reach_connected_runner(live_server_url: str, admin_headers) -> None:
     runner = socketio.AsyncClient()
     request_received = asyncio.Event()
     received_payload: dict = {}
@@ -277,13 +278,10 @@ async def test_ui_health_manual_check_request_reaches_runner(live_server_url: st
         async with AsyncClient(base_url=live_server_url, headers=admin_headers) as client:
             response = await client.post("/api/ui-health/run-now", json={})
 
-        assert response.status_code == 202
-        body = response.json()
-        assert body["runnerId"] == "manual-check-runner"
-        assert body["runnerName"] == "Manual Check Chrome"
-        await asyncio.wait_for(request_received.wait(), timeout=2)
-        assert received_payload["requestId"] == body["requestId"]
-        assert received_payload["trigger"] == "manual-web"
+        assert response.status_code == 404
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(request_received.wait(), timeout=.25)
+        assert received_payload == {}
     finally:
         if runner.connected:
             await runner.disconnect()

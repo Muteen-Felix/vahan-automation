@@ -279,6 +279,41 @@ class AnnualReportsTest(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone((await self.read(rto='AS99'))['lastSaved'])
         self.assertIsNone((await self.read(year=2027))['lastSaved'])
 
+    async def test_export_one_thousand_rows_and_every_state_rto_match_across_pages(self):
+        groups = [('ASSAM', 'UDALGURI - AS27', 450), ('ASSAM', 'TINSUKIA - AS23', 150),
+                  ('TRIPURA', 'AGARTALA - TR1', 250), ('SIKKIM', 'GANGTOK - SK1', 150)]
+        makers = {}
+        for index, (state, office, amount) in enumerate(groups):
+            names = {f'GROUP {index} MAKER {i:04}' for i in range(amount)}
+            makers[(state, office)] = names
+            await self.ingest(f'large-export-{index}', rows(['Maker', "JAN'26"],
+                [[name, i] for i, name in enumerate(sorted(names))]),
+                filters={**FILTERS, 'states': [state], 'rtos': [office]})
+        for state, rto, expected in [
+            ('ASSAM', '', makers[groups[0][:2]] | makers[groups[1][:2]]),
+            ('', 'AS27', makers[groups[0][:2]]), ('assam', 'UDALGURI', makers[groups[0][:2]]),
+            ('', '', set().union(*makers.values())),
+        ]:
+            with self.subTest(state=state, rto=rto):
+                view = await self.read(state=state, rto=rto)
+                self.assertEqual(len(view['rows']), 100)
+                self.assertEqual(view['summary']['rows'], len(expected))
+                if not state and not rto:
+                    with self.assertRaises(HTTPException) as rejected:
+                        await export_annual_reports(request(), year=2026, dataset=view['datasetId'],
+                            state=state, rto=rto, confirm_all=False)
+                    self.assertEqual(rejected.exception.status_code, 409)
+                response = await export_annual_reports(request(), year=2026, dataset=view['datasetId'],
+                    state=state, rto=rto, confirm_all=not state and not rto)
+                self.assertEqual(int(response.headers['x-report-row-count']), len(expected))
+                workbook = load_workbook(io.BytesIO(response.body), read_only=True, data_only=True)
+                exported = list(workbook.active.iter_rows(min_row=4, values_only=True))
+                self.assertEqual({row[4] for row in exported}, expected)
+                self.assertEqual(len(exported), len(expected))
+                self.assertEqual([row[0] for row in exported], list(range(1, len(expected)+1)))
+                self.assertEqual([row[4] for row in exported[:100]], [row['maker'] for row in view['rows']])
+                workbook.close()
+
     async def test_export_filtered_reads_all_pages_real_name_null_zero_and_safe_text(self):
         values = [[f'MAKER {i:03d}', i, 0] for i in range(150)]
         values[0][0] = '=UNTRUSTED NAME'

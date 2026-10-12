@@ -81,9 +81,8 @@ async def create_job(command: CreateJobRequest, request: Request) -> Job:
             raise HTTPException(409, "Retry must remain in the original report session.")
         if command.filters != retry_of.filters or command.source != retry_of.source:
             raise HTTPException(409, "Retry must use exactly the original filters and source.")
-        if (command.update_kind != retry_of.update_kind or command.update_run_id != retry_of.update_run_id
-                or command.update_task_id != retry_of.update_task_id):
-            raise HTTPException(409, "Retry must preserve the Maker update task.")
+        if retry_of.update_kind != 'NORMAL' or retry_of.update_run_id or retry_of.update_task_id:
+            raise HTTPException(409, "Maker Update has been removed.")
         session_id = retry_of.session_id
 
     from app.repositories.ui_contract import require_gate, bind_gate
@@ -102,9 +101,6 @@ async def create_job(command: CreateJobRequest, request: Request) -> Job:
         filters=command.filters,
         scenarioName=command.scenario_name,
         source=command.source,
-        updateKind=command.update_kind,
-        updateRunId=command.update_run_id,
-        updateTaskId=command.update_task_id,
         status=JobStatus.ASSIGNED,
         ownerUsername=request.state.authenticated_user,
         retryOfJobId=retry_of.id if retry_of else None,
