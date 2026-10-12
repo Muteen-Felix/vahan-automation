@@ -1503,3 +1503,19 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
   overflow-wrap:anywhere;
   max-width:100%;
 }
+
+.access-denied-page { display:grid; min-height:calc(100dvh - 72px); place-items:center; padding-block:42px; }
+.access-denied-card { display:grid; justify-items:center; width:min(100%,620px); padding:44px 48px; border:1px solid #dce8dc; border-radius:20px; background:radial-gradient(circle at 50% 0,#f1f8f0 0,white 62%); box-shadow:0 18px 54px #294b3210; text-align:center; }
+.access-denied-icon { display:grid; width:58px; height:58px; place-items:center; border:1px solid #d3e5d4; border-radius:18px; background:#eaf4e9; color:#39724a; box-shadow:0 5px 14px #315c3c12; }
+.access-denied-icon svg { width:28px; height:28px; }
+.access-denied-kicker { margin:20px 0 8px; color:#66806b; font-size:10px; font-weight:750; letter-spacing:.16em; }
+.access-denied-card h2 { max-width:18ch; margin:0; color:#263b2d; font:650 clamp(24px,3.2vw,32px)/1.2 Manrope,Inter,sans-serif; letter-spacing:-.035em; }
+.access-denied-description { max-width:48ch; margin:12px 0 23px; color:#6b7b70; font-size:13px; line-height:1.7; }
+.access-denied-action { display:inline-flex; align-items:center; justify-content:center; gap:12px; min-height:42px; padding:10px 17px; border:1px solid #285d37; border-radius:999px; background:#285d37; color:#fff; font-size:12px; font-weight:650; text-decoration:none; transition:background .15s,border-color .15s,transform .15s; }
+.access-denied-action:hover { transform:translateY(-1px); border-color:#1f492b; background:#1f492b; }
+.access-denied-action span { font-size:17px; line-height:1; }
+@media(max-width:600px) {
+  .access-denied-page { min-height:calc(100dvh - 112px); padding-block:28px; }
+  .access-denied-card { padding:32px 22px; border-radius:16px; }
+  .access-denied-description { font-size:12px; }
+}

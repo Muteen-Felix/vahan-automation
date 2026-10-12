@@ -35,14 +35,17 @@ try {
       } else if(path==='/api/annual-reports')body={year:2026,datasetId:'fixture',datasets:[{id:'fixture',label:'Fixture report'}],years:[2026],states:['State A'],rtos:['Office A'],rows:[{id:'1',state:'State A',rto:'Office A',rto_code:'A1',maker:'Fixture Maker',months:Array(12).fill(1)}],coverage:[1],summary:{rows:1,makers:1,offices:1,updatedAt:null}};
       await route.fulfill({contentType:'application/json',body:JSON.stringify(body)});
     });
-    await page.goto(origin);
+    await page.goto(origin+(role==='user'?'#settings':''));
     const nav=page.getByRole('navigation',{name:'Main navigation'});
     await nav.waitFor();
     assert.deepEqual(await nav.locator('a').allTextContents(),role==='user'?['Exported Reports']:['Exported Reports','Filters','Run History','Settings']);
     if(role==='user') {
+      await page.getByRole('heading',{name:'Exported Reports',exact:true}).waitFor();
+      assert.equal(new URL(page.url()).hash,'#reports','Members landing on an administrative route are redirected to Exported Reports');
       for(const target of ['#filters','#run-history','#update-history','#settings','#settings-ui-health','#health','#configure?scheduled=fixture','filters','settings','#unknown']) {
         await page.goto(origin+target);
-        await page.getByRole('heading',{name:'Bạn không có quyền truy cập trang này.',exact:true}).waitFor();
+        await page.getByRole('heading',{name:'You don’t have access to this feature',exact:true}).waitFor();
+        await page.getByRole('link',{name:'Go to Exported Reports',exact:true}).waitFor();
         assert.equal(await page.locator('.settings-page, .filter-profiles').count(),0);
       }
       await page.goto(origin+'#reports');await nav.waitFor();
