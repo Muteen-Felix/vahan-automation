@@ -92,6 +92,12 @@ try {
   for(const width of [1440,768,390,320]) {
     await page.setViewportSize({width,height:1000});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`No horizontal page overflow at ${width}px`);
+    if(width===1440) {
+      const row=panel.locator('tbody tr').first();
+      assert.ok((await row.boundingBox()).height<=90,'Desktop rows remain compact');
+      assert.ok((await row.locator('th').boundingBox()).width<=300,'Filter column does not create a large empty gap');
+      assert.ok((await panel.boundingBox()).width<=1200,'History stays readable on a wide screen');
+    }
     if(width===1440||width===390) {
       await page.evaluate(()=>window.scrollTo(0,0));
       await page.screenshot({path:fileURLToPath(new URL(`run-history-${width}.png`,artifacts)),fullPage:false});
