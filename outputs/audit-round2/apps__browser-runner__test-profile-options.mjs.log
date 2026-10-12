@@ -1,0 +1,2 @@
+Command: ['node', 'test-profile-options.mjs']
+Profile options: native dependent Class, complete Maker pagination beyond 20, OTHERS and stalled pagination passed.

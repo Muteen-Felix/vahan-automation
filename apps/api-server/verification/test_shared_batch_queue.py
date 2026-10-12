@@ -14,7 +14,7 @@ from app.api.batch_queue import QueueTaskInput
 from app.models.job import Job, JobStatus
 from app.models.runner import Runner
 from app.repositories.batch_queue import BatchQueueRepository
-from app.repositories.postgres import PostgresJobRepository, job_document, release_runner, runner_document, now
+from app.repositories.postgres import PostgresJobRepository, PostgresRunnerRegistry, job_document, release_runner, runner_document, now
 
 
 async def finish(job_id: str, status: JobStatus):
@@ -125,6 +125,7 @@ async def main():
 
     async def consume(number):
         while True:
+            await PostgresRunnerRegistry().heartbeat(f'load-socket-{number}')
             item = await queue.claim(large_session, 'queue-test', f'load-runner-{number}')
             if item['type'] == 'done':
                 return

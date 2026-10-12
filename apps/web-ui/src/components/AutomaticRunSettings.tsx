@@ -20,7 +20,6 @@ const STATUS_LABELS: Record<RunSchedule['status'], string> = {
 interface Props {
   profiles: FilterProfile[];
   selectedProfileId: string;
-  workerCount: number;
   year: number;
   schedules: RunSchedule[];
   loading: boolean;
@@ -29,7 +28,7 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, year, schedules, loading, loadError, onUpsert, onDelete}: Props) {
+export function AutomaticRunSettings({profiles, selectedProfileId, year, schedules, loading, loadError, onUpsert, onDelete}: Props) {
   const [timeZone, setTimeZone] = useState(readRunTimeZone);
   const initial = scheduleDateTime(new Date(Date.now() + 5 * 60_000), timeZone);
   const [profileId, setProfileId] = useState(selectedProfileId);
@@ -39,7 +38,6 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
   const [saving, setSaving] = useState(false);
   const [timeZoneSaving, setTimeZoneSaving] = useState(false);
   const [actionId, setActionId] = useState('');
-  const [workerChoices, setWorkerChoices] = useState<Record<string, number>>({});
   const [formOpen, setFormOpen] = useState(false);
   const formDialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -73,19 +71,6 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
   }
 
   useEffect(() => {
-    setWorkerChoices(previous => {
-      const next = {...previous};
-      let changed = false;
-      for (const schedule of schedules) {
-        if (!canResumeSchedule(schedule) && previous[schedule.id] !== undefined && previous[schedule.id] !== schedule.workerCount) {
-          next[schedule.id] = schedule.workerCount; changed = true;
-        }
-      }
-      return changed ? next : previous;
-    });
-  }, [schedules]);
-
-  useEffect(() => {
     if (!profiles.some(item => item.id === profileId)) {
       setProfileId(profiles.some(item => item.id === selectedProfileId) ? selectedProfileId : profiles[0]?.id || '');
     }
@@ -100,7 +85,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
     }
     setSaving(true); setError(''); setNotice('');
     try {
-      const saved = await api.createRunSchedule({profileId, year: selectedYear, workerCount, startsAt, timeZone, repeat});
+      const saved = await api.createRunSchedule({profileId, year: selectedYear, startsAt, timeZone, repeat});
       onUpsert(saved);
       const savedTimeZone = runTimeZone(saved.timeZone);
       setNotice(`Schedule saved for ${formatScheduledTime(saved.nextRunAt, savedTimeZone)} (${runTimeZoneLabel(savedTimeZone)}).`);
@@ -118,9 +103,8 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
         onDelete(schedule.id);
       } else {
         const updated = type === 'pause' ? await api.pauseRunSchedule(schedule.id)
-          : type === 'resume' ? await api.resumeRunSchedule(schedule.id, workerChoices[schedule.id] ?? schedule.workerCount)
+          : type === 'resume' ? await api.resumeRunSchedule(schedule.id)
           : await api.toggleRunSchedule(schedule.id, !schedule.enabled);
-        if (type === 'pause' || type === 'resume') setWorkerChoices(current => ({...current, [schedule.id]: updated.workerCount}));
         onUpsert(updated);
       }
     } catch (reason) {
@@ -195,11 +179,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, workerCount, 
               <div className="run-schedule-start"><dt>{schedule.nextRunAt ? 'Next start' : 'Scheduled start'}</dt><dd title={formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}>{formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, runTimeZone(schedule.timeZone))}</dd><small>{runTimeZoneLabel(schedule.timeZone)}</small></div>
               <div><dt>Repeat</dt><dd>{schedule.repeat === 'monthly' ? 'Every month' : schedule.repeat === 'daily' ? 'Every day' : 'Once'}</dd>
                 <small>{schedule.repeat === 'monthly' ? `Day ${scheduledDayOfMonth(schedule.startsAt, runTimeZone(schedule.timeZone))} · month-end if needed` : schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
-              <div className="schedule-worker-setting"><dt>Reports at a time</dt><dd>
-                <input aria-label={`Reports at a time for ${schedule.profileName}`} type="number" min="1" step="1" value={workerChoices[schedule.id] ?? schedule.workerCount}
-                  disabled={Boolean(actionId) || !canResumeSchedule(schedule)}
-                  onChange={event => setWorkerChoices(current => ({...current, [schedule.id]: Math.max(1, Math.floor(Number(event.target.value) || 1))}))} />
-              </dd><small>{canResumeSchedule(schedule) ? 'Used when you continue' : schedule.status === 'PAUSING' ? 'Waiting for reports to save' : 'Pause to change this number'}</small></div>
+              <div><dt>Report browsers</dt><dd>Automatic</dd><small>Uses connected browsers; waits when none are available</small></div>
             </dl>
             <RunScheduleProgress schedule={schedule} statusLabel={!schedule.enabled && !schedule.sessionId && schedule.nextRunAt ? 'Disabled' : schedule.networkPaused ? 'Waiting for network' : STATUS_LABELS[schedule.status]} />
             <div className="schedule-retry-slot">

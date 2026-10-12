@@ -137,6 +137,7 @@ class PostgresJobRepository:
             if not payload:
                 return None
             job = Job.model_validate(payload)
+            previous_status = job.status
             if not await operation(job, connection):
                 return None
             job.touch()
@@ -146,7 +147,10 @@ class PostgresJobRepository:
                     db.maker_update_tasks.c.id == job.update_task_id,
                     db.maker_update_tasks.c.job_id == str(job.id)).values(
                     status='FAILED', error=job.error or job.status.value, updated_at=now()))
-            if job.status in TERMINAL:
+            if job.status in TERMINAL and previous_status not in TERMINAL:
+                # The first terminal commit already released this attempt.
+                # A delayed duplicate must not lock a runner now executing a
+                # different case while holding its old job's row lock.
                 await release_runner(connection, job.runner_id, job.id)
         return job
 

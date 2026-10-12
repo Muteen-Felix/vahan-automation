@@ -1,0 +1,3 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', '-m', 'pytest', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\verification\\test_captcha_refresh_race.py', '-ra', '--tb=short', '--junitxml=C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\audit-round2\\apps__api-server__verification__test_captcha_refresh_race.py.xml']
+...                                                                    [100%]
+3 passed, 2 subtests passed in 1.75s

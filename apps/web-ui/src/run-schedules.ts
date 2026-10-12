@@ -6,7 +6,6 @@ export interface RunSchedule {
   profileName: string;
   profileRevision: number;
   year: number;
-  workerCount: number;
   startsAt: string;
   nextRunAt: string | null;
   repeat: 'once' | 'daily' | 'monthly';
@@ -72,7 +71,6 @@ export function canResumeSchedule(value: RunSchedule) {
 export interface RunScheduleInput {
   profileId: string;
   year: number;
-  workerCount: number;
   startsAt: string;
   repeat: 'once' | 'daily' | 'monthly';
   timeZone: RunTimeZone;

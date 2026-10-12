@@ -156,7 +156,7 @@ class BatchQueueRepository:
         return progress
 
     async def start(self, session_id: UUID, owner: str, tasks: list, max_workers: int = 1,
-                    *, profile_id=None, filter_name=None):
+                    *, profile_id=None, filter_name=None, automatic_workers=False):
         if isinstance(max_workers, bool) or not isinstance(max_workers, int) or max_workers < 1:
             raise ValueError('Choose at least one worker.')
         from app.models.filter_profile import case_key
@@ -202,7 +202,7 @@ class BatchQueueRepository:
                 'runner_id': None, 'job_id': None, 'error': None, 'updated_at': now(),
             } for position, task in enumerate(tasks)])
             await self._save_policy(connection, {'session_id': session_key}, {
-                'version': 1, 'phase': 'PRIMARY', 'windowStart': 0,
+                'version': 1, 'automaticWorkers': automatic_workers, 'phase': 'PRIMARY', 'windowStart': 0,
                 'windowEnd': min(max(10, max_workers), len(tasks)), 'lastCheckpoint': 0,
                 'finalPassStarted': False, 'finalTargets': []})
 
@@ -219,7 +219,7 @@ class BatchQueueRepository:
         if row['status'] != 'PROCESSING' or not row['job_id']:
             return row
         job_row = (await connection.execute(select(db.jobs.c.payload).where(
-            db.jobs.c.id == row['job_id']))).scalar_one_or_none()
+            db.jobs.c.id == row['job_id']).with_for_update())).scalar_one_or_none()
         if not job_row:
             return row
         job = Job.model_validate(job_row)
@@ -230,7 +230,7 @@ class BatchQueueRepository:
             if runner_row:
                 runner = Runner.model_validate(runner_row['payload'])
                 heartbeat_age = (now() - runner.last_seen_at).total_seconds()
-                if runner_row['connected'] or heartbeat_age <= settings.runner_disconnect_grace_seconds + 15:
+                if heartbeat_age <= settings.runner_disconnect_grace_seconds + 15:
                     return row
             job.status = JobStatus.FAILED
             job.error = 'Worker stopped responding. The report will be retried from its saved filters.'
@@ -331,6 +331,23 @@ class BatchQueueRepository:
                         await self._save_policy(connection, session, {**policy, 'windowEnd': expanded_end})
             await connection.execute(update(db.batch_queue_sessions).where(
                 db.batch_queue_sessions.c.session_id == str(session_id)).values(**values))
+
+    async def set_worker_limit(self, session_id: UUID, owner: str, count: int):
+        """Scheduler capacity follows live workers, including legacy saved queues.
+
+        Shrinking prevents new assignments while existing attempts drain. It
+        never rewrites cases, attempts, or checkpoint boundaries.
+        """
+        if type(count) is not int or count < 1:
+            raise ValueError('Choose at least one worker.')
+        async with engine.begin() as connection:
+            session = await self._session(connection, session_id, owner, lock=True)
+            await connection.execute(update(db.batch_queue_sessions).where(
+                db.batch_queue_sessions.c.session_id == str(session_id)).values(max_workers=count))
+            policy = await self._policy(connection, session)
+            if policy and not policy.get('automaticWorkers'):
+                await self._save_policy(connection, session, {**policy, 'automaticWorkers': True})
+
     async def claim(self, session_id: UUID, owner: str, runner_id: str):
         async with engine.begin() as connection:
             preliminary = await self._session(connection, session_id, owner)
@@ -339,19 +356,29 @@ class BatchQueueRepository:
             allocation, _ = await assignment_status(connection, runner_id)
             if allocation == 'offline': return {'type': 'network_paused'}
             if allocation == 'updating': return {'type': 'pool_updating'}
-            runner_row = (await connection.execute(select(db.runners).where(
-                db.runners.c.id == runner_id).with_for_update())).mappings().first()
             await connection.execute(select(db.report_sessions.c.id).where(
                 db.report_sessions.c.id == str(session_id)).with_for_update())
             session = await self._session(connection, session_id, owner, lock=True)
             if session['status'] != 'RUNNING':
                 return {'type': 'paused'}
+            # Lock job before runner, as result commits do. Also expire a stale
+            # attempt before returning a recovered assignment to the same ID.
+            processing = (await connection.execute(select(db.batch_queue_tasks).where(
+                db.batch_queue_tasks.c.session_id == str(session_id),
+                db.batch_queue_tasks.c.status == 'PROCESSING').with_for_update())).mappings().all()
+            for active_task in processing:
+                await self._settle(connection, active_task)
+            runner_row = (await connection.execute(select(db.runners).where(
+                db.runners.c.id == runner_id))).mappings().first()
             if not runner_row or not runner_row['connected']:
                 return {'type': 'runner_unavailable'}
             if await connection.scalar(select(db.runner_planning_leases.c.runner_id).where(
                 db.runner_planning_leases.c.runner_id == runner_id, db.runner_planning_leases.c.expires_at > now())):
                 return {'type': 'waiting'}
             runner = Runner.model_validate(runner_row['payload'])
+            from app.worker_pool import live_worker
+            if not live_worker(runner):
+                return {'type': 'runner_unavailable'}
             if runner.current_job_id:
                 existing = (await connection.execute(select(db.batch_queue_tasks).where(
                     db.batch_queue_tasks.c.session_id == str(session_id),
@@ -363,21 +390,16 @@ class BatchQueueRepository:
                 return {'type': 'runner_unavailable'}
             if runner.status == RunnerStatus.RECONNECTING or runner.source != 'new':
                 return {'type': 'runner_unavailable'}
+            policy = await self._policy(connection, session)
+            if policy and policy.get('automaticWorkers'):
+                connected = await connection.scalars(select(db.runners.c.payload).where(db.runners.c.connected.is_(True)))
+                limit = sum(live_worker(Runner.model_validate(payload)) for payload in connected)
+                session = {**session, 'max_workers': min(session['max_workers'], limit)}
             active_count = await connection.scalar(select(func.count()).select_from(db.batch_queue_tasks).where(
                 db.batch_queue_tasks.c.session_id == str(session_id),
                 db.batch_queue_tasks.c.status == 'PROCESSING'))
             if active_count >= session['max_workers']:
-                processing = (await connection.execute(select(db.batch_queue_tasks).where(
-                    db.batch_queue_tasks.c.session_id == str(session_id),
-                    db.batch_queue_tasks.c.status == 'PROCESSING').limit(session['max_workers'])
-                    .with_for_update(skip_locked=True))).mappings().all()
-                for active_task in processing:
-                    await self._settle(connection, active_task)
-                active_count = await connection.scalar(select(func.count()).select_from(db.batch_queue_tasks).where(
-                    db.batch_queue_tasks.c.session_id == str(session_id),
-                    db.batch_queue_tasks.c.status == 'PROCESSING'))
-                if active_count >= session['max_workers']:
-                    return {'type': 'waiting'}
+                return {'type': 'waiting'}
             policy = await self._policy(connection, session)
             if not policy:
                 unfinished = await connection.scalar(select(db.batch_queue_tasks.c.position).where(
@@ -393,14 +415,6 @@ class BatchQueueRepository:
                     'lastCheckpoint': window_start, 'finalPassStarted': False, 'finalTargets': []}
                 await self._save_policy(connection, session, policy)
             rows = await self._policy_rows(connection, session, policy)
-            # Settle terminal jobs even if their coordinator disappeared before /settle.
-            for active_task in rows:
-                if active_task['status'] == 'PROCESSING':
-                    full = (await connection.execute(select(db.batch_queue_tasks).where(
-                        db.batch_queue_tasks.c.session_id == session['session_id'],
-                        db.batch_queue_tasks.c.position == active_task['position']))).mappings().one()
-                    settled = await self._settle(connection, full)
-                    active_task.update(status=settled['status'], failures=settled['failures'], error=settled['error'])
             policy, rows = await self._advance_policy(connection, session, rows, complete_rows=False)
             progress = await self._claim_progress(connection, policy, rows, session)
             if policy['phase'] == 'DONE':
@@ -425,6 +439,18 @@ class BatchQueueRepository:
             from app.models.filters import VahanFilters
             if not await capacity_available(connection, [runner_id]):
                 return {'type': 'waiting'}
+            # Fence late terminal acknowledgements using the same job ->
+            # runner lock order as commits. Never hold a runner while waiting
+            # on its previous job's result transaction.
+            if previous:
+                await connection.execute(select(db.jobs.c.id).where(db.jobs.c.id == str(previous.id)).with_for_update())
+            latest = (await connection.execute(select(db.runners).where(
+                db.runners.c.id == runner_id).with_for_update())).mappings().first()
+            if not latest or not latest['connected'] or latest['current_job_id']:
+                return {'type': 'runner_unavailable'}
+            runner = Runner.model_validate(latest['payload'])
+            if not live_worker(runner):
+                return {'type': 'runner_unavailable'}
             job = Job(runnerId=runner_id, sessionId=session_id,
                 filters=VahanFilters.model_validate(row['filters']), scenarioName=row['scenario_name'],
                 status=JobStatus.ASSIGNED, ownerUsername=owner,

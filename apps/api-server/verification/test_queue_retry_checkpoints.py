@@ -45,6 +45,7 @@ class RetryCheckpoints(unittest.IsolatedAsyncioTestCase):
             await release_runner(c,job.runner_id,job.id)
         return await self.repo.settle(UUID(item['task']['sessionId']) if 'sessionId' in item['task'] else self.session,self.owner,item['task']['position'])
     async def claim(self,worker):
+        await services.runners.heartbeat(f'fixture-{worker}')
         item=await self.repo.claim(self.session,self.owner,f'playwright-{worker}')
         if item['type']=='assigned':self.assignments.append((item['task']['position'],item['task']['attempts'],item.get('retry',{}).get('phase'),worker))
         return item

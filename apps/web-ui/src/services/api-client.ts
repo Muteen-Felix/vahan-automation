@@ -147,7 +147,7 @@ export const api = {
   }),
   stopRunSchedule: (id: string) => request<RunSchedule>(`/api/run-schedules/${id}/stop`, {method: 'POST'}),
   pauseRunSchedule: (id: string) => request<RunSchedule>(`/api/run-schedules/${id}/pause`, {method: 'POST'}),
-  resumeRunSchedule: (id: string, workerCount: number) => request<RunSchedule>(`/api/run-schedules/${id}/resume`, {method: 'POST', body: JSON.stringify({workerCount})}),
+  resumeRunSchedule: (id: string) => request<RunSchedule>(`/api/run-schedules/${id}/resume`, {method: 'POST', body: JSON.stringify({})}),
   deleteRunSchedule: (id: string) => request(`/api/run-schedules/${id}`, {method: 'DELETE'}),
   currentCaptchas: () => request<CurrentCaptcha[]>('/api/run-schedules/captchas'),
   filterProfiles:()=>request<FilterProfile[]>('/api/filter-profiles'),

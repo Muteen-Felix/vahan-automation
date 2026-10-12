@@ -29,7 +29,8 @@ async def _expire_disconnected_runner(runner_id: str, socket_id: str) -> None:
             job = await services.jobs.get(UUID(runner.current_job_id))
             if job and can_transition(job.status, JobStatus.FAILED):
                 job = await services.jobs.update_status(job.id, JobStatus.FAILED, error="Runner disconnected.")
-                await sio.emit("job:status", job.model_dump(mode="json", by_alias=True), room=f"job:{job.id}", namespace="/ui")
+                if job:
+                    await sio.emit("job:status", job.model_dump(mode="json", by_alias=True), room=f"job:{job.id}", namespace="/ui")
         wake_scheduler()
         await sio.emit("runner:offline", {"runnerId": runner.id}, namespace="/ui")
     finally:

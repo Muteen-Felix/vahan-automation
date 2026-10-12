@@ -236,7 +236,7 @@ export default function App() {
           </div>
           <UiHealthContract refreshToken={healthRefresh} scrollIntoView={routeHash === '#settings-ui-health'} />
           <AutomaticRunSettings profiles={profiles} selectedProfileId={selectedProfileId}
-            workerCount={runDefaults.workerCount} year={runDefaults.year} schedules={scheduledRuns.schedules}
+            year={runDefaults.year} schedules={scheduledRuns.schedules}
             loading={scheduledRuns.loading} loadError={scheduledRuns.error}
             onUpsert={scheduledRuns.upsert} onDelete={scheduledRuns.remove} />
         </main> : <main className="page-content exported-reports-page" id="reports">

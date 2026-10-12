@@ -50,7 +50,7 @@ def next_monthly_run(starts_at, current, time_zone=TIME_ZONE):
 
 
 def public_schedule(value):
-    result = {key: item for key, item in value.items() if key not in {'definition', 'tasks', 'owner'}}
+    result = {key: item for key, item in value.items() if key not in {'definition', 'tasks', 'owner', 'workerCount'}}
     result.setdefault('timeZone', TIME_ZONE)
     result['canResume'] = bool(value['status'] == 'PAUSED' and not value.get('networkPaused') and value.get('sessionId') or
         value['status'] == 'STOPPED' and value.get('lastSessionId') and (value['done'] < value['total']
@@ -162,18 +162,16 @@ class RunScheduleRepository:
             await connection.execute(update(db.app_settings).where(db.app_settings.c.key == key).values(value=value))
         return value
 
-    async def resume(self, schedule_id, owner, worker_count):
-        if isinstance(worker_count, bool) or not isinstance(worker_count, int) or worker_count < 1:
-            raise ValueError('Choose a positive concurrency limit.')
+    async def resume(self, schedule_id, owner):
         async with engine.begin() as connection:
             key = PREFIX + str(schedule_id)
             value = await connection.scalar(select(db.app_settings.c.value).where(db.app_settings.c.key == key).with_for_update())
             if not value or value['owner'] != owner:
                 raise LookupError('Run schedule not found.')
-            if value['status'] in {'RUNNING', 'RESUMING'} and worker_count == value['workerCount']:
+            if value['status'] in {'RUNNING', 'RESUMING'}:
                 return value
             if value['status'] not in {'PAUSED', 'STOPPED'}:
-                raise ValueError('Wait until the scheduled run is paused before changing workers or continuing.')
+                raise ValueError('Wait until the scheduled run is paused before continuing.')
             session_id = value.get('sessionId') or value.get('lastSessionId')
             if not session_id:
                 raise ValueError('This schedule has no saved report session to continue.')
@@ -196,10 +194,11 @@ class RunScheduleRepository:
             elif value['status'] == 'STOPPED':
                 raise ValueError('The stopped schedule has no saved queue to continue.')
             elapsed = active_elapsed_ms(value)
-            value = {**value, 'sessionId': session_id, 'status': 'RESUMING', 'workerCount': worker_count,
+            value.pop('workerCount', None)
+            value = {**value, 'sessionId': session_id, 'status': 'RESUMING',
                 'executionEpoch': value.get('executionEpoch', 0) + 1, 'preparationAttempts': 0, 'retryAfter': None,
         'activeElapsedMs': elapsed, 'activeSegmentStartedAt': None, 'lastFinishedAt': None, 'pausedAt': None,
-                'networkPaused': False, 'message': f'Preparing {worker_count} workers to continue the saved session.', 'updatedAt': now().isoformat()}
+                'networkPaused': False, 'message': 'Preparing connected browser workers to continue the saved session.', 'updatedAt': now().isoformat()}
             await connection.execute(update(db.app_settings).where(db.app_settings.c.key == key).values(value=value))
         return value
 
@@ -222,7 +221,7 @@ class RunScheduleRepository:
         year = (profile['definition'].get('report') or {}).get('year', command.year)
         value = {'version': 1, 'id': str(uuid4()), 'owner': owner,
             'profileId': profile['id'], 'profileName': profile['name'], 'profileRevision': profile['revision'],
-            'definition': profile['definition'], 'year': year, 'workerCount': command.worker_count,
+            'definition': profile['definition'], 'year': year,
             'startsAt': command.starts_at.isoformat(), 'nextRunAt': command.starts_at.isoformat(),
             'timeZone': command.time_zone, 'repeat': command.repeat, 'enabled': True, 'status': 'WAITING',
             'sessionId': None, 'lastSessionId': None, 'lastRunAt': None, 'lastFinishedAt': None,

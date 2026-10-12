@@ -34,6 +34,10 @@ from app.services import services
 
 
 async def scheduler_tick():
+    # Simulated live workers renew the same heartbeat as the real runner.
+    for runner in await services.runners.list():
+        if runner.status.value != 'RECONNECTING':
+            await services.runners.heartbeat(runner.socket_id)
     await control_tick()
     from starlette.requests import Request
     from app.api.batch_queue import claim_queue_task
@@ -65,7 +69,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
             for owner in ['schedule-test', 'another-user']:
                 await connection.execute(insert(db.users).values(username=owner, password_hash='fixture',
                     role='user', active=True, profile={}, created_at=now()))
-        for number in range(1, 4):
+        for number in range(1, 3):
             await services.runners.register(runner_id=f'playwright-{number}', name=f'Worker {number}', socket_id=f'socket-{number}')
         self.repo = RunScheduleRepository()
         self.profile = await FilterProfileRepository().save('schedule-test', ProfileWrite.model_validate({
@@ -86,7 +90,14 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
             await connection.execute(insert(db.ui_preflight_checks).values(id=self.gate_id,
                 owner_username='schedule-test', runner_ids=[f'playwright-{i}' for i in range(1, 4)],
                 version_id=self.validation['versionId'], status='PASS', reports=[self.validation], created_at=now()))
-        self.preflight = AsyncMock(return_value=self.gate_id)
+        async def fresh_preflight(value, runner_ids):
+            gate = str(uuid4())
+            async with engine.begin() as connection:
+                await connection.execute(insert(db.ui_preflight_checks).values(id=gate,
+                    owner_username=value['owner'], runner_ids=runner_ids,
+                    version_id=self.validation['versionId'], status='PASS', reports=[self.validation], created_at=now()))
+            return gate
+        self.preflight = AsyncMock(side_effect=fresh_preflight)
         self.patches = [patch('app.api.filter_profiles.compile_profile_plan', self.planner),
             patch('app.run_scheduler.apply_pool', self.pool), patch('app.run_scheduler.sio.emit', self.events),
             patch('app.run_scheduler.automatic_preflight', self.preflight)]
@@ -190,6 +201,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         saved = await self.repo.patch(saved['id'], {'status':'PREPARING', 'operation':{
             'stage':'Worker pool','startedAt':(now()-timedelta(minutes=8)).isoformat(),
             'heartbeatAt':now().isoformat(),'progressAt':now().isoformat(),'error':'Worker busy.'}})
+        await services.runners.register(runner_id='playwright-3', name='Worker 3', socket_id='socket-3')
         await services.runners.mark_reconnecting('socket-3')
         values = await attach_diagnostics([public_schedule(saved)])
         diagnostics = values[0]['diagnostics']
@@ -224,6 +236,59 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
     async def jobs(self):
         return await services.jobs.list_all('schedule-test')
 
+    async def assert_connected_capacity(self, initial_count):
+        from app.worker_pool import pool_status
+        from app.repositories.run_schedules import public_schedule
+        for number in range(1, 3):
+            await services.runners.remove_by_socket(f'socket-{number}')
+        for number in range(1, initial_count + 1):
+            await services.runners.register(runner_id=f'playwright-{number}', name=f'Worker {number}', socket_id=f'socket-{number}')
+        self.tasks = [{'name': f'Office {i}', 'filters': {'states': ['State'], 'rtos': [f'Office {i}']}} for i in range(9)]
+        self.planner.return_value = {'scenarios': self.tasks}
+        saved = await self.schedule()
+        # Persist a legacy value directly: the scheduler must ignore it even
+        # before any new dashboard has rewritten this schedule.
+        saved = await self.repo.patch(saved['id'], {'workerCount': 9999})
+        self.assertNotIn('workerCount', public_schedule(saved))
+        await scheduler_tick(); await scheduler_tick()
+        if initial_count == 0:
+            current = await self.repo.get(saved['id'])
+            self.assertEqual(current['status'], 'PREPARING')
+            self.assertIn('Waiting for a connected', current['message'])
+            self.assertEqual(await self.jobs(), [])
+            self.planner.assert_not_awaited(); self.preflight.assert_not_awaited(); self.pool.assert_not_awaited()
+            initial_count = 1
+            await services.runners.register(runner_id='playwright-1', name='Worker 1', socket_id='socket-1')
+            await scheduler_tick()
+        session = UUID((await self.repo.get(saved['id']))['sessionId'])
+        self.assertEqual((await queue.snapshot(session, saved['owner']))['maxWorkers'], initial_count)
+        self.assertEqual((await pool_status())['desiredCount'], initial_count)
+        peak = 0
+        for _ in range(15):
+            active = [job for job in await self.jobs() if job.status == JobStatus.ASSIGNED]
+            peak = max(peak, len(active))
+            self.assertLessEqual(len(active), initial_count)
+            self.assertEqual(len({job.case_id for job in active}), len(active))
+            for job in active:
+                await finish(str(job.id), JobStatus.NO_DATA)
+            await scheduler_tick()
+            if (await self.repo.get(saved['id']))['status'] == 'COMPLETED':
+                break
+        self.assertEqual(peak, initial_count)
+        self.assertEqual((await self.repo.get(saved['id']))['status'], 'COMPLETED')
+        self.assertEqual(len(await self.jobs()), 9)
+        self.assertEqual(len({job.case_id for job in await self.jobs()}), 9)
+        self.assertEqual(self.preflight.await_args.args[1], [f'playwright-{i}' for i in range(1, initial_count + 1)])
+
+    async def test_zero_workers_wait_then_connected_worker_finishes_without_lost_cases(self):
+        await self.assert_connected_capacity(0)
+
+    async def test_one_worker_ignores_legacy_large_count_and_runs_one_case(self):
+        await self.assert_connected_capacity(1)
+
+    async def test_three_workers_ignores_legacy_large_count_and_runs_three_cases(self):
+        await self.assert_connected_capacity(3)
+
     async def test_expired_or_revoked_dashboard_session_does_not_stop_dispatch(self):
         from app.security import authenticate_access_token, issue_access_token
         from app.repositories.postgres import session_hash
@@ -250,10 +315,9 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         monthly = RunScheduleCreate(profileId=self.profile['id'], startsAt=future,
             workerCount=8, year=now().year, repeat='monthly')
         self.assertEqual(monthly.repeat, 'monthly')
-        for starts_at, workers in [(future.replace(tzinfo=None), 8), (now()-timedelta(minutes=1), 8),
-            (future, 0), (future, True), (future, 1.5)]:
+        for starts_at in [future.replace(tzinfo=None), now()-timedelta(minutes=1)]:
             with self.assertRaises(ValidationError):
-                RunScheduleCreate(profileId=self.profile['id'], startsAt=starts_at, workerCount=workers, year=now().year)
+                RunScheduleCreate(profileId=self.profile['id'], startsAt=starts_at, year=now().year)
         next_run = next_daily_run('2026-10-07T09:30:00+07:00', datetime.fromisoformat('2026-10-10T18:00:00+07:00'))
         self.assertEqual(next_run, '2026-10-11T02:30:00+00:00')
         february = next_monthly_run('2026-01-31T09:30:00+07:00', datetime.fromisoformat('2026-02-01T09:00:00+07:00'))
@@ -369,7 +433,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         await scheduler_tick()
         self.assertEqual(len(await self.jobs()), 2, 'Pausing must not claim the next pending case.')
         self.assertTrue(all(job.status == JobStatus.ASSIGNED for job in await self.jobs()), 'Active cases drain; they are not cancelled.')
-        with self.assertRaises(ValueError): await self.repo.resume(saved['id'], 'schedule-test', 3)
+        with self.assertRaises(ValueError): await self.repo.resume(saved['id'], 'schedule-test')
         await finish(str(first_jobs[0].id), JobStatus.COMPLETED)
         await finish(str(first_jobs[1].id), JobStatus.NO_DATA)
         await scheduler_tick()
@@ -380,18 +444,22 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         await scheduler_tick()
         self.assertEqual(len(await self.jobs()), 2, 'Reloaded/idle ticks do not resume paused work automatically.')
         self.assertEqual((await self.repo.get(saved['id']))['activeElapsedMs'], clock)
-        await self.repo.resume(saved['id'], 'schedule-test', 3)
+        await services.runners.register(runner_id='playwright-3', name='Worker 3', socket_id='socket-3')
+        await self.repo.resume(saved['id'], 'schedule-test')
         await scheduler_tick(); await scheduler_tick()
         running = await self.repo.get(saved['id'])
         self.assertEqual(running['lastRunAt'], original_start)
-        self.assertEqual(running['workerCount'], 3)
+        self.assertNotIn('workerCount', running)
+        self.assertEqual((await queue.snapshot(UUID(original_session), saved['owner']))['maxWorkers'], 3)
         self.assertEqual(running['sessionId'], original_session)
         active_jobs = [job for job in await self.jobs() if job.status == JobStatus.ASSIGNED]
         self.assertEqual({job.runner_id for job in active_jobs}, {'playwright-1','playwright-2','playwright-3'})
         await self.repo.pause(saved['id'], 'schedule-test')
         for job in active_jobs: await finish(str(job.id), JobStatus.COMPLETED)
         await scheduler_tick()
-        await self.repo.resume(saved['id'], 'schedule-test', 1)
+        await services.runners.remove_by_socket('socket-2')
+        await services.runners.remove_by_socket('socket-3')
+        await self.repo.resume(saved['id'], 'schedule-test')
         await scheduler_tick(); await scheduler_tick()
         active_jobs = [job for job in await self.jobs() if job.status == JobStatus.ASSIGNED]
         self.assertEqual(len(active_jobs), 1)
@@ -445,7 +513,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError): await self.repo.delete(saved['id'], saved['owner'])
         for job in await self.jobs(): await finish(str(job.id), JobStatus.NO_DATA)
         await scheduler_tick()
-        await self.repo.resume(saved['id'], saved['owner'], 1)
+        await self.repo.resume(saved['id'], saved['owner'])
         with self.assertRaises(ValueError): await self.repo.delete(saved['id'], saved['owner'])
         self.assertEqual((await self.repo.get(saved['id']))['status'], 'RESUMING')
 
@@ -472,7 +540,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         for job in await self.jobs(): await finish(str(job.id), JobStatus.NO_DATA)
         await scheduler_tick()
         outcomes = await asyncio.gather(self.repo.delete(saved['id'], saved['owner']),
-            self.repo.resume(saved['id'], saved['owner'], 1), return_exceptions=True)
+            self.repo.resume(saved['id'], saved['owner']), return_exceptions=True)
         self.assertEqual(sum(isinstance(value, Exception) for value in outcomes), 1)
         if outcomes[0] is None:
             with self.assertRaises(LookupError): await self.repo.get(saved['id'])
@@ -516,7 +584,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
             current=await self.repo.get(saved['id'])
             if current['status']=='PAUSED':
                 self.assertEqual(current['sessionId'],session)
-                await self.repo.resume(saved['id'],'schedule-test',3)
+                await self.repo.resume(saved['id'],'schedule-test')
         else:self.fail('Automatic recovery did not finish')
         current=await self.repo.get(saved['id'])
         self.assertTrue(paused);self.assertEqual(current['status'],'COMPLETED_WITH_ERRORS')
@@ -540,14 +608,14 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         async with engine.connect() as connection:
             self.assertEqual(list(await connection.scalars(select(db.batch_queue_sessions.c.session_id))), [])
         self.planner.side_effect = None
-        await self.repo.resume(saved['id'], 'schedule-test', 3)
+        await self.repo.resume(saved['id'], 'schedule-test')
         await scheduler_tick(); await scheduler_tick()
         resumed = await self.repo.get(saved['id'])
         self.assertEqual(resumed['sessionId'], original_session)
         self.assertEqual(resumed['status'], 'RUNNING')
-        self.assertEqual(len(await self.jobs()), 3)
+        self.assertEqual(len(await self.jobs()), 2)
 
-    async def test_pause_epoch_ownership_and_worker_validation(self):
+    async def test_pause_epoch_ownership_and_legacy_worker_setting_ignored(self):
         saved = await self.start()
         with self.assertRaises(LookupError): await self.repo.pause(saved['id'], 'another-user')
         values = await asyncio.gather(self.repo.pause(saved['id'], 'schedule-test'), self.repo.pause(saved['id'], 'schedule-test'))
@@ -556,15 +624,15 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(stale, 'Old dispatch callbacks cannot overwrite a pause.')
         for job in await self.jobs(): await finish(str(job.id), JobStatus.NO_DATA)
         await scheduler_tick()
-        with self.assertRaises(LookupError): await self.repo.resume(saved['id'], 'another-user', 2)
-        for count in [0,True,1.5]:
-            with self.assertRaises(ValueError): await self.repo.resume(saved['id'], 'schedule-test', count)
-            with self.assertRaises(ValidationError): RunScheduleResume(workerCount=count)
+        with self.assertRaises(LookupError): await self.repo.resume(saved['id'], 'another-user')
+        for count in [0, True, 1.5, 9999]:
+            self.assertEqual(RunScheduleResume(workerCount=count).model_dump(), {})
 
     async def test_legacy_stopped_run_can_continue_saved_queue(self):
         saved = await self.start()
         await stop_scheduled_run(saved)
-        await self.repo.resume(saved['id'], 'schedule-test', 1)
+        await services.runners.remove_by_socket('socket-2')
+        await self.repo.resume(saved['id'], 'schedule-test')
         await scheduler_tick(); await scheduler_tick()
         resumed = await self.repo.get(saved['id'])
         self.assertEqual(resumed['sessionId'], saved['sessionId'])
@@ -576,7 +644,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
     async def test_future_toggle_and_resume_do_not_overwrite_execution_state(self):
         saved = await self.start('daily')
         await stop_scheduled_run(saved)
-        await asyncio.gather(self.repo.resume(saved['id'], 'schedule-test', 1),
+        await asyncio.gather(self.repo.resume(saved['id'], 'schedule-test'),
             self.repo.toggle(saved['id'], 'schedule-test', True))
         current = await self.repo.get(saved['id'])
         self.assertEqual(current['status'], 'RESUMING')
@@ -588,7 +656,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         await self.repo.pause(saved['id'], 'schedule-test')
         for job in await self.jobs(): await finish(str(job.id), JobStatus.NO_DATA)
         await scheduler_tick()
-        await self.repo.resume(saved['id'], 'schedule-test', 3)
+        await self.repo.resume(saved['id'], 'schedule-test')
         self.preflight.side_effect = ValueError('Fixture resumed preflight failed')
         for _ in range(3):
             await self.repo.patch(saved['id'], {'retryAfter':None})
