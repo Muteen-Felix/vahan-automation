@@ -12,6 +12,14 @@ try {
     sessionId: String(51-index),
     filterName: index === 0 ? newest : ['Electric two-wheelers','Petrol passenger cars','Commercial diesel vehicles'][index%3],
     runNumber: 17-Math.floor(index/3), totalRuns: 17,
+    ...[
+      {status:'PAUSED',processed:24,totalCases:1676,withData:20,noData:3,failed:1,pending:1652,running:0,finishedAt:null},
+      {status:'COMPLETED',processed:240,totalCases:240,withData:218,noData:22,failed:0,pending:0,running:0,finishedAt:'2026-10-12T01:15:00Z'},
+      {status:'RUNNING',processed:1069,totalCases:1676,withData:1010,noData:55,failed:4,pending:604,running:3,finishedAt:null},
+      {status:'COMPLETED_WITH_ERRORS',processed:100,totalCases:100,withData:80,noData:18,failed:2,pending:0,running:0,finishedAt:'2026-10-11T10:00:00Z'},
+      {status:'STOPPED',processed:35,totalCases:600,withData:30,noData:5,failed:0,pending:565,running:0,finishedAt:null},
+    ][index%5],
+    lastActivityAt:new Date(Date.parse('2026-10-12T02:35:00Z')-index*6*60*60*1000).toISOString(),
     startedAt: new Date(Date.parse('2026-10-12T02:30:00Z')-index*6*60*60*1000).toISOString(),
   }));
   page.on('pageerror', error => errors.push(error.message));
@@ -51,15 +59,21 @@ try {
   const panel=page.getByRole('region',{name:'Filter run history'});
   await panel.getByRole('rowheader',{name:'Electric two-wheelers',exact:true}).first().waitFor();
   assert.equal(await page.getByRole('dialog').count(),0);
-  assert.deepEqual(await panel.locator('thead th').allTextContents(),['Run','Filter','Run time']);
+  assert.deepEqual(await panel.locator('thead th').allTextContents(),['Run','Filter','Progress','Status','Results','Run time']);
   assert.equal(await panel.locator('tbody tr').count(),50);
-  assert.equal(await panel.locator('tbody tr').first().locator('td').first().innerText(),'17 / 17');
+  assert.match(await panel.locator('tbody tr').first().locator('td').first().innerText(),/#17\s+17 runs/);
+  const first = panel.locator('tbody tr').first();
+  assert.match(await first.locator('[data-label="Progress"]').innerText(),/24 \/ 1,676/);
+  assert.match(await first.locator('[data-label="Status"]').innerText(),/Paused\s+1,652 pending · 0 running/);
+  assert.match(await first.locator('[data-label="Results"]').innerText(),/With data\s+20\s+No data\s+3\s+Failed\s+1/);
+  assert.equal(await first.locator('progress').getAttribute('value'),'24');
+  assert.equal(await panel.getByText('History by day',{exact:true}).count(),0);
   assert.match(await panel.locator('time').first().innerText(),/12\/10\/2026,? 09:30:00/);
   assert.equal(await page.getByLabel('Update history from year').count(),0);
   await panel.getByRole('button',{name:'Next',exact:true}).click();
   await panel.getByRole('rowheader',{name:'Commercial diesel vehicles',exact:true}).waitFor();
   assert.equal(await panel.locator('tbody tr').count(),1);
-  assert.equal(await panel.locator('tbody td').first().innerText(),'1 / 17');
+  assert.match(await panel.locator('tbody td').first().innerText(),/#1\s+17 runs/);
   await panel.getByRole('button',{name:'Previous',exact:true}).click();
   await panel.getByRole('rowheader',{name:'Electric two-wheelers',exact:true}).first().waitFor();
   newest='Renamed filter';

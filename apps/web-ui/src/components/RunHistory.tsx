@@ -4,13 +4,24 @@ import {request} from '../services/api-client';
 import {uiSocket} from '../services/socket-client';
 import {useLiveQuery} from '../hooks/use-live-query';
 
-type Run = {sessionId: string; filterName: string; runNumber: number; totalRuns: number; startedAt: string};
+type Run = {
+  sessionId: string; filterName: string; runNumber: number; totalRuns: number; startedAt: string;
+  status: string; processed: number | null; totalCases: number | null;
+  withData: number | null; noData: number | null; failed: number | null;
+  pending: number | null; running: number | null; lastActivityAt: string | null; finishedAt: string | null;
+};
 type History = {runs: Run[]; total: number};
 const PAGE_SIZE = 50;
 const timestamp = (value: string) => new Date(value).toLocaleString('en-GB', {
   timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric',
   hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
 });
+const count = (value: number | null) => value == null ? '—' : value.toLocaleString();
+const statusLabels: Record<string, string> = {
+  RUNNING: 'Running', PAUSED: 'Paused', PAUSING: 'Pausing', STOPPED: 'Stopped',
+  PREPARING: 'Preparing', RESUMING: 'Resuming', COMPLETED: 'Completed',
+  COMPLETED_WITH_ERRORS: 'Completed with errors', ERROR: 'Error', UNKNOWN: 'Details unavailable',
+};
 
 export function RunHistory() {
   const [offset, setOffset] = useState(0);
@@ -33,7 +44,7 @@ export function RunHistory() {
   const total = query.data?.total ?? 0;
   return <main className="page-content run-history-page" id="run-history">
     <div className="section-intro run-history-intro">
-      <div><h2>Run History</h2><p>Filter runs, newest first · Vietnam time</p></div>
+      <div><h2>Run History</h2><p>One row per run, newest first · Vietnam time (GMT+7)</p></div>
       <button type="button" onClick={() => query.refresh(true)}>Refresh history</button>
     </div>
     {query.error && <p role="alert">{operatorMessage(query.error)}</p>}
@@ -41,13 +52,34 @@ export function RunHistory() {
       <div className="run-history-summary"><strong>{total.toLocaleString()} runs</strong>
         <span role="status">{query.loading ? 'Updating history…' : 'Auto-updated'}</span></div>
       <table className="run-history-table">
-        <thead><tr><th scope="col">Run</th><th scope="col">Filter</th><th scope="col">Run time</th></tr></thead>
+        <thead><tr><th scope="col">Run</th><th scope="col">Filter</th><th scope="col">Progress</th>
+          <th scope="col">Status</th><th scope="col">Results</th><th scope="col">Run time</th></tr></thead>
         <tbody>{query.data?.runs.map(run => <tr key={run.sessionId}>
-          <td data-label="Run">{run.runNumber.toLocaleString()} / {run.totalRuns.toLocaleString()}</td>
+          <td data-label="Run"><div><strong>#{run.runNumber.toLocaleString()}</strong><small>{run.totalRuns.toLocaleString()} runs</small></div></td>
           <th data-label="Filter" scope="row">{run.filterName}</th>
-          <td data-label="Run time"><time dateTime={run.startedAt}>{timestamp(run.startedAt)}</time></td>
+          <td data-label="Progress"><div className="run-history-progress">
+            <strong>{count(run.processed)} / {count(run.totalCases)}</strong>
+            <small>cases processed{run.totalCases ? ` · ${((run.processed ?? 0) / run.totalCases * 100).toFixed(1)}%` : ''}</small>
+            {run.totalCases != null && <progress aria-label={`Run ${run.runNumber} cases processed`}
+              value={run.processed ?? 0} max={run.totalCases || 1}/>}
+          </div></td>
+          <td data-label="Status"><div><span className="run-history-status" data-status={run.status}>
+            {statusLabels[run.status] ?? run.status}</span>
+            {run.pending != null && run.running != null && <small>{count(run.pending)} pending · {count(run.running)} running</small>}
+          </div></td>
+          <td data-label="Results"><div className="run-history-results">
+            <span>With data <strong>{count(run.withData)}</strong></span>
+            <span>No data <strong>{count(run.noData)}</strong></span>
+            <span className={run.failed ? 'has-failures' : ''}>Failed <strong>{count(run.failed)}</strong></span>
+          </div></td>
+          <td data-label="Run time"><div className="run-history-times">
+            <span><small>Started</small><time dateTime={run.startedAt}>{timestamp(run.startedAt)}</time></span>
+            {(run.finishedAt || run.lastActivityAt) && <span><small>{run.finishedAt ? 'Finished' : 'Last activity'}</small>
+              <time dateTime={(run.finishedAt || run.lastActivityAt)!}>{timestamp((run.finishedAt || run.lastActivityAt)!)}</time></span>}
+          </div></td>
         </tr>)}</tbody>
       </table>
+      <p className="run-history-note">Processed cases include results with data, no data and failures. Retries stay in the same run.</p>
       {!query.loading && !query.error && !query.data?.runs.length && <p className="run-history-empty">No filter runs yet.</p>}
       {total > PAGE_SIZE && <div className="run-history-pagination">
         <span>{offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total.toLocaleString()}</span>
