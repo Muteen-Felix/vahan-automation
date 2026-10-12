@@ -155,7 +155,8 @@ class BatchQueueRepository:
             progress.update(failedRemaining=failed, pendingRetries=pending)
         return progress
 
-    async def start(self, session_id: UUID, owner: str, tasks: list, max_workers: int = 1):
+    async def start(self, session_id: UUID, owner: str, tasks: list, max_workers: int = 1,
+                    *, profile_id=None, filter_name=None):
         if isinstance(max_workers, bool) or not isinstance(max_workers, int) or max_workers < 1:
             raise ValueError('Choose at least one worker.')
         from app.models.filter_profile import case_key
@@ -184,10 +185,16 @@ class BatchQueueRepository:
                        or row['filters'] != task.filters.model_dump(mode='json', by_alias=True)
                        for position, (row, task) in enumerate(zip(originals, tasks))):
                     raise ValueError('Saved queue cases changed. Start a new report session.')
+                if profile_id and filter_name:
+                    from app.repositories.run_history import record_run
+                    await record_run(connection, session_key, profile_id, filter_name)
                 return
             await connection.execute(insert(db.batch_queue_sessions).values(
                 session_id=session_key, owner_username=owner, status='RUNNING',
                 total=len(tasks), max_workers=max_workers, created_at=now(), updated_at=now()))
+            if profile_id and filter_name:
+                from app.repositories.run_history import record_run
+                await record_run(connection, session_key, profile_id, filter_name)
             await connection.execute(insert(db.batch_queue_tasks), [{
                 'session_id': session_key, 'position': position, 'scenario_name': task.name,
                 'filters': task.filters.model_dump(mode='json', by_alias=True),

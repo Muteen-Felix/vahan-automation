@@ -191,7 +191,8 @@ async def prepare_run(value):
             if not await still_current(value):
                 return
             await checkpoint(value, {'stage': 'Adding cases to PostgreSQL queue', 'message': f'Adding {len(tasks)} cases for workers.'})
-            await queue.start(UUID(session_id), value['owner'], [QueueTaskInput.model_validate(task) for task in tasks], value['workerCount'])
+            await queue.start(UUID(session_id), value['owner'], [QueueTaskInput.model_validate(task) for task in tasks],
+                value['workerCount'], profile_id=value['profileId'], filter_name=value['profileName'])
             await bind_gate(session_id, gate)
         else:
             gate = await require_gate(value['owner'], runner_ids, value.get('preflightId'), fresh=True)

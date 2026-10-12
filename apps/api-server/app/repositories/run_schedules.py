@@ -79,6 +79,8 @@ class RunScheduleRepository:
             if (not value or not value['enabled'] or value.get('sessionId') or not value.get('nextRunAt')
                     or datetime.fromisoformat(value['nextRunAt']) > now()):
                 return None
+            from app.repositories.run_history import preserve_schedule_runs
+            await preserve_schedule_runs(connection, value)
             value = {**value, 'sessionId': str(uuid4()), 'status': 'PREPARING',
                 'message': 'Preparing the scheduled report profile.', 'total': 0, 'done': 0, 'withData': 0,
                 'noData': 0, 'failed': 0, 'preparationAttempts': 0, 'retryAfter': None, 'updatedAt': now().isoformat(),
@@ -296,6 +298,8 @@ class RunScheduleRepository:
                 raise ValueError('Wait until the scheduled run is paused before deleting its schedule.')
             session_id = value.get('sessionId') or value.get('lastSessionId')
             if session_id:
+                from app.repositories.run_history import preserve_schedule_runs
+                await preserve_schedule_runs(connection, value)
                 session = (await connection.execute(select(db.batch_queue_sessions).where(
                     db.batch_queue_sessions.c.session_id == session_id).with_for_update())).mappings().first()
                 if session and (session['owner_username'] != owner or session['status'] != 'PAUSED'):

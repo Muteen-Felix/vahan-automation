@@ -2,15 +2,22 @@
 from collections import defaultdict
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import Date, cast, func, literal, or_, select
 from sqlalchemy.dialects.postgresql import JSONB
 from app.db import engine, schema as db
 from app.api.report_coverage import filter_key
 from app.repositories.annual_reports import context_year, dataset
+from app.access import require_admin
+from app.repositories.run_history import list_runs
 
 router=APIRouter(prefix='/annual-reports',tags=['annual-reports'])
 ZONE=ZoneInfo('Asia/Ho_Chi_Minh')
+
+
+@router.get('/run-history', dependencies=[Depends(require_admin)])
+async def run_history(offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100)):
+    return await list_runs(offset, limit)
 
 
 def day(value):
