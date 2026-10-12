@@ -3,18 +3,13 @@ import {useEffect, useMemo} from 'react';
 import type {MatrixPlan} from '../matrix-plan';
 import {useLiveQuery} from '../hooks/use-live-query';
 import {loadReportCoverage, type CoverageContext, type ReportCoverageData} from '../report-coverage';
-
-function formatSavedAt(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('en-GB', {
-    timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-  });
-}
+import {useDisplayTimeZone} from '../display-time-zone';
+import {formatUiDateTime, runTimeZoneLabel} from '../run-schedules';
 
 export function ReportCoverage({context, plan, refreshTrigger}: {
   context: CoverageContext; plan: MatrixPlan; refreshTrigger?: number;
 }) {
+  const {timeZone} = useDisplayTimeZone();
   const viewKey = JSON.stringify(context);
   const queryKey = useMemo(() => [viewKey, plan], [viewKey, plan]);
   const {data: shown, error, refresh} = useLiveQuery<ReportCoverageData>(queryKey,
@@ -46,8 +41,8 @@ export function ReportCoverage({context, plan, refreshTrigger}: {
       {shown.firstMissing && <p><span>Next</span><strong>#{shown.firstMissing.index + 1} · {shown.firstMissing.state} · {shown.firstMissing.rto}</strong></p>}
     </div>}
     {shown?.matrixLoaded && shown.lastSaved && <p className="report-coverage-updated">
-      <span>Last data saved · Vietnam time</span>
-      <time dateTime={shown.lastSaved.savedAt}>{formatSavedAt(shown.lastSaved.savedAt)}</time>
+      <span>Last data saved · {runTimeZoneLabel(timeZone)}</span>
+      <time dateTime={shown.lastSaved.savedAt}>{formatUiDateTime(shown.lastSaved.savedAt, timeZone, {second: '2-digit'})}</time>
     </p>}
     <details className="report-coverage-more"><summary>Details</summary>
       {shown?.matrixLoaded && <p>Last saved <strong>{shown.lastSaved ? `#${shown.lastSaved.index + 1} · ${shown.lastSaved.state} · ${shown.lastSaved.rto}` : 'No reports yet'}</strong></p>}

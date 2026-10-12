@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import type { PendingUiHealthCheck, UiHealthReportsResponse } from "../contracts";
 import { api } from "../services/api-client";
 import { AuthenticatedDownload } from "./AuthenticatedDownload";
+import {useDisplayTimeZone} from '../display-time-zone';
+import {formatUiDateTime} from '../run-schedules';
 
 const MANUAL_REPORT_POLL_INTERVAL_MS = 2_000;
 const MANUAL_REPORT_POLL_TIMEOUT_MS = 90_000;
@@ -14,17 +16,8 @@ const statusLabels: Record<string, string> = {
   CHECK_ERROR: "Check error",
 };
 
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZoneName: "short",
-  }).format(date);
+function formatDateTime(value: string, timeZone: import('../run-schedules').RunTimeZone) {
+  return formatUiDateTime(value, timeZone, {day: 'numeric', month: 'short', timeZoneName: 'short'});
 }
 
 function formatBytes(value: number) {
@@ -73,6 +66,7 @@ function reportValue(report: Record<string, unknown>, key: string) {
 }
 
 function HealthReportTable({ rows }: { rows: Array<Record<string, string>> }) {
+  const {timeZone} = useDisplayTimeZone();
   return (
     <table className="health-report-table">
       <thead>
@@ -94,7 +88,7 @@ function HealthReportTable({ rows }: { rows: Array<Record<string, string>> }) {
             : reports.length || (row.status === "PASS" ? 0 : 1);
           return (
           <tr key={row.log_id}>
-            <td className="report-nowrap">{formatDateTime(row.checked_at)}</td>
+            <td className="report-nowrap">{formatDateTime(row.checked_at, timeZone)}</td>
             <td>
               <span className={`report-status report-status-${(row.status || "CHECK_ERROR").toLowerCase()}`}>
                 {statusLabels[row.status] || row.status || "Unknown"}

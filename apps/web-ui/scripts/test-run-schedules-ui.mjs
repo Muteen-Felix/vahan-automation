@@ -5,7 +5,7 @@ const browser = await chromium.launch({headless:true});
 try {
   const page = await browser.newPage({viewport:{width:1440,height:1000},timezoneId:'America/New_York'});
   const errors = []; page.on('pageerror',error=>errors.push(error.message));
-  let schedules = [], posted, imageRequests = 0, uiSocket;
+  let schedules = [], posted, imageRequests = 0, uiSocket, timeZoneUpdates = [];
   const queueWrites = [];
   const resumeBodies = [];
   let annualReads = 0,deleteFails=false,deleteCalls=0;
@@ -51,6 +51,9 @@ try {
         nextRunAt:posted.startsAt,enabled:true,status:'WAITING',sessionId:null,lastSessionId:null,
         message:'Waiting for the scheduled start time.',total:0,done:0,withData:0,noData:0,failed:0};
       schedules.push(saved);body=saved;
+    } else if(path==='/api/run-schedules/time-zone' && request.method()==='POST') {
+      const update=request.postDataJSON();timeZoneUpdates.push(update);
+      schedules=schedules.map(schedule=>({...schedule,timeZone:update.timeZone}));body=schedules;
     } else if(path==='/api/run-schedules') body=schedules;
     else if(path.startsWith('/api/batch-queue/')) {
       if(request.method()!=='GET') queueWrites.push(path);
@@ -113,6 +116,7 @@ try {
   const monthlyDay=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Ho_Chi_Minh',day:'numeric'}).format(new Date(posted.startsAt));
   await card.getByText(`Day ${monthlyDay} · month-end if needed · new filter each year`,{exact:true}).waitFor();
   assert.equal(await page.getByRole('link',{name:/Create Report/}).count(),0);
+  assert.equal(await page.getByLabel('Schedule time zone').count(),0,'The time zone control lives in Account settings');
   assert.equal(await card.locator('.run-schedule-actions > *').count(),3);
   const bounds=()=>page.locator('.automatic-run-settings').evaluate(root=>{
     const selectors=['.automatic-run-form','.automatic-run-form-footer','.schedule-help-slot','.schedule-feedback',
@@ -144,12 +148,21 @@ try {
   assert.ok(await card.getByLabel('Estimated finish').locator('time').getAttribute('datetime'));
   assert.match(await card.getByLabel('Estimated finish').innerText(), /Vietnam time \(UTC\+07:00\)/);
   schedules[0]={...schedules[0],timeZone:'Asia/Kolkata'};
+  await card.getByLabel('Estimated finish').getByText('Vietnam time (UTC+07:00)',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Account',exact:true}).click();
+  const accountDialog=page.getByRole('dialog',{name:'Account settings'});
+  await accountDialog.getByLabel('Display time zone',{exact:true}).selectOption('Asia/Kolkata');
+  await accountDialog.getByRole('status').getByText(/Times across the interface now use India time/).waitFor();
+  assert.deepEqual(timeZoneUpdates,[{timeZone:'Asia/Kolkata'}]);
   await card.getByLabel('Estimated finish').getByText('India time (UTC+05:30)',{exact:true}).waitFor();
   const finish=await card.getByLabel('Estimated finish').locator('time').getAttribute('datetime');
   const indiaFinish=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',
     year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(finish));
   assert.equal(await card.getByLabel('Estimated finish').locator('time').innerText(),indiaFinish);
-  schedules[0]={...schedules[0],timeZone:'Asia/Ho_Chi_Minh'};
+  await accountDialog.getByLabel('Display time zone',{exact:true}).selectOption('Asia/Ho_Chi_Minh');
+  await accountDialog.getByRole('status').getByText(/Times across the interface now use Vietnam time/).waitFor();
+  assert.deepEqual(timeZoneUpdates,[{timeZone:'Asia/Kolkata'},{timeZone:'Asia/Ho_Chi_Minh'}]);
+  await page.getByRole('button',{name:'Close account settings'}).click();
   const diagnosticsPanel=page.locator('.run-diagnostics').first();
   schedules[0]={...schedules[0],status:'PREPARING',message:'A worker is still busy.',
     operation:{stage:'Docker worker pool',detail:'A worker is still busy.',startedAt:new Date(Date.now()-360_000).toISOString(),

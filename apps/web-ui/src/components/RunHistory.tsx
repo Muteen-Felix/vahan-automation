@@ -4,6 +4,8 @@ import {request} from '../services/api-client';
 import {uiSocket} from '../services/socket-client';
 import {useLiveQuery} from '../hooks/use-live-query';
 import {sampleRunHistory} from '../sample-run-history';
+import {useDisplayTimeZone} from '../display-time-zone';
+import {formatUiDateTime, runTimeZoneLabel} from '../run-schedules';
 
 type Run = {
   sessionId: string; filterName: string; runNumber: number; totalRuns: number; startedAt: string;
@@ -13,10 +15,6 @@ type Run = {
 };
 type History = {runs: Run[]; total: number};
 const PAGE_SIZE = 50;
-const timestamp = (value: string) => new Date(value).toLocaleString('en-GB', {
-  timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric',
-  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-});
 const count = (value: number | null) => value == null ? '—' : value.toLocaleString();
 const statusLabels: Record<string, string> = {
   RUNNING: 'Running', PAUSED: 'Paused', PAUSING: 'Pausing', STOPPED: 'Stopped',
@@ -25,6 +23,8 @@ const statusLabels: Record<string, string> = {
 };
 
 export function RunHistory() {
+  const {timeZone} = useDisplayTimeZone();
+  const timestamp = (value: string) => formatUiDateTime(value, timeZone, {second: '2-digit'});
   const [offset, setOffset] = useState(0);
   const [showSamples, setShowSamples] = useState(false);
   const query = useLiveQuery<History>(offset,
@@ -47,7 +47,7 @@ export function RunHistory() {
   const total = history?.total ?? 0;
   return <main className="page-content run-history-page" id="run-history">
     <div className="section-intro run-history-intro">
-      <div><h2>Run History</h2><p>One row per run, newest first · Vietnam time (GMT+7)</p></div>
+      <div><h2>Run History</h2><p>One row per run, newest first · {runTimeZoneLabel(timeZone)}</p></div>
       <div className="run-history-actions">
         <label><input type="checkbox" checked={showSamples} aria-label="Show sample data"
           onChange={event => setShowSamples(event.target.checked)} /> Show sample data</label>

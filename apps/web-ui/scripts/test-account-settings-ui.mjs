@@ -3,7 +3,7 @@ import {chromium} from '../../browser-runner/node_modules/playwright/index.mjs';
 import {testArtifactPath} from './test-artifact-path.mjs';
 const browser=await chromium.launch({headless:true});
 try {
- const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];let changed=[],resets=[],role='admin';
+ const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];let changed=[],resets=[],timeZoneChanges=[],role='admin';
  page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>localStorage.setItem('vahanUiAccessToken','fixture'));
  await page.route('https://fonts.googleapis.com/**',r=>r.abort());await page.route('https://fonts.gstatic.com/**',r=>r.abort());
@@ -11,15 +11,20 @@ try {
  await page.route('**/api/**',async route=>{
   const req=route.request(),path=new URL(req.url()).pathname;let body=[];
   if(path==='/api/auth/status')body={configured:true};
-  else if(path==='/api/auth/me')body={username:'admin-fixture',role};
+  else if(path==='/api/auth/me')body={username:role==='admin'?'admin-fixture':'member-fixture',role};
   else if(path==='/api/auth/activity')body={accessToken:'fixture'};
   else if(path==='/api/user-state')body={};
+  else if(path==='/api/annual-reports/run-history')body={runs:[{sessionId:'timezone-fixture',filterName:'Timezone fixture',runNumber:1,totalRuns:1,
+   startedAt:'2026-01-01T18:00:00.000Z',status:'COMPLETED',processed:1,totalCases:1,withData:1,noData:0,failed:0,
+   pending:0,running:0,lastActivityAt:null,finishedAt:'2026-01-01T18:00:00.000Z'}],total:1};
   else if(path==='/api/ui-health/status')body={blocked:false,latestPreflight:null};
   else if(path==='/api/users')body=[{username:'admin-fixture',role:'admin',active:true},{username:'member-fixture',role:'user',active:true}];
   else if(path==='/api/auth/password') {
    const payload=req.postDataJSON();changed.push(payload);
    if(payload.currentPassword==='Wrong password fixture')return route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({detail:'The current password is incorrect.'})});
    body={ok:true};
+  }else if(path==='/api/run-schedules/time-zone') {
+   timeZoneChanges.push(req.postDataJSON());body=[];
   }else if(path==='/api/users/member-fixture/password'){resets.push(req.postDataJSON());body={ok:true};}
   await route.fulfill({contentType:'application/json',body:JSON.stringify(body)});
  });
@@ -29,6 +34,15 @@ try {
  assert.equal(await page.getByRole('button',{name:'Log out',exact:true}).count(),0);
  await page.getByRole('button',{name:'Account',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Account settings'});
  await dialog.locator('.account-identity strong').filter({hasText:'admin-fixture'}).waitFor();assert.equal(await dialog.locator('.account-identity strong').innerText(),'admin-fixture');
+ await dialog.getByLabel('Display time zone',{exact:true}).selectOption('Asia/Kolkata');
+ await dialog.getByRole('status').getByText(/Times across the interface now use India time \(UTC\+05:30\)/).waitFor();
+ assert.deepEqual(timeZoneChanges,[{timeZone:'Asia/Kolkata'}]);
+ await page.getByRole('button',{name:'Close account settings'}).click();
+ await page.getByRole('link',{name:'Run History',exact:true}).click();
+ await page.getByText(/One row per run, newest first · India time \(UTC\+05:30\)/).waitFor();
+ await page.locator('.run-history-times time').first().getByText('01/01/2026, 23:30:00',{exact:true}).waitFor();
+ await page.getByRole('link',{name:'Settings',exact:true}).click();
+ await page.getByRole('button',{name:'Account',exact:true}).click();
  await dialog.getByLabel('Current password',{exact:true}).fill('Wrong password fixture');
  await dialog.locator('.account-password-form').getByLabel('New password',{exact:true}).fill('New password fixture');
  await dialog.locator('.account-password-form').getByLabel('Confirm new password',{exact:true}).fill('Mismatch password fixture');
@@ -54,6 +68,10 @@ try {
  await dialog.screenshot({path:testArtifactPath('account-settings-mobile.png')});
  await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
  role='user';await page.getByRole('button',{name:'Account',exact:true}).click();await dialog.getByText('Workspace member',{exact:true}).waitFor();
+ await dialog.getByLabel('Display time zone',{exact:true}).selectOption('Asia/Ho_Chi_Minh');
+ await dialog.getByRole('status').getByText(/Times across the interface now use Vietnam time/).waitFor();
+ assert.deepEqual(timeZoneChanges,[{timeZone:'Asia/Kolkata'}],'Members change display time without changing administrator schedules');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('vahanScheduleTimeZoneV1:member-fixture')),'Asia/Ho_Chi_Minh');
  assert.equal(await dialog.getByText('Manage user accounts',{exact:true}).count(),0);
  assert.deepEqual(errors,[]);
  console.log('Account UI: hidden account controls, own password mismatch/error/success, admin reset, self-reset restriction, Escape and mobile layout passed.');

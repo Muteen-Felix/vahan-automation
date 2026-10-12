@@ -1,14 +1,15 @@
 import type {RunSchedule} from '../run-schedules';
 import {useScheduleTiming} from '../hooks/use-schedule-timing';
 import {formatScheduleDuration} from '../schedule-timing';
-import {formatScheduledTime, runTimeZone, runTimeZoneLabel} from '../run-schedules';
+import {useDisplayTimeZone} from '../display-time-zone';
+import {formatScheduledTime, runTimeZoneLabel} from '../run-schedules';
 
 export function RunScheduleProgress({schedule, statusLabel}: {schedule: RunSchedule; statusLabel: string}) {
   const {estimate} = useScheduleTiming(schedule);
+  const {timeZone} = useDisplayTimeZone();
   const total = Number.isFinite(schedule.total) ? Math.max(0, Math.floor(schedule.total)) : 0;
   const done = Number.isFinite(schedule.done) ? Math.min(total, Math.max(0, Math.floor(schedule.done))) : 0;
   const progressLabel = `${done.toLocaleString('en-GB')} / ${total ? total.toLocaleString('en-GB') : '—'} reports`;
-  const timeZone = runTimeZone(schedule.timeZone);
   const waiting = estimate.stale ? 'Waiting for an update' : estimate.stalled ? 'Waiting for progress'
     : schedule.status === 'PAUSED' || schedule.status === 'PAUSING' ? 'Paused'
     : schedule.status === 'COMPLETED' || schedule.status === 'COMPLETED_WITH_ERRORS' ? 'Finished'

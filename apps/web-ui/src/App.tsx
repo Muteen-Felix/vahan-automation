@@ -17,6 +17,8 @@ import {flushPersistentState, persistentState} from './services/persistent-state
 import {uiSocket} from './services/socket-client';
 import {NetworkNotice, useNetworkStatus} from './components/NetworkNotice';
 import {useRunSchedules} from './services/use-run-schedules';
+import {DisplayTimeZoneProvider} from './display-time-zone';
+import type {RunTimeZone} from './run-schedules';
 
 type AppSection = 'reports' | 'filters' | 'run-history' | 'settings' | 'forbidden';
 
@@ -31,6 +33,10 @@ function sectionFromHash(): AppSection {
 }
 
 export default function App() {
+  return <DisplayTimeZoneProvider><AppContent/></DisplayTimeZoneProvider>;
+}
+
+function AppContent() {
   const [role, setRole] = useState<string | null>(null);
   const isAdmin = role === 'admin';
   const [activeSection, setActiveSection] = useState<AppSection>(sectionFromHash);
@@ -193,6 +199,12 @@ export default function App() {
     finally {setSigningOut(false);}
   }
 
+  async function updateAccountTimeZone(timeZone: RunTimeZone) {
+    if (!isAdmin) return;
+    const updated = await api.setRunScheduleTimeZone(timeZone);
+    updated.forEach(scheduledRuns.upsert);
+  }
+
   if (!role) return <main className="auth-shell"><p role={error ? 'alert' : 'status'}>{operatorMessage(error) || 'Checking your account access…'}</p></main>;
   const forbidden = activeSection === 'forbidden' || (!isAdmin && activeSection !== 'reports');
   return <div className="app-shell" data-view={activeSection}>
@@ -204,7 +216,7 @@ export default function App() {
         <a className={activeSection === 'run-history' ? 'active' : undefined} aria-current={activeSection === 'run-history' ? 'page' : undefined} href="#run-history">Run History</a>
         <a className={activeSection === 'settings' ? 'active' : undefined} aria-current={activeSection === 'settings' ? 'page' : undefined} href="#settings">Settings</a></>}
       </nav>
-      <div className="header-actions">{!isAdmin && <AccountSettings signingOut={signingOut} onSignOut={signOut}/>}</div>
+      <div className="header-actions">{!isAdmin && <AccountSettings signingOut={signingOut} onSignOut={signOut} onTimeZoneChange={updateAccountTimeZone}/>}</div>
     </header>
     <div className="app-layout"><div className="app-main">
       <NetworkNotice network={network} connection={connection}/>
@@ -232,7 +244,7 @@ export default function App() {
           window.location.hash = 'settings';
         }} /> : activeSection === 'run-history' ? <RunHistory/> : activeSection === 'settings' ? <main className="page-content settings-page" id="settings">
           <div className="section-intro settings-intro"><div><h2>Settings</h2><p>Schedules, activity and account.</p></div>
-            <AccountSettings signingOut={signingOut} onSignOut={signOut}/>
+            <AccountSettings signingOut={signingOut} onSignOut={signOut} onTimeZoneChange={updateAccountTimeZone}/>
           </div>
           <UiHealthContract refreshToken={healthRefresh} scrollIntoView={routeHash === '#settings-ui-health'} />
           <AutomaticRunSettings profiles={profiles} selectedProfileId={selectedProfileId}

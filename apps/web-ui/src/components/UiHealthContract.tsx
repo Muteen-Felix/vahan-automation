@@ -3,13 +3,15 @@ import {api} from '../services/api-client';
 import {uiSocket} from '../services/socket-client';
 import {websiteCheckAlerts,websiteCheckBlocked,websiteCheckReport,websiteTargetLabel} from '../ui-health-alerts';
 import {operatorMessage,websiteIssueMessage} from '../operator-language';
+import {useDisplayTimeZone} from '../display-time-zone';
+import {formatUiDateTime, runTimeZoneLabel, type RunTimeZone} from '../run-schedules';
 
-function checkedTime(value: unknown) {
-  const date = new Date(typeof value === 'string' ? value : '');
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('en-GB',{timeZone:'Asia/Ho_Chi_Minh',hour12:false});
+function checkedTime(value: unknown, timeZone: RunTimeZone) {
+  return formatUiDateTime(typeof value === 'string' ? value : '', timeZone, {hour12: false});
 }
 
 export function UiHealthContract({refreshToken=0,scrollIntoView=false}:{refreshToken?:number;scrollIntoView?:boolean}) {
+  const {timeZone} = useDisplayTimeZone();
   const [status,setStatus] = useState<Record<string,unknown>|null>(null);
   const [error,setError] = useState('');
   const [copied,setCopied] = useState<string|null>(null);
@@ -52,9 +54,9 @@ export function UiHealthContract({refreshToken=0,scrollIntoView=false}:{refreshT
       <p className="website-alert-notice" role="alert">The run could not start. Copy the issue for support, then try again after it is fixed.</p>
       <div className="website-alert-scroll">
         <table className="website-alert-table" role="table" aria-label="Website changes blocking a run">
-          <thead><tr role="row"><th scope="col" role="columnheader">Detected (Vietnam time)</th><th scope="col" role="columnheader">Report browsers</th><th scope="col" role="columnheader">Website issue</th><th scope="col" role="columnheader">Result</th><th scope="col" role="columnheader">Share with support</th></tr></thead>
+          <thead><tr role="row"><th scope="col" role="columnheader">Detected ({runTimeZoneLabel(timeZone)})</th><th scope="col" role="columnheader">Report browsers</th><th scope="col" role="columnheader">Website issue</th><th scope="col" role="columnheader">Result</th><th scope="col" role="columnheader">Share with support</th></tr></thead>
           <tbody>{alerts.map(alert=><tr key={alert.id} role="row">
-            <td role="cell" data-label="Detected (Vietnam time)">{checkedTime(alert.checkedAt)}</td>
+            <td role="cell" data-label={`Detected (${runTimeZoneLabel(timeZone)})`}>{checkedTime(alert.checkedAt, timeZone)}</td>
             <td role="cell" data-label="Report browsers">{alert.workers.length ? `${alert.workers.length} ${alert.workers.length===1?'browser':'browsers'}` : '—'}</td>
             <td role="cell" data-label="Website issue"><strong>{websiteTargetLabel(alert.target)}</strong><p>{websiteIssueMessage(alert.code,alert.title)}</p></td>
             <td role="cell" data-label="Result"><span className="website-alert-blocked">Cannot start yet</span></td>
