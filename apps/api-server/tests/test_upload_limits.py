@@ -33,7 +33,7 @@ def inflated_workbook(dimension):
 
 
 @pytest.mark.parametrize('dimension', ['A1:XFD1048576', 'A1:D1048576', 'A1:SR10000'])
-async def test_inflated_sheet_dimensions_are_rejected_without_saving(dimension):
+async def test_inflated_sheet_dimensions_are_rejected_without_saving(dimension, admin_token):
     job = await services.jobs.create(Job(runnerId='dimension-runner', ownerUsername='test-admin',
         status=JobStatus.WAITING_RESULT, filters={'states':['Fixture State'], 'rtos':['Office - TS1'],
         'fromYear':'2025', 'toYear':'2025', 'yAxis':'Maker'}))

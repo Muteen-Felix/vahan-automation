@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="7" time="41.022" timestamp="2026-10-12T15:37:37.110608+07:00" hostname="VSF-109RTK-L"><testcase classname="verification.test_worker_pool.PoolTest" name="test_any_worker_id_and_planning_reservations_obey_limit" time="7.163" /><testcase classname="verification.test_worker_pool.PoolTest" name="test_limits_one_five_ten_keep_containers_connected" time="6.748" /><testcase classname="verification.test_worker_pool.PoolTest" name="test_parallel_direct_jobs_cannot_bypass_global_limit_with_custom_ids" time="7.381" /><testcase classname="verification.test_worker_pool.PoolTest" name="test_parallel_queues_share_capacity_and_claim_only_once" time="5.811" /><testcase classname="verification.test_worker_pool.PoolTest" name="test_preflight_reservation_blocks_unsafe_shrink" time="4.640"><failure message="sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) connection was closed in the middle of operation: terminating connection due to administrator command&#10;[SQL: INSERT INTO app_settings (key, value) VALUES ($1::VARCHAR, $2::JSONB) ON CONFLICT DO NOTHING]&#10;[parameters: ('docker-worker-pool', '{&quot;desiredCount&quot;: 20, &quot;phase&quot;: &quot;ready&quot;}')]&#10;(Background on this error at: https://sqlalche.me/e/21/dbapi)">asyncpg.exceptions.AdminShutdownError: terminating connection due to administrator command
+
+The above exception was the direct cause of the following exception:
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:605: in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:197: in bind_execute
+    ???
+E   asyncpg.exceptions.ConnectionDoesNotExistError: connection was closed in the middle of operation: terminating connection due to administrator command
+
+The above exception was the direct cause of the following exception:
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1946: in _exec_single_context
+    self.dialect.do_execute(
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:1192: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:656: in execute
+    await_(self._prepare_and_execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:618: in _prepare_and_execute
+    self._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:568: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:847: in _handle_exception
+    super()._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:412: in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:840: in _handle_exception_no_connection
+    raise translated_error from error
+E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.Error: connection was closed in the middle of operation: terminating connection due to administrator command
+
+The above exception was the direct cause of the following exception:
+verification\test_worker_pool.py:94: in test_preflight_reservation_blocks_unsafe_shrink
+    async with reserve_preflight_runners([f'playwright-{i}' for i in range(1, 7)], 'worker-test'):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+app\repositories\filter_profiles.py:117: in reserve_preflight_runners
+    allocation, _count = await assignment_status(connection, runner_id)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\worker_pool.py:79: in assignment_status
+    pool = await pool_value(connection, lock=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\worker_pool.py:42: in pool_value
+    await connection.execute(pg_insert(db.app_settings).values(key=KEY,
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:667: in execute
+    result = await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:212: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1451: in execute
+    return meth(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:533: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1671: in _execute_clauseelement
+    ret = self._execute_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1825: in _execute_context
+    return self._exec_single_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1965: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:2335: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1946: in _exec_single_context
+    self.dialect.do_execute(
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:1192: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:656: in execute
+    await_(self._prepare_and_execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:618: in _prepare_and_execute
+    self._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:568: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:847: in _handle_exception
+    super()._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:412: in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:840: in _handle_exception_no_connection
+    raise translated_error from error
+E   sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) connection was closed in the middle of operation: terminating connection due to administrator command
+E   [SQL: INSERT INTO app_settings (key, value) VALUES ($1::VARCHAR, $2::JSONB) ON CONFLICT DO NOTHING]
+E   [parameters: ('docker-worker-pool', '{"desiredCount": 20, "phase": "ready"}')]
+E   (Background on this error at: https://sqlalche.me/e/21/dbapi)</failure></testcase><testcase classname="verification.test_worker_pool.PoolTest" name="test_restart_keeps_selected_count_and_queue_cap" time="0.109"><failure message="ConnectionError: unexpected connection_lost() call">verification\test_worker_pool.py:19: in asyncSetUp
+    async with engine.begin() as connection:
+               ^^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:1086: in begin
+    async with conn:
+               ^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\base.py:152: in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:283: in start
+    await greenlet_spawn(self.sync_engine.connect)
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:210: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3263: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:149: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3287: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:445: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1303: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:709: in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\impl.py:176: in _do_get
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:166: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv\Lib\site-packages\sqlalchemy\pool\impl.py:174: in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:386: in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:671: in __init__
+    self.__connect()
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:906: in __connect
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:166: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:902: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\create.py:645: in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:869: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:967: in connect
+    return await_(
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:378: in create
+    cls._handle_exception_no_connection(dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:841: in _handle_exception_no_connection
+    super()._handle_exception_no_connection(dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:409: in _handle_exception_no_connection
+    raise error.with_traceback(exc_info[2])
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:376: in create
+    connection = await connection_awaitable
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\connection.py:2498: in connect
+    return await connect_utils._connect(
+.venv\Lib\site-packages\asyncpg\connect_utils.py:1307: in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+.venv\Lib\site-packages\asyncpg\connect_utils.py:1278: in _connect
+    conn = await _connect_addr(
+.venv\Lib\site-packages\asyncpg\connect_utils.py:1092: in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\connect_utils.py:1162: in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\connect_utils.py:1004: in _create_ssl_connection
+    do_ssl_upgrade = await pr.on_data
+                     ^^^^^^^^^^^^^^^^
+E   ConnectionError: unexpected connection_lost() call</failure></testcase><testcase classname="verification.test_worker_pool.PoolTest" name="test_shrink_preserves_busy_job_and_can_grow" time="2.074"><failure message="ConnectionRefusedError: [WinError 1225] The remote computer refused the network connection">verification\test_worker_pool.py:19: in asyncSetUp
+    async with engine.begin() as connection:
+               ^^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:1086: in begin
+    async with conn:
+               ^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\base.py:152: in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:283: in start
+    await greenlet_spawn(self.sync_engine.connect)
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:210: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3263: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:149: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3287: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:445: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1303: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:709: in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\impl.py:176: in _do_get
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:166: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv\Lib\site-packages\sqlalchemy\pool\impl.py:174: in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:386: in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:671: in __init__
+    self.__connect()
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:906: in __connect
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:166: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:902: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\create.py:645: in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:869: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:967: in connect
+    return await_(
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:378: in create
+    cls._handle_exception_no_connection(dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:841: in _handle_exception_no_connection
+    super()._handle_exception_no_connection(dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:409: in _handle_exception_no_connection
+    raise error.with_traceback(exc_info[2])
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:376: in create
+    connection = await connection_awaitable
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\connection.py:2498: in connect
+    return await connect_utils._connect(
+.venv\Lib\site-packages\asyncpg\connect_utils.py:1307: in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+.venv\Lib\site-packages\asyncpg\connect_utils.py:1278: in _connect
+    conn = await _connect_addr(
+.venv\Lib\site-packages\asyncpg\connect_utils.py:1092: in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\connect_utils.py:1162: in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\connect_utils.py:996: in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py:1132: in create_connection
+    raise exceptions[0]
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py:1107: in create_connection
+    sock = await self._connect_sock(
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py:1010: in _connect_sock
+    await self.sock_connect(sock, address)
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\asyncio\proactor_events.py:729: in sock_connect
+    return await self._proactor.connect(sock, address)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\asyncio\windows_events.py:803: in _poll
+    value = callback(transferred, key, ov)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python312\Lib\asyncio\windows_events.py:599: in finish_connect
+    ov.getresult()
+E   ConnectionRefusedError: [WinError 1225] The remote computer refused the network connection</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,14 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', '-m', 'pytest', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\verification\\test_queue_retry_checkpoints.py', '-ra', '--tb=short', '--junitxml=C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\audit-round2\\apps__api-server__verification__test_queue_retry_checkpoints.py.xml']
+..F..                                                                    [100%]
+================================== FAILURES ===================================
+_ RetryCheckpoints.test_concurrent_workers_claim_each_case_once_across_many_checkpoints _
+verification\test_queue_retry_checkpoints.py:146: in test_concurrent_workers_claim_each_case_once_across_many_checkpoints
+    await asyncio.gather(*(consume(worker) for worker in (1,2,3)))
+verification\test_queue_retry_checkpoints.py:142: in consume
+    self.assertEqual(item['type'],'assigned')
+E   AssertionError: 'runner_unavailable' != 'assigned'
+E   - runner_unavailable
+E   + assigned
+=========================== short test summary info ===========================
+FAILED verification/test_queue_retry_checkpoints.py::RetryCheckpoints::test_concurrent_workers_claim_each_case_once_across_many_checkpoints
+1 failed, 4 passed in 86.04s (0:01:26)

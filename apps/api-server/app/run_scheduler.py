@@ -14,7 +14,7 @@ from app.repositories.batch_queue import BatchQueueRepository, MAX_FAILURES
 from app.repositories.run_schedules import RunScheduleRepository, now, active_elapsed_ms
 from app.realtime.server import sio
 from app.services import services
-from app.worker_pool import apply_pool, PoolError
+from app.worker_pool import apply_pool, active_workers, live_worker, PoolError
 from app.scheduler_wakeup import wait_for_scheduler_wakeup, wake_scheduler
 
 logger = logging.getLogger(__name__)
@@ -130,6 +130,22 @@ async def complete_run(value, counts, retry=None):
     await repository.complete(value, counts)
 
 
+async def connected_workers():
+    return sorted([runner for runner in await services.runners.list() if live_worker(runner)],
+                  key=lambda runner: runner.id)
+
+
+async def sync_worker_capacity(value, workers, snapshot=None):
+    # Disconnected assignments drain/recover before shrinking the shared pool.
+    # New queue claims still use the number of currently connected workers.
+    async with engine.connect() as connection:
+        draining = len(await active_workers(connection))
+    if workers:
+        await apply_pool(max(len(workers), draining))
+    if snapshot:
+        await queue.set_worker_limit(UUID(value['sessionId']), value['owner'], max(1, len(workers)))
+
+
 async def prepare_run(value):
     from app.api.batch_queue import QueueTaskInput
     from app.api.filter_profiles import compile_profile_plan
@@ -151,15 +167,13 @@ async def prepare_run(value):
         if await execution_busy(session_id):
             await checkpoint(value, {'stage': 'Waiting for other work', 'message': 'Waiting for the current run or filter preview to finish.'})
             return
-        await checkpoint(value, {'stage': 'Worker pool', 'message': f"Preparing {value['workerCount']} workers."})
-        await apply_pool(value['workerCount'])
-        if not await still_current(value):
-            return
-        ready = sorted([runner for runner in await services.runners.list()
-            if runner.source.value == 'new' and runner.status == RunnerStatus.ONLINE
-            and not runner.current_job_id], key=lambda runner: runner.id)
+        workers = await connected_workers()
+        ready = [runner for runner in workers if runner.status == RunnerStatus.ONLINE and not runner.current_job_id]
         if not ready:
             await checkpoint(value, {'stage': 'Worker connection', 'message': 'Waiting for a connected, idle browser worker.'})
+            return
+        await sync_worker_capacity(value, workers, snapshot)
+        if not await still_current(value):
             return
         runner_ids = [runner.id for runner in ready]
         # Resume is a new execution segment and must check the selected pool again.
@@ -192,7 +206,7 @@ async def prepare_run(value):
                 return
             await checkpoint(value, {'stage': 'Adding cases to PostgreSQL queue', 'message': f'Adding {len(tasks)} cases for workers.'})
             await queue.start(UUID(session_id), value['owner'], [QueueTaskInput.model_validate(task) for task in tasks],
-                value['workerCount'], profile_id=value['profileId'], filter_name=value['profileName'])
+                len(workers), profile_id=value['profileId'], filter_name=value['profileName'], automatic_workers=True)
             await bind_gate(session_id, gate)
         else:
             gate = await require_gate(value['owner'], runner_ids, value.get('preflightId'), fresh=True)
@@ -200,7 +214,7 @@ async def prepare_run(value):
                 return
             await bind_gate(session_id, gate)
             if snapshot['status'] == 'PAUSED':
-                await queue.set_status(UUID(session_id), value['owner'], 'RUNNING', value['workerCount'])
+                await queue.set_status(UUID(session_id), value['owner'], 'RUNNING')
         started = now().isoformat()
         first_start = value.get('lastSessionId') != session_id or not value.get('lastRunAt')
         updated = await checkpoint(value, {'stage': 'Collecting reports', 'status': 'RUNNING', 'message': 'Scheduled report collection is running.',
@@ -250,7 +264,7 @@ async def pause_run_tick(value):
         return
     await checkpoint(value, {**counts, 'status': 'PAUSED', 'pausedAt': now().isoformat(),
         'activeElapsedMs': active_elapsed_ms(value), 'activeSegmentStartedAt': None,
-        'message': 'Network unavailable. Work will continue automatically after recovery.' if value.get('networkPaused') else 'Run paused. Choose workers and continue the saved session.'})
+        'message': 'Network unavailable. Work will continue automatically after recovery.' if value.get('networkPaused') else 'Run paused. Continue the saved session when ready.'})
 
 
 async def dispatch_run(value):
@@ -266,8 +280,9 @@ async def dispatch_run(value):
     if await checkpoint(value, {**counts, 'stage': 'Recovering failed cases' if (snapshot.get('retry') or {}).get('phase') in {'CHECKPOINT', 'FINAL'} else 'Collecting reports', 'retryProgress': snapshot.get('retry'), 'message': retry_message(snapshot, counts)}) is None:
         return
     from app.repositories.ui_contract import require_gate, bind_gate
-    runner_ids = [runner.id for runner in await services.runners.list()
-        if runner.source.value == 'new' and runner.status in {RunnerStatus.ONLINE, RunnerStatus.BUSY}]
+    workers = await connected_workers()
+    await sync_worker_capacity(value, workers, snapshot)
+    runner_ids = [runner.id for runner in workers]
     if not runner_ids:
         await checkpoint(value, {'stage': 'Waiting for workers', 'operationError': None,
             'message': 'Waiting for a connected browser worker before continuing the queue.'})
@@ -307,7 +322,7 @@ async def scheduler_tick():
             continue
         if value.get('networkPaused') and value['status'] == 'PAUSED':
             if connected:
-                await repository.resume(value['id'], value['owner'], value['workerCount'])
+                await repository.resume(value['id'], value['owner'])
                 wake_scheduler()
             continue
         if not connected and value['status'] != 'PAUSING':

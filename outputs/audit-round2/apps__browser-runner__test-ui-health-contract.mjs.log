@@ -1,0 +1,2 @@
+Command: ['node', 'test-ui-health-contract.mjs']
+UI contract: unique semantic recovery, runtime selector alias, ambiguous candidates and wrong types passed.

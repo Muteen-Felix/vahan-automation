@@ -11,6 +11,12 @@ KEY = 'docker-worker-pool'
 DEFAULT_CONCURRENCY = 20
 
 
+def live_worker(runner):
+    from app.config import settings
+    return runner.source == 'new' and runner.status != 'RECONNECTING' and (
+        datetime.now(timezone.utc) - runner.last_seen_at).total_seconds() <= settings.runner_disconnect_grace_seconds + 15
+
+
 class PoolError(ValueError):
     pass
 

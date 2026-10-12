@@ -1,0 +1,117 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\verification\\test_main_migration.py']
+Traceback (most recent call last):
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 581, in _prepare_and_execute
+    prepared_stmt, attributes = await adapt_connection._prepare(
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 819, in _prepare
+    prepared_stmt = await self._connection.prepare(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\asyncpg\connection.py", line 661, in prepare
+    return await self._prepare(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\asyncpg\connection.py", line 680, in _prepare
+    stmt = await self._get_statement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\asyncpg\connection.py", line 466, in _get_statement
+    statement = await self._protocol.prepare(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 161, in prepare
+    return await waiter
+asyncpg.exceptions.UndefinedTableError: relation "annual_records" does not exist
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1946, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 1192, in do_execute
+    cursor.execute(statement, parameters)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 656, in execute
+    await_(self._prepare_and_execute(operation, parameters))
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\util\concurrency.py", line 167, in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\util\concurrency.py", line 205, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 618, in _prepare_and_execute
+    self._handle_exception(error)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 568, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 847, in _handle_exception
+    super()._handle_exception(error)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 412, in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 840, in _handle_exception_no_connection
+    raise translated_error from error
+sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError: relation "annual_records" does not exist
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\verification\test_main_migration.py", line 64, in <module>
+    asyncio.run(main())
+  File "C:\Users\huyvv12\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\verification\test_main_migration.py", line 31, in main
+    old_rows = await read(source, '''SELECT r.id,d.owner_key,r.dataset_id,d.label,d.filters::text,
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\verification\test_main_migration.py", line 25, in read
+    return [tuple(row) for row in await c.execute(text(query))]
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py", line 667, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\util\concurrency.py", line 210, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1451, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 533, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1671, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1825, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2335, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1946, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 1192, in do_execute
+    cursor.execute(statement, parameters)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 656, in execute
+    await_(self._prepare_and_execute(operation, parameters))
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\util\concurrency.py", line 167, in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\util\concurrency.py", line 205, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 618, in _prepare_and_execute
+    self._handle_exception(error)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 568, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 847, in _handle_exception
+    super()._handle_exception(error)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 412, in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 840, in _handle_exception_no_connection
+    raise translated_error from error
+sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) relation "annual_records" does not exist
+[SQL: SELECT r.id,d.owner_key,r.dataset_id,d.label,d.filters::text,
+            r.year,r.state,r.rto,r.rto_code,r.maker,r.created_at,r.updated_at
+            FROM annual_records r JOIN annual_datasets d ON d.id=r.dataset_id ORDER BY r.id]
+(Background on this error at: https://sqlalche.me/e/21/f405)

@@ -7,7 +7,7 @@ try {
   const errors = []; page.on('pageerror',error=>errors.push(error.message));
   let schedules = [], posted, imageRequests = 0, uiSocket;
   const queueWrites = [];
-  const resumedWorkers = [];
+  const resumeBodies = [];
   let annualReads = 0,deleteFails=false,deleteCalls=0;
   const tasks = Array.from({length:10},(_,position)=>({position,name:`Scheduled office ${position+1}`,
     status:position===0?'COMPLETED':position===1?'NO_DATA':position===2?'PROCESSING':'PENDING',
@@ -78,8 +78,8 @@ try {
           message:'Run paused. Choose workers and continue the saved session.'};
       },500);
     } else if(path==='/api/run-schedules/schedule-1/resume') {
-      const count=request.postDataJSON().workerCount;resumedWorkers.push(count);
-      schedules[0]={...schedules[0],status:'RESUMING',canResume:false,workerCount:count,message:`Preparing ${count} workers to continue the saved session.`};body=schedules[0];
+      resumeBodies.push(request.postDataJSON());
+      schedules[0]={...schedules[0],status:'RESUMING',canResume:false,message:`Preparing connected workers to continue the saved session.`};body=schedules[0];
       setTimeout(()=>{
         if(schedules[0]?.status!=='RESUMING')return; // Fence a late resume callback after a newer pause.
         const next=tasks.find(task=>task.status==='PENDING');
@@ -106,7 +106,7 @@ try {
   await page.getByText(/Runs on day \d+ each month; shorter months use their last day\./).waitFor();
   await page.getByRole('button',{name:'Add schedule',exact:true}).click();
   await page.getByText(/Schedule saved for/).waitFor();
-  assert.equal(posted.workerCount,20);assert.equal(posted.year,2024);assert.equal(posted.repeat,'monthly');
+  assert.equal(Object.hasOwn(posted,'workerCount'),false);assert.equal(posted.year,2024);assert.equal(posted.repeat,'monthly');
   assert.equal(posted.profileId,profile.id);assert.ok(posted.startsAt.endsWith('T09:30:00+07:00'));
   const card=page.locator('.run-schedule-card').first();
   const monthlyDay=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Ho_Chi_Minh',day:'numeric'}).format(new Date(posted.startsAt));
@@ -222,21 +222,22 @@ try {
   assert.equal(await page.getByRole('button',{name:'Delete schedule',exact:true}).isEnabled(),true);
   assert.equal(await card.locator('.schedule-progress-speed strong').innerText(),'—');
   const paused=await bounds();
-  await page.getByLabel(`Reports at a time for ${profile.name}`,{exact:true}).fill('10');
+  assert.equal(await card.locator('input[type=number]').count(),0);
   await page.getByRole('button',{name:'Disable future runs',exact:true}).click();
-  assert.equal(await page.getByLabel(`Reports at a time for ${profile.name}`,{exact:true}).inputValue(),'10','Toggle preserves the paused worker draft');
+  assert.equal(await card.locator('input[type=number]').count(),0);
   await page.getByRole('button',{name:'Continue run',exact:true}).click();
-  await card.locator('.schedule-worker-setting input:disabled').waitFor();
+  assert.equal(await card.locator('input[type=number]').count(),0);
   await card.locator('.schedule-status').getByText('Running',{exact:true}).waitFor();
-  assert.equal(schedules[0].workerCount,10);assert.equal(schedules[0].done,5);
+  assert.equal(Object.hasOwn(resumeBodies[0],'workerCount'),false);assert.equal(schedules[0].done,5);
   assert.deepEqual(await bounds(),paused,'Continuation preserves fixed card geometry');
   await page.getByRole('button',{name:'Pause run',exact:true}).click();
   await page.getByRole('button',{name:'Continue run',exact:true}).waitFor();
-  await page.getByLabel(`Reports at a time for ${profile.name}`,{exact:true}).fill('3');
+  // A legacy response may still include a large worker count; controls ignore it.
+  schedules[0].workerCount=9999;
   await page.getByRole('button',{name:'Continue run',exact:true}).click();
-  await card.locator('.schedule-worker-setting input:disabled').waitFor();
+  assert.equal(await card.locator('input[type=number]').count(),0);
   await card.locator('.schedule-status').getByText('Running',{exact:true}).waitFor();
-  assert.deepEqual(resumedWorkers,[10,3]);assert.equal(schedules[0].sessionId,'session-1');assert.equal(schedules[0].done,6);
+  assert.deepEqual(resumeBodies,[{},{}]);assert.equal(schedules[0].sessionId,'session-1');assert.equal(schedules[0].done,6);
   assert.deepEqual(queueWrites,[],'Only backend schedule controls dispatch work');
   await card.screenshot({path:testArtifactPath('vahan-settings-schedule-mobile.png')});
   await page.setViewportSize({width:1440,height:1000});
@@ -264,5 +265,5 @@ try {
   assert.deepEqual(queueWrites,[],'Deletion uses the schedule API, never a second browser dispatch loop');
   assert.equal(await page.locator('.captcha-inbox,.captcha-panel,.settings-captcha-panel,img[src^="data:image/"]').count(),0);
   assert.equal(imageRequests,0);assert.deepEqual(errors,[]);
-  console.log('Settings schedules: create, fixed desktop/mobile layout, pause/drain, worker increase/decrease, same session and report refresh passed.');
+  console.log('Settings schedules: create, fixed desktop/mobile layout, pause/drain, automatic connected workers, same session and report refresh passed.');
 } finally {await browser.close();}

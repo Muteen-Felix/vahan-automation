@@ -143,7 +143,8 @@ try{
   await page.getByRole('button',{name:'Use in Settings'}).click();
   await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
   assert.equal(await page.getByLabel('Saved filters',{exact:true}).inputValue(),id);
-  assert.equal(await page.getByLabel('Report year',{exact:true}).inputValue(),'2023');
+  assert.equal(await page.getByLabel('Report year',{exact:true}).count(),0);
+  assert.match(await page.getByLabel('Saved filters',{exact:true}).locator('option:checked').innerText(),/2023/);
   assert.equal(previewCalls,1,'Selecting a schedule profile must not start another preview or manual run');
   assert.equal(queueBody,undefined,'The dashboard never publishes a manual queue');
   await page.reload();await page.getByRole('button',{name:'Show form',exact:true}).click();await page.getByLabel('Saved filters',{exact:true}).waitFor();
@@ -164,6 +165,7 @@ try{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'filter editor fits mobile width');
   await page.screenshot({path:testArtifactPath('vahan-filter-profiles-mobile.png'),fullPage:true});
   assert.ok(Array.isArray(state.vahanFilterOptionsV1),'live option snapshots persist in the SQL-backed user state');
+  await page.waitForLoadState('networkidle');
   forceBusy=true;await page.reload();await page.getByRole('heading',{name:'Filters',exact:true}).waitFor();
   await page.locator('.profile-list').getByRole('button',{name:/Customer filters/}).click();
   const cachedState=page.locator('.profile-field-row').filter({has:page.getByText('State',{exact:true})});
@@ -173,6 +175,7 @@ try{
   await cachedDialog.getByRole('checkbox',{name:'State A',exact:true}).check();
   assert.ok(await cachedDialog.getByRole('checkbox',{name:'State B',exact:true}).isEnabled(),'State choices remain available when every worker is busy');
   await cachedDialog.getByRole('button',{name:'Done',exact:true}).click();
+  await page.waitForLoadState('networkidle');
   state.vahanFilterOptionsV1=[];state.vahanSelectedFilterProfileV1='';state.vahanRunSettingsV1={year:2026,workerCount:2};
   delete state.vahanStateRtoBatchRecoveryV1;delete state.vahanActiveJobId;
   state.vahanStateRtoMatrixV1={year:2026,states:['Recorded State'],scenarios:[{name:'Recorded office',filters:{states:['Recorded State'],rtos:['Recorded Office'],fromYear:'2026',toYear:'2026',delhiNcr:'ALL STATES',yAxis:'Maker',xAxis:'Month Wise'}}]};

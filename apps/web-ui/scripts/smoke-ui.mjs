@@ -1,7 +1,17 @@
 import { io } from "socket.io-client";
 
 const apiUrl = process.env.VITE_API_URL || "http://127.0.0.1:8000";
-const runnerId = `web-ui-smoke-${Date.now()}`;
+const runnerId = process.env.VAHAN_SMOKE_RUNNER_ID || `web-ui-smoke-${Date.now()}`;
+let token = process.env.VAHAN_UI_ACCESS_TOKEN;
+if (!token) {
+  const login = await fetch(`${apiUrl}/api/auth/login`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({username:process.env.VAHAN_UI_AUTH_USERNAME,password:process.env.VAHAN_UI_AUTH_PASSWORD}),
+  });
+  if (!login.ok) throw new Error(`Smoke login failed (${login.status}); provide an administrator access token or test credentials.`);
+  token = (await login.json()).accessToken;
+}
+let jobId;
 const runner = io(`${apiUrl}/runner`, {
   transports: ["websocket"],
   auth: {
@@ -9,10 +19,12 @@ const runner = io(`${apiUrl}/runner`, {
     runnerName: "Web UI Smoke Runner",
     token: process.env.VAHAN_API_RUNNER_TOKEN || "change-me",
     version: "0.1.0",
+    source: "new",
+    engine: "playwright",
   },
   reconnection: false,
 });
-const ui = io(`${apiUrl}/ui`, { transports: ["websocket"], reconnection: false });
+const ui = io(`${apiUrl}/ui`, { transports: ["websocket"], auth:{token}, reconnection: false });
 
 const event = (socket, name) => new Promise((resolve, reject) => {
   const timer = setTimeout(() => reject(new Error(`Timed out waiting for ${name}`)), 5_000);
@@ -27,7 +39,7 @@ try {
   const assignedPromise = event(runner, "job:assigned");
   const response = await fetch(`${apiUrl}/api/jobs`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization:`Bearer ${token}` },
     body: JSON.stringify({
       runnerId,
       filters: {
@@ -43,6 +55,7 @@ try {
   });
   if (!response.ok) throw new Error(`Create job failed (${response.status})`);
   const job = await response.json();
+  jobId = job.id;
   const assigned = await assignedPromise;
   if (assigned.jobId !== job.id) throw new Error("Runner received the wrong job.");
 
@@ -62,6 +75,7 @@ try {
 
   console.log(`Web UI flow verified for job: ${job.id}`);
 } finally {
+  if (jobId) await fetch(`${apiUrl}/api/jobs/${jobId}/cancel`, {method:'POST',headers:{Authorization:`Bearer ${token}`}});
   ui.disconnect();
   runner.disconnect();
 }

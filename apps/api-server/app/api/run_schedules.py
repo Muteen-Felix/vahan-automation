@@ -87,8 +87,8 @@ async def pause_schedule(schedule_id: UUID, request: Request):
 
 
 @router.post('/{schedule_id}/resume')
-async def resume_schedule(schedule_id: UUID, command: RunScheduleResume, request: Request):
-    value = await call(repository.resume(schedule_id, await schedule_owner(schedule_id, request), command.worker_count))
+async def resume_schedule(schedule_id: UUID, request: Request, command: RunScheduleResume | None = None):
+    value = await call(repository.resume(schedule_id, await schedule_owner(schedule_id, request)))
     wake_scheduler()
     return public_schedule(value)
 

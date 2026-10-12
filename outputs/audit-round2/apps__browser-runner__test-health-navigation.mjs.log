@@ -1,0 +1,2 @@
+Command: ['node', 'test-health-navigation.mjs']
+Health navigation: unfinished assets, HTTP failure, redirected page and isolated-context cleanup passed.
