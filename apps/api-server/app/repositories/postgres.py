@@ -113,13 +113,10 @@ class PostgresJobRepository:
             runner = Runner.model_validate(row["payload"])
             if runner.status == RunnerStatus.RECONNECTING:
                 return None
-            from app.repositories.maker_updates import validate_update_job
-            task_id = await validate_update_job(connection, job)
+            from app.models.job import UpdateKind
+            if job.update_kind != UpdateKind.NORMAL or job.update_run_id or job.update_task_id:
+                raise ValueError('Maker Update has been removed.')
             await self._insert(connection, job)
-            if task_id:
-                await connection.execute(update(db.maker_update_tasks).where(
-                    db.maker_update_tasks.c.id == task_id).values(
-                    status='RUNNING', job_id=str(job.id), error=None, updated_at=now()))
             runner.current_job_id = str(job.id)
             runner.status = RunnerStatus.BUSY
             await connection.execute(update(db.runners).where(db.runners.c.id == job.runner_id).values(
@@ -142,11 +139,6 @@ class PostgresJobRepository:
                 return None
             job.touch()
             await save_job(connection, job, event)
-            if job.update_task_id and job.status in {JobStatus.FAILED, JobStatus.CANCELLED}:
-                await connection.execute(update(db.maker_update_tasks).where(
-                    db.maker_update_tasks.c.id == job.update_task_id,
-                    db.maker_update_tasks.c.job_id == str(job.id)).values(
-                    status='FAILED', error=job.error or job.status.value, updated_at=now()))
             if job.status in TERMINAL and previous_status not in TERMINAL:
                 # The first terminal commit already released this attempt.
                 # A delayed duplicate must not lock a runner now executing a

@@ -14,7 +14,7 @@ try{
   await page.route('https://fonts.googleapis.com/**',route=>route.abort());
   await page.route('https://fonts.gstatic.com/**',route=>route.abort());
   page.on('pageerror',error=>errors.push(error.message));
-  await page.addInitScript(()=>localStorage.setItem('vahanUiAccessToken','fixture-token'));
+  await page.addInitScript(()=>{if(location.origin!=='null')localStorage.setItem('vahanUiAccessToken','fixture-token');});
   await page.routeWebSocket('**/socket.io/**',socket=>{
     socket.send('0'+JSON.stringify({sid:'fixture-engine',upgrades:[],pingInterval:60000,pingTimeout:60000,maxPayload:1000000}));
     socket.onMessage(message=>{if(String(message).startsWith('40/ui,'))socket.send('40/ui,'+JSON.stringify({sid:'fixture-ui'}));});
@@ -29,7 +29,7 @@ try{
     else if(path==='/api/run-schedules'||path==='/api/users')body=[];
     else if(path==='/api/runners')body=forceBusy?runners.map(runner=>({...runner,status:'BUSY',currentJobId:'busy-fixture'})):runners;
     else if(path==='/api/worker-pool')body={enabled:true,desiredCount:2,runningCount:2,phase:'ready',workers:[]};
-    else if(path==='/api/maker-updates'||path==='/api/jobs'||path==='/api/run-schedules')body=[];
+    else if(path==='/api/jobs'||path==='/api/run-schedules')body=[];
     else if(path==='/api/ui-health/preflight')body={allowed:true,preflightId:'22222222-2222-4222-8222-222222222222',revision:1,reports:[]};
     else if(path==='/api/filter-profiles'&&request.method()==='GET')body=profiles;
     else if((path==='/api/filter-profiles'||path===`/api/filter-profiles/${id}`)&&['POST','PUT'].includes(request.method())){
@@ -166,7 +166,8 @@ try{
   await page.screenshot({path:testArtifactPath('vahan-filter-profiles-mobile.png'),fullPage:true});
   assert.ok(Array.isArray(state.vahanFilterOptionsV1),'live option snapshots persist in the SQL-backed user state');
   await page.waitForLoadState('networkidle');
-  forceBusy=true;await page.reload();await page.getByRole('heading',{name:'Filters',exact:true}).waitFor();
+  await page.goto('about:blank');
+  forceBusy=true;await page.goto(process.env.WORKER_UI_URL || 'http://127.0.0.1:5183/#filters');await page.getByRole('heading',{name:'Filters',exact:true}).waitFor();
   await page.locator('.profile-list').getByRole('button',{name:/Customer filters/}).click();
   const cachedState=page.locator('.profile-field-row').filter({has:page.getByText('State',{exact:true})});
   await cachedState.getByRole('button',{name:'State',exact:true}).click();

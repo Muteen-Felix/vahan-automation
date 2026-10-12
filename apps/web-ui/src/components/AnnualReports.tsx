@@ -73,7 +73,8 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
   const hasSearch = Boolean(state.trim() || rto.trim() || search.state.trim() || search.rto.trim());
   const exportExcel = async () => {
     if (!shownData || searchPending || exporting || !total) return;
-    if (!hasSearch && !window.confirm(`Export all ${total.toLocaleString()} manufacturer rows for ${year} in the selected report to Excel?`)) return;
+    const scope = hasSearch ? 'matching the State/RTO filters' : 'in the selected report';
+    if (!window.confirm(`Export all ${total.toLocaleString()} manufacturer rows ${scope} for ${year} to Excel? This includes rows on every page.`)) return;
     const params = new URLSearchParams({year: String(year), dataset: shownData.datasetId,
       state: search.state.trim(), rto: search.rto.trim()});
     if (!hasSearch) params.set('confirmAll', 'true');

@@ -1,8 +1,6 @@
 from app.models.job import CreateJobRequest, Job, JobStatus
 from app.models.runner import Runner, RunnerStatus
 from app.models.ui_health import (
-    UiHealthCheckNowRequest,
-    UiHealthCheckNowResponse,
     UiHealthDaySummary,
     UiHealthLogRequest,
     UiHealthLogResponse,
@@ -17,8 +15,6 @@ __all__ = [
     "JobStatus",
     "Runner",
     "RunnerStatus",
-    "UiHealthCheckNowRequest",
-    "UiHealthCheckNowResponse",
     "UiHealthSchedule",
     "UiHealthDaySummary",
     "UiHealthLogRequest",

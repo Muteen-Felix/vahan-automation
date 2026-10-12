@@ -8,6 +8,11 @@ try {
   const errors = [];
   const exportRequests = [];
   const exportFiltered = async (state, rto) => {
+    const before = exportRequests.length;
+    page.once('dialog', async dialog => {assert.match(dialog.message(), /matching the State\/RTO filters/); await dialog.dismiss();});
+    await page.getByRole('button',{name:'Export filtered to Excel',exact:true}).click();
+    assert.equal(exportRequests.length, before, 'Cancelling a filtered export sends no request');
+    page.once('dialog', async dialog => {assert.match(dialog.message(), /rows on every page/); await dialog.accept();});
     const download = page.waitForEvent('download');
     await page.getByRole('button',{name:'Export filtered to Excel',exact:true}).click();
     const file = await download;
@@ -39,8 +44,8 @@ try {
     });
   });
   await page.addInitScript(() => localStorage.setItem('vahanUiAccessToken', 'fixture-token'));
-  const rows = Array.from({length: 105}, (_, i) => ({id: String(i), state: i < 100 ? 'ASSAM' : 'Andaman & Nicobar Island',
-    rto: i < 100 ? 'UDALGURI' : 'Port Blair DTO', rto_code: i < 100 ? 'AS27' : 'AN1',
+  const rows = Array.from({length: 1000}, (_, i) => ({id: String(i), state: i < 800 ? 'ASSAM' : 'Andaman & Nicobar Island',
+    rto: i < 800 ? 'UDALGURI' : 'Port Blair DTO', rto_code: i < 800 ? 'AS27' : 'AN1',
     maker: i === 0 ? 'OLA ELECTRIC TECHNOLOGIES PVT LTD' : `MANUFACTURER ${String(i).padStart(3, '0')} LTD`,
     months: [0,1,2,3,4,5,6,7,8,9,null,null]}));
   await page.route('**/api/**', async route => {
@@ -140,20 +145,20 @@ try {
   await page.screenshot({path:testArtifactPath('vahan-annual-desktop.png'), fullPage:true});
   await page.getByRole('button',{name:'Next →',exact:true}).click();
   await page.getByRole('rowheader',{name:'MANUFACTURER 100 LTD',exact:true}).waitFor();
-  assert.equal(await page.locator('.annual-table tbody tr').count(),5);
+  assert.equal(await page.locator('.annual-table tbody tr').count(),100);
   assert.equal(await page.locator('.annual-table tbody tr td').first().innerText(),'101');
   await page.getByLabel('Search State').fill('andaman');
   assert.equal(await page.locator('.annual-export-button').isDisabled(),true,'Export waits until the new State filter is applied');
   await page.waitForFunction(() => document.querySelector('.annual-table tbody td')?.textContent === '1');
-  assert.equal(await page.locator('.annual-table tbody tr').count(),5);
+  assert.equal(await page.locator('.annual-table tbody tr').count(),100);
   await exportFiltered('andaman','');
   await page.getByLabel('Search RTO / code').fill('AN1');
   await page.waitForTimeout(350);
-  assert.equal(await page.locator('.annual-table tbody tr').count(),5);
+  assert.equal(await page.locator('.annual-table tbody tr').count(),100);
   await exportFiltered('andaman','AN1');
   await page.getByLabel('Search State').fill('');
   await page.waitForTimeout(350);
-  assert.equal(await page.locator('.annual-table tbody tr').count(),5);
+  assert.equal(await page.locator('.annual-table tbody tr').count(),100);
   await exportFiltered('','AN1');
   assert.equal(exportRequests.length,3,'State-only, combined and RTO-only exports use the applied filters');
   await page.getByLabel('Search RTO / code').fill('NO_SUCH_RTO');
@@ -161,7 +166,7 @@ try {
   assert.equal(await page.locator('.annual-export-button').isDisabled(),true,'Empty filtered results cannot be exported');
   await page.getByRole('button',{name:'Clear',exact:true}).click();
   await page.getByRole('rowheader',{name:'OLA ELECTRIC TECHNOLOGIES PVT LTD',exact:true}).waitFor();
-  page.once('dialog',async dialog=>{assert.match(dialog.message(),/Export all 105 manufacturer rows for 2026/);await dialog.dismiss();});
+  page.once('dialog',async dialog=>{assert.match(dialog.message(),/Export all 1,000 manufacturer rows.*2026/);await dialog.dismiss();});
   await page.getByRole('button',{name:'Export all to Excel',exact:true}).click();
   assert.equal(exportRequests.length,3,'cancelled full export sends no download request');
   page.once('dialog',dialog=>dialog.accept());

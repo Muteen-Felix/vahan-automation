@@ -110,9 +110,6 @@ export interface Job {
   filters: VahanFilters & Record<string, unknown>;
   scenarioName?: string | null;
   source?: ReportSource;
-  updateKind?: "NORMAL" | "GLOBAL" | "DISCOVER" | "REFRESH";
-  updateRunId?: string | null;
-  updateTaskId?: string | null;
   captchaId?: string | null;
   error?: string | null;
   excelFileName?: string | null;

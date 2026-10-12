@@ -20,7 +20,8 @@ runInNewContext(source.slice(source.indexOf('const timer = setInterval('),source
 await context.heartbeat();
 assert.deepEqual(calls,['runner:heartbeat','save'],'Even at a future time, heartbeat does not open a health-check tab');
 calls.length=0;
-runInNewContext(source.slice(source.indexOf("socket.on('ui-health:preflight'"),source.indexOf("socket.on('ui-health:run-now'")),context);
+assert.equal(source.includes("socket.on('ui-health:run-now'"),false,'The retired manual-check event is not registered');
+runInNewContext(source.slice(source.indexOf("socket.on('ui-health:preflight'"),source.indexOf('const timer = setInterval(')),context);
 const request={requestId:'session-check',trigger:'preflight'};
 let reply;
 await events.get('ui-health:preflight')(request,value=>{reply=value;});

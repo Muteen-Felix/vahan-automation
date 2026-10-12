@@ -24,7 +24,7 @@ try {
   else if(p==='/api/users')body=[{username:'fixture',role:'admin',active:true}];
   else if(p==='/api/filter-profiles')body=[profile];
   else if(p==='/api/run-schedules')body=[schedule];
-  else if(['/api/runners','/api/jobs','/api/maker-updates'].includes(p))body=[];
+  else if(['/api/runners','/api/jobs'].includes(p))body=[];
   else if(p==='/api/worker-pool')body={enabled:true,desiredCount:8,runningCount:8,phase:'ready',workers:[]};
   else if(p==='/api/ui-health/status')body=sqlState();
   else if(['/api/ui-health/run-now','/api/ui-health/reports'].includes(p))extraHealthRequests.push(p);
@@ -37,7 +37,8 @@ try {
  const scheduleBounds=()=>page.locator('.automatic-run-settings').evaluate(node=>{const r=node.getBoundingClientRect();return {x:r.x,width:r.width};});
  const healthyBounds=await scheduleBounds();
  assert.equal(await page.getByLabel('Start time',{exact:true}).isVisible(),false,'Existing schedules keep the creation form closed');
- assert.ok((await page.locator('.run-schedule-card').boundingBox()).height<240);
+  assert.ok((await page.locator('.run-schedule-card').boundingBox()).height<290,'The schedule card includes progress and the ETA');
+  await page.getByLabel('Estimated finish').waitFor();
  await page.getByRole('button',{name:'Show form',exact:true}).click();
  await page.getByLabel('Start time',{exact:true}).fill('11:51');
  assert.equal(await page.getByRole('link',{name:'UI Health' ,exact:true}).count(),0,'UI Health lives inside Settings');
