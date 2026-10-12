@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="8" time="6.812" timestamp="2026-10-12T14:12:12.800174+07:00" hostname="VSF-109RTK-L"><testcase classname="tests.test_upload_limits" name="test_inflated_sheet_dimensions_are_rejected_without_saving[A1:XFD1048576]" time="0.181"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.ForeignKeyViolationError) insert or update on table &quot;report_sessions&quot; violates foreign key constraint &quot;report_sessions_owner_username_fkey&quot;&#10;[SQL: INSERT INTO report_sessions (id, owner_username, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::TIMESTAMP WITH TIME ZONE) ON CONFLICT DO NOTHING]&#10;[parameters: ('5551b2c2-da89-4f14-bdf8-9f46c9174b99', 'test-admin', datetime.datetime(2026, 10, 12, 7, 12, 13, 910109, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/21/gkpj)">.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:605: in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:197: in bind_execute
+    ???
+E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "report_sessions" violates foreign key constraint "report_sessions_owner_username_fkey"
+E   DETAIL:  Key (owner_username)=(test-admin) is not present in table "users".
+
+The above exception was the direct cause of the following exception:
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1946: in _exec_single_context
+    self.dialect.do_execute(
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:1192: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:656: in execute
+    await_(self._prepare_and_execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:618: in _prepare_and_execute
+    self._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:568: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:847: in _handle_exception
+    super()._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:412: in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:840: in _handle_exception_no_connection
+    raise translated_error from error
+E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ForeignKeyViolationError: insert or update on table "report_sessions" violates foreign key constraint "report_sessions_owner_username_fkey"
+
+The above exception was the direct cause of the following exception:
+tests\test_upload_limits.py:37: in test_inflated_sheet_dimensions_are_rejected_without_saving
+    job = await services.jobs.create(Job(runnerId='dimension-runner', ownerUsername='test-admin',
+app\repositories\postgres.py:61: in create
+    await self._insert(connection, job)
+app\repositories\postgres.py:83: in _insert
+    await connection.execute(pg_insert(db.report_sessions).values(id=str(job.session_id),
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:667: in execute
+    result = await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:210: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1451: in execute
+    return meth(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:533: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1671: in _execute_clauseelement
+    ret = self._execute_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1825: in _execute_context
+    return self._exec_single_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1965: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:2335: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1946: in _exec_single_context
+    self.dialect.do_execute(
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:1192: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:656: in execute
+    await_(self._prepare_and_execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:618: in _prepare_and_execute
+    self._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:568: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:847: in _handle_exception
+    super()._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:412: in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:840: in _handle_exception_no_connection
+    raise translated_error from error
+E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.ForeignKeyViolationError) insert or update on table "report_sessions" violates foreign key constraint "report_sessions_owner_username_fkey"
+E   [SQL: INSERT INTO report_sessions (id, owner_username, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::TIMESTAMP WITH TIME ZONE) ON CONFLICT DO NOTHING]
+E   [parameters: ('5551b2c2-da89-4f14-bdf8-9f46c9174b99', 'test-admin', datetime.datetime(2026, 10, 12, 7, 12, 13, 910109, tzinfo=datetime.timezone.utc))]
+E   (Background on this error at: https://sqlalche.me/e/21/gkpj)</failure></testcase><testcase classname="tests.test_upload_limits" name="test_inflated_sheet_dimensions_are_rejected_without_saving[A1:D1048576]" time="0.120"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.ForeignKeyViolationError) insert or update on table &quot;report_sessions&quot; violates foreign key constraint &quot;report_sessions_owner_username_fkey&quot;&#10;[SQL: INSERT INTO report_sessions (id, owner_username, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::TIMESTAMP WITH TIME ZONE) ON CONFLICT DO NOTHING]&#10;[parameters: ('3d2b7da4-2f3b-433e-97cd-08ed949c1dbf', 'test-admin', datetime.datetime(2026, 10, 12, 7, 12, 14, 971174, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/21/gkpj)">.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:605: in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:197: in bind_execute
+    ???
+E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "report_sessions" violates foreign key constraint "report_sessions_owner_username_fkey"
+E   DETAIL:  Key (owner_username)=(test-admin) is not present in table "users".
+
+The above exception was the direct cause of the following exception:
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1946: in _exec_single_context
+    self.dialect.do_execute(
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:1192: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:656: in execute
+    await_(self._prepare_and_execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:618: in _prepare_and_execute
+    self._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:568: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:847: in _handle_exception
+    super()._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:412: in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:840: in _handle_exception_no_connection
+    raise translated_error from error
+E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ForeignKeyViolationError: insert or update on table "report_sessions" violates foreign key constraint "report_sessions_owner_username_fkey"
+
+The above exception was the direct cause of the following exception:
+tests\test_upload_limits.py:37: in test_inflated_sheet_dimensions_are_rejected_without_saving
+    job = await services.jobs.create(Job(runnerId='dimension-runner', ownerUsername='test-admin',
+app\repositories\postgres.py:61: in create
+    await self._insert(connection, job)
+app\repositories\postgres.py:83: in _insert
+    await connection.execute(pg_insert(db.report_sessions).values(id=str(job.session_id),
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:667: in execute
+    result = await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:210: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1451: in execute
+    return meth(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:533: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1671: in _execute_clauseelement
+    ret = self._execute_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1825: in _execute_context
+    return self._exec_single_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1965: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:2335: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1946: in _exec_single_context
+    self.dialect.do_execute(
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:1192: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:656: in execute
+    await_(self._prepare_and_execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:618: in _prepare_and_execute
+    self._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:568: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:847: in _handle_exception
+    super()._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:412: in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:840: in _handle_exception_no_connection
+    raise translated_error from error
+E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.ForeignKeyViolationError) insert or update on table "report_sessions" violates foreign key constraint "report_sessions_owner_username_fkey"
+E   [SQL: INSERT INTO report_sessions (id, owner_username, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::TIMESTAMP WITH TIME ZONE) ON CONFLICT DO NOTHING]
+E   [parameters: ('3d2b7da4-2f3b-433e-97cd-08ed949c1dbf', 'test-admin', datetime.datetime(2026, 10, 12, 7, 12, 14, 971174, tzinfo=datetime.timezone.utc))]
+E   (Background on this error at: https://sqlalche.me/e/21/gkpj)</failure></testcase><testcase classname="tests.test_upload_limits" name="test_inflated_sheet_dimensions_are_rejected_without_saving[A1:SR10000]" time="0.083"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.ForeignKeyViolationError) insert or update on table &quot;report_sessions&quot; violates foreign key constraint &quot;report_sessions_owner_username_fkey&quot;&#10;[SQL: INSERT INTO report_sessions (id, owner_username, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::TIMESTAMP WITH TIME ZONE) ON CONFLICT DO NOTHING]&#10;[parameters: ('5a14e564-b02c-4c9f-aae4-a715c8188c98', 'test-admin', datetime.datetime(2026, 10, 12, 7, 12, 16, 117783, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/21/gkpj)">.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:605: in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+.venv\Lib\site-packages\asyncpg\prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:197: in bind_execute
+    ???
+E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "report_sessions" violates foreign key constraint "report_sessions_owner_username_fkey"
+E   DETAIL:  Key (owner_username)=(test-admin) is not present in table "users".
+
+The above exception was the direct cause of the following exception:
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1946: in _exec_single_context
+    self.dialect.do_execute(
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:1192: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:656: in execute
+    await_(self._prepare_and_execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:618: in _prepare_and_execute
+    self._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:568: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:847: in _handle_exception
+    super()._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:412: in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:840: in _handle_exception_no_connection
+    raise translated_error from error
+E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ForeignKeyViolationError: insert or update on table "report_sessions" violates foreign key constraint "report_sessions_owner_username_fkey"
+
+The above exception was the direct cause of the following exception:
+tests\test_upload_limits.py:37: in test_inflated_sheet_dimensions_are_rejected_without_saving
+    job = await services.jobs.create(Job(runnerId='dimension-runner', ownerUsername='test-admin',
+app\repositories\postgres.py:61: in create
+    await self._insert(connection, job)
+app\repositories\postgres.py:83: in _insert
+    await connection.execute(pg_insert(db.report_sessions).values(id=str(job.session_id),
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:667: in execute
+    result = await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:210: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1451: in execute
+    return meth(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:533: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1671: in _execute_clauseelement
+    ret = self._execute_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1825: in _execute_context
+    return self._exec_single_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1965: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:2335: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1946: in _exec_single_context
+    self.dialect.do_execute(
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:1192: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:656: in execute
+    await_(self._prepare_and_execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:167: in await_
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\concurrency.py:205: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:618: in _prepare_and_execute
+    self._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:568: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:847: in _handle_exception
+    super()._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py:412: in _handle_exception
+    self._handle_exception_no_connection(self.dbapi, error)
+.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:840: in _handle_exception_no_connection
+    raise translated_error from error
+E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.ForeignKeyViolationError) insert or update on table "report_sessions" violates foreign key constraint "report_sessions_owner_username_fkey"
+E   [SQL: INSERT INTO report_sessions (id, owner_username, created_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::TIMESTAMP WITH TIME ZONE) ON CONFLICT DO NOTHING]
+E   [parameters: ('5a14e564-b02c-4c9f-aae4-a715c8188c98', 'test-admin', datetime.datetime(2026, 10, 12, 7, 12, 16, 117783, tzinfo=datetime.timezone.utc))]
+E   (Background on this error at: https://sqlalche.me/e/21/gkpj)</failure></testcase><testcase classname="tests.test_upload_limits" name="test_general_upload_returns_client_error_for_broken_zip" time="0.733" /><testcase classname="tests.test_upload_limits" name="test_general_upload_returns_client_error_for_oversized_csv_field" time="0.735" /><testcase classname="tests.test_upload_limits" name="test_sheet_cell_budget_is_shared_across_worksheets" time="0.169" /><testcase classname="tests.test_upload_limits" name="test_csv_width_is_bounded" time="0.110" /><testcase classname="tests.test_upload_limits" name="test_api_data_and_authentication_failures_are_not_cached" time="1.025" /></testsuite></testsuites>

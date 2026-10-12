@@ -1,0 +1,2 @@
+Command: ['node', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\web-ui\\scripts\\test-session-ui.mjs']
+Session UI: idle logout despite polling, no renewal, login recovery and shared-tab logout passed.

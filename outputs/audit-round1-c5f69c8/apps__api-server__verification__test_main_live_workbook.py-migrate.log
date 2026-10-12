@@ -1,0 +1,2 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', '-m', 'app.migrate']
+Shared report migration: {"afterRows": 0, "beforeRows": 0, "conflictingMonths": 0, "overlappingMonths": 0}

@@ -1,0 +1,27 @@
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+AssertionError [ERR_ASSERTION]: option reads must not target busy workers
+
+true !== false
+
+    at file:///C:/Users/huyvv12/Desktop/vahan-automation/outputs/audit-round1-c5f69c8/diagnostic-test-filter-profiles-ui.mjs:39:14
+    at RouteHandler._handleInternal (C:\Users\huyvv12\Desktop\vahan-automation\apps\browser-runner\node_modules\playwright-core\lib\coreBundle.js:60186:11)
+    at RouteHandler._handleImpl (C:\Users\huyvv12\Desktop\vahan-automation\apps\browser-runner\node_modules\playwright-core\lib\coreBundle.js:60153:29)
+    at C:\Users\huyvv12\Desktop\vahan-automation\apps\browser-runner\node_modules\playwright-core\lib\coreBundle.js:60147:59
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_context_frame:63:14)
+    at _Zone.run (C:\Users\huyvv12\Desktop\vahan-automation\apps\browser-runner\node_modules\playwright-core\lib\coreBundle.js:10364:40)
+    at RouteHandler.handle (C:\Users\huyvv12\Desktop\vahan-automation\apps\browser-runner\node_modules\playwright-core\lib\coreBundle.js:60147:38)
+    at _Page._onRoute (C:\Users\huyvv12\Desktop\vahan-automation\apps\browser-runner\node_modules\playwright-core\lib\coreBundle.js:61441:46)
+    at Proxy.<anonymous> (C:\Users\huyvv12\Desktop\vahan-automation\apps\browser-runner\node_modules\playwright-core\lib\coreBundle.js:61387:63)
+    at Proxy._callHandler (C:\Users\huyvv12\Desktop\vahan-automation\apps\browser-runner\node_modules\playwright-core\lib\coreBundle.js:10962:33) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: true,
+  expected: false,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.19.0

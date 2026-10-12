@@ -1,0 +1,11 @@
+Member route probe #filters http://127.0.0.1:5198/#filters { sameDocument: true }
+Member route probe #run-history http://127.0.0.1:5198/#run-history { sameDocument: true }
+Member route probe #update-history http://127.0.0.1:5198/#update-history { sameDocument: true }
+Member route probe #settings http://127.0.0.1:5198/#settings { sameDocument: true }
+Member route probe #settings-ui-health http://127.0.0.1:5198/#settings-ui-health { sameDocument: true }
+Member route probe #health http://127.0.0.1:5198/#health { sameDocument: true }
+Member route probe #configure?scheduled=fixture http://127.0.0.1:5198/#configure?scheduled=fixture { sameDocument: true }
+Member route probe filters http://127.0.0.1:5198/filters { sameDocument: false }
+Member route probe settings http://127.0.0.1:5198/settings { sameDocument: false }
+Member route probe #unknown http://127.0.0.1:5198/#unknown { sameDocument: false }
+Permissions UI passed: member reports-only navigation and direct-route denial, no private requests/socket, admin schedules, grant/revoke role.
