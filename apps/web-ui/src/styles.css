@@ -1298,7 +1298,8 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .account-dialog .account-users-panel .data-table table { min-width:500px; }
 .account-dialog .account-users-panel .data-table th { position:sticky; top:0; z-index:1; background:#eef5ed; }
 .account-dialog .account-users-panel .data-table :is(th,td) { padding:8px; }
-.account-dialog .account-users-panel .data-table button { width:auto; max-width:none; min-height:28px; margin:2px 2px 2px 0; padding:5px 8px; border-radius:999px; font-size:10px; line-height:1.2; letter-spacing:0; text-transform:none; white-space:nowrap; }
+.account-user-actions { display:flex; width:max-content; align-items:center; flex-wrap:nowrap; gap:5px; white-space:nowrap; }
+.account-dialog .account-users-panel .data-table button { width:auto; max-width:none; min-height:28px; margin:0; padding:5px 8px; border-radius:999px; font-size:10px; line-height:1.2; letter-spacing:0; text-transform:none; white-space:nowrap; }
 .account-password-section h3 { margin:0; font-size:15px; }
 .account-password-section > p,.account-reset-form > p { margin:7px 0 16px; color:#748478; font-size:12px; line-height:1.6; }
 .account-password-form,.account-reset-form { display:grid; gap:13px; }
