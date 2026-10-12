@@ -1,12 +1,12 @@
 # Chromium Playwright worker
 
-`runner.mjs` quản lý Chromium/context, Socket.IO, CAPTCHA do người dùng nhập, download và upload file. `page-driver.js` chứa các thao tác DOM VAHAN, giữ dependency giữa State/RTO và filters.
+`runner.mjs` quản lý Chromium/context, Socket.IO, CAPTCHA OCR, download và upload file. `page-driver.js` chứa các thao tác DOM VAHAN, giữ dependency giữa State/RTO và filters.
 
-Playwright package và Docker image pin `1.63.0`. Container chạy non-root, sandbox, seccomp và shared memory 1 GB. Mạng API và browser state được cấu hình qua compose. Health endpoint nội bộ `:3001/health` báo kết nối API/browser.
+Playwright package pin `1.63.0`; Node base image pin digest trong Dockerfile. Container chạy non-root, sandbox, seccomp và shared memory 1 GB. Mạng API và browser state được cấu hình qua compose. Health endpoint nội bộ `:3001/health` báo kết nối API/browser.
 
-Worker không giải CAPTCHA hoặc vượt qua validation. VAHAN HTTP 401 được ghi thành lỗi yêu cầu người vận hành xử lý; không retry vô hạn. Browser state mã hóa được tải/lưu qua backend PostgreSQL.
+Worker chạy Tesseract qua stdin, giới hạn chung 20 OCR start/10 phút qua SQL; VAHAN vẫn xác minh mã. Không log chữ OCR thô. VAHAN HTTP 401 được ghi thành lỗi yêu cầu người vận hành xử lý; không retry vô hạn. Browser state mã hóa được tải/lưu qua backend PostgreSQL.
 
-Xem [README gốc](../../README.md).
+Xem [README gốc](../../README.md) và [runbook](../../docs/runbook.md) để chạy `test-container-runtime.mjs` trong image. OCR ảnh tổng hợp không chứng minh CAPTCHA VAHAN thật đã được chấp nhận.
 
 Sau Apply, DOM driver xác nhận kết quả mới, đúng RTO và đã hết loading. `No record found` gửi NO_RECORD cùng ngày giờ ISO đầy đủ, lưu lịch sử và hoàn tất NO_DATA. Khi có dữ liệu, workbook đầy đủ là bắt buộc: worker gửi một lần tới `/api/jobs/{id}/main-report`, chờ SQL lưu vào bảng chính rồi mới nhận filter tiếp theo và xóa file tạm. Không lưu bản sao DOM/Excel/TXT hoặc ảnh thành công trong SQL. Timeout là lỗi riêng. Kiểm thử: `npm run test:results`, `node test-main-report-save.mjs`.
 

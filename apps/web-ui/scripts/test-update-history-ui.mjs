@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {chromium} from '../../browser-runner/node_modules/playwright/index.mjs';
 const browser = await chromium.launch({headless:true, channel:process.env.PLAYWRIGHT_CHANNEL || 'chrome'});
 try {
   const page = await browser.newPage({viewport:{width:1440,height:1000}});
   const errors = []; let calls=0, newest='Electric two-wheelers', fail=false;
-  const artifacts = new URL('../../../outputs/', import.meta.url);
+  const artifacts = process.env.UI_TEST_ARTIFACT_DIR
+    ? pathToFileURL(`${process.env.UI_TEST_ARTIFACT_DIR.replaceAll('\\', '/').replace(/\/$/, '')}/`)
+    : new URL('../../../outputs/', import.meta.url);
   await mkdir(artifacts, {recursive:true});
   const runs = Array.from({length:51}, (_,index) => ({
     sessionId:`run-${index+1}`,

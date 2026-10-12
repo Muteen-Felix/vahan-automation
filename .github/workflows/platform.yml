@@ -41,6 +41,9 @@ jobs:
       - name: Validate host secret setup
         run: python scripts/setup-docker.py
 
+      - name: Validate local documentation links
+        run: python scripts/check-doc-links.py
+
       - name: Install and test API
         working-directory: apps/api-server
         run: |
@@ -225,6 +228,8 @@ jobs:
         run: docker compose --env-file .docker.env config --quiet
       - name: Test production container security
         run: python scripts/test_container_security.py
+      - name: Test packaged Chromium sandbox and real Tesseract
+        run: docker run --rm --init --shm-size=1g --security-opt seccomp=./docker/seccomp_profile.json --entrypoint node vahan-security-test/runner:round4 test-container-runtime.mjs
       - name: Scan images and write full reports and CycloneDX SBOMs
         run: python scripts/scan_container_images.py --output-dir "${{ runner.temp }}/container-sbom"
       - name: Upload vulnerability reports and container SBOMs
