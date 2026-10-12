@@ -1,6 +1,5 @@
 """Expand only native valid branches, retaining combined fixed multi-selections."""
 import json
-import time
 
 from app.models.filter_profile import FIELD_ORDER, FIELD_LABELS, PARENTS, SCALAR_FIELDS, ProfileDefinition, case_key
 
@@ -27,9 +26,7 @@ class FilterPlanner:
     def __init__(self, definition: ProfileDefinition, year: int, lookup, progress):
         self.definition, self.year, self.lookup, self.progress = definition, definition.report.year if definition.report else year, lookup, progress
         self.cache, self.scenarios, self.seen = {}, [], set()
-        self.skipped = self.explored = 0
-        self.plan_bytes = 0
-        self.started = time.monotonic()
+        self.skipped = 0
 
     def rules_match(self, values):
         for rule in self.definition.rules:
@@ -75,9 +72,6 @@ class FilterPlanner:
         return options if field in SCALAR_FIELDS else [[value] for value in options]
 
     async def walk(self, position, chosen):
-        self.explored += 1
-        if self.explored > 100_000 or time.monotonic() - self.started > 600:
-            raise ValueError('Preview limit reached. Narrow Include/Exclude conditions and try again.')
         if not self.rules_match(chosen):
             self.skipped += 1; return
         if position < len(FIELD_ORDER):
@@ -91,11 +85,6 @@ class FilterPlanner:
         identity = case_key(filters)
         if identity in self.seen:
             return
-        if len(self.scenarios) >= self.definition.max_cases:
-            raise ValueError(f'More than {self.definition.max_cases} valid cases. Restrict filters; no partial run was created.')
-        self.plan_bytes += len(json.dumps(filters, ensure_ascii=False).encode()) + 1000
-        if self.plan_bytes > 12 * 1024 * 1024:
-            raise ValueError('The generated plan is too large. Narrow the filter selections before running.')
         self.seen.add(identity)
         state, rto = chosen['states'][0], chosen['rtos'][0]
         name = f'Maker Month Wise Data of {rto}, {state} ({self.year})'

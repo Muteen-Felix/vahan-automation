@@ -239,8 +239,7 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
           <button type="button" disabled={disabled||definition.rules.length>=30} onClick={()=>setDefinition(current=>({...current,rules:[...current.rules,{whenField:'fuels',whenValues:[],targetField:'evTypes',targetValues:[],action:'exclude'}]}))}>Add rule</button>
           <button type="button" className="profile-picker-done" onClick={()=>setRulesOpen(false)}>Done</button></div>
         </dialog>,document.body)}
-        <div className="profile-save-bar"><label>Maximum reports<input type="number" min={1} max={3000} value={definition.maxCases} disabled={disabled}
-          onChange={event=>{setPreview(null);setDefinition(current=>({...current,maxCases:Number(event.target.value)}));}} /></label>
+        <div className="profile-save-bar">
           <button type="button" disabled={disabled} onClick={()=>void save()}>Save filters</button>
           <button type="button" disabled={disabled||busy||loading||!runnerId} onClick={()=>void save(true)}>Save &amp; preview</button>
           {working&&previewAbort.current&&<button type="button" onClick={()=>previewAbort.current?.abort()}>Cancel preview</button>}
