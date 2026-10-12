@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 import {request} from '../services/api-client';
 import {uiSocket} from '../services/socket-client';
+import type {ConnectionState} from '../contracts';
 
 type ServerNetwork = {online: boolean; checkedAt?: string; message?: string};
 export function useNetworkStatus() {
@@ -31,11 +32,16 @@ export function useNetworkStatus() {
   },[]);
   return {browserOnline,reachable,server,offline:!browserOnline||!reachable||server?.online===false};
 }
-export function NetworkNotice({network}: {network:ReturnType<typeof useNetworkStatus>}) {
-  if(!network.offline)return null;
+export function NetworkNotice({network,connection}: {network:ReturnType<typeof useNetworkStatus>;connection:ConnectionState}) {
+  if(!network.offline&&connection!=='disconnected'&&connection!=='error')return null;
   const upstream=network.browserOnline&&network.reachable&&network.server?.online===false;
-  return <div className="network-notice" role="alert"><span aria-hidden="true">⚠</span><div>
-    <strong>{upstream?'Network unavailable · reports paused':!network.browserOnline?'Your browser is offline':'Connection to the system was lost'}</strong>
-    <p>{upstream?'Unfinished reports are kept in the waiting list. Collection continues automatically after the connection is stable.':'Trying to reconnect. Your saved progress is kept. Current progress will appear when the connection returns.'}</p>
-  </div><span className="network-notice-status">Reconnecting…</span></div>;
+  const message=!network.browserOnline
+    ? 'Internet connection lost · Reconnecting…'
+    : upstream
+    ? 'VAHAN connection unavailable · Retrying…'
+    : 'Server connection lost · Reconnecting…';
+  return <div className="network-notice" role="status" aria-live="polite">
+    <span className="network-notice-dot" aria-hidden="true" />
+    <span>{message}</span>
+  </div>;
 }

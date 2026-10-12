@@ -18,14 +18,14 @@ try {
  await page.goto(process.env.NETWORK_UI_URL||'http://127.0.0.1:5189/');await page.getByRole('link',{name:'Settings',exact:true}).waitFor();
  assert.equal(await page.locator('.network-notice').count(),0);
  online=false;socket.send('42/ui,'+JSON.stringify(['network:status',{online:false}]));
- await page.getByRole('alert').getByText('Network unavailable · reports paused',{exact:true}).waitFor();
- await page.getByRole('link',{name:'Settings',exact:true}).click();await page.getByRole('alert').getByText('Network unavailable · reports paused',{exact:true}).waitFor();
+ await page.getByRole('status').getByText('VAHAN connection unavailable · Retrying…',{exact:true}).waitFor();
+ await page.getByRole('link',{name:'Settings',exact:true}).click();await page.getByRole('status').getByText('VAHAN connection unavailable · Retrying…',{exact:true}).waitFor();
  online=true;socket.send('42/ui,'+JSON.stringify(['network:status',{online:true}]));await page.locator('.network-notice').waitFor({state:'detached'});
  await page.evaluate(()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});dispatchEvent(new Event('offline'));});
- await page.getByRole('alert').getByText('Your browser is offline',{exact:true}).waitFor();
+ await page.getByRole('status').getByText('Internet connection lost · Reconnecting…',{exact:true}).waitFor();
  await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  await page.evaluate(()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});dispatchEvent(new Event('online'));});await page.locator('.network-notice').waitFor({state:'detached'});
- unreachable=true;await page.getByRole('alert').getByText('Connection to the system was lost',{exact:true}).waitFor();
+ unreachable=true;await page.getByRole('status').getByText('Server connection lost · Reconnecting…',{exact:true}).waitFor();
  unreachable=false;await page.locator('.network-notice').waitFor({state:'detached'});
  assert.deepEqual(errors,[]);console.log('Network UI: main-page outage banner, cross-page visibility, browser offline, backend failure, automatic reconnect and mobile fit passed.');
 }finally{await browser.close();}

@@ -3,7 +3,6 @@ import {AccountSettings} from './components/AccountSettings';
 import {Brand} from './components/Brand';
 import {AnnualReports} from './components/AnnualReports';
 import {AutomaticRunSettings} from './components/AutomaticRunSettings';
-import {ConnectionBanner} from './components/ConnectionBanner';
 import {StateSyncStatus} from './components/DataManagement';
 import {FilterProfiles} from './components/FilterProfiles';
 import {UiHealthContract} from './components/UiHealthContract';
@@ -205,11 +204,10 @@ export default function App() {
         <a className={activeSection === 'run-history' ? 'active' : undefined} aria-current={activeSection === 'run-history' ? 'page' : undefined} href="#run-history">Run History</a>
         <a className={activeSection === 'settings' ? 'active' : undefined} aria-current={activeSection === 'settings' ? 'page' : undefined} href="#settings">Settings</a></>}
       </nav>
-      <div className="header-actions">{isAdmin ? <ConnectionBanner backend={connection}
-        runners={runners.filter(runner => runner.status === 'ONLINE' || runner.status === 'BUSY').length} /> : <AccountSettings signingOut={signingOut} onSignOut={signOut}/>}</div>
+      <div className="header-actions">{!isAdmin && <AccountSettings signingOut={signingOut} onSignOut={signOut}/>}</div>
     </header>
     <div className="app-layout"><div className="app-main">
-      <NetworkNotice network={network}/>
+      <NetworkNotice network={network} connection={connection}/>
       <StateSyncStatus />
       {error && <div className="global-error" role="alert">{operatorMessage(error)}<button type="button" aria-label="Dismiss message" onClick={() => setError('')}>×</button></div>}
       {isAdmin && healthBlock && activeSection !== 'settings' && <div className="ui-health-block" role="alert">
