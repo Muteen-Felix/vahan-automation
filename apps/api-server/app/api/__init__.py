@@ -14,6 +14,7 @@ from app.api.batch_queue import router as batch_queue_router, worker_router as w
 from app.api.worker_pool import router as worker_pool_router
 from app.api.filter_profiles import router as filter_profiles_router
 from app.api.run_schedules import router as run_schedules_router
+from app.api.ocr import router as ocr_router
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(health_router)
@@ -31,3 +32,4 @@ api_router.include_router(worker_queue_router)
 api_router.include_router(worker_pool_router)
 api_router.include_router(filter_profiles_router)
 api_router.include_router(run_schedules_router)
+api_router.include_router(ocr_router)
