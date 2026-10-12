@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import secrets
 import subprocess
 from pathlib import Path
@@ -24,6 +25,18 @@ def run(*command: str) -> str:
     return result.stdout
 
 
+def active_docker_socket() -> str:
+    endpoint = os.environ.get("DOCKER_HOST")
+    if not endpoint:
+        endpoint = json.loads(run("docker", "context", "inspect"))[0]["Endpoints"]["docker"]["Host"]
+    if endpoint.startswith("unix://"):
+        return endpoint.removeprefix("unix://")
+    if endpoint.startswith("npipe://"):
+        # Docker Desktop exposes its Linux engine socket inside Linux containers.
+        return "/var/run/docker.sock"
+    raise RuntimeError("The scanner needs a local Unix Docker socket or Docker Desktop Linux engine.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -36,7 +49,7 @@ def main() -> None:
     failures = []
     try:
         run("docker", "run", "-d", "--name", container,
-            "-v", "/var/run/docker.sock:/var/run/docker.sock", "--entrypoint", "/bin/sh",
+            "-v", f"{active_docker_socket()}:/var/run/docker.sock", "--entrypoint", "/bin/sh",
             SCANNER, "-c", "mkdir -p /reports; sleep 3600")
         if args.ca_cert:
             run("docker", "cp", str(args.ca_cert.resolve()),

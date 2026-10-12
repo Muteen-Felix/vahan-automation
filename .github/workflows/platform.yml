@@ -49,6 +49,7 @@ jobs:
           python -m pytest verification/test_production_config.py
           python -m unittest discover -s ../../scripts -p 'test_deployment_guard.py'
           python -m unittest discover -s ../../scripts -p 'test_worker_capacity.py'
+          python -m unittest discover -s ../../scripts -p 'test_container_scan.py'
           python ../../tools/ui-drift-guard/test_ui_diagnostics.py
 
       - name: Install runner dependencies
