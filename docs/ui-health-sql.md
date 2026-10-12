@@ -1,8 +1,9 @@
 # UI Health và preflight
 
 Runner Playwright kiểm form/control theo contract trước thao tác VAHAN.
-API lưu trạng thái/diagnostics trong PostgreSQL. `blocked` là kết quả kiểm
-contract, không tự xóa chỉ vì runner disconnect hoặc UI reload.
+API lưu trạng thái/diagnostics trong PostgreSQL. `blocked` phản ánh các lỗi của
+runner đang kết nối; cờ có thể mất khi runner lỗi disconnect. Đây là điểm
+cần duyệt trong danh sách defect, không phải bằng chứng contract đã hồi phục.
 Khi gate không đạt, không Apply/cấp run mới để vượt preflight.
 
 `GET /api/ui-health/status` đọc trạng thái; `POST /api/ui-health/preflight`

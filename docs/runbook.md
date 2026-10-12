@@ -70,12 +70,13 @@ và xác minh SHA-256 trong manifest backup. Khởi động PostgreSQL trước:
 docker compose --env-file .docker.env up -d --no-build --wait postgres
 # PowerShell không redirect dump nhị phân qua pipeline text.
 docker compose --env-file .docker.env cp <backup-directory>/database.dump postgres:/tmp/restore.dump
-docker compose --env-file .docker.env exec -T postgres pg_restore -U vahan -d vahan --clean --if-exists --no-owner --exit-on-error /tmp/restore.dump
+docker compose --env-file .docker.env exec -T postgres pg_restore -U vahan -d vahan --clean --if-exists --no-owner --no-acl --exit-on-error /tmp/restore.dump
 py -3 scripts/run-docker.py --no-build --workers 1
 ```
 
-Đây là thủ tục cần diễn tập và kiểm dữ liệu trước khi chuyển traffic; đọc mục
-restore trong bảng chưa kiểm của báo cáo. Không rollback binary qua migration
+`--no-acl` tránh tham chiếu role chưa có trên cluster mới; `migrate` cấp lại
+quyền runtime sau restore. Kiểm dữ liệu trước khi chuyển traffic; đọc phạm vi
+restore đã thử trong báo cáo. Không rollback binary qua migration
 không tương thích; dùng bản image/backup tương ứng tại project tách biệt.
 
 ## Chẩn đoán

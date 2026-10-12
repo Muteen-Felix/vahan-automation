@@ -11,17 +11,20 @@ import subprocess
 import tempfile
 import time
 import urllib.parse
+import urllib.error
+import urllib.request
 import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from test_container_security import free_port, request, require
+from test_container_security import free_port, request, require, header_value
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--package-dir', required=True)
     parser.add_argument('--output-dir', required=True)
+    parser.add_argument('--live-case', action='store_true', help='After live preflight, attempt one real VAHAN case with native State/RTO options (at most 180 seconds).')
     args = parser.parse_args()
     package = Path(args.package_dir).resolve()
     output = Path(args.output_dir).resolve()
@@ -61,6 +64,7 @@ def main() -> None:
         secret_values = [v for k,v in values.items() if any(s in k for s in ('PASSWORD','SECRET','TOKEN','STATE_KEY'))]
         env = {**os.environ, 'COMPOSE_PROJECT_NAME':project}
         compose = ['docker','compose','--env-file','.docker.env','-p',project]
+        restore_compose = ['docker','compose','--env-file','.docker.env','-p',project+'-restore']
 
         def run(command, label, *, timeout=600, optional=False):
             started = time.monotonic()
@@ -158,10 +162,10 @@ def main() -> None:
             member = call('/api/auth/login','POST',{'username':'round5-member','password':member_password})['accessToken']
             secret_values.append(member)
             def permissions():
-                for path in ('/api/run-history','/api/run-schedules','/api/users','/api/filter-profiles'):
+                for path in ('/api/annual-reports/run-history','/api/run-schedules','/api/users','/api/filter-profiles'):
                     call(path,token=member,expected=403)
                 call('/api/annual-reports',token=member)
-                call('/api/run-history',token=admin_token)
+                call('/api/annual-reports/run-history',token=admin_token)
                 call('/api/users/round5-member','PATCH',{'role':'admin'},token=admin_token)
                 call('/api/users/round5-member','PATCH',{'role':'user'},token=admin_token)
                 return 'Member reports allowed; history/schedules/users/profiles forbidden; admin role changes persisted.'
@@ -186,7 +190,7 @@ async def main():
  rows += [{'sheet':'Sheet1','row_number':i+1,'cells':['ROUND5 SYNTHETIC MAKER %04d'%i,i]} for i in range(1000)]
  async with engine.begin() as c:
   await import_rows(c,source_key='round5-synthetic-1000',name='ROUND5 SYNTHETIC FIXTURE - NOT VAHAN DATA',
-    rows=rows,owner='admin',observed_at=datetime.now(timezone.utc),filters={'states':['ROUND5 SYNTHETIC STATE'],'rtos':['ROUND5 SYNTHETIC RTO - T01'],
+    rows=rows,owner='admin',observed_at=datetime.now(timezone.utc),filters={'states':['ROUND5 SYNTHETIC STATE'],'rtos':['ROUND5 SYNTHETIC RTO - ZZ01'],
     'fromYear':'2026','toYear':'2026','categoryGroups':['Two Wheeler'],'fuels':['ELECTRIC(BOV)']})
  await engine.dispose()
  print('Imported 1000 explicitly synthetic makers through the built import_rows implementation.')
@@ -198,10 +202,11 @@ asyncio.run(main())"""
                 dataset = urllib.parse.quote(table['datasetId'])
                 call(f'/api/annual-reports/export?year=2026&dataset={dataset}',token=admin_token,expected=409)
                 for label, suffix in [('unfiltered','&confirmAll=true'),('state','&state=ROUND5'),
-                                      ('rto','&rto=T01'),('combined','&state=ROUND5&rto=T01')]:
+                                      ('rto','&rto=ZZ01'),('combined','&state=ROUND5&rto=ZZ01')]:
                     status, headers, body = request(api+f'/api/annual-reports/export?year=2026&dataset={dataset}{suffix}',
                         headers={'Authorization':f'Bearer {admin_token}'})
-                    require(status==200 and headers.get('X-Report-Row-Count')=='1000', f'{label} export lost rows.')
+                    count = header_value(headers, 'X-Report-Row-Count')
+                    require(status==200 and count=='1000', f'{label} export: status={status}, row count={count!r}.')
                     artifact = output / f'export-{label}-SYNTHETIC.xlsx';artifact.write_bytes(body)
                     with zipfile.ZipFile(artifact) as workbook:
                         from xml.etree import ElementTree as ET
@@ -210,6 +215,37 @@ asyncio.run(main())"""
                         require(len(rows)==1003, f'{label} workbook expected 3 header rows + 1000 data rows, got {len(rows)}.')
                 return {'displayed':100,'total':1000,'workbookDataRows':1000,'cases':['unfiltered-confirmed','State','RTO','State+RTO']}
             check('actual-excel-all-1000-matching-rows',exports)
+            run([os.sys.executable,'scripts/backup-docker.py'],'backup-custom-dump-and-manifest')
+            backup = max((root / 'backups').iterdir(),key=lambda path:path.name)
+            backup_manifest = json.loads((backup/'manifest.json').read_text())
+            for filename, expected in backup_manifest['sha256'].items():
+                with (backup/filename).open('rb') as source:
+                    require(hashlib.file_digest(source,'sha256').hexdigest()==expected,'Backup checksum mismatch.')
+            try:
+                run([*restore_compose,'up','-d','--no-build','--wait','postgres'],'restore-fresh-postgres')
+                run([*restore_compose,'cp',str(backup/'database.dump'),'postgres:/tmp/restore.dump'],'restore-copy-binary-dump')
+                run([*restore_compose,'exec','-T','postgres','pg_restore','-U','vahan','-d','vahan',
+                    '--clean','--if-exists','--no-owner','--no-acl','--exit-on-error','/tmp/restore.dump'],'restore-sql-dump')
+                run([*restore_compose,'run','--rm','--no-deps','migrate'],'restore-provision-runtime-role')
+                restored_probe = """import asyncio
+from sqlalchemy import text
+from app.db import engine
+from app.main import fastapi_app
+async def main():
+ async with fastapi_app.router.lifespan_context(fastapi_app):
+  async with engine.connect() as c:
+   assert await c.scalar(text('SELECT current_user')) == 'vahan_app'
+   assert await c.scalar(text('SELECT count(*) FROM main_reports')) == 1000
+   assert await c.scalar(text("SELECT value->>'persisted' FROM user_state WHERE key='round5Probe'")) == 'true'
+   assert await c.scalar(text("SELECT count(*) FROM users WHERE username='round5-member'")) == 1
+   assert not await c.scalar(text("SELECT has_schema_privilege(current_user,'public','CREATE')"))
+   print('Restored 1000 synthetic reports, member account and persisted state; API lifespan works with DML-only role.')
+asyncio.run(main())"""
+                run([*restore_compose,'run','--rm','--no-deps','--entrypoint','python','api','-c',restored_probe],
+                    'restored-api-lifespan-and-data',timeout=90)
+            finally:
+                run([*restore_compose,'down','--volumes','--remove-orphans','--timeout','15'],
+                    'restore-disposable-project-cleanup',optional=True)
             run([*compose,'run','--rm','--no-deps','-e','VAHAN_RUNTIME_LIVE_PROBE=1','--entrypoint','node',
                 'runner','test-container-runtime.mjs'],'chromium-sandbox-and-real-tesseract',timeout=120)
             for test in ('test-image-pipe.mjs','test-filter-fill.mjs','test-options.mjs','test-profile-options.mjs',
@@ -228,9 +264,100 @@ asyncio.run(main())"""
                 'ACCOUNT_UI_URL':'','NETWORK_UI_URL':'','PERMISSIONS_UI_URL':''}
             env.update({k:api+'/'+v for k,v in aliases.items()})
             env['UI_TEST_ARTIFACT_DIR'] = str(output / 'ui-screenshots')
+            env.update(INSTALLED_UI_URL=api, REVIEW_ADMIN_USERNAME=values['VAHAN_UI_AUTH_USERNAME'],
+                REVIEW_ADMIN_PASSWORD=values['VAHAN_UI_AUTH_PASSWORD'], REVIEW_MEMBER_PASSWORD=member_password)
+            run(['node',str(web_root/'scripts'/'test-installed-dashboard.mjs')], 'real-installed-dashboard',timeout=180)
             for name in names:
                 run(['node',str(web_root/'scripts'/f'{name}.mjs')],'built-ui-fixture-'+name,timeout=300)
             run([*compose,'ps','--format','json'],'final-container-status')
+            runner = next(r for r in call('/api/runners',token=admin_token) if r['status']=='ONLINE')
+            preflight_request = urllib.request.Request(api+'/api/ui-health/preflight',method='POST',
+                data=json.dumps({'runnerIds':[runner['id']]}).encode(),
+                headers={'Content-Type':'application/json','Authorization':f'Bearer {admin_token}'})
+            try:
+                with urllib.request.urlopen(preflight_request,timeout=130) as response:
+                    preflight_status, preflight_body = response.status,response.read()
+            except urllib.error.HTTPError as response:
+                preflight_status, preflight_body = response.code,response.read()
+            preflight = {'httpStatus':preflight_status,'body':json.loads(preflight_body)}
+            (output/'live-preflight.json').write_text(json.dumps(preflight,indent=2),encoding='utf-8')
+            evidence['checks'].append({'name':'live-vahan-preflight','passed':preflight_status==200,
+                'httpStatus':preflight_status,'log':'live-preflight.json',
+                'scope':'Actual VAHAN DOM through installed runner/API; failure remains an open finding, not a skipped test.'})
+            print(f'live-vahan-preflight: {"PASS" if preflight_status==200 else "OPEN FINDING"}',flush=True)
+            if args.live_case and preflight_status==200:
+                live = {'scope':'One actual VAHAN case, using native State/RTO options; no synthetic page or CAPTCHA.',
+                    'observations':[]}
+                job = None
+                try:
+                    def live_options(context):
+                        req=urllib.request.Request(api+'/api/filter-profiles/options',method='POST',
+                            data=json.dumps({'runnerId':runner['id'],'year':datetime.now().year,'context':context}).encode(),
+                            headers={'Content-Type':'application/json','Authorization':f'Bearer {admin_token}'})
+                        with urllib.request.urlopen(req,timeout=150) as response:
+                            return json.load(response)
+                    options=live_options({})
+                    require(bool(options.get('states')),'Live State options are empty.')
+                    state=next((v for v in options['states'] if v.casefold()=='assam'),options['states'][0])
+                    options=live_options({'delhiNcr':'ALL STATES','states':[state]})
+                    require(bool(options.get('rtos')) and bool(options.get('archivedFlags')),'Live RTO/Active options are empty.')
+                    filters={'period':'CALENDAR YEAR','fromYear':str(datetime.now().year),'toYear':str(datetime.now().year),
+                        'delhiNcr':'ALL STATES','states':[state],'rtos':[options['rtos'][0]],
+                        'archivedFlags':[options['archivedFlags'][0]],'yAxis':'Maker','xAxis':'Month Wise',
+                        'autoApply':True,'autoExport':True}
+                    live['filters']=filters
+                    job=call('/api/jobs','POST',{'runnerId':runner['id'],'filters':filters,
+                        'scenarioName':'ROUND5 LIVE VAHAN SINGLE-CASE VERIFICATION'},token=admin_token,expected=201)
+                    deadline=time.monotonic()+180
+                    while True:
+                        job=call('/api/jobs/'+job['id'],token=admin_token)
+                        observation={key:job.get(key) for key in ('id','sessionId','caseId','status','error','updatedAt',
+                            'successfulApplyCount','reportRowCount','mainReportSavedAt','mainReportSummary')}
+                        if not live['observations'] or observation!=live['observations'][-1]:
+                            live['observations'].append(observation)
+                        if job['status'] in ('COMPLETED','NO_DATA','FAILED','CANCELLED'):break
+                        if time.monotonic()>deadline:
+                            call('/api/jobs/'+job['id']+'/cancel','POST',token=admin_token)
+                            live['error']='Timed out at 180 seconds; the test cancelled only its own job.'
+                            break
+                        time.sleep(2)
+                    live['passed']=job['status'] in ('COMPLETED','NO_DATA')
+                    live['workbookImported']=bool(job.get('mainReportSavedAt'))
+                except Exception as error:
+                    # Do not retain request headers, CAPTCHA images or OCR strings.
+                    live.update(passed=False,error=str(error).split('\n')[0])
+                    if job and job.get('status') not in ('COMPLETED','NO_DATA','FAILED','CANCELLED'):
+                        call('/api/jobs/'+job['id']+'/cancel','POST',token=admin_token)
+                evidence['checks'].append({'name':'live-vahan-single-case','passed':live['passed'],
+                    'workbookImported':live.get('workbookImported',False),'log':'live-single-case.json'})
+                (output/'live-single-case.json').write_text(json.dumps(live,indent=2),encoding='utf-8')
+                print(f'live-vahan-single-case: {"PASS" if live["passed"] else "OPEN FINDING"}',flush=True)
+            # Reproduce an existing product behavior without changing product code.
+            # Deliberately incompatible evidence is synthetic and lives only in this disposable DB.
+            payload = {'runnerId':runner['id'],'pageUrl':'https://round5-synthetic.invalid/',
+                'healthCheck':{'observedControls':[], 'status':'CHECK_ERROR',
+                    'error':'ROUND5 SYNTHETIC disconnect diagnostic','checkId':str(secrets.token_hex(16))}}
+            status, _, body = request(api+'/api/ui-health/logs',method='POST',body=json.dumps(payload).encode(),
+                headers={'Content-Type':'application/json','X-VAHAN-RUNNER-TOKEN':values['VAHAN_API_RUNNER_TOKEN'],
+                    'X-VAHAN-RUNNER-ID':runner['id']})
+            require(status==201, 'Could not stage isolated synthetic UI Health diagnostic.')
+            before = call('/api/ui-health/status',token=admin_token)
+            require(before['blocked'] is True,'Synthetic incompatible evidence must block the online runner.')
+            run([*compose,'stop','runner'],'runner-disconnect-diagnostic')
+            disconnected_deadline=time.monotonic()+45
+            while any(r['id']==runner['id'] for r in call('/api/runners',token=admin_token)):
+                require(time.monotonic()<disconnected_deadline,'Runner did not leave SQL connected pool after disconnect grace.')
+                time.sleep(1)
+            after = call('/api/ui-health/status',token=admin_token)
+            finding = {'name':'ui-health-blocked-after-disconnect','passed':after['blocked'] is True,
+                'beforeBlocked':before['blocked'],'afterBlocked':after['blocked'],
+                'storedRunnerDiagnosticRetained':runner['id'] in after.get('runnerErrors',{}),
+                'scope':'Controlled incompatible synthetic DOM evidence; actual HTTP API and actual runner disconnect.',
+                'source':'apps/api-server/app/repositories/ui_contract.py:current',
+                'productChanged':False}
+            evidence['checks'].append(finding)
+            (output/'ui-health-disconnect-finding.json').write_text(json.dumps(finding,indent=2),encoding='utf-8')
+            print(f'ui-health-blocked-after-disconnect: {"PASS" if finding["passed"] else "OPEN PRODUCT DEFECT"}',flush=True)
             run([*compose,'logs','--no-color','--tail','100','api','runner'],'runtime-logs')
             check('administrator-logout',lambda: call('/api/auth/logout','POST',token=admin_token))
             call('/api/auth/me',token=admin_token,expected=401)
@@ -241,7 +368,11 @@ asyncio.run(main())"""
         finally:
             run([*compose,'down','--volumes','--remove-orphans','--timeout','15'],'disposable-project-cleanup',timeout=120,optional=True)
             evidence['finishedAt'] = datetime.now(timezone.utc).isoformat()
+            evidence['outcome'] = ('FAIL_OR_OPEN_FINDINGS' if evidence.get('error') or any(
+                entry.get('passed') is False or entry.get('exitCode',0) != 0 for entry in evidence['checks']) else 'PASS')
             (output / 'results.json').write_text(json.dumps(evidence,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+    if evidence['outcome'] != 'PASS':
+        raise SystemExit(1)
 
 
 if __name__ == '__main__':

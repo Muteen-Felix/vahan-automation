@@ -12,7 +12,7 @@ riêng và identity; token UI không thay quyền runner.
 | Password | `POST /api/auth/password` | Chính chủ |
 | Tài khoản | `/api/users`, `/api/users/{username}`, `/api/users/{username}/password` | Admin |
 | Báo cáo | `GET /api/annual-reports`, `/api/annual-reports/export`, `/api/annual-reports/history` | Tài khoản đăng nhập |
-| Run History | `GET /api/run-history` | Admin |
+| Run History | `GET /api/annual-reports/run-history` | Admin |
 | Profile | `/api/filter-profiles`, `/{id}`, `/options`, `/makers`, `/{id}/preview` | Admin |
 | Lịch | `/api/run-schedules`, `/{id}/pause`, `/{id}/resume`, `/{id}/stop`, `/time-zone` | Admin |
 | Hàng đợi | `/api/batch-queue/sessions` và các thao tác session | Admin |

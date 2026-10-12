@@ -34,7 +34,8 @@ password tài khoản SQL đã tồn tại. Giữ encryption key khi nâng cấp
 1. Admin lưu profile gồm report year, bộ lọc và quy tắc kết hợp. Preview cần
    options VAHAN thật. Lịch tạo một lần hoặc hằng tháng, múi giờ Việt Nam/Ấn Độ.
 2. UI Health preflight kiểm trang/control, lưu diagnostics trong SQL và chặn
-   thao tác khi không xác minh được. Disconnect không tự xóa trạng thái blocked.
+   thao tác khi không xác minh được. Trạng thái blocked khi disconnect còn là
+   điểm cần duyệt trong danh sách defect.
 3. SQL queue claim từng case bằng transaction. Không có runner thì chờ;
    mỗi runner xử lý một case, concurrency theo pool runner khả dụng. Số
    worker cũ trong lịch bị bỏ qua; form lịch không nhập worker count.
