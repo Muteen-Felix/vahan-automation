@@ -1,0 +1,2 @@
+Command: ['node', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\web-ui\\scripts\\test-annual-reports.mjs']
+Annual reports UI: live committed updates, slow reads under continuous worker updates, removed workspace absent, search, pagination, exports and responsive layout passed.

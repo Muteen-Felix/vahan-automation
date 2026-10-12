@@ -1,0 +1,3 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', '-m', 'pytest', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\tests\\test_excel.py', '-ra', '--tb=short', '--junitxml=C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\audit-round1-c5f69c8\\apps__api-server__tests__test_excel.py.xml']
+.............                                                            [100%]
+13 passed in 10.43s

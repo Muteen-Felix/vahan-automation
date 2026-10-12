@@ -1,0 +1,7 @@
+INFO:     Started server process [23424]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8017 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64193 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64194 - "WebSocket /socket.io/?EIO=4&transport=websocket" [accepted]
+INFO:     connection open

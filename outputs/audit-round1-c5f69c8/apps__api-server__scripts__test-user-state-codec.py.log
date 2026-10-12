@@ -1,0 +1,2 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', 'scripts/test-user-state-codec.py']
+User-state checks passed: legacy state, literal escapes, nested NUL strings/keys, Unicode and complete retry-queue preservation.

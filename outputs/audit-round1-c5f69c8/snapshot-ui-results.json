@@ -1,0 +1,114 @@
+[
+  {
+    "file": "apps/web-ui/scripts/test-account-settings-ui.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 8.11,
+    "log": "snapshot-apps__web-ui__scripts__test-account-settings-ui.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-annual-reports.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 15.73,
+    "log": "snapshot-apps__web-ui__scripts__test-annual-reports.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-artifact-path.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.11,
+    "log": "snapshot-apps__web-ui__scripts__test-artifact-path.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-batch-timing.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.58,
+    "log": "snapshot-apps__web-ui__scripts__test-batch-timing.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-filter-profiles-ui.mjs",
+    "exit_code": 1,
+    "status": "FAIL",
+    "seconds": 43.05,
+    "log": "snapshot-apps__web-ui__scripts__test-filter-profiles-ui.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-health-page-ui.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 4.91,
+    "log": "snapshot-apps__web-ui__scripts__test-health-page-ui.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-navigation-ui.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 7.66,
+    "log": "snapshot-apps__web-ui__scripts__test-navigation-ui.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-network-ui.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 8.45,
+    "log": "snapshot-apps__web-ui__scripts__test-network-ui.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-permissions-ui.mjs",
+    "exit_code": 1,
+    "status": "FAIL",
+    "seconds": 34.2,
+    "log": "snapshot-apps__web-ui__scripts__test-permissions-ui.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-platform.mjs",
+    "exit_code": 1,
+    "status": "FAIL",
+    "seconds": 61.77,
+    "log": "snapshot-apps__web-ui__scripts__test-platform.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-run-schedules-ui.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 51.09,
+    "log": "snapshot-apps__web-ui__scripts__test-run-schedules-ui.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-schedule-timing.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.56,
+    "log": "snapshot-apps__web-ui__scripts__test-schedule-timing.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-session-ui.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 10.19,
+    "log": "snapshot-apps__web-ui__scripts__test-session-ui.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  },
+  {
+    "file": "apps/web-ui/scripts/test-update-history-ui.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 7.11,
+    "log": "snapshot-apps__web-ui__scripts__test-update-history-ui.mjs.log",
+    "source": "git archive 3ecce961fc345d167e6979b5136d4a79cd642995"
+  }
+]

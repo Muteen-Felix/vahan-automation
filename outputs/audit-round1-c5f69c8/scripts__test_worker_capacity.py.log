@@ -1,0 +1,12 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', '-m', 'pytest', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\scripts\\test_worker_capacity.py', '-ra', '--tb=short', '--junitxml=C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\audit-round1-c5f69c8\\scripts__test_worker_capacity.py.xml']
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\huyvv12\Desktop\vahan-automation\scripts
+plugins: anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 7 items
+
+test_worker_capacity.py .......                                          [100%]
+
+- generated xml file: C:\Users\huyvv12\Desktop\vahan-automation\outputs\audit-round1-c5f69c8\scripts__test_worker_capacity.py.xml -
+============================== 7 passed in 0.33s ==============================

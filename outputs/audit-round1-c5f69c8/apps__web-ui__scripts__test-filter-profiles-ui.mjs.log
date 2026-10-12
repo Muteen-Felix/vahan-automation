@@ -1,0 +1,15 @@
+Command: ['node', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\web-ui\\scripts\\test-filter-profiles-ui.mjs']
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.inputValue: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByLabel('Report year', { exact: true })[22m
+
+    at C:\Users\huyvv12\Desktop\vahan-automation\apps\web-ui\scripts\test-filter-profiles-ui.mjs:146:66 {
+  log: [ "  - waiting for getByLabel('Report year', { exact: true })" ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

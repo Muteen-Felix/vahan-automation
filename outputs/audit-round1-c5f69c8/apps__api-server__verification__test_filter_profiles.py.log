@@ -1,0 +1,11 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', '-m', 'pytest', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\verification\\test_filter_profiles.py', '-ra', '--tb=short', '--junitxml=C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\audit-round1-c5f69c8\\apps__api-server__verification__test_filter_profiles.py.xml']
+F.......                                                                 [100%]
+================================== FAILURES ===================================
+_ ProfileTests.test_fixed_multi_values_remain_combined_and_case_limit_is_explicit _
+verification\test_filter_profiles.py:95: in test_fixed_multi_values_remain_combined_and_case_limit_is_explicit
+    with self.assertRaisesRegex(ValueError,'More than 2'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: ValueError not raised
+=========================== short test summary info ===========================
+FAILED verification/test_filter_profiles.py::ProfileTests::test_fixed_multi_values_remain_combined_and_case_limit_is_explicit
+1 failed, 7 passed in 26.43s

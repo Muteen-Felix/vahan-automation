@@ -1,0 +1,2 @@
+Command: ['node', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\web-ui\\scripts\\test-account-settings-ui.mjs']
+Account UI: hidden account controls, own password mismatch/error/success, admin reset, self-reset restriction, Escape and mobile layout passed.
