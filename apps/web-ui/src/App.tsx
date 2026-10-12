@@ -6,6 +6,7 @@ import {ConnectionBanner} from './components/ConnectionBanner';
 import {StateSyncStatus} from './components/DataManagement';
 import {FilterProfiles} from './components/FilterProfiles';
 import {UiHealthContract} from './components/UiHealthContract';
+import {RunHistory} from './components/RunHistory';
 import type {ConnectionState, Runner} from './contracts';
 import {operatorMessage} from './operator-language';
 import {FILTER_PROFILE_STORAGE_KEY, type FilterProfile} from './filter-profiles';
@@ -17,7 +18,7 @@ import {uiSocket} from './services/socket-client';
 import {NetworkNotice, useNetworkStatus} from './components/NetworkNotice';
 import {useRunSchedules} from './services/use-run-schedules';
 
-type AppSection = 'reports' | 'filters' | 'settings' | 'forbidden';
+type AppSection = 'reports' | 'filters' | 'run-history' | 'settings' | 'forbidden';
 
 function sectionFromHash(): AppSection {
   const route = window.location.hash.slice(1) || window.location.pathname.replace(/^\/+|\/+$/g, '');
@@ -25,6 +26,7 @@ function sectionFromHash(): AppSection {
   if (['settings', 'settings-ui-health', 'health'].includes(hash)
     || (hash === 'configure' && new URLSearchParams(query).has('scheduled'))) return 'settings';
   if (hash === 'configure') return 'settings';
+  if (hash === 'run-history' || hash === 'update-history') return 'run-history';
   return hash === 'filters' ? 'filters' : !hash || hash === 'reports' ? 'reports' : 'forbidden';
 }
 
@@ -60,7 +62,7 @@ export default function App() {
     const navigate = () => {
       const section = sectionFromHash();
       if (window.location.hash === '#health') window.history.replaceState(null, '', '#settings-ui-health');
-      else if (section !== 'forbidden' && !['#reports', '#filters', '#settings', '#settings-ui-health'].includes(window.location.hash)) {
+      else if (section !== 'forbidden' && !['#reports', '#filters', '#run-history', '#settings', '#settings-ui-health'].includes(window.location.hash)) {
         window.history.replaceState(null, '', `#${section}`);
       }
       setActiveSection(section);
@@ -72,7 +74,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    document.title = `VAHAN · ${activeSection === 'reports' ? 'Exported Reports' : activeSection === 'filters' ? 'Filters' : 'Settings'}`;
+    document.title = `VAHAN · ${activeSection === 'reports' ? 'Exported Reports' : activeSection === 'filters' ? 'Filters' : activeSection === 'run-history' ? 'Run History' : 'Settings'}`;
   }, [activeSection]);
 
   async function refreshProfiles() {
@@ -192,6 +194,7 @@ export default function App() {
       <nav className="main-nav" aria-label="Main navigation">
         <a className={activeSection === 'reports' ? 'active' : undefined} aria-current={activeSection === 'reports' ? 'page' : undefined} href="#reports">Exported Reports</a>
         {isAdmin && <><a className={activeSection === 'filters' ? 'active' : undefined} aria-current={activeSection === 'filters' ? 'page' : undefined} href="#filters">Filters</a>
+        <a className={activeSection === 'run-history' ? 'active' : undefined} aria-current={activeSection === 'run-history' ? 'page' : undefined} href="#run-history">Run History</a>
         <a className={activeSection === 'settings' ? 'active' : undefined} aria-current={activeSection === 'settings' ? 'page' : undefined} href="#settings">Settings</a></>}
       </nav>
       <div className="header-actions">{isAdmin ? <ConnectionBanner backend={connection}
@@ -213,7 +216,7 @@ export default function App() {
           setSelectedProfileId(id); persistentState.setItem(FILTER_PROFILE_STORAGE_KEY, JSON.stringify(id));
           setKnownPlan(plan); persistentState.setItem(MATRIX_STORAGE_KEY, JSON.stringify(plan));
           window.location.hash = 'settings';
-        }} /> : activeSection === 'settings' ? <main className="page-content settings-page" id="settings">
+        }} /> : activeSection === 'run-history' ? <RunHistory/> : activeSection === 'settings' ? <main className="page-content settings-page" id="settings">
           <div className="section-intro settings-intro"><div><h2>Settings</h2><p>Schedules, activity and account.</p></div>
             <AccountSettings signingOut={signingOut} onSignOut={signOut}/>
           </div>

@@ -38,9 +38,9 @@ try {
     await page.goto(origin);
     const nav=page.getByRole('navigation',{name:'Main navigation'});
     await nav.waitFor();
-    assert.deepEqual(await nav.locator('a').allTextContents(),role==='user'?['Exported Reports']:['Exported Reports','Filters','Settings']);
+    assert.deepEqual(await nav.locator('a').allTextContents(),role==='user'?['Exported Reports']:['Exported Reports','Filters','Run History','Settings']);
     if(role==='user') {
-      for(const target of ['#filters','#settings','#settings-ui-health','#health','#configure?scheduled=fixture','filters','settings','#unknown']) {
+      for(const target of ['#filters','#run-history','#update-history','#settings','#settings-ui-health','#health','#configure?scheduled=fixture','filters','settings','#unknown']) {
         await page.goto(origin+target);
         await page.getByRole('heading',{name:'Bạn không có quyền truy cập trang này.',exact:true}).waitFor();
         assert.equal(await page.locator('.settings-page, .filter-profiles').count(),0);

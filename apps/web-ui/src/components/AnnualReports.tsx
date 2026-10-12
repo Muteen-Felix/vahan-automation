@@ -2,7 +2,6 @@ import {operatorMessage} from '../operator-language';
 import { useEffect, useState } from 'react';
 import { api, request } from '../services/api-client';
 import { uiSocket } from '../services/socket-client';
-import {UpdateHistory} from './UpdateHistory';
 import { ReportCoverage } from './ReportCoverage';
 import { useLiveQuery } from '../hooks/use-live-query';
 import {currentReportYear} from '../matrix-plan';
@@ -108,7 +107,6 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
           title="Confirm and export the entire selected report">
           {exporting ? 'Exporting…' : 'Export all to Excel'}
         </button>}
-        <UpdateHistory/>
         <button type="button" onClick={() => {setExportError(''); setRefresh(value => value + 1); refreshData(true);}}
           aria-label="Refresh monthly data">↻ Refresh</button>
       </div>

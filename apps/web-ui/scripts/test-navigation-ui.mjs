@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {testArtifactPath} from './test-artifact-path.mjs';
 import {chromium} from '../../browser-runner/node_modules/playwright/index.mjs';
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,channel:process.env.PLAYWRIGHT_CHANNEL || 'chrome'});
 try {
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
   const errors=[],manualWrites=[];
@@ -36,7 +36,7 @@ try {
   await page.goto(origin);
   const nav=page.getByRole('navigation',{name:'Main navigation'});
   await nav.getByRole('link',{name:'Settings',exact:true}).waitFor();
-  assert.deepEqual(await nav.locator('a').allTextContents(),['Exported Reports','Filters','Settings']);
+  assert.deepEqual(await nav.locator('a').allTextContents(),['Exported Reports','Filters','Run History','Settings']);
   assert.ok(page.url().endsWith('#reports'),'Default page is Exported Reports');
   assert.equal(await page.getByRole('button',{name:'Log out',exact:true}).count(),0);
   assert.equal(await page.getByRole('link',{name:/Create Report/}).count(),0);
@@ -45,7 +45,7 @@ try {
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`Header and reports fit ${width}px`);
     const links=await nav.locator('a').all();
     const rects=await Promise.all(links.map(link=>link.boundingBox()));
-    assert.ok(rects[0].x<rects[1].x&&rects[1].x<rects[2].x,'Navigation keeps its order');
+    assert.ok(rects.every((rect,index)=>index===0||rects[index-1].x<rect.x),'Navigation keeps its order');
     if(width===1440||width===390)await page.locator('.site-header').screenshot({path:testArtifactPath(`vahan-header-new-${width}.png`)});
   }
   await nav.getByRole('link',{name:'Settings',exact:true}).click();
