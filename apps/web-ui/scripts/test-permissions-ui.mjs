@@ -72,7 +72,7 @@ try {
     } else {
       await nav.getByRole('link',{name:'Run History',exact:true}).click();
       await page.getByRole('heading',{name:'Run History',exact:true}).waitFor();
-      assert.equal(await page.getByRole('checkbox',{name:'Show sample data'}).isChecked(),false);
+      assert.equal(await page.getByRole('checkbox',{name:'Show sample data'}).count(),0,'Run History has no sample-data control');
       await nav.getByRole('link',{name:'Settings',exact:true}).click();
       await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
       await page.getByRole('button',{name:'Account',exact:true}).click();

@@ -1,0 +1,13 @@
+{
+  "baseCommit": "87bb34d2a3f86d2fbc7eb6783b47b219e690acbe",
+  "uncommittedCandidate": true,
+  "nativeSteps": 25,
+  "databaseSteps": 24,
+  "databasePytestPassed": 276,
+  "packageChecks": 55,
+  "packageOutcome": "PASS",
+  "failedTests": 0,
+  "skippedTests": 0,
+  "unfixedHighCriticalFindings": 236,
+  "protectedOutputsAndUnrelatedUIChanges": "preserved"
+}

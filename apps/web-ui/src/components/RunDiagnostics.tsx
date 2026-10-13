@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
-import {formatScheduledTime, runTimeZone, type RunSchedule} from '../run-schedules';
+import {useDisplayTimeZone} from '../display-time-zone';
+import {formatScheduledTime, type RunSchedule} from '../run-schedules';
 import {operatorMessage,operatorStage,operatorStatus,reportBrowserName} from '../operator-language';
 
 function elapsed(seconds: number | null | undefined) {
@@ -8,7 +9,7 @@ function elapsed(seconds: number | null | undefined) {
 }
 
 export function RunDiagnostics({schedule}: {schedule: RunSchedule}) {
-  const timeZone = runTimeZone(schedule.timeZone);
+  const {timeZone} = useDisplayTimeZone();
   const [copyState, setCopyState] = useState('');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const detailsDialog = useRef<HTMLDialogElement>(null);

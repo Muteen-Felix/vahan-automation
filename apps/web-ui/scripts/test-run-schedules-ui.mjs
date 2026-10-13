@@ -5,7 +5,7 @@ const browser = await chromium.launch({headless:true});
 try {
   const page = await browser.newPage({viewport:{width:1440,height:1000},timezoneId:'America/New_York'});
   const errors = []; page.on('pageerror',error=>errors.push(error.message));
-  let schedules = [], posted, imageRequests = 0, uiSocket;
+  let schedules = [], posted, imageRequests = 0, uiSocket, timeZoneUpdates = [];
   const queueWrites = [];
   const resumeBodies = [];
   let annualReads = 0,deleteFails=false,deleteCalls=0;
@@ -51,6 +51,9 @@ try {
         nextRunAt:posted.startsAt,enabled:true,status:'WAITING',sessionId:null,lastSessionId:null,
         message:'Waiting for the scheduled start time.',total:0,done:0,withData:0,noData:0,failed:0};
       schedules.push(saved);body=saved;
+    } else if(path==='/api/run-schedules/time-zone' && request.method()==='POST') {
+      const update=request.postDataJSON();timeZoneUpdates.push(update);
+      schedules=schedules.map(schedule=>({...schedule,timeZone:update.timeZone}));body=schedules;
     } else if(path==='/api/run-schedules') body=schedules;
     else if(path.startsWith('/api/batch-queue/')) {
       if(request.method()!=='GET') queueWrites.push(path);
@@ -101,17 +104,23 @@ try {
   const future=new Date(Date.now()+86400_000);
   await page.getByLabel('Start date',{exact:true}).fill(future.toISOString().slice(0,10));
   await page.getByLabel('Start time',{exact:true}).fill('09:30');
-  await page.getByLabel('Repeat',{exact:true}).selectOption('daily');
-  await page.getByLabel('Repeat',{exact:true}).selectOption('monthly');
-  await page.getByText(/Runs on day \d+ each month; shorter months use their last day\./).waitFor();
+  const repeatSelect=page.getByLabel('Repeat',{exact:true});
+  assert.deepEqual(await repeatSelect.locator('option').evaluateAll(options=>options.map(option=>option.value)),['once','monthly']);
+  await repeatSelect.selectOption('once');
+  await page.getByText(/Runs once on the selected date and time, using the saved filters and selected time zone\. It will not repeat or create a filter or schedule for a following year\./).waitFor();
+  await repeatSelect.selectOption('monthly');
+  await page.getByText(/Uses the saved filters above to collect reports for year 2024\. Runs on day \d+ of each month at the selected time and time zone\./).waitFor();
+  await page.getByText(/After the final run for report year 2024, this schedule ends\. If it is still enabled, the system creates a separate copy of the saved filters with the same search settings and only the report year changed to 2025\. A new monthly schedule then uses the same day, time, and time zone\. This repeats automatically each year\. Disable this schedule to stop the rollover\./).waitFor();
+  assert.equal(await page.locator('.schedule-help').evaluate(element=>getComputedStyle(element).display),'block');
   await page.getByRole('button',{name:'Add schedule',exact:true}).click();
   await page.getByText(/Schedule saved for/).waitFor();
   assert.equal(Object.hasOwn(posted,'workerCount'),false);assert.equal(posted.year,2024);assert.equal(posted.repeat,'monthly');
   assert.equal(posted.profileId,profile.id);assert.ok(posted.startsAt.endsWith('T09:30:00+07:00'));
   const card=page.locator('.run-schedule-card').first();
   const monthlyDay=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Ho_Chi_Minh',day:'numeric'}).format(new Date(posted.startsAt));
-  await card.getByText(`Day ${monthlyDay} · month-end if needed`,{exact:true}).waitFor();
+  await card.getByText(`Day ${monthlyDay} · month-end if needed · new filter each year`,{exact:true}).waitFor();
   assert.equal(await page.getByRole('link',{name:/Create Report/}).count(),0);
+  assert.equal(await page.getByLabel('Schedule time zone').count(),0,'The time zone control lives in Account settings');
   assert.equal(await card.locator('.run-schedule-actions > *').count(),3);
   const bounds=()=>page.locator('.automatic-run-settings').evaluate(root=>{
     const selectors=['.automatic-run-form','.automatic-run-form-footer','.schedule-help-slot','.schedule-feedback',
@@ -143,12 +152,21 @@ try {
   assert.ok(await card.getByLabel('Estimated finish').locator('time').getAttribute('datetime'));
   assert.match(await card.getByLabel('Estimated finish').innerText(), /Vietnam time \(UTC\+07:00\)/);
   schedules[0]={...schedules[0],timeZone:'Asia/Kolkata'};
+  await card.getByLabel('Estimated finish').getByText('Vietnam time (UTC+07:00)',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Account',exact:true}).click();
+  const accountDialog=page.getByRole('dialog',{name:'Account settings'});
+  await accountDialog.getByLabel('Display time zone',{exact:true}).selectOption('Asia/Kolkata');
+  await accountDialog.getByRole('status').getByText(/Times across the interface now use India time/).waitFor();
+  assert.deepEqual(timeZoneUpdates,[{timeZone:'Asia/Kolkata'}]);
   await card.getByLabel('Estimated finish').getByText('India time (UTC+05:30)',{exact:true}).waitFor();
   const finish=await card.getByLabel('Estimated finish').locator('time').getAttribute('datetime');
   const indiaFinish=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',
     year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(finish));
   assert.equal(await card.getByLabel('Estimated finish').locator('time').innerText(),indiaFinish);
-  schedules[0]={...schedules[0],timeZone:'Asia/Ho_Chi_Minh'};
+  await accountDialog.getByLabel('Display time zone',{exact:true}).selectOption('Asia/Ho_Chi_Minh');
+  await accountDialog.getByRole('status').getByText(/Times across the interface now use Vietnam time/).waitFor();
+  assert.deepEqual(timeZoneUpdates,[{timeZone:'Asia/Kolkata'},{timeZone:'Asia/Ho_Chi_Minh'}]);
+  await page.getByRole('button',{name:'Close account settings'}).click();
   const diagnosticsPanel=page.locator('.run-diagnostics').first();
   schedules[0]={...schedules[0],status:'PREPARING',message:'A worker is still busy.',
     operation:{stage:'Docker worker pool',detail:'A worker is still busy.',startedAt:new Date(Date.now()-360_000).toISOString(),

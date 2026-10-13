@@ -4,6 +4,8 @@ import type { ExportedReportJob, ExportedReportSession } from "../contracts";
 import { AuthenticatedDownload } from "./AuthenticatedDownload";
 import { api } from "../services/api-client";
 import { operatorMessage } from "../operator-language";
+import {useDisplayTimeZone} from '../display-time-zone';
+import {formatUiDateTime, timeZoneDateKey, type RunTimeZone} from '../run-schedules';
 
 function formatSize(bytes: number): string {
   if (!bytes) return "0 B";
@@ -12,26 +14,12 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+function formatDate(iso: string, timeZone: RunTimeZone): string {
+  return formatUiDateTime(iso, timeZone, {second: '2-digit'});
 }
 
-function reportDateKey(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function reportDateKey(iso: string, timeZone: RunTimeZone): string {
+  return timeZoneDateKey(iso, timeZone);
 }
 
 function formatDay(date: string): string {
@@ -61,6 +49,11 @@ function parseDateDraft(value: string): string {
 function monthFromDateKey(date: string): Date {
   const [year, month] = date.split("-").map(Number);
   return new Date(year, month - 1, 1, 12);
+}
+
+function formatCalendarMonth(date: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {timeZone: "UTC", month: "long", year: "numeric"})
+    .format(new Date(Date.UTC(date.getFullYear(), date.getMonth(), 15, 12)));
 }
 
 function statusLabel(status: ExportedReportJob["status"]): string {
@@ -125,6 +118,7 @@ function sessionStatusClass(session: ExportedReportSession): string {
 }
 
 function SessionDetail({ session, onClose }: { session: ExportedReportSession; onClose: () => void }) {
+  const {timeZone} = useDisplayTimeZone();
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -160,7 +154,7 @@ function SessionDetail({ session, onClose }: { session: ExportedReportSession; o
           <span><strong>{session.activeCount}</strong> running</span>
           <span><strong>{session.fileCount}</strong> files · {formatSize(session.totalFileSize)}</span>
         </div>
-        <p className="report-detail-time">Started: {formatDate(session.startedAt)} · Updated: {formatDate(session.updatedAt)}</p>
+        <p className="report-detail-time">Started: {formatDate(session.startedAt, timeZone)} · Updated: {formatDate(session.updatedAt, timeZone)}</p>
 
         <div className="report-detail-list" aria-label="Reports in this session">
           {session.jobs.map((job, index) => (
@@ -178,7 +172,7 @@ function SessionDetail({ session, onClose }: { session: ExportedReportSession; o
               <dl className="report-case-info">
                 <div><dt>State</dt><dd>{job.state || "—"}</dd></div>
                 <div><dt>RTO</dt><dd>{job.rto || "—"}</dd></div>
-                <div><dt>Time</dt><dd>{formatDate(job.createdAt)}</dd></div>
+                <div><dt>Time</dt><dd>{formatDate(job.createdAt, timeZone)}</dd></div>
                 <div><dt>File</dt><dd>{job.fileName || (job.status === "COMPLETED" ? "Output file missing" : "No file")}</dd></div>
                 <div><dt>Size</dt><dd>{job.downloadUrl ? formatSize(job.fileSize) : "—"}</dd></div>
                 <div><dt>Path</dt><dd>{job.filePath || "—"}</dd></div>
@@ -216,6 +210,7 @@ function SessionDetail({ session, onClose }: { session: ExportedReportSession; o
 }
 
 export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: number }) {
+  const {timeZone} = useDisplayTimeZone();
   const [sessions, setSessions] = useState<ExportedReportSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<ExportedReportSession | null>(null);
   const [loading, setLoading] = useState(false);
@@ -224,8 +219,7 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
   const [changingSessionId, setChangingSessionId] = useState<string | null>(null);
   const [dateInput, setDateInput] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(() => {
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1, 12);
+    return monthFromDateKey(timeZoneDateKey(new Date(), timeZone));
   });
   const [calendarOpen, setCalendarOpen] = useState(false);
   const calendarInitialized = useRef(false);
@@ -237,9 +231,9 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
   const dateInputIncomplete = dateInputHasValue && dateInput.length < 10;
   const dateInputInvalid = dateInputHasValue && !selectedDate;
   const filteredSessions = selectedDate
-    ? sessions.filter((session) => reportDateKey(session.startedAt) === selectedDate)
+    ? sessions.filter((session) => reportDateKey(session.startedAt, timeZone) === selectedDate)
     : dateInputHasValue && !dateInputIncomplete ? [] : sessions;
-  const sessionDates = new Set(sessions.map((session) => reportDateKey(session.startedAt)).filter(Boolean));
+  const sessionDates = new Set(sessions.map((session) => reportDateKey(session.startedAt, timeZone)).filter(Boolean));
   const firstOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1, 12);
   const firstWeekdayOffset = (firstOfMonth.getDay() + 6) % 7;
   const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
@@ -254,13 +248,17 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
   });
 
   useEffect(() => {
+    setCalendarMonth(monthFromDateKey(timeZoneDateKey(new Date(), timeZone)));
+  }, [timeZone]);
+
+  useEffect(() => {
     if (calendarInitialized.current || sessions.length === 0) return;
-    const dates = sessions.map((session) => reportDateKey(session.startedAt)).filter(Boolean).sort();
+    const dates = sessions.map((session) => reportDateKey(session.startedAt, timeZone)).filter(Boolean).sort();
     const latestDate = dates[dates.length - 1];
     if (!latestDate) return;
     setCalendarMonth(monthFromDateKey(latestDate));
     calendarInitialized.current = true;
-  }, [sessions]);
+  }, [sessions, timeZone]);
 
   useEffect(() => {
     if (!calendarOpen) return;
@@ -403,7 +401,7 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
             {calendarOpen && (
               <section className="exported-report-calendar" id="exported-report-calendar" aria-label="Report session calendar">
                 <div className="exported-report-calendar-heading">
-                  <h3>{calendarMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</h3>
+                  <h3>{formatCalendarMonth(calendarMonth)}</h3>
                   <div className="exported-report-calendar-nav">
                     <button type="button" aria-label="Previous month" title="Previous month" onClick={() => moveCalendarMonth(-1)}>‹</button>
                     <button type="button" aria-label="Next month" title="Next month" onClick={() => moveCalendarMonth(1)}>›</button>
@@ -414,8 +412,7 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
                   {calendarCells.map((cell, index) => {
                     if (!cell) return <span className="exported-report-calendar-blank" key={`blank-${index}`} />;
                     const isSelected = selectedDate === cell.date;
-                    const today = new Date();
-                    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                    const todayKey = timeZoneDateKey(new Date(), timeZone);
                     const classes = ["exported-calendar-day", cell.hasReports ? "has-reports" : "", isSelected ? "selected" : "", todayKey === cell.date ? "today" : ""].filter(Boolean).join(" ");
                     return (
                       <button
@@ -461,7 +458,7 @@ export function ExportedReportsList({ refreshTrigger }: { refreshTrigger?: numbe
                 </div>
                 <span className="report-session-case-count">{session.jobCount} cases</span>
               </div>
-              <p className="report-session-dates">Started {formatDate(session.startedAt)} · Updated {formatDate(session.updatedAt)}</p>
+              <p className="report-session-dates">Started {formatDate(session.startedAt, timeZone)} · Updated {formatDate(session.updatedAt, timeZone)}</p>
               <div className="report-session-metrics">
                 <span><strong>{session.completedCount}</strong><small>With data</small></span>
                 <span><strong>{session.noDataCount}</strong><small>No data</small></span>

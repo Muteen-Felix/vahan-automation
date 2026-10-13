@@ -1,0 +1,3 @@
+Chromium POST/navigation recovery passed: 1 Apply, 3 destroyed contexts, 1 confirmed saved result.
+Navigation checks passed: repeated context loss, shared timeout, cancellation, parser errors, loading timeout and authentication.
+

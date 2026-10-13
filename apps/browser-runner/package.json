@@ -15,7 +15,7 @@
     "test:image-pipe": "node test-image-pipe.mjs",
     "test:profile-options": "node test-profile-options.mjs",
     "test:main-report-save": "node test-main-report-save.mjs",
-    "test:ocr-rate-limit": "node test-ocr-rate-limit.mjs"
+    "test:ocr-start": "node test-ocr-start.mjs"
   },
   "dependencies": {
     "playwright": "1.63.0",

@@ -62,7 +62,9 @@ try {
  await layout();
  assert.equal(await page.getByLabel('Start time',{exact:true}).inputValue(),'11:51','Showing an error preserves the schedule draft');
  assert.equal(await page.locator('.website-alert-table tbody tr').count(),1,'the same SQL error across workers/retries appears once');
- assert.match(await page.locator('.website-alert-table tbody').innerText(),/2 browsers/);
+ assert.match(await page.locator('.website-alert-table tbody').innerText(),/playwright-1, playwright-2/);
+ assert.match(await page.getByRole('alert').innerText(),/listed browser stays blocked until it reconnects and passes a valid UI Health check/);
+ assert.match(await page.getByRole('alert').innerText(),/rerun preflight; every selected browser must pass before work resumes/);
  assert.equal(await page.locator('.website-alert-table tbody').getByText(report.title,{exact:true}).isVisible(),false,'Raw website errors are kept inside support details');
  await page.getByRole('button',{name:'Hide form',exact:true}).click();
  await page.locator('.website-alert-table').getByRole('button',{name:'Copy for support',exact:true}).click();await page.getByRole('button',{name:'Copied',exact:true}).waitFor();

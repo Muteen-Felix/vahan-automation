@@ -195,6 +195,39 @@ async def main():
 asyncio.run(main())'''
             run("exec", "-T", "api", "python", "-c", runtime_check, timeout=60)
 
+            # Exercise persisted UI Health with the built production API and its
+            # restricted role, rather than allowing transport loss to hide drift.
+            contract_check = r'''import asyncio
+from app.db import engine
+from app.repositories import ui_contract
+from app.repositories.postgres import now
+from app.services import services
+async def main():
+    runner='security-contract-probe'
+    other='security-contract-other'
+    await services.runners.register(runner_id=runner,name='Probe',socket_id=runner)
+    controls=[{**seed,'found':True,'count':1,'name':seed['field'],'label':seed['field'],
+        'matchedBy':'selector','inputType':'text' if seed['tag']=='input' else None,
+        'optionsHash':'probe'} for seed in ui_contract.SEEDS]
+    good={'status':'PASS','observedControls':controls,'checkedAt':now().isoformat()}
+    broken={**good,'observedControls':[{**item,'found':False} if item['field']=='makers' else item for item in controls]}
+    await ui_contract.evaluate(broken,runner)
+    await services.runners.remove_by_socket(runner)
+    await engine.dispose()
+    disconnected=await ui_contract.current()
+    assert disconnected['blocked'] and disconnected['lastError']
+    await ui_contract.evaluate(good,other)
+    assert (await ui_contract.current())['blocked']
+    await services.runners.register(runner_id=runner,name='Probe',socket_id=runner)
+    assert (await ui_contract.current())['blocked']
+    await ui_contract.evaluate(good,runner)
+    assert not (await ui_contract.current())['blocked']
+    await services.runners.remove_by_socket(runner)
+    await engine.dispose()
+    print('Built API UI Health: disconnect and reconnect retain drift; only same-runner successful evidence clears it.')
+asyncio.run(main())'''
+            run("exec", "-T", "api", "python", "-c", contract_check, timeout=60)
+
             print("Container security checks passed: production startup/readiness, docs, HTTP and Socket.IO origin allowlists, headers/CSP, Nginx login throttling and restricted runtime DB role.")
         finally:
             run("down", "--volumes", "--remove-orphans", "--timeout", "15", timeout=120)

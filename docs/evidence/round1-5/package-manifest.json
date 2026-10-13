@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "sourceCommit": "87bb34d2a3f86d2fbc7eb6783b47b219e690acbe",
+  "imageNamespace": "vahan-audit",
+  "imageTag": "working-fix",
+  "files": {
+    "vahan-audit-source.zip": "82f924555d6ca656916d1a6532b9e2c09762b38829e3a5ac4341dac4846d0ee6",
+    "vahan-audit-images.tar": "2077dd8d13913d354982df7bc15fde71c0817755852c482aebb882fd0137de83"
+  },
+  "imageIds": {
+    "vahan-audit/postgres:working-fix": "sha256:0bb9310994fe40ac63c30887a5c561e3beeae5097da2da3f9238973df3fe3f95",
+    "vahan-audit/api:working-fix": "sha256:c60aafa5854b6965ac1b4efadbec63314fb603ca035d8f5e1ceaa6600407e92e",
+    "vahan-audit/web:working-fix": "sha256:6d380e069566a5cb533acbe3c40592012cd1ad3fa3e5d37d3898dfceab11841e",
+    "vahan-audit/runner:working-fix": "sha256:184365ddc82d7213f22de6831575c37fff95b4aab7e12ee14b508b993adc6d05"
+  },
+  "scope": "Uncommitted candidate: base commit plus exactly the recorded fixes; unrelated dirty UI and outputs excluded.",
+  "uncommittedOverrides": {
+    "apps/api-server/app/repositories/ui_contract.py": "ebd2daa7fdb4a5873e5fe4eb3d767daee1a257f4e9010758e22d9d0394509843",
+    "apps/api-server/verification/test_ui_contract.py": "9ddfac7beb898332312ce13300e972453110d98ae314cc70877a9237a70757d4",
+    "scripts/test_container_security.py": "ca1a7d4525e956ad14997215d92ceb4909f8c60f7e8e3b988cb6196a63ddd05b"
+  }
+}

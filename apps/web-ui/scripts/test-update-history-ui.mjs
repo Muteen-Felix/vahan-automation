@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {chromium} from '../../browser-runner/node_modules/playwright/index.mjs';
 const browser = await chromium.launch({headless:true, channel:process.env.PLAYWRIGHT_CHANNEL || 'chrome'});
 try {
   const page = await browser.newPage({viewport:{width:1440,height:1000}});
   const errors = []; let calls=0, newest='Electric two-wheelers', fail=false;
-  const artifacts = new URL('../../../outputs/', import.meta.url);
+  const artifacts = process.env.UI_TEST_ARTIFACT_DIR
+    ? pathToFileURL(`${process.env.UI_TEST_ARTIFACT_DIR.replaceAll('\\', '/').replace(/\/$/, '')}/`)
+    : new URL('../../../outputs/', import.meta.url);
   await mkdir(artifacts, {recursive:true});
   const runs = Array.from({length:51}, (_,index) => ({
     sessionId:`run-${index+1}`,
@@ -111,18 +113,8 @@ try {
   await page.reload();
   await panel.locator('tbody th').first().filter({hasText:'Electric two-wheelers'}).waitFor();
   assert.equal(await nav.getByRole('link',{name:'Run History',exact:true}).getAttribute('aria-current'),'page');
-  assert.equal(await page.getByRole('checkbox',{name:'Show sample data'}).isChecked(),false,'Samples are off by default');
-  assert.equal(await page.locator('[data-source=sample]').count(),0);
-  await page.getByRole('checkbox',{name:'Show sample data'}).check();
-  await page.getByRole('status').filter({hasText:'demonstration only.'}).waitFor();
-  assert.equal(await page.locator('[data-source=sample]').count(),2);
-  assert.equal(await page.locator('[data-source=actual]').count(),0,'Sample and actual rows are not mixed');
-  assert.match(await page.locator('.run-history-table').innerText(),/\[Sample\]/);
-  await page.reload();
-  await page.getByRole('checkbox',{name:'Show sample data'}).waitFor();
-  assert.equal(await page.getByRole('checkbox',{name:'Show sample data'}).isChecked(),false,'Samples are not persisted across reloads');
-  await page.locator('[data-source=actual]').first().waitFor();
-  assert.equal(await page.locator('[data-source=sample]').count(),0);
+  assert.equal(await page.getByRole('checkbox',{name:'Show sample data'}).count(),0,'Run History has no sample-data control');
+  assert.equal(await page.locator('.run-history-table [data-source]').count(),0,'Rows come directly from the history API');
   assert.ok(calls>callsBeforeReload,'Reload fetches run history from the API');
   await page.goto(origin+'#update-history');
   await page.waitForURL('**/#run-history');

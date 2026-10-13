@@ -1,0 +1,2 @@
+UI Health: hidden when healthy; error-only reports, grouped developer copy, reload, recovery and mobile work without schedule/history requests.
+

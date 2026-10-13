@@ -21,6 +21,10 @@ class PoolError(ValueError):
     pass
 
 
+class CapacityLimitReached(PoolError):
+    """A healthy idle runner cannot start work because the global cap is full."""
+
+
 async def initialize_pool(reset_phase=False):
     async with engine.begin() as connection:
         saved = await connection.scalar(select(db.user_state.c.value).where(

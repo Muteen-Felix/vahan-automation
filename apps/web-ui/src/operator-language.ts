@@ -55,10 +55,6 @@ export function operatorMessage(value: string | null | undefined): string {
       } else message = '';
     } catch { message = ''; }
   }
-  if (/OCR_RATE_LIMIT/.test(message)) {
-    const wait = message.match(/Try again in about (.+?)\./i)?.[1];
-    return `Automatic CAPTCHA reading reached the system limit of 20 starts within 10 minutes. This report was stopped.${wait ? ` Try again in ${wait}.` : ' Try again after the limit window clears.'}`;
-  }
   if (/UI_HEALTH_BLOCKED|UI_PREFLIGHT_REQUIRED|UI_CONTRACT_MISMATCH|UI_DRIFT|successful UI health check/i.test(message)) {
     return 'The VAHAN website check needs attention. Open Website check in Settings and copy the issue for support. Try again after it is fixed.';
   }

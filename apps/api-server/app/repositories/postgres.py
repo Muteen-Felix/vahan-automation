@@ -97,14 +97,14 @@ class PostgresJobRepository:
 
     async def assign(self, job):
         async with engine.begin() as connection:
-            from app.worker_pool import assignment_allowed, capacity_available
+            from app.worker_pool import CapacityLimitReached, assignment_allowed, capacity_available
             if not await assignment_allowed(connection, job.runner_id):
                 raise ValueError('This worker is outside the active pool or work is paused.')
             row = (await connection.execute(select(db.runners).where(db.runners.c.id == job.runner_id).with_for_update())).mappings().first()
             if not row or not row["connected"] or row["current_job_id"]:
                 return None
             if not await capacity_available(connection, [job.runner_id]):
-                return None
+                raise CapacityLimitReached('PARALLEL_LIMIT_REACHED: All parallel execution slots are in use. Wait for an active job to finish.')
             reserved = await connection.scalar(select(db.runner_planning_leases.c.runner_id).where(
                 db.runner_planning_leases.c.runner_id == job.runner_id,
                 db.runner_planning_leases.c.expires_at > now()))

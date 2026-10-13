@@ -25,8 +25,8 @@ class OptionsInput(StrictModel):
     @field_validator('year')
     @classmethod
     def valid_year(cls, value):
-        if value > datetime.now().year:
-            raise ValueError('Choose the current calendar year or an earlier year.')
+        if value > datetime.now().year + 1:
+            raise ValueError('Choose the current calendar year or the following year.')
         return value
 
     @field_validator('context')

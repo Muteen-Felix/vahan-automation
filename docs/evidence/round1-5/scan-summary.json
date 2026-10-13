@@ -1,0 +1,26 @@
+{
+  "policy": "Fail HIGH/CRITICAL with a vendor fix; retain all unfixed findings in full reports.",
+  "images": {
+    "postgres": {
+      "high": 65,
+      "critical": 3,
+      "fixableHighCritical": 0
+    },
+    "api": {
+      "high": 55,
+      "critical": 2,
+      "fixableHighCritical": 0
+    },
+    "web": {
+      "high": 0,
+      "critical": 0,
+      "fixableHighCritical": 0
+    },
+    "runner": {
+      "high": 107,
+      "critical": 4,
+      "fixableHighCritical": 0
+    }
+  },
+  "errors": []
+}

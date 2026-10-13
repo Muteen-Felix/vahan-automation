@@ -1,0 +1,3 @@
+
+ vahan-review-2d456f37b8d2-restore-postgres-1 Copying C:\Users\huyvv12\AppData\Local\Temp\vahan-review-install-tcqxd5hv\backups\20261012T141855419726Z\database.dump to vahan-review-2d456f37b8d2-restore-postgres-1:/tmp/restore.dump
+ vahan-review-2d456f37b8d2-restore-postgres-1 Copied C:\Users\huyvv12\AppData\Local\Temp\vahan-review-install-tcqxd5hv\backups\20261012T141855419726Z\database.dump to vahan-review-2d456f37b8d2-restore-postgres-1:/tmp/restore.dump

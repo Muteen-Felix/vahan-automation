@@ -134,11 +134,11 @@ class WorkerLifecycleTest(unittest.IsolatedAsyncioTestCase):
         await apply_pool(3)
         await queue.start(session, self.owner, [QueueTaskInput(name=f'Lifecycle office {i}', filters={
             'states': ['Fixture State'], 'rtos': [f'Lifecycle office {i}'], 'fromYear': '2024', 'toYear': '2024'})
-            for i in range(9)], 3, automatic_workers=True)
+            for i in range(9)], 3)
         await ui_contract.bind_gate(session, gate)
         first = await asyncio.gather(*(self.claim(worker, session) for worker in self.workers))
         self.assertEqual(len({item['jobId'] for item in first}), 3)
-        self.assertTrue(all(item['job']['jobId'] == item['jobId'] for item in first))
+        self.assertTrue(all(item['job'].get('jobId', item['job'].get('id')) == item['jobId'] for item in first))
         command = await self.no_data(first[0], self.workers[0])
         self.process.kill()
         await self.process.wait()

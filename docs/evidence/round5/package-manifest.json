@@ -1,0 +1,17 @@
+{
+  "format": 1,
+  "sourceCommit": "e40a402987426666a41ce1201ee25ac0ff98b02e",
+  "imageNamespace": "vahan-review",
+  "imageTag": "e40a40298742",
+  "files": {
+    "vahan-e40a40298742-source.zip": "da97ec4eb424a42881a37f4628b2437dcbb89ea26507b7d90422bf1732454975",
+    "vahan-e40a40298742-images.tar": "f002ea2148605bd1b1ac44c9f5ca9c1391480e275a22bf639f367de9e9b8306e"
+  },
+  "imageIds": {
+    "vahan-review/postgres:e40a40298742": "sha256:176f80daa06c38ff7d5643b3f211cb2b69c662575adee7008955b2b1468f1ff0",
+    "vahan-review/api:e40a40298742": "sha256:e430cf375be43431829a7d2df200cda93c2a5d0984fe88cb8743074881f5a3b0",
+    "vahan-review/web:e40a40298742": "sha256:fa3a5c369fb0e2910414b82cb0792890b4b3e1ff67eaf62e3a0cfe05d614f667",
+    "vahan-review/runner:e40a40298742": "sha256:2ff6c63dcb758b9b4ad2fc07496e401e3c51f450f1bd2cd0632fe593d29d2a5b"
+  },
+  "scope": "Committed source only; outputs, secrets, local CA, backups and Git metadata are excluded."
+}

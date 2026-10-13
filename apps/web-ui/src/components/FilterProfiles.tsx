@@ -100,7 +100,7 @@ export function FilterProfiles({profiles,runners,busy,knownPlan=null,onSaved,onS
   const [id,setId]=useState(''),[name,setName]=useState(''),[revision,setRevision]=useState<number>();
   const [definition,setDefinition]=useState<ProfileDefinition>(()=>defaultProfile());
   const year=definition.report?.year??currentReportYear();
-  const years=Array.from({length:currentReportYear()-MIN_REPORT_YEAR+1},(_,index)=>currentReportYear()-index);
+  const years=Array.from({length:currentReportYear()-MIN_REPORT_YEAR+2},(_,index)=>currentReportYear()+1-index);
   function changeYear(value:number){setDefinition(current=>({...current,report:{year:value,period:'CALENDAR YEAR',yAxis:'Maker',xAxis:'Month Wise'}}));setPreview(null);setMessage('');}
   const [options,setOptions]=useState<ProfileOptions>(()=>cachedFilterOptions(year,parentContext(definition),knownPlan));
   const [runnerId,setRunnerId]=useState('');

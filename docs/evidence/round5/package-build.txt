@@ -1,0 +1,267 @@
+Created C:\Users\huyvv12\AppData\Local\Temp\vahan-package-build-mhr4ierp\.docker.env; credentials remain in this ignored file.
+Added a separate database runtime credential; existing keys were preserved.
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+ Image vahan-review/api:e40a40298742 Building 
+ Image vahan-review/runner:e40a40298742 Building 
+ Image vahan-review/web:e40a40298742 Building 
+ Image vahan-review/postgres:e40a40298742 Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.27kB done
+#1 DONE 0.0s
+
+#2 [runner internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.74kB 0.0s done
+#2 DONE 0.1s
+
+#3 [web internal] load build definition from Dockerfile
+#3 transferring dockerfile: 661B 0.0s done
+#3 DONE 0.1s
+
+#4 [postgres internal] load build definition from postgres.Dockerfile
+#4 transferring dockerfile: 660B done
+#4 DONE 0.1s
+
+#5 [api internal] load build definition from Dockerfile
+#5 transferring dockerfile: 943B done
+#5 DONE 0.1s
+
+#6 [api] resolve image config for docker-image://docker.io/docker/buildkit-syft-scanner:stable-1
+#6 DONE 1.0s
+
+#7 [api internal] load metadata for docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#7 DONE 0.0s
+
+#8 [runner internal] load metadata for docker.io/library/node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+#8 DONE 0.1s
+
+#9 [web internal] load metadata for docker.io/library/nginx:1.30.5-alpine@sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94
+#9 DONE 0.1s
+
+#10 [postgres internal] load metadata for docker.io/library/golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61
+#10 DONE 0.1s
+
+#11 [postgres internal] load metadata for docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
+#11 DONE 0.1s
+
+#12 [web internal] load .dockerignore
+#12 transferring context: 181B done
+#12 DONE 0.0s
+
+#13 [web internal] load build context
+#13 DONE 0.0s
+
+#14 [runner internal] load build context
+#14 DONE 0.0s
+
+#15 [api internal] load build context
+#15 DONE 0.0s
+
+#16 [api] docker-image://docker.io/docker/buildkit-syft-scanner:stable-1
+#16 resolve docker.io/docker/buildkit-syft-scanner:stable-1
+#16 ...
+
+#17 [web build 1/6] FROM docker.io/library/node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+#17 resolve docker.io/library/node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392 0.1s done
+#17 DONE 0.1s
+
+#18 [postgres stage-1 1/3] FROM docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
+#18 resolve docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826 0.0s done
+#18 DONE 0.1s
+
+#19 [web stage-1 1/5] FROM docker.io/library/nginx:1.30.5-alpine@sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94
+#19 resolve docker.io/library/nginx:1.30.5-alpine@sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94 0.1s done
+#19 DONE 0.1s
+
+#20 [postgres gosu-build 1/2] FROM docker.io/library/golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61
+#20 resolve docker.io/library/golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 0.0s done
+#20 DONE 0.1s
+
+#21 [api stage-0  1/11] FROM docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#21 resolve docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258 0.0s done
+#21 DONE 0.0s
+
+#22 [postgres stage-1 2/3] COPY --from=gosu-build /go/bin/gosu /usr/local/bin/gosu
+#22 CACHED
+
+#23 [postgres gosu-build 2/2] RUN CGO_ENABLED=0 go install github.com/tianon/gosu@1.19
+#23 CACHED
+
+#24 [postgres stage-1 3/3] RUN test "$(gosu nobody id -u)" = "65534"     && gosu --version
+#24 CACHED
+
+#14 [runner internal] load build context
+#14 transferring context: 183.18kB 0.1s done
+#14 DONE 0.1s
+
+#13 [web internal] load build context
+#13 transferring context: 570.72kB 0.1s done
+#13 DONE 0.1s
+
+#25 [runner stage-0 5/9] COPY apps/browser-runner/package*.json ./
+#25 CACHED
+
+#26 [runner stage-0 3/9] RUN apt-get update     && apt-get upgrade -y     && apt-get install -y --no-install-recommends ca-certificates     && rm -rf /var/lib/apt/lists/*     && /usr/sbin/update-ca-certificates
+#26 CACHED
+
+#27 [runner stage-0 4/9] WORKDIR /app
+#27 CACHED
+
+#28 [runner stage-0 6/9] RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
+#28 CACHED
+
+#29 [runner stage-0 7/9] RUN npx playwright install --with-deps chromium     && apt-get update     && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng libnss3-tools     && rm -rf /var/lib/apt/lists/*     && for certificate in /usr/local/share/ca-certificates/vahan/*.crt; do          [ -f "$certificate" ] || continue;          if [ ! -d /home/node/.pki/nssdb ]; then            mkdir -p /home/node/.pki/nssdb;            certutil -N --empty-password -d sql:/home/node/.pki/nssdb;          fi;          certutil -A -d sql:/home/node/.pki/nssdb -n "$(basename "$certificate")" -t "C,," -i "$certificate";        done     && if [ -d /home/node/.pki ]; then chown -R node:node /home/node/.pki; fi     && chown -R node:node /ms-playwright /app
+#29 CACHED
+
+#30 [runner stage-0 2/9] COPY docker/certs/ /usr/local/share/ca-certificates/vahan/
+#30 CACHED
+
+#31 [runner stage-0 8/9] COPY --chown=node:node apps/browser-runner/ ./
+#31 CACHED
+
+#32 [runner stage-0 9/9] RUN rm -rf /usr/local/lib/node_modules/npm /opt/yarn*     && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg
+#32 CACHED
+
+#15 [api internal] load build context
+#15 transferring context: 697.85kB 0.1s done
+#15 DONE 0.1s
+
+#33 [web stage-1 3/5] COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+#33 CACHED
+
+#34 [web build 5/6] COPY apps/web-ui/ ./
+#34 CACHED
+
+#35 [web build 6/6] RUN npm run build
+#35 CACHED
+
+#36 [web stage-1 2/5] RUN apk upgrade --no-cache
+#36 CACHED
+
+#37 [web stage-1 4/5] COPY docker/security-headers.conf /etc/nginx/snippets/security-headers.conf
+#37 CACHED
+
+#38 [web build 3/6] COPY apps/web-ui/package*.json ./
+#38 CACHED
+
+#39 [web build 4/6] RUN npm ci
+#39 CACHED
+
+#40 [web build 2/6] WORKDIR /app
+#40 CACHED
+
+#41 [web stage-1 5/5] COPY --from=build /app/dist /usr/share/nginx/html
+#41 CACHED
+
+#42 [api stage-0 10/11] COPY apps/api-server/migrations ./migrations
+#42 CACHED
+
+#43 [api stage-0  3/11] RUN /usr/sbin/update-ca-certificates
+#43 CACHED
+
+#44 [api stage-0  7/11] RUN --mount=type=cache,target=/root/.cache/pip pip install --require-hashes -r requirements.lock     && useradd --create-home --uid 10001 vahan
+#44 CACHED
+
+#45 [api stage-0  5/11] WORKDIR /app
+#45 CACHED
+
+#46 [api stage-0  8/11] COPY apps/api-server/app ./app
+#46 CACHED
+
+#47 [api stage-0  6/11] COPY apps/api-server/requirements.lock ./requirements.lock
+#47 CACHED
+
+#48 [api stage-0  4/11] RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+#48 CACHED
+
+#49 [api stage-0  2/11] COPY docker/certs/ /usr/local/share/ca-certificates/vahan/
+#49 CACHED
+
+#50 [api stage-0  9/11] COPY apps/api-server/alembic.ini ./
+#50 CACHED
+
+#51 [api stage-0 11/11] RUN python -m pip uninstall --yes pip
+#51 CACHED
+
+#16 [api] docker-image://docker.io/docker/buildkit-syft-scanner:stable-1
+#16 resolve docker.io/docker/buildkit-syft-scanner:stable-1 0.4s done
+#16 resolve docker.io/docker/buildkit-syft-scanner:stable-1 0.4s done
+#16 DONE 0.4s
+
+#52 [web linux/amd64] generating sbom using docker.io/docker/buildkit-syft-scanner:stable-1
+#52 CACHED
+
+#53 [postgres linux/amd64] generating sbom using docker.io/docker/buildkit-syft-scanner:stable-1
+#53 CACHED
+
+#54 [runner linux/amd64] generating sbom using docker.io/docker/buildkit-syft-scanner:stable-1
+#54 CACHED
+
+#55 [api linux/amd64] generating sbom using docker.io/docker/buildkit-syft-scanner:stable-1
+#55 CACHED
+
+#56 [api] exporting to image
+#56 exporting layers done
+#56 exporting manifest sha256:8f0eb712f1847480d972608a774864481e9d8704fe6f14c4e9fcb8102f2cdbcb done
+#56 exporting config sha256:b9c00487cbf32601a5b1f7863c5aee7e692cd49f29729757cdb17e6cb363d413 done
+#56 exporting attestation manifest sha256:7b963c40e2562ec66f20a387879ad4499af170bfcd74ce1098c32968ced44d49
+#56 exporting attestation manifest sha256:7b963c40e2562ec66f20a387879ad4499af170bfcd74ce1098c32968ced44d49 0.0s done
+#56 exporting manifest list sha256:e430cf375be43431829a7d2df200cda93c2a5d0984fe88cb8743074881f5a3b0 0.0s done
+#56 naming to docker.io/vahan-review/api:e40a40298742 done
+#56 unpacking to docker.io/vahan-review/api:e40a40298742 0.0s done
+#56 DONE 0.4s
+
+#57 [runner] exporting to image
+#57 exporting layers done
+#57 exporting manifest sha256:bbb1b50a4305257fcb1ce750df082207ea4aa851244176cb1168a5ff2ca2bd93 done
+#57 exporting config sha256:4933a20416f4fcfa078aa531fbd824d19fb22324faa5a2e3fb3cd715f47ab042 done
+#57 exporting attestation manifest sha256:1e4069eca12111b3ebd154ad7e9f4f49a9ca5dacada532b59c476ff0101bde5c 0.0s done
+#57 exporting manifest list sha256:2ff6c63dcb758b9b4ad2fc07496e401e3c51f450f1bd2cd0632fe593d29d2a5b 0.0s done
+#57 naming to docker.io/vahan-review/runner:e40a40298742 done
+#57 unpacking to docker.io/vahan-review/runner:e40a40298742
+#57 unpacking to docker.io/vahan-review/runner:e40a40298742 0.0s done
+#57 DONE 0.5s
+
+#58 [web] exporting to image
+#58 exporting layers 0.0s done
+#58 exporting manifest sha256:05240ca38ac685e1117a3811ef804eabb996799259524f7f142b3b8f88af324f done
+#58 exporting config sha256:c64bf621953d7cb0676dbc26d2851475181b1973cc0dd8c406efa330485f3547 done
+#58 exporting attestation manifest sha256:ef8ea60d8aa13c9f46d319f7b8b0599002faec3dea43bbc50d8c1320fecc5097 0.0s done
+#58 exporting manifest list sha256:fa3a5c369fb0e2910414b82cb0792890b4b3e1ff67eaf62e3a0cfe05d614f667 0.0s done
+#58 naming to docker.io/vahan-review/web:e40a40298742 done
+#58 unpacking to docker.io/vahan-review/web:e40a40298742
+#58 unpacking to docker.io/vahan-review/web:e40a40298742 0.1s done
+#58 DONE 0.4s
+
+#59 [postgres] exporting to image
+#59 exporting layers 0.0s done
+#59 exporting manifest sha256:9fa9259c345352cb4dc846b35981152235f7546df6e0b5f6ca57dd73031615f4 done
+#59 exporting config sha256:be7538e30d442b3c5f191035d299db425f5e757cc54db127237a4707f82ea6b1 done
+#59 exporting attestation manifest sha256:0824d7b88dd0bfa4faed61292889296ce5ccf3c463974016237579c37f93dc52 0.1s done
+#59 exporting manifest list sha256:176f80daa06c38ff7d5643b3f211cb2b69c662575adee7008955b2b1468f1ff0 0.0s done
+#59 naming to docker.io/vahan-review/postgres:e40a40298742 done
+#59 unpacking to docker.io/vahan-review/postgres:e40a40298742 0.0s done
+#59 DONE 0.7s
+
+#60 [api] resolving provenance for metadata file
+#60 DONE 0.0s
+
+#61 [runner] resolving provenance for metadata file
+#61 DONE 0.0s
+
+#62 [web] resolving provenance for metadata file
+#62 DONE 0.0s
+
+#63 [postgres] resolving provenance for metadata file
+#63 DONE 0.0s
+ Image vahan-review/api:e40a40298742 Built 
+ Image vahan-review/postgres:e40a40298742 Built 
+ Image vahan-review/runner:e40a40298742 Built 
+ Image vahan-review/web:e40a40298742 Built 
+{
+  "sourceCommit": "e40a402987426666a41ce1201ee25ac0ff98b02e",
+  "manifest": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-round5-evidence\\diagnostics\\round5-package-reviewed\\vahan-e40a40298742-manifest.json",
+  "files": {
+    "vahan-e40a40298742-source.zip": "da97ec4eb424a42881a37f4628b2437dcbb89ea26507b7d90422bf1732454975",
+    "vahan-e40a40298742-images.tar": "f002ea2148605bd1b1ac44c9f5ca9c1391480e275a22bf639f367de9e9b8306e"
+  }
+}

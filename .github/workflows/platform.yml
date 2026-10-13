@@ -41,6 +41,9 @@ jobs:
       - name: Validate host secret setup
         run: python scripts/setup-docker.py
 
+      - name: Validate local documentation links
+        run: python scripts/check-doc-links.py
+
       - name: Install and test API
         working-directory: apps/api-server
         run: |
@@ -51,6 +54,7 @@ jobs:
           python -m unittest discover -s ../../scripts -p 'test_worker_capacity.py'
           python -m unittest discover -s ../../scripts -p 'test_container_scan.py'
           python ../../tools/ui-drift-guard/test_ui_diagnostics.py
+          python scripts/test-user-state-codec.py
 
       - name: Install runner dependencies
         working-directory: apps/browser-runner
@@ -79,7 +83,7 @@ jobs:
           npm run test:image-pipe
           npm run test:profile-options
           npm run test:main-report-save
-          npm run test:ocr-rate-limit
+          npm run test:ocr-start
 
       - name: Install dashboard dependencies
         working-directory: apps/web-ui
@@ -225,6 +229,8 @@ jobs:
         run: docker compose --env-file .docker.env config --quiet
       - name: Test production container security
         run: python scripts/test_container_security.py
+      - name: Test packaged Chromium sandbox and real Tesseract
+        run: docker run --rm --init --shm-size=1g --security-opt seccomp=./docker/seccomp_profile.json --entrypoint node vahan-security-test/runner:round4 test-container-runtime.mjs
       - name: Scan images and write full reports and CycloneDX SBOMs
         run: python scripts/scan_container_images.py --output-dir "${{ runner.temp }}/container-sbom"
       - name: Upload vulnerability reports and container SBOMs

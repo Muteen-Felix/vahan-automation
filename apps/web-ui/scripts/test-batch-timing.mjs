@@ -28,3 +28,14 @@ assert.equal(estimateBatchTiming([], 10, 2, null, 0, 45_000, null).remainingMs, 
   'Paused time must not change the forecast after restoring a session.');
 assert.equal(estimateBatchTiming(checkpoints, 1600, 1600, null, 40_000, 0, 0).remainingMs, 0);
 console.log('Aggregate throughput ETA, ten-worker pace, stalled queue and pause recovery passed.');
+
+// Startup congestion must not bias the remaining throughput after recovery.
+// The last completion was ten seconds ago; that time is already spent.
+const recovered = Array.from({length:80}, (_,i)=>({index:i, durationMs:0,
+  completedCount:i+1, activeElapsedMs:600_000+(i+1)*18_000}));
+const forecast=estimateBatchTiming(recovered,100,80,null,2_050_000,2_050_000,null);
+const mixedRate=0.65*(17/306_000)+0.35*(80/2_050_000);
+assert.ok(Math.abs(forecast.remainingMs-(20/mixedRate-10_000))<1,
+  'Late ETA follows rolling throughput while retaining full-session context.');
+assert.ok(Math.abs(forecast.remainingMs-350_000)/350_000<=0.15,
+  'Late ETA must follow recovered output, excluding startup delay and time since last result.');

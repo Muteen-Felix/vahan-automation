@@ -20,11 +20,12 @@ async def current(connection=None):
     version=await connection.scalar(select(db.ui_contract_versions.c.controls).where(db.ui_contract_versions.c.id==state.get('versionId','')))
     # Data hashes are the latest observation; version rows remain immutable.
     controls=[{**item,'optionsHash':state.get('optionHashes',{}).get(item['field'],item.get('optionsHash'))} for item in (version or SEEDS)]
-    connected_ids=set(await connection.scalars(select(db.runners.c.id).where(db.runners.c.connected.is_(True))))
-    active_errors={key:value for key,value in state.get('runnerErrors',{}).items() if key in connected_ids}
+    # Losing transport does not prove that an incompatible DOM was repaired.
+    # Only a successful observation from the same runner clears its evidence.
+    active_errors=state.get('runnerErrors',{})
     blocked=bool(active_errors) if state.get('runnerErrors') else state.get('blocked',False)
     return {**state,'versionId':state.get('versionId'),'revision':state.get('revision',0),
-        'blocked':blocked,'controls':controls,
+        'blocked':blocked,'blockedRunnerIds':sorted(active_errors),'controls':controls,
         'lastError':next(iter(active_errors.values()))['reports'][0]['title'] if active_errors else state.get('lastError') if blocked else None}
 
 async def evaluate(observation,runner_id):
@@ -76,8 +77,7 @@ async def evaluate(observation,runner_id):
         runner_errors=dict(previous.get('runnerErrors',{}))
         if allowed:runner_errors.pop(runner_id,None)
         else:runner_errors[runner_id]=details
-        connected_ids=set(await c.scalars(select(db.runners.c.id).where(db.runners.c.connected.is_(True))))
-        active_errors={key:value for key,value in runner_errors.items() if key in connected_ids}
+        active_errors=runner_errors
         blocked=bool(active_errors)
         details['blocked']=blocked
         value={'versionId':version_id,'revision':revision,'blocked':blocked,'runnerErrors':runner_errors,

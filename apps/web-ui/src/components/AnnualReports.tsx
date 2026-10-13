@@ -6,6 +6,8 @@ import { ReportCoverage } from './ReportCoverage';
 import { useLiveQuery } from '../hooks/use-live-query';
 import {currentReportYear} from '../matrix-plan';
 import type {MatrixPlan} from '../matrix-plan';
+import {useDisplayTimeZone} from '../display-time-zone';
+import {formatUiDateTime, runTimeZoneLabel} from '../run-schedules';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 type AnnualRow = {id: string; state: string; rto: string; rto_code: string; maker: string; months: (number | null)[]};
@@ -16,12 +18,9 @@ type AnnualData = {year: number; datasetId: string; datasets: {id: string; label
   years: number[]; states: string[]; rtos: string[]; rows: AnnualRow[]; coverage: number[];
   lastSaved?: SavedReport | null; summary: {rows: number; makers: number; offices: number; updatedAt: string | null}};
 const PAGE_SIZE = 100;
-const dateTime = (value: string | null) => value ? new Date(value).toLocaleString('en-GB', {
-  timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric',
-  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-}) : '—';
-
 function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; coveragePlan?: MatrixPlan | null}) {
+  const {timeZone} = useDisplayTimeZone();
+  const dateTime = (value: string | null) => formatUiDateTime(value, timeZone, {second: '2-digit'});
   const [year, setYear] = useState(currentReportYear);
   const [dataset, setDataset] = useState('');
   const [state, setState] = useState('');
@@ -159,7 +158,7 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
             <div><strong>{shownData?.summary.offices.toLocaleString() ?? '—'}</strong><span>RTO offices</span></div></div>
           <p className="annual-summary-label">Months with data</p>
           <div className="annual-month-coverage">{MONTHS.map((month, i) => <span key={month} className={shownData?.coverage.includes(i + 1) ? 'available' : ''}>{month}</span>)}</div>
-          <p className="annual-summary-label">Last updated · Vietnam time</p><time>{dateTime(shownData?.summary.updatedAt ?? null)}</time>
+          <p className="annual-summary-label">Last updated · {runTimeZoneLabel(timeZone)}</p><time>{dateTime(shownData?.summary.updatedAt ?? null)}</time>
         </section>
         {coveragePlan && <ReportCoverage context={{year, dataset: shownData?.datasetId || dataset, state: search.state, rto: search.rto}}
           plan={coveragePlan} refreshTrigger={(refreshTrigger ?? 0) + refresh} />}

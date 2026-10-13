@@ -1,0 +1,2 @@
+Account UI: hidden account controls, own password mismatch/error/success, admin reset, self-reset restriction, Escape and mobile layout passed.
+

@@ -6,7 +6,7 @@ export interface FilterTiming {
 }
 
 const HOUR_MS = 60 * 60 * 1000;
-const RECENT_WINDOW_MS = 90_000;
+const RECENT_WINDOW_MS = 300_000;
 const STALLED_AFTER_MS = 120_000;
 
 /** Forecast from observed *system output per wall-clock second*, including
@@ -44,7 +44,8 @@ export function estimateBatchTiming(
   }
 
   const sessionRate = completedCount / activeElapsedMs;
-  const windowStart = Math.max(0, activeElapsedMs - RECENT_WINDOW_MS);
+  const outputTime = latest?.activeElapsedMs ?? activeElapsedMs;
+  const windowStart = Math.max(0, outputTime - RECENT_WINDOW_MS);
   let baseCount = 0;
   let baseTime = 0;
   for (const checkpoint of checkpoints) {
@@ -53,17 +54,17 @@ export function estimateBatchTiming(
     baseTime = checkpoint.activeElapsedMs!;
   }
   const recentCompleted = completedCount - baseCount;
-  const recentElapsedMs = activeElapsedMs - baseTime;
+  const recentElapsedMs = outputTime - baseTime;
   const useRecent = completedCount >= 12 && recentCompleted >= 6 && recentElapsedMs >= 15_000;
   const recentRate = useRecent ? recentCompleted / recentElapsedMs : 0;
-  // The long window damps completion bursts; the rolling window follows
-  // congestion, CAPTCHA waits and changes in healthy worker count.
-  const rate = useRecent ? 0.75 * recentRate + 0.25 * sessionRate : sessionRate;
+  // Blend the rolling output rate with the full-session rate. The recent
+  // window reacts to congestion; the session rate damps minute-to-minute bursts.
+  const rate = useRecent ? 0.65 * recentRate + 0.35 * sessionRate : sessionRate;
   if (!Number.isFinite(rate) || rate <= 0) {
     return {remainingMs: null, reportsPerHour: null, pace: null, activeElapsedMs, currentElapsedMs};
   }
   return {
-    remainingMs: remainingCount / rate,
+    remainingMs: Math.max(0, remainingCount / rate - (useRecent ? activeElapsedMs - outputTime : 0)),
     reportsPerHour: rate * HOUR_MS,
     pace: useRecent ? 'recent' as const : 'session' as const,
     activeElapsedMs,

@@ -10,7 +10,7 @@ from app.services import services
 from app.repositories.batch_queue import BatchQueueRepository
 from app.api.batch_queue import QueueTaskInput
 from app.repositories.filter_profiles import reserve_options_runner, reserve_preflight_runners, PreflightUnavailable
-from app.worker_pool import apply_pool, assignment_allowed, initialize_pool, pool_status, PoolError, KEY
+from app.worker_pool import apply_pool, assignment_allowed, initialize_pool, pool_status, PoolError, CapacityLimitReached, KEY
 
 
 class PoolTest(unittest.IsolatedAsyncioTestCase):
@@ -61,8 +61,12 @@ class PoolTest(unittest.IsolatedAsyncioTestCase):
         ids = [f'external-{number}' for number in range(8)]
         for runner in ids:
             await services.runners.register(runner_id=runner, name='Fixture', socket_id=runner)
-        results = await asyncio.wait_for(asyncio.gather(*(services.jobs.assign(self.job(runner)) for runner in ids)), 15)
-        self.assertEqual(sum(result is not None for result in results), 1)
+        results = await asyncio.wait_for(asyncio.gather(*(services.jobs.assign(self.job(runner)) for runner in ids),
+            return_exceptions=True), 15)
+        self.assertEqual(sum(not isinstance(result, Exception) for result in results), 1)
+        self.assertEqual(sum(isinstance(result, CapacityLimitReached) for result in results), 7)
+        self.assertTrue(all('PARALLEL_LIMIT_REACHED' in str(result)
+            for result in results if isinstance(result, CapacityLimitReached)))
         self.assertEqual((await pool_status())['activeCount'], 1)
 
     async def test_parallel_queues_share_capacity_and_claim_only_once(self):
@@ -84,7 +88,8 @@ class PoolTest(unittest.IsolatedAsyncioTestCase):
         await apply_pool(1)
         await services.runners.register(runner_id='external', name='Fixture', socket_id='external')
         async with reserve_options_runner('playwright-10', 'worker-test'):
-            self.assertIsNone(await services.jobs.assign(self.job('external')))
+            with self.assertRaisesRegex(CapacityLimitReached, 'PARALLEL_LIMIT_REACHED'):
+                await services.jobs.assign(self.job('external'))
             with self.assertRaises(PreflightUnavailable):
                 async with reserve_options_runner('playwright-2', 'worker-test'):
                     self.fail('Concurrent options must respect capacity')

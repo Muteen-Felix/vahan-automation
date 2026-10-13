@@ -71,7 +71,9 @@ class ProfileTests(unittest.IsolatedAsyncioTestCase):
         plan=await FilterPlanner(restored,2026,lookup,AsyncMock()).compile()
         self.assertEqual(plan['year'],2023)
         self.assertTrue(all(case['filters']['fromYear']=='2023' and case['filters']['toYear']=='2023' for case in plan['scenarios']))
-        with self.assertRaises(ValidationError): definition(report={'year':datetime.now().year+1})
+        next_year = datetime.now().year + 1
+        self.assertEqual(definition(report={'year': next_year}).report.year, next_year)
+        with self.assertRaises(ValidationError): definition(report={'year':next_year+1})
         with self.assertRaises(ValidationError): definition(report={'year':2023,'yAxis':'State'})
 
     async def test_include_exclude_and_conditional_rule(self):
@@ -116,7 +118,8 @@ class ProfileTests(unittest.IsolatedAsyncioTestCase):
         await queue.start(session,self.owner,tasks,1)
         async with reserve_options_runner(self.runner,self.owner):
             self.assertEqual((await queue.claim(session,self.owner,self.runner))['type'],'waiting')
-            self.assertIsNone(await services.jobs.assign(Job(runnerId=self.runner,ownerUsername=self.owner,filters=tasks[0].filters)))
+            self.assertIsNone(await services.jobs.assign(Job(runnerId=self.runner,ownerUsername=self.owner,filters=tasks[0].filters)),
+                'A planning lease for this runner differs from the global execution limit.')
             self.assertEqual(next(r for r in await services.runners.list() if r.id==self.runner).status,'BUSY')
             with self.assertRaises(PreflightUnavailable) as blocked:
                 async with reserve_options_runner(self.runner,self.other):pass

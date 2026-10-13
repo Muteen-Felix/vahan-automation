@@ -6,6 +6,10 @@ export interface RunSchedule {
   profileName: string;
   profileRevision: number;
   year: number;
+  annualSeriesId?: string;
+  annualSourceScheduleId?: string;
+  annualSuccessorScheduleId?: string;
+  annualRolloverYear?: number;
   startsAt: string;
   nextRunAt: string | null;
   repeat: 'once' | 'daily' | 'monthly';
@@ -72,7 +76,7 @@ export interface RunScheduleInput {
   profileId: string;
   year: number;
   startsAt: string;
-  repeat: 'once' | 'daily' | 'monthly';
+  repeat: 'once' | 'monthly';
   timeZone: RunTimeZone;
 }
 
@@ -105,6 +109,10 @@ export function readRunTimeZone() {
   return runTimeZone(persistentState.getItem(RUN_TIME_ZONE_STORAGE_KEY));
 }
 
+export function accountRunTimeZoneKey(username: string) {
+  return `${RUN_TIME_ZONE_STORAGE_KEY}:${username}`;
+}
+
 export function runTimeZoneLabel(value: unknown) {
   return TIME_ZONE_SETTINGS[runTimeZone(value)].label;
 }
@@ -126,6 +134,23 @@ export function formatScheduledTime(value: string | null, timeZone: RunTimeZone 
   if (!value) return '—';
   return new Intl.DateTimeFormat('en-GB', {timeZone, day: '2-digit', month: 'short',
     year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).format(new Date(value));
+}
+
+export function formatUiDateTime(value: string | null | undefined, timeZone: RunTimeZone,
+  options: Intl.DateTimeFormatOptions = {}) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-GB', {timeZone, day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23', ...options}).format(date);
+}
+
+export function timeZoneDateKey(value: string | Date, timeZone: RunTimeZone) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {timeZone, year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(date);
+  const part = (type: string) => parts.find(item => item.type === type)?.value || '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
 export function scheduledDayOfMonth(value: string, timeZone: RunTimeZone) {

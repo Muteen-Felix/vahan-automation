@@ -1,10 +1,17 @@
 import {operatorMessage} from '../operator-language';
 import {useEffect, useRef, useState, type FormEvent, type KeyboardEvent} from 'react';
 import {api, request} from '../services/api-client';
+import {useDisplayTimeZone} from '../display-time-zone';
+import {accountRunTimeZoneKey, INDIA_TIME_ZONE, RUN_TIME_ZONE, RUN_TIME_ZONE_STORAGE_KEY,
+  runTimeZoneLabel, type RunTimeZone} from '../run-schedules';
+import {persistentState} from '../services/persistent-state';
 import {UserManagement} from './DataManagement';
 
-export function AccountSettings({signingOut, onSignOut}: {signingOut: boolean; onSignOut: () => Promise<void>}) {
+export function AccountSettings({signingOut, onSignOut, onTimeZoneChange}: {
+  signingOut: boolean; onSignOut: () => Promise<void>; onTimeZoneChange: (timeZone: RunTimeZone) => Promise<void>;
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const {timeZone, setTimeZone} = useDisplayTimeZone();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'password'|'users'>('password');
   const [user, setUser] = useState<{username: string; role: string} | null>(null);
@@ -12,8 +19,11 @@ export function AccountSettings({signingOut, onSignOut}: {signingOut: boolean; o
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
+  const [timeZoneBusy, setTimeZoneBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [timeZoneError, setTimeZoneError] = useState('');
+  const [timeZoneNotice, setTimeZoneNotice] = useState('');
   useEffect(() => {
     if (open) {
       dialog.current?.showModal();
@@ -31,6 +41,22 @@ export function AccountSettings({signingOut, onSignOut}: {signingOut: boolean; o
       setCurrent('');setPassword('');setConfirm('');setNotice('Password changed. You have been signed out on other devices.');
     } catch (reason) {setError(reason instanceof Error ? reason.message : 'Could not change password.');}
     finally {setBusy(false);}
+  }
+  async function changeTimeZone(value: string) {
+    if (value !== RUN_TIME_ZONE && value !== INDIA_TIME_ZONE || !user || value === timeZone) return;
+    const next = value as RunTimeZone;
+    setTimeZoneBusy(true);setTimeZoneError('');setTimeZoneNotice('');
+    setTimeZone(next);
+    try {
+      localStorage.setItem(accountRunTimeZoneKey(user.username), next);
+      if (user.role === 'admin') persistentState.setItem(RUN_TIME_ZONE_STORAGE_KEY, next);
+      if (user.role === 'admin') await onTimeZoneChange(next);
+      setTimeZoneNotice(`Times across the interface now use ${runTimeZoneLabel(next)}.`);
+    } catch (reason) {
+      setTimeZoneError(user.role === 'admin'
+        ? `The interface now uses ${runTimeZoneLabel(next)}, but saved schedules may still use their previous time zone: ${operatorMessage(reason instanceof Error ? reason.message : 'Could not update saved schedules.')}`
+        : `Could not save your display time zone: ${operatorMessage(reason instanceof Error ? reason.message : 'Could not save the selected time zone.')}`);
+    } finally {setTimeZoneBusy(false);}
   }
   function moveTab(event: KeyboardEvent<HTMLDivElement>) {
     const tabs = ['password', 'users'] as const;
@@ -53,7 +79,15 @@ export function AccountSettings({signingOut, onSignOut}: {signingOut: boolean; o
       {open && <>
         <div className="account-identity"><span className="account-avatar" aria-hidden="true">{user?.username.slice(0,1).toUpperCase() || '…'}</span>
           <div><strong>{user?.username || 'Loading account…'}</strong><small>{user?.role === 'admin' ? 'Administrator' : 'Workspace member'}</small></div>
-          <button type="button" className="secondary-button" disabled={busy || signingOut} onClick={() => {void onSignOut().finally(() => setOpen(false));}}>{signingOut ? 'Signing out…' : 'Log out'}</button></div>
+          <label className="account-timezone-label">Display time zone
+            <select aria-label="Display time zone" value={timeZone} onChange={event => void changeTimeZone(event.target.value)} disabled={timeZoneBusy || signingOut || !user}>
+              <option value={RUN_TIME_ZONE}>Vietnam time (UTC+07:00)</option>
+              <option value={INDIA_TIME_ZONE}>India time (UTC+05:30)</option>
+            </select>
+          </label>
+          <button type="button" className="secondary-button" disabled={busy || signingOut || timeZoneBusy} onClick={() => {void onSignOut().finally(() => setOpen(false));}}>{signingOut ? 'Signing out…' : 'Log out'}</button></div>
+        {timeZoneError && <p className="account-feedback account-feedback-error account-timezone-feedback" role="alert">{timeZoneError}</p>}
+        {timeZoneNotice && <p className="account-feedback account-timezone-feedback" role="status">{timeZoneNotice}</p>}
         {user?.role === 'admin' && <div className="account-tabs" role="tablist" aria-label="Account settings sections" onKeyDown={moveTab}>
           <button type="button" role="tab" id="account-tab-password" tabIndex={activeTab === 'password' ? 0 : -1} aria-controls="account-panel-password" aria-selected={activeTab === 'password'} onClick={() => setActiveTab('password')}>Change password</button>
           <button type="button" role="tab" id="account-tab-users" tabIndex={activeTab === 'users' ? 0 : -1} aria-controls="account-panel-users" aria-selected={activeTab === 'users'} onClick={() => setActiveTab('users')}>Manage user accounts</button>
