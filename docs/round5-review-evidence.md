@@ -1,5 +1,8 @@
 # Đợt 5 — bằng chứng trước duyệt
 
+> Kết quả dưới đây là bằng chứng lịch sử của gói Đợt 5. Lỗi UI Health được
+> sửa trong [lần rà soát Đợt 1–5](round1-5-audit.md); log cũ được giữ nguyên.
+
 Đã hoàn tất thu thập bằng chứng, **chưa phải phê duyệt go-live**. Bộ kiểm đầy
 đủ trả exit **1**: **55/56 kiểm tra pass**, một defect sản phẩm được tái hiện
 và giữ mở. Không skip/xfail để đổi kết quả. Không sửa sản phẩm ngoài phạm vi.

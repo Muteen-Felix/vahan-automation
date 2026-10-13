@@ -1,0 +1,235 @@
+[
+  {
+    "fileOrSuite": "docs",
+    "command": [
+      "python",
+      "scripts/check-doc-links.py"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test_ocr_platform.py",
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "verification/test_ocr_platform.py",
+      "-v"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test_captcha_ephemeral.py",
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "verification/test_captcha_ephemeral.py",
+      "-v"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test_captcha_refresh_race.py",
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "verification/test_captcha_refresh_race.py",
+      "-v"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test_production_config.py",
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "verification/test_production_config.py",
+      "-v"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test_deployment_guard.py",
+    "command": [
+      "python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts",
+      "-p",
+      "test_deployment_guard.py"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test_worker_capacity.py",
+    "command": [
+      "python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts",
+      "-p",
+      "test_worker_capacity.py"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test_container_scan.py",
+    "command": [
+      "python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts",
+      "-p",
+      "test_container_scan.py"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "ui-diagnostics",
+    "command": [
+      "python",
+      "tools/ui-drift-guard/test_ui_diagnostics.py"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-filter-fill.mjs",
+    "command": [
+      "node",
+      "test-filter-fill.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-health-navigation.mjs",
+    "command": [
+      "node",
+      "test-health-navigation.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-health-trigger.mjs",
+    "command": [
+      "node",
+      "test-health-trigger.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-image-pipe.mjs",
+    "command": [
+      "node",
+      "test-image-pipe.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-job-lifecycle.mjs",
+    "command": [
+      "node",
+      "test-job-lifecycle.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-main-report-save.mjs",
+    "command": [
+      "node",
+      "test-main-report-save.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-navigation.mjs",
+    "command": [
+      "node",
+      "test-navigation.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-ocr-rate-limit.mjs",
+    "command": [
+      "node",
+      "test-ocr-rate-limit.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-options.mjs",
+    "command": [
+      "node",
+      "test-options.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-page-recovery.mjs",
+    "command": [
+      "node",
+      "test-page-recovery.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-profile-options.mjs",
+    "command": [
+      "node",
+      "test-profile-options.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-results.mjs",
+    "command": [
+      "node",
+      "test-results.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "test-ui-health-contract.mjs",
+    "command": [
+      "node",
+      "test-ui-health-contract.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "web-check",
+    "command": [
+      "npm.cmd",
+      "run",
+      "check"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "web-build",
+    "command": [
+      "npm.cmd",
+      "run",
+      "build"
+    ],
+    "exitCode": 0
+  },
+  {
+    "fileOrSuite": "web-test-platform",
+    "command": [
+      "npm.cmd",
+      "run",
+      "test:platform"
+    ],
+    "exitCode": 0
+  }
+]
