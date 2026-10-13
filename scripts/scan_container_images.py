@@ -21,6 +21,16 @@ SCANNER = ("docker.io/aquasec/trivy:0.66.0@sha256:"
 # PostgreSQL is the official upstream image pinned by digest in compose.yaml (D-33);
 # the three application images are built by CI under the security-test namespace.
 OFFICIAL_POSTGRES = pinned_reference()
+# Decision D-36 (Felix, 13/10/2026): the fixable Go-stdlib findings of the privilege-drop helper bundled in the
+# official PostgreSQL image are accepted. The exception is bound to this exact image digest, this exact binary and
+# the Go standard library only; any other fixable HIGH/CRITICAL finding, or a different digest, still fails.
+ACCEPTED_EXCEPTIONS = {
+    OFFICIAL_POSTGRES.rsplit("@", 1)[1]: {
+        "decision": "D-36", "target": "usr/local/bin/gosu", "type": "gobinary", "package": "stdlib",
+        "reason": "gosu runs once as root to drop privileges and does not use net/http or crypto/tls (assumption "
+                  "to be re-confirmed by Security); replaced when upstream ships a rebuilt gosu.",
+    }
+}
 IMAGES = [OFFICIAL_POSTGRES,
           *[f"vahan-security-test/{name}:round4" for name in ("api", "web", "runner")]]
 
@@ -74,20 +84,26 @@ def main() -> None:
                         "--format", format_name, "--output", destination, image)
                     run("docker", "cp", f"{container}:{destination}", str(args.output_dir / f"{name}.{suffix}"))
                 report = json.loads((args.output_dir / f"{name}.vulnerabilities.json").read_text(encoding="utf-8"))
-                counts = {"high": 0, "critical": 0, "fixableHighCritical": 0}
+                counts = {"high": 0, "critical": 0, "fixableHighCritical": 0, "acceptedFixable": 0}
+                exception = ACCEPTED_EXCEPTIONS.get(image.rsplit("@", 1)[1]) if "@" in image else None
                 for result in report.get("Results", []):
-                    for finding in result.get("Vulnerabilities", []):
+                    for finding in result.get("Vulnerabilities") or []:
                         severity = finding.get("Severity", "").lower()
                         if severity in ("high", "critical"):
                             counts[severity] += 1
                             if finding.get("FixedVersion"):
-                                counts["fixableHighCritical"] += 1
+                                accepted = bool(exception and result.get("Target") == exception["target"]
+                                    and result.get("Type") == exception["type"]
+                                    and finding.get("PkgName") == exception["package"])
+                                counts["acceptedFixable" if accepted else "fixableHighCritical"] += 1
                 summary[name] = counts
                 print(f"{name}: {json.dumps(counts)}", flush=True)
             except Exception as error:
                 failures.append(f"{name}: {error}")
         (args.output_dir / "summary.json").write_text(json.dumps({
-            "policy": "Fail HIGH/CRITICAL with a vendor fix; retain all unfixed findings in full reports.",
+            "policy": "Fail HIGH/CRITICAL with a vendor fix; retain all unfixed findings in full reports. "
+                      "Findings covered by an explicit exception are counted as acceptedFixable and never hidden.",
+            "exceptions": ACCEPTED_EXCEPTIONS,
             "images": summary, "scanned": {i.split("/")[-1].split(":")[0]: i for i in IMAGES},
             "errors": failures,
         }, indent=2) + "\n", encoding="utf-8")

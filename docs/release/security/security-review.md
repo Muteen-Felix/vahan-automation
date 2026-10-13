@@ -11,7 +11,7 @@ Nhãn: *Verified* (đã chạy), *Likely* (đọc source), *Not verified*.
 | S6 — header bảo mật | Likely | `docker/security-headers.conf`; `scripts/test_container_security.py` kiểm CSP/nosniff/DENY trên stack thật |
 | S7 — `/docs`, `/openapi.json` | Likely | tắt khi `VAHAN_ENVIRONMENT=production` (`main.py`); test trên stack thật |
 | S8 — runner token riêng | **Deferred** | KI-14 |
-| S9 — supply chain | Một phần | lock có hash (`requirements.lock`), base image pin digest; PostgreSQL = image chính thức pin digest (D-33, `pins.md`). **Scan image chính thức vượt ngưỡng T21: 25 finding HIGH/CRITICAL có bản vá, đều ở `gosu` (Go stdlib 1.24.6)** — `evidence/T21a-postgres-official-scan/`; chờ quyết định gate của Felix |
+| S9 — supply chain | Một phần | lock có hash (`requirements.lock`), base image pin digest; PostgreSQL = image chính thức pin digest (D-33, `pins.md`). Scan image chính thức: 25 finding HIGH/CRITICAL có bản vá, đều ở `gosu` (Go stdlib 1.24.6) — `evidence/T21a-postgres-official-scan/`. **Felix chấp nhận ngoại lệ hẹp (D-36, 13/10/2026; KI-25)**: gắn đúng digest, file, package; phần còn lại của policy giữ nguyên |
 | S10 — hardening container | **Deferred** | KI-21 |
 | S12 — tách quyền DB | Likely | service `migrate` + role `DB_APP_USERNAME` DML-only; `scripts/test_runtime_role_lifecycle.py` |
 | O1 — monitoring tối thiểu | Một phần | `/api/ready` kiểm revision migration; probe + cảnh báo do vận hành sở hữu (`ops/runbook.md`) |
@@ -26,6 +26,7 @@ Nhãn: *Verified* (đã chạy), *Likely* (đọc source), *Not verified*.
 | Container chưa hardening | KI-21 | Major |
 | Brute-force chậm/phân tán không bị chặn bởi nginx | KI-22 | Major |
 | Không có trần cứng số runner/giới hạn song song | KI-19 | Minor |
+| `gosu` (Go stdlib 1.24.6) trong image PostgreSQL chính thức | KI-25 | Minor (đề xuất) |
 | Stack không tự cấp TLS | KI-05 | Major |
 
 ## Cơ chế CA tùy chỉnh

@@ -72,3 +72,4 @@ Các dòng này sinh từ mục Deferred/Excluded theo PLAN §3.3 "Hệ quả th
 | 6 | ~~Quyết định cho hai route legacy còn lại~~ — **xong 12/10:** D-07 = A gỡ nốt; code ở T18 | dev |
 | 7 | ~~Xác nhận lần cuối các mức KI-21/22/24~~ — **xong 12/10** | Felix |
 | 8 | Thực hiện D-31…D-34 (R17 Run History, S12 tách quyền DB, image PostgreSQL chính thức pin digest, mặc định 20 + runner thực tế) và cập nhật KI-19 sau T16c | dev |
+| KI-25 | Image PostgreSQL chính thức chứa `gosu` build bằng Go 1.24.6: 25 finding HIGH/CRITICAL có bản vá của Go stdlib (ngoại lệ D-36, Felix chốt 13/10/2026) | Scan T21 báo đỏ nếu không có ngoại lệ; khả năng khai thác thấp vì `gosu` chỉ chạy lúc khởi động container để hạ quyền (giả định, Security xác nhận lại) | Minor (đề xuất — chờ Felix xác nhận mức) | Giữ pin digest; thay bằng bản upstream đã vá khi có (đổi pin theo `docs/release/pins.md`) | Felix | Không theo §1.5; accepted risk D-36 |
