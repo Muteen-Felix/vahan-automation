@@ -5,29 +5,80 @@ Admin lưu filter profiles và lịch; Chromium worker thực thi case; PostgreS
 giữ tiến độ, kết quả, tài khoản và browser state mã hóa. React dashboard
 hiển thị báo cáo dùng chung, search State/RTO và export Excel.
 
-## Cài và vận hành
+## Cài mới bằng Docker Compose
 
-- [Cài mới/nâng cấp từ source hoặc gói image](docs/deployment.md).
-- [Runbook: readiness, pause/drain, backup, restart, restore, chẩn đoán](docs/runbook.md).
-- [Bằng chứng Đợt 5, defect và những phần chưa kiểm](docs/round5-review-evidence.md).
-- [Bảo mật, image pin, lock, scan/SBOM Đợt 4](docs/round4-security-validation.md).
+Ứng dụng chạy trong Linux containers. Máy cài cần Docker Engine đang chạy và
+Docker Compose v2. Cài Docker theo hệ điều hành:
 
-Windows cần Docker Desktop Linux containers và Python. Tại thư mục repository:
+- Windows: [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/), bật Linux containers.
+- macOS: [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/).
+- Linux: [Docker Engine](https://docs.docker.com/engine/install/) và [Compose plugin](https://docs.docker.com/compose/install/linux/).
 
-```powershell
-py -3 scripts/run-docker.py --workers 1
+Sau khi cài, mở terminal mới và kiểm tra Docker daemon cùng Compose:
+
+```sh
+docker --version
+docker compose version
+docker info
 ```
 
-Linux/macOS dùng `python3 scripts/run-docker.py --workers 1`.
-Launcher tạo cấu hình riêng nếu chưa có, kiểm deployment guard, build/migrate
-rồi khởi động stack. Nếu đã load image từ gói, đặt namespace/tag đúng manifest
-và thêm `--no-build`; xem hướng dẫn đầy đủ trước khi nâng cấp.
+Lấy source bằng Git hoặc tải ZIP từ [trang repository](https://github.com/Muteen-Felix/vahan-automation):
 
-Dashboard mặc định `http://127.0.0.1:5173`; readiness ngoài Docker
-`http://127.0.0.1:8000/api/ready`. Production API không có `/docs`, `/redoc`
-hay `/openapi.json`. Bootstrap username/password nằm trong `.docker.env`
-ở máy cài; không commit/gửi secrets. Đổi cấu hình bootstrap không reset
-password tài khoản SQL đã tồn tại. Giữ encryption key khi nâng cấp/restore.
+```sh
+git clone https://github.com/Muteen-Felix/vahan-automation.git
+cd vahan-automation
+```
+
+Trong thư mục repository, tạo cấu hình và secrets riêng cho máy này. Python
+3.12+ chỉ dùng cho bước tạo file `.docker.env`; PostgreSQL, API, Chromium,
+Tesseract và web dashboard đều chạy trong Docker:
+
+```powershell
+# Windows PowerShell
+py -3 scripts/setup-docker.py
+```
+
+```sh
+# Linux hoặc macOS
+python3 scripts/setup-docker.py
+```
+
+Khởi động toàn bộ hệ thống từ source. Lần đầu Docker sẽ tải image nền và build
+các service, nên máy cần Internet tới Docker registries, npm/PyPI và VAHAN:
+
+```sh
+docker compose --env-file .docker.env up -d --build --scale runner=1
+docker compose --env-file .docker.env ps --all
+```
+
+Khi `postgres`, `api`, `runner` và `web` báo `healthy`, mở
+`http://localhost:5173`. Service `migrate` hoàn tất với trạng thái `Exited (0)`.
+Thông tin đăng nhập khởi tạo nằm trong `.docker.env`; đổi password admin sau
+khi đăng nhập lần đầu và không commit hoặc gửi file này. Nếu cổng mặc định
+8000 hoặc 5173 đang được dùng, đổi `API_PORT` hoặc `WEB_PORT` trong `.docker.env`
+rồi chạy lại lệnh `up`.
+
+Dashboard mặc định chỉ mở trên chính máy chạy Docker. Readiness API là
+`http://localhost:8000/api/ready`. Production API không có `/docs`, `/redoc`
+hay `/openapi.json`.
+
+Dừng service nhưng giữ database:
+
+```sh
+docker compose --env-file .docker.env down
+```
+
+Không thêm `-v` nếu muốn giữ dữ liệu PostgreSQL. Mỗi máy cài mới tự tạo
+`.docker.env`; giữ nguyên file đó và encryption key khi nâng cấp/restore.
+Để nâng cấp stack đang có dữ liệu, dùng [deployment guide](docs/deployment.md)
+và [runbook](docs/runbook.md), không dùng quy trình cài mới ở trên.
+
+Compose không gắn đường dẫn cài đặt riêng của một máy. Bằng chứng build/runtime
+hiện có trong repo là trên Linux amd64; Windows, macOS và các kiến trúc khác
+chưa được xác nhận end-to-end. Xem [bằng chứng và giới hạn hiện tại](docs/round5-review-evidence.md).
+
+- [Runbook: readiness, pause/drain, backup, restart, restore, chẩn đoán](docs/runbook.md).
+- [Bảo mật, image pin, lock, scan/SBOM Đợt 4](docs/round4-security-validation.md).
 
 ## Luồng thực thi
 
