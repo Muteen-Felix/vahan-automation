@@ -3,16 +3,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from app.repositories.run_schedules import annual_profile_name, monthly_start_for_year, next_daily_run, next_monthly_run
-
-
-@pytest.mark.parametrize('zone,offset', [('Asia/Ho_Chi_Minh', '+07:00'), ('Asia/Kolkata', '+05:30')])
-def test_daily_schedule_keeps_local_time_and_rolls_over_utc_date(zone, offset):
-    anchor = f'2026-10-12T00:15:00{offset}'
-    result = datetime.fromisoformat(next_daily_run(anchor, datetime(2026, 10, 12, tzinfo=timezone.utc), zone))
-    local = result.astimezone(ZoneInfo(zone))
-    assert (local.day, local.hour, local.minute) == (13, 0, 15)
-    assert result.day == 12
+from app.repositories.run_schedules import annual_profile_name, monthly_start_for_year, next_monthly_run
 
 
 @pytest.mark.parametrize('zone,offset', [('Asia/Ho_Chi_Minh', '+07:00'), ('Asia/Kolkata', '+05:30')])

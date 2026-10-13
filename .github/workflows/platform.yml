@@ -162,6 +162,7 @@ jobs:
               'vahan_history_platform_test',
               'vahan_lifecycle_platform_test',
               'vahan_migration_platform_test',
+              'vahan_migration_daily_test',
           ]
 
           async def main():
@@ -204,6 +205,7 @@ jobs:
           VAHAN_HISTORY_TEST_DATABASE=vahan_history_platform_test python -m pytest verification/test_run_history.py
           VAHAN_LIFECYCLE_TEST_DATABASE=vahan_lifecycle_platform_test python -m pytest verification/test_worker_lifecycle.py
           VAHAN_QUEUE_MIGRATION_TEST_DATABASE=vahan_migration_platform_test python -m pytest verification/test_queue_migrations.py
+          VAHAN_DAILY_MIGRATION_TEST_DATABASE=vahan_migration_daily_test python -m pytest verification/test_daily_schedule_removal.py
           PYTHONPATH=. DATABASE_URL=postgresql+asyncpg://vahan:platform-test-password@127.0.0.1:5432/vahan_shared_batch_platform_test python verification/test_shared_batch_queue.py
           VAHAN_FIXTURE_POSTGRES_CONTAINER=${{ job.services.postgres.id }} python verification/prepare_report_test_fixtures.py
           VAHAN_MIGRATION_SOURCE_DATABASE=vahan_results_round2_legacy_source_test VAHAN_MIGRATION_TEST_DATABASE=vahan_results_round2_legacy_target_test python verification/test_main_migration.py

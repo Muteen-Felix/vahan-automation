@@ -12,7 +12,7 @@ export interface RunSchedule {
   annualRolloverYear?: number;
   startsAt: string;
   nextRunAt: string | null;
-  repeat: 'once' | 'daily' | 'monthly';
+  repeat: 'once' | 'monthly';
   timeZone: RunTimeZone;
   enabled: boolean;
   status: 'WAITING' | 'PREPARING' | 'RUNNING' | 'PAUSING' | 'PAUSED' | 'RESUMING' | 'COMPLETED' | 'COMPLETED_WITH_ERRORS' | 'ERROR' | 'STOPPED';

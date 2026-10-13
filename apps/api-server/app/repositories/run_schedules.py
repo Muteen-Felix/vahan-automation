@@ -1,7 +1,7 @@
 """Durable run schedules stored as versioned PostgreSQL application settings."""
 import calendar
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -16,17 +16,6 @@ TIME_ZONE = 'Asia/Ho_Chi_Minh'
 
 def now():
     return datetime.now(timezone.utc)
-
-
-def next_daily_run(starts_at, current, time_zone=TIME_ZONE):
-    """Keep the original schedule wall-clock time and skip missed daily slots."""
-    zone = ZoneInfo(time_zone)
-    anchor = datetime.fromisoformat(starts_at).astimezone(zone)
-    current = current.astimezone(zone)
-    candidate = anchor.replace(year=current.year, month=current.month, day=current.day)
-    if candidate <= current:
-        candidate += timedelta(days=1)
-    return max(candidate, anchor).astimezone(timezone.utc).isoformat()
 
 
 def next_monthly_run(starts_at, current, time_zone=TIME_ZONE):
@@ -266,8 +255,8 @@ class RunScheduleRepository:
                 return None
             finished = now()
             time_zone = current.get('timeZone', TIME_ZONE)
-            next_run = (next_daily_run(current['startsAt'], finished, time_zone) if current['repeat'] == 'daily'
-                else next_monthly_run(current['startsAt'], finished, time_zone) if current['repeat'] == 'monthly' else None)
+            # Only Once (no next run) and Monthly schedules exist (D-35; migration 0015 removed Daily).
+            next_run = next_monthly_run(current['startsAt'], finished, time_zone) if current['repeat'] == 'monthly' else None
             rollover_year = None
             successor_id = None
             if (current['repeat'] == 'monthly' and current['enabled'] and next_run
@@ -325,9 +314,7 @@ class RunScheduleRepository:
                 legacy_resume = value['status'] == 'STOPPED' and value.get('lastSessionId') and value['done'] < value['total']
                 if not legacy_resume:
                     changes.update(status='WAITING', preparationAttempts=0, retryAfter=None)
-                if value['repeat'] == 'daily':
-                    changes['nextRunAt'] = next_daily_run(value['startsAt'], now(), value.get('timeZone', TIME_ZONE))
-                elif value['repeat'] == 'monthly':
+                if value['repeat'] == 'monthly':
                     changes['nextRunAt'] = next_monthly_run(value['startsAt'], now(), value.get('timeZone', TIME_ZONE))
             stamp = now().isoformat()
             if 'operation' not in changes and ('stage' in changes or value.get('operation')):

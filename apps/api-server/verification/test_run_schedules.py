@@ -27,7 +27,7 @@ from app.models.job import Job, JobStatus
 from app.models.run_schedule import RunScheduleCreate, RunScheduleResume
 from app.repositories.filter_profiles import FilterProfileRepository
 from app.repositories.postgres import job_document, release_runner
-from app.repositories.run_schedules import RunScheduleRepository, next_daily_run, next_monthly_run, now
+from app.repositories.run_schedules import RunScheduleRepository, next_monthly_run, now
 from app.repositories import ui_contract
 from app.run_scheduler import automatic_preflight, scheduler_tick as control_tick, stop_scheduled_run, still_current, checkpoint, queue, LEADER_LOCK
 from app.services import services
@@ -307,7 +307,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(await self.jobs()), 2)
         self.assertTrue(all(job.status == JobStatus.ASSIGNED for job in await self.jobs()))
 
-    async def test_dates_validation_and_daily_and_monthly_time_zones(self):
+    async def test_dates_validation_and_monthly_time_zones(self):
         future = now()+timedelta(days=1)
         command = RunScheduleCreate(profileId=self.profile['id'], startsAt=future,
             workerCount=8, year=now().year)
@@ -318,8 +318,8 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         for starts_at in [future.replace(tzinfo=None), now()-timedelta(minutes=1)]:
             with self.assertRaises(ValidationError):
                 RunScheduleCreate(profileId=self.profile['id'], startsAt=starts_at, year=now().year)
-        next_run = next_daily_run('2026-10-07T09:30:00+07:00', datetime.fromisoformat('2026-10-10T18:00:00+07:00'))
-        self.assertEqual(next_run, '2026-10-11T02:30:00+00:00')
+        with self.assertRaises(ValidationError):
+            RunScheduleCreate(profileId=self.profile['id'], startsAt=future, year=now().year, repeat='daily')
         february = next_monthly_run('2026-01-31T09:30:00+07:00', datetime.fromisoformat('2026-02-01T09:00:00+07:00'))
         self.assertEqual(february, '2026-02-28T02:30:00+00:00')
         march = next_monthly_run('2026-01-31T09:30:00+07:00', datetime.fromisoformat('2026-02-28T10:00:00+07:00'))
@@ -504,7 +504,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(await still_current(saved))
         self.assertIsNone(await checkpoint(saved, {'status': 'RUNNING'}))
         await scheduler_tick()
-        self.assertEqual(len(await self.jobs()), 2, 'Deleted daily schedules cannot publish more work.')
+        self.assertEqual(len(await self.jobs()), 2, 'Deleted schedules cannot publish more work.')
 
     async def test_delete_rejects_active_draining_and_resuming_runs(self):
         saved = await self.start()
