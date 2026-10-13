@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Save full vulnerability reports/SBOMs; reject fixable HIGH/CRITICAL findings.
+
+Unfixed vendor findings remain in reports and the summary, never suppressed.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import secrets
+import subprocess
+from pathlib import Path
+
+SCANNER = ("docker.io/aquasec/trivy:0.66.0@sha256:"
+    "086971aaf400beebd94e8300fd8ea623774419597169156cec56eec5b00dfb1e")
+IMAGES = [f"vahan-security-test/{name}:round4" for name in ("postgres", "api", "web", "runner")]
+
+
+def run(*command: str) -> str:
+    result = subprocess.run(command, text=True, encoding="utf-8", errors="replace",
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode:
+        raise RuntimeError(f"{' '.join(command)} failed:\n{result.stderr}")
+    return result.stdout
+
+
+def active_docker_socket() -> str:
+    endpoint = os.environ.get("DOCKER_HOST")
+    if not endpoint:
+        endpoint = json.loads(run("docker", "context", "inspect"))[0]["Endpoints"]["docker"]["Host"]
+    if endpoint.startswith("unix://"):
+        return endpoint.removeprefix("unix://")
+    if endpoint.startswith("npipe://"):
+        # Docker Desktop exposes its Linux engine socket inside Linux containers.
+        return "/var/run/docker.sock"
+    raise RuntimeError("The scanner needs a local Unix Docker socket or Docker Desktop Linux engine.")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--ca-cert", type=Path,
+        help="Optional local enterprise trust root for the scanner's HTTPS downloads.")
+    args = parser.parse_args()
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    container = f"vahan-scan-{secrets.token_hex(6)}"
+    summary = {}
+    failures = []
+    try:
+        run("docker", "run", "-d", "--name", container,
+            "-v", f"{active_docker_socket()}:/var/run/docker.sock", "--entrypoint", "/bin/sh",
+            SCANNER, "-c", "mkdir -p /reports; sleep 3600")
+        if args.ca_cert:
+            run("docker", "cp", str(args.ca_cert.resolve()),
+                f"{container}:/usr/local/share/ca-certificates/enterprise.crt")
+            run("docker", "exec", container, "update-ca-certificates")
+        for image in IMAGES:
+            name = image.split("/")[-1].split(":")[0]
+            try:
+                for suffix, format_name in (("vulnerabilities.json", "json"), ("cdx.json", "cyclonedx")):
+                    destination = f"/reports/{name}.{suffix}"
+                    run("docker", "exec", container, "trivy", "image", "--scanners", "vuln",
+                        "--format", format_name, "--output", destination, image)
+                    run("docker", "cp", f"{container}:{destination}", str(args.output_dir / f"{name}.{suffix}"))
+                report = json.loads((args.output_dir / f"{name}.vulnerabilities.json").read_text(encoding="utf-8"))
+                counts = {"high": 0, "critical": 0, "fixableHighCritical": 0}
+                for result in report.get("Results", []):
+                    for finding in result.get("Vulnerabilities", []):
+                        severity = finding.get("Severity", "").lower()
+                        if severity in ("high", "critical"):
+                            counts[severity] += 1
+                            if finding.get("FixedVersion"):
+                                counts["fixableHighCritical"] += 1
+                summary[name] = counts
+                print(f"{name}: {json.dumps(counts)}", flush=True)
+            except Exception as error:
+                failures.append(f"{name}: {error}")
+        (args.output_dir / "summary.json").write_text(json.dumps({
+            "policy": "Fail HIGH/CRITICAL with a vendor fix; retain all unfixed findings in full reports.",
+            "images": summary, "errors": failures,
+        }, indent=2) + "\n", encoding="utf-8")
+    finally:
+        subprocess.run(["docker", "rm", "-f", container], stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL)
+    if failures or any(item["fixableHighCritical"] for item in summary.values()):
+        raise SystemExit("Image scan failed: fixable HIGH/CRITICAL findings or scan errors; inspect artifacts.")
+
+
+if __name__ == "__main__":
+    main()

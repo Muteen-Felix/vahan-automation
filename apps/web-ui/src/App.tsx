@@ -153,6 +153,9 @@ export default function App() {
       setHealthRefresh(value => value + 1);
     };
     const onHealthUpdate = () => {void refreshHealth(); setHealthRefresh(value => value + 1);};
+    const onJobError = (notice: {code?: string; message?: string}) => {
+      if (notice.code === 'OCR_RATE_LIMIT' && notice.message) setError(`${notice.code}: ${notice.message}`);
+    };
     uiSocket.on('connect', onConnect);
     uiSocket.on('disconnect', onDisconnect);
     uiSocket.on('connect_error', onConnectionError);
@@ -162,6 +165,7 @@ export default function App() {
     uiSocket.on('ui-health:waiting', onHealthUpdate);
     uiSocket.on('ui-health:verified', onHealthUpdate);
     uiSocket.on('ui-health:log-received', onHealthUpdate);
+    uiSocket.on('job:error', onJobError);
     void refreshRunners(); void refreshHealth();
     uiSocket.connect();
     window.addEventListener('online', ensureConnection);
@@ -178,6 +182,7 @@ export default function App() {
       uiSocket.off('ui-health:waiting', onHealthUpdate);
       uiSocket.off('ui-health:verified', onHealthUpdate);
       uiSocket.off('ui-health:log-received', onHealthUpdate);
+      uiSocket.off('job:error', onJobError);
       window.removeEventListener('online', ensureConnection);
       window.removeEventListener('pageshow', ensureConnection);
       document.removeEventListener('visibilitychange', onVisibility);

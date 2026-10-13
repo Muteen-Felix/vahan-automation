@@ -20,6 +20,8 @@ database = os.environ.get('VAHAN_LIFECYCLE_TEST_DATABASE', '')
 if not database.startswith('vahan_lifecycle_') or not database.endswith('_test'):
     raise RuntimeError('Use a disposable vahan_lifecycle_*_test database.')
 os.environ['DATABASE_URL'] = make_url(os.environ['DATABASE_URL']).set(database=database).render_as_string(hide_password=False)
+os.environ.setdefault('VAHAN_UI_AUTH_USERNAME', 'lifecycle-admin')
+os.environ.setdefault('VAHAN_UI_AUTH_PASSWORD', 'lifecycle-fixture-only-password')
 
 import httpx
 import socketio

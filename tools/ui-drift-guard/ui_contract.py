@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-from playwright.sync_api import Locator, Page
+if TYPE_CHECKING:
+    from playwright.sync_api import Locator, Page
 
 
 UI_CONTRACT_VERSION = "v1"

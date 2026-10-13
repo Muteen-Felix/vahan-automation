@@ -2,7 +2,7 @@ name: Platform verification
 
 on:
   push:
-    branches: [main]
+    branches: [main, ocr, release, 'release/**']
   pull_request:
   workflow_dispatch:
 
@@ -42,11 +42,15 @@ jobs:
         run: python scripts/setup-docker.py
 
       - name: Install and test API
+        working-directory: apps/api-server
         run: |
-          python -m pip install -e "apps/api-server[dev]"
-          python -m pytest apps/api-server/verification/test_ocr_platform.py apps/api-server/verification/test_captcha_ephemeral.py apps/api-server/verification/test_captcha_refresh_race.py
-          python -m pytest apps/api-server/verification/test_production_config.py
-          python -m unittest discover -s scripts -p 'test_deployment_guard.py'
+          python -m pip install --require-hashes -r requirements-dev.lock
+          python -m pytest verification/test_ocr_platform.py verification/test_captcha_ephemeral.py verification/test_captcha_refresh_race.py
+          python -m pytest verification/test_production_config.py
+          python -m unittest discover -s ../../scripts -p 'test_deployment_guard.py'
+          python -m unittest discover -s ../../scripts -p 'test_worker_capacity.py'
+          python -m unittest discover -s ../../scripts -p 'test_container_scan.py'
+          python ../../tools/ui-drift-guard/test_ui_diagnostics.py
 
       - name: Install runner dependencies
         working-directory: apps/browser-runner
@@ -75,6 +79,7 @@ jobs:
           npm run test:image-pipe
           npm run test:profile-options
           npm run test:main-report-save
+          npm run test:ocr-rate-limit
 
       - name: Install dashboard dependencies
         working-directory: apps/web-ui
@@ -92,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17.11-bookworm
+        image: docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
         env:
           POSTGRES_USER: vahan
           POSTGRES_PASSWORD: platform-test-password
@@ -115,8 +120,14 @@ jobs:
       - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '22'
+      - name: Install Socket.IO smoke-test dependencies
+        working-directory: apps/web-ui
+        run: npm ci
       - name: Install API dependencies
-        run: python -m pip install -e "apps/api-server[dev]"
+        run: python -m pip install --require-hashes -r apps/api-server/requirements-dev.lock
       - name: Create isolated verification databases
         working-directory: apps/api-server
         run: |
@@ -140,6 +151,9 @@ jobs:
               'vahan_queue_platform_test',
               'vahan_shared_batch_platform_test',
               'vahan_account_platform_test',
+              'vahan_history_platform_test',
+              'vahan_lifecycle_platform_test',
+              'vahan_migration_platform_test',
           ]
 
           async def main():
@@ -165,6 +179,7 @@ jobs:
         run: |
           python -m pytest tests
           python -m pytest verification/test_permissions.py
+          python ../../scripts/test_runtime_role_lifecycle.py
           VAHAN_ACCOUNT_TEST_DATABASE=vahan_account_platform_test python -m pytest verification/test_account_passwords.py
           VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_report_test python -m pytest verification/test_report_results.py
           VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_annual_test python -m pytest verification/test_annual_reports.py
@@ -178,7 +193,14 @@ jobs:
           VAHAN_COVERAGE_TEST_DATABASE=vahan_coverage_platform_test python -m pytest verification/test_report_coverage.py
           VAHAN_SCHEDULE_TEST_DATABASE=vahan_schedule_platform_test python -m pytest verification/test_run_schedules.py
           VAHAN_QUEUE_TEST_DATABASE=vahan_queue_platform_test python -m pytest verification/test_queue_retry_checkpoints.py
+          VAHAN_HISTORY_TEST_DATABASE=vahan_history_platform_test python -m pytest verification/test_run_history.py
+          VAHAN_LIFECYCLE_TEST_DATABASE=vahan_lifecycle_platform_test python -m pytest verification/test_worker_lifecycle.py
+          VAHAN_QUEUE_MIGRATION_TEST_DATABASE=vahan_migration_platform_test python -m pytest verification/test_queue_migrations.py
           PYTHONPATH=. DATABASE_URL=postgresql+asyncpg://vahan:platform-test-password@127.0.0.1:5432/vahan_shared_batch_platform_test python verification/test_shared_batch_queue.py
+          VAHAN_FIXTURE_POSTGRES_CONTAINER=${{ job.services.postgres.id }} python verification/prepare_report_test_fixtures.py
+          VAHAN_MIGRATION_SOURCE_DATABASE=vahan_results_round2_legacy_source_test VAHAN_MIGRATION_TEST_DATABASE=vahan_results_round2_legacy_target_test python verification/test_main_migration.py
+          VAHAN_SHARED_TEST_DATABASE=vahan_results_round2_shared_target_test python verification/test_shared_migration.py
+          VAHAN_MIGRATION_SOURCE_DATABASE=vahan_results_round2_workbook_source_test VAHAN_MIGRATION_TEST_DATABASE=vahan_results_round2_workbook_target_test python verification/test_main_live_workbook.py
 
   container-build:
     name: Linux container packaging (Ubuntu)
@@ -188,9 +210,28 @@ jobs:
       - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
+      - name: Enable containerd image store for SBOM and provenance
+        uses: docker/setup-docker-action@v5.5.0
+        with:
+          daemon-config: |
+            {"features": {"containerd-snapshotter": true}}
+      - name: Install pinned Docker Compose with attestation support
+        uses: docker/setup-compose-action@v2.4.0
+        with:
+          version: v5.6.0
       - name: Create isolated build settings
         run: python scripts/setup-docker.py
       - name: Validate Compose package
         run: docker compose --env-file .docker.env config --quiet
-      - name: Build all Linux images
-        run: docker compose --env-file .docker.env build
+      - name: Test production container security
+        run: python scripts/test_container_security.py
+      - name: Scan images and write full reports and CycloneDX SBOMs
+        run: python scripts/scan_container_images.py --output-dir "${{ runner.temp }}/container-sbom"
+      - name: Upload vulnerability reports and container SBOMs
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: round4-container-sbom
+          path: ${{ runner.temp }}/container-sbom/*.json
+          if-no-files-found: warn
+          retention-days: 30

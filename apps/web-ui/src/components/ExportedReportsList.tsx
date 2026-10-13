@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ExportedReportJob, ExportedReportSession } from "../contracts";
 import { AuthenticatedDownload } from "./AuthenticatedDownload";
 import { api } from "../services/api-client";
+import { operatorMessage } from "../operator-language";
 
 function formatSize(bytes: number): string {
   if (!bytes) return "0 B";
@@ -194,7 +195,7 @@ function SessionDetail({ session, onClose }: { session: ExportedReportSession; o
                 </details>
               )}
 
-              {job.error && <p className="report-case-error">Error details: {job.error}</p>}
+              {job.error && <p className="report-case-error">Error details: {operatorMessage(job.error)}</p>}
               {job.downloadUrl && job.fileName ? (
                 <AuthenticatedDownload
                   className="primary-button report-case-download"
