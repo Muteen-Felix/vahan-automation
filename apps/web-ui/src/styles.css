@@ -1470,6 +1470,7 @@ html:has(.filter-profiles-page),html:has(.profile-value-popover:popover-open) { 
 .schedule-form-dialog .automatic-run-form .schedule-profile-label { grid-column:1/-1; }
 .schedule-form-dialog .automatic-run-form-footer { grid-column:1/-1; }
 .schedule-form-dialog .schedule-help-slot { height:auto; min-height:26px; padding-top:10px; }
+.schedule-form-dialog .schedule-help-slot .schedule-help { display:block; -webkit-line-clamp:unset; -webkit-box-orient:initial; overflow:visible; }
 .schedule-dialog-error { margin:14px 0 0; padding:10px 12px; border:1px solid #f0d6cf; border-radius:8px; color:#a3382b; background:#fff3f0; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
 @media(max-width:600px) {
   .schedule-form-dialog { width:calc(100vw - 24px); max-height:calc(100dvh - 24px); border-radius:12px; }

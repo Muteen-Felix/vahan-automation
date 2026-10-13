@@ -106,8 +106,12 @@ try {
   await page.getByLabel('Start time',{exact:true}).fill('09:30');
   const repeatSelect=page.getByLabel('Repeat',{exact:true});
   assert.deepEqual(await repeatSelect.locator('option').evaluateAll(options=>options.map(option=>option.value)),['once','monthly']);
+  await repeatSelect.selectOption('once');
+  await page.getByText(/Runs once on the selected date and time, using the saved filters and selected time zone\. It will not repeat or create a filter or schedule for a following year\./).waitFor();
   await repeatSelect.selectOption('monthly');
-  await page.getByText(/Runs on day \d+ each month; shorter months use their last day\. At year-end, a separate filter and schedule are created for the following year\./).waitFor();
+  await page.getByText(/Uses the saved filters above to collect reports for year 2024\. Runs on day \d+ of each month at the selected time and time zone\./).waitFor();
+  await page.getByText(/After the final run for report year 2024, this schedule ends\. If it is still enabled, the system creates a separate copy of the saved filters with the same search settings and only the report year changed to 2025\. A new monthly schedule then uses the same day, time, and time zone\. This repeats automatically each year\. Disable this schedule to stop the rollover\./).waitFor();
+  assert.equal(await page.locator('.schedule-help').evaluate(element=>getComputedStyle(element).display),'block');
   await page.getByRole('button',{name:'Add schedule',exact:true}).click();
   await page.getByText(/Schedule saved for/).waitFor();
   assert.equal(Object.hasOwn(posted,'workerCount'),false);assert.equal(posted.year,2024);assert.equal(posted.repeat,'monthly');

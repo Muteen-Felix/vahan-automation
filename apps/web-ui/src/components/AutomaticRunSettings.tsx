@@ -129,10 +129,10 @@ export function AutomaticRunSettings({profiles, selectedProfileId, year, schedul
             </div>
           </form>
           <div className="schedule-help-slot"><p className="schedule-help">{repeat === 'monthly'
-            ? `Runs on day ${Number(date.slice(-2))} each month; shorter months use their last day. At year-end, a separate filter and schedule are created for the following year.`
+            ? `Uses the saved filters above to collect reports for year ${selectedYear}. Runs on day ${Number(date.slice(-2))} of each month at the selected time and time zone. If a month has fewer days, it runs on that month's last day (for example, day 31 runs on February's last day). After the final run for report year ${selectedYear}, this schedule ends. If it is still enabled, the system creates a separate copy of the saved filters with the same search settings and only the report year changed to ${selectedYear + 1}. A new monthly schedule then uses the same day, time, and time zone. This repeats automatically each year. Disable this schedule to stop the rollover.`
             : !profiles.length
             ? <><a href="#filters">Save your filters</a> before adding a schedule.</>
-            : 'Saved schedules use these filters. View collected data in Exported Reports.'}</p></div>
+            : 'Runs once on the selected date and time, using the saved filters and selected time zone. It will not repeat or create a filter or schedule for a following year.'}</p></div>
         </div>
       </dialog>
       <div className={`schedule-feedback${loadError || (!formOpen && (error || notice)) ? ' has-feedback' : ''}`}>
