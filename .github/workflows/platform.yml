@@ -53,6 +53,10 @@ jobs:
           python -m unittest discover -s ../../scripts -p 'test_deployment_guard.py'
           python -m unittest discover -s ../../scripts -p 'test_worker_capacity.py'
           python -m unittest discover -s ../../scripts -p 'test_container_scan.py'
+          python -m unittest discover -s ../../scripts -p 'test_postgres_pin.py'
+          python -m unittest discover -s ../../scripts -p 'test_evidence_check.py'
+          python -m unittest discover -s ../../scripts -p 'test_release_smoke.py'
+          python -m unittest discover -s ../../scripts -p 'test_config_template.py'
           python ../../tools/ui-drift-guard/test_ui_diagnostics.py
           python scripts/test-user-state-codec.py
 
