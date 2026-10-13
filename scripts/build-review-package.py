@@ -6,15 +6,22 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+DIGEST_REF = re.compile(r'.+@sha256:[0-9a-f]{64}')
 PATHS = ['README.md', 'compose.yaml', '.dockerignore', '.gitignore',
          'run-vahan-rpa.ps1', 'run-vahan-rpa.sh', 'backup-vahan-rpa.ps1',
          'apps', 'docker', 'docs', 'scripts', 'tools', 'test-scenarios-filter.json']
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise SystemExit(message)
 
 
 def digest(path: Path) -> str:
@@ -39,7 +46,7 @@ def main() -> None:
     subprocess.run(['git', 'archive', '--format=zip', '-o', str(source), sha, *PATHS], cwd=ROOT, check=True)
     namespace, tag = 'vahan-review', sha[:12]
     manifest = {'format': 1, 'sourceCommit': sha, 'imageNamespace': namespace, 'imageTag': tag,
-                'files': {source.name: digest(source)}, 'imageIds': {},
+                'files': {source.name: digest(source)}, 'imageIds': {}, 'images': {},
                 'scope': 'Committed source only; outputs, secrets, local CA, backups and Git metadata are excluded.'}
     if args.with_images:
         with tempfile.TemporaryDirectory(prefix='vahan-package-build-') as temporary:
@@ -50,12 +57,39 @@ def main() -> None:
             # Build uses the committed cert directory, even when empty.
             subprocess.run([os.sys.executable, 'scripts/setup-docker.py'], cwd=build_root, check=True)
             env = {**os.environ, 'VAHAN_IMAGE_NAMESPACE': namespace, 'VAHAN_IMAGE_TAG': tag}
-            subprocess.run(['docker', 'compose', '--env-file', '.docker.env', 'build',
-                            '--sbom=true', '--provenance=mode=max'], cwd=build_root, env=env, check=True)
-            refs = [f'{namespace}/{service}:{tag}' for service in ('postgres', 'api', 'web', 'runner')]
+            compose = ['docker', 'compose', '--env-file', '.docker.env']
+            # Only the three application images are built; PostgreSQL is the
+            # official upstream image pinned by digest in compose.yaml (D-33).
+            subprocess.run([*compose, 'build', '--sbom=true', '--provenance=mode=max'],
+                           cwd=build_root, env=env, check=True)
+            refs = subprocess.check_output([*compose, 'config', '--images'], cwd=build_root, env=env,
+                                           text=True).split()
+            refs = list(dict.fromkeys(refs))
+            official = [ref for ref in refs if '/postgres:' in ref or ref.startswith('postgres:')]
+            require(len(refs) == 4 and len(official) == 1,
+                    f'Expected 3 application images plus one official PostgreSQL image, got {refs}.')
+            pinned = official[0]
+            require(DIGEST_REF.fullmatch(pinned) is not None, f'PostgreSQL image is not digest-pinned: {pinned}')
+            subprocess.run(['docker', 'pull', pinned], check=True)
+            expected_digest = pinned.rsplit('@', 1)[1]
+            application_platform = None
             for ref in refs:
-                manifest['imageIds'][ref] = subprocess.check_output(
-                    ['docker', 'image', 'inspect', '--format', '{{.Id}}', ref], text=True).strip()
+                info = json.loads(subprocess.check_output(['docker', 'image', 'inspect', ref], text=True))[0]
+                platform = f"{info['Os']}/{info['Architecture']}"
+                if ref == pinned:
+                    require(any(item.endswith('@' + expected_digest) for item in info.get('RepoDigests', []))
+                            or info['Id'] == expected_digest,
+                            f'{ref} does not resolve to the pinned digest {expected_digest}.')
+                else:
+                    application_platform = application_platform or platform
+                    require(platform == application_platform, 'Application images use different platforms.')
+                manifest['imageIds'][ref] = info['Id']
+                manifest['images'][ref] = {
+                    'id': info['Id'], 'repoDigests': info.get('RepoDigests', []), 'platform': platform,
+                    'upstream': ref == pinned, 'revisionLabel': (info['Config'].get('Labels') or {}).get(
+                        'org.opencontainers.image.revision') if ref != pinned else None}
+            require(manifest['images'][pinned]['platform'] == application_platform,
+                    'PostgreSQL platform differs from the application images.')
             subprocess.run(['docker', 'image', 'save', '-o', str(images), *refs], check=True)
             manifest['files'][images.name] = digest(images)
     manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')

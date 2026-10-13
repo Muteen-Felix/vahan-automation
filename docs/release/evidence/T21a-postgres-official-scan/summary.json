@@ -1,0 +1,14 @@
+{
+  "policy": "Fail HIGH/CRITICAL with a vendor fix; retain all unfixed findings in full reports.",
+  "images": {
+    "postgres": {
+      "high": 89,
+      "critical": 4,
+      "fixableHighCritical": 25
+    }
+  },
+  "scanned": {
+    "postgres": "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826"
+  },
+  "errors": []
+}

@@ -7,10 +7,10 @@ x-logging: &bounded-logging
 services:
   postgres:
     logging: *bounded-logging
-    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/postgres:${VAHAN_IMAGE_TAG:-local}
-    build:
-      context: .
-      dockerfile: docker/postgres.Dockerfile
+    # Official upstream image, pinned by multi-arch index digest (linux/amd64 is
+    # the supported platform). Keep identical to .github/workflows/platform.yml
+    # and docs/release/pins.md; scripts/test_container_security.py enforces it.
+    image: docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
     environment:
       POSTGRES_DB: vahan
       POSTGRES_USER: vahan

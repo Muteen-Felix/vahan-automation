@@ -14,6 +14,7 @@ import scan_container_images as scanner
 class ContainerScanTests(unittest.TestCase):
     def exercise(self, *, fixable=False):
         self.scanned = []
+        self.pulled = []
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
 
@@ -22,6 +23,8 @@ class ContainerScanTests(unittest.TestCase):
                     return json.dumps([{'Endpoints': {'docker': {'Host': 'unix:///ci/isolated/docker.sock'}}}])
                 if command[:2] == ('docker', 'run'):
                     self.assertIn('/ci/isolated/docker.sock:/var/run/docker.sock', command)
+                if command[:2] == ('docker', 'pull'):
+                    self.pulled.append(command[-1])
                 if command[:2] == ('docker', 'exec'):
                     self.scanned.append(command[-1])
                 if command[:2] == ('docker', 'cp'):
@@ -51,6 +54,8 @@ class ContainerScanTests(unittest.TestCase):
             self.assertEqual(set(summary['images']), {'postgres', 'api', 'web', 'runner'})
             self.assertEqual(summary['errors'], [])
             self.assertEqual(set(self.scanned), set(scanner.IMAGES))
+            self.assertEqual(self.pulled, [scanner.OFFICIAL_POSTGRES])
+            self.assertRegex(summary['scanned']['postgres'], r'^docker\.io/library/postgres:.+@sha256:[0-9a-f]{64}$')
             return summary
 
     def test_active_ci_engine_is_scanned_and_unfixed_findings_are_retained(self):
