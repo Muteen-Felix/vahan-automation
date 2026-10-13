@@ -3,7 +3,6 @@ import {operatorMessage} from '../operator-language';
 import {request} from '../services/api-client';
 import {uiSocket} from '../services/socket-client';
 import {useLiveQuery} from '../hooks/use-live-query';
-import {sampleRunHistory} from '../sample-run-history';
 import {useDisplayTimeZone} from '../display-time-zone';
 import {formatUiDateTime, runTimeZoneLabel} from '../run-schedules';
 
@@ -26,12 +25,9 @@ export function RunHistory() {
   const {timeZone} = useDisplayTimeZone();
   const timestamp = (value: string) => formatUiDateTime(value, timeZone, {second: '2-digit'});
   const [offset, setOffset] = useState(0);
-  const [showSamples, setShowSamples] = useState(false);
   const query = useLiveQuery<History>(offset,
-    signal => request<History>(`/api/annual-reports/run-history?offset=${offset}&limit=${PAGE_SIZE}`, {signal}), 1000, !showSamples);
-  const history = showSamples ? sampleRunHistory : query.data;
+    signal => request<History>(`/api/annual-reports/run-history?offset=${offset}&limit=${PAGE_SIZE}`, {signal}), 1000);
   useEffect(() => {
-    if (showSamples) return;
     const refresh = () => query.refresh();
     const timer = window.setInterval(refresh, 15000);
     uiSocket.on('job:status', refresh);
@@ -41,21 +37,18 @@ export function RunHistory() {
       uiSocket.off('job:status', refresh);
       uiSocket.off('connect', refresh);
     };
-  }, [query.refresh, showSamples]);
+  }, [query.refresh]);
   useEffect(() => {
     if (query.data && offset > 0 && offset >= query.data.total) setOffset(0);
   }, [query.data, offset]);
-  const total = history?.total ?? 0;
+  const total = query.data?.total ?? 0;
   return <main className="page-content run-history-page" id="run-history">
     <div className="section-intro run-history-intro">
       <div><h2>Run History</h2><p>One row per run, newest first · {runTimeZoneLabel(timeZone)}</p></div>
       <div className="run-history-actions">
-        <label><input type="checkbox" checked={showSamples} aria-label="Show sample data"
-          onChange={event => {setOffset(0);setShowSamples(event.target.checked);}} /> Show sample data</label>
-        <button className="run-history-refresh" type="button" disabled={showSamples} onClick={() => query.refresh(true)}>Refresh history</button>
+        <button className="run-history-refresh" type="button" onClick={() => query.refresh(true)}>Refresh history</button>
       </div>
     </div>
-    {showSamples && <p className="run-history-note" role="status"><strong>Sample data — demonstration only.</strong> These rows are not actual runs and are never saved to the database.</p>}
     {query.error && <p role="alert">{operatorMessage(query.error)}</p>}
     <section className="run-history-panel" aria-label="Filter run history" aria-busy={query.loading}>
       <div className="run-history-summary"><strong>{total.toLocaleString()} runs</strong>
@@ -63,7 +56,7 @@ export function RunHistory() {
       <table className="run-history-table">
         <thead><tr><th scope="col">Run</th><th scope="col">Filter</th><th scope="col">Progress</th>
           <th scope="col">Status</th><th scope="col">Results</th><th scope="col">Run time</th></tr></thead>
-        <tbody>{history?.runs.map(run => <tr key={run.sessionId} data-source={showSamples ? 'sample' : 'actual'}>
+        <tbody>{query.data?.runs.map(run => <tr key={run.sessionId}>
           <td data-label="Run"><div><strong>#{run.runNumber.toLocaleString()}</strong><small>{run.totalRuns.toLocaleString()} runs</small></div></td>
           <th data-label="Filter" scope="row">{run.filterName}</th>
           <td data-label="Progress"><div className="run-history-progress">
@@ -89,7 +82,7 @@ export function RunHistory() {
         </tr>)}</tbody>
       </table>
       <p className="run-history-note">Processed cases include results with data, no data and failures. Retries stay in the same run.</p>
-      {!query.loading && !query.error && !history?.runs.length && <p className="run-history-empty">No filter runs yet.</p>}
+      {!query.loading && !query.error && !query.data?.runs.length && <p className="run-history-empty">No filter runs yet.</p>}
       {total > PAGE_SIZE && <div className="run-history-pagination">
         <span>{offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total.toLocaleString()}</span>
         <div><button type="button" disabled={offset === 0 || query.loading} onClick={() => setOffset(value => Math.max(0, value - PAGE_SIZE))}>Previous</button>

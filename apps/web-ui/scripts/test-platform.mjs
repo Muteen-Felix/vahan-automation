@@ -69,9 +69,7 @@ try {
     PERMISSIONS_UI_URL: `${baseUrl}/`,
   };
   for (const file of testFiles) await runNode([file], env);
-  for (const REVIEW_UI_CASE of ['sample','finished']) {
-    await runNode(['scripts/test-review-regressions-ui.mjs'], {...env, REVIEW_UI_CASE, REVIEW_UI_URL: baseUrl});
-  }
+  await runNode(['scripts/test-review-regressions-ui.mjs'], {...env, REVIEW_UI_URL: baseUrl});
   console.log('Web UI platform tests passed.');
 } finally {
   server.kill();
