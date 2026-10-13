@@ -1,8 +1,6 @@
 import {
   filterChoiceLabel,
   operatorMessage,
-  operatorStatus,
-  reportBrowserName,
 } from "../operator-language";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -27,7 +25,6 @@ import {
   type ProfileDefinition,
   type ProfileField,
   type ProfileOptions,
-  type CombinationRule,
 } from "../filter-profiles";
 
 function isWorkerWaiting(reason: unknown): boolean {
@@ -445,15 +442,7 @@ export function FilterProfiles({
   const [error, setError] = useState(""),
     [message, setMessage] = useState("");
   const [preview, setPreview] = useState<MatrixPlan | null>(null);
-  const [refresh, setRefresh] = useState(0);
   const [retrySequence, setRetrySequence] = useState(0);
-  const [rulesOpen, setRulesOpen] = useState(false);
-  const rulesDialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    if (rulesOpen && !rulesDialog.current?.open)
-      rulesDialog.current?.showModal();
-    if (!rulesOpen && rulesDialog.current?.open) rulesDialog.current.close();
-  }, [rulesOpen]);
   const mounted = useRef(true),
     optionsPending = useRef(false),
     wantedContext = useRef(""),
@@ -467,7 +456,7 @@ export function FilterProfiles({
     parents.states = definition.fields.states.include.filter(
       (state) => !definition.fields.states.exclude.includes(state),
     );
-  const contextKey = JSON.stringify([runnerId, year, parents, refresh]);
+  const contextKey = JSON.stringify([runnerId, year, parents]);
   const runnerAvailable = Boolean(
     runners.find(
       (runner) =>
@@ -702,16 +691,6 @@ export function FilterProfiles({
     const values = await api.filterMakers(runnerId, year, search);
     setOptions((current) => ({ ...current, makers: values }));
   };
-  const setRule = (index: number, patch: Partial<CombinationRule>) => {
-    setPreview(null);
-    setDefinition((current) => ({
-      ...current,
-      rules: current.rules.map((rule, position) =>
-        position === index ? { ...rule, ...patch } : rule,
-      ),
-    }));
-  };
-
   return (
     <main className="page-content filter-profiles-page">
       <div className="filter-profiles-title">
@@ -762,37 +741,6 @@ export function FilterProfiles({
                 }}
               />
             </label>
-            {/* <label>
-              Browser for loading choices
-              <select
-                value={runnerId}
-                disabled={disabled || loading}
-                onChange={(event) => setRunnerId(event.target.value)}
-              >
-                <option value="">Choose an available browser</option>
-                {runners
-                  .filter((runner) => runner.source === "new")
-                  .map((runner, index) => (
-                    <option
-                      key={runner.id}
-                      value={runner.id}
-                      disabled={
-                        runner.status !== "ONLINE" && runner.id !== runnerId
-                      }
-                    >
-                      {reportBrowserName(runner.name, index)} ·{" "}
-                      {operatorStatus(runner.status)}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              disabled={disabled || loading || !runnerAvailable}
-              onClick={() => setRefresh((value) => value + 1)}
-            >
-              Reload choices
-            </button> */}
           </div>
           <div className="profile-report-context" aria-label="Report settings">
             <label>
@@ -852,177 +800,6 @@ export function FilterProfiles({
                       ? "Waiting for an available report browser to load choices."
                       : "")}
           </div>
-          {/* <div className="profile-rules">
-            <span>Rules for combining filters · {definition.rules.length}</span>
-            <button type="button" onClick={() => setRulesOpen(true)}>
-              Edit rules
-            </button>
-          </div> */}
-          {createPortal(
-            <dialog
-              ref={rulesDialog}
-              className="profile-picker-dialog profile-rules-dialog"
-              aria-label="Rules for combining filters"
-              onCancel={(event) => {
-                if (event.target === event.currentTarget) {
-                  event.preventDefault();
-                  setRulesOpen(false);
-                }
-              }}
-              onClose={(event) => {
-                if (event.target === event.currentTarget) setRulesOpen(false);
-              }}
-            >
-              <div className="profile-picker-header">
-                <div>
-                  <h3>Rules for combining filters</h3>
-                  <p>
-                    Choose which options to use or skip when another filter
-                    matches.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="profile-picker-close"
-                  aria-label="Close rules"
-                  onClick={() => setRulesOpen(false)}
-                >
-                  ×
-                </button>
-              </div>
-              <div className="profile-rules-body">
-                {definition.rules.map((rule, index) => (
-                  <div className="profile-rule" key={index}>
-                    <label>
-                      If
-                      <select
-                        value={rule.whenField}
-                        disabled={disabled}
-                        onChange={(event) =>
-                          setRule(index, {
-                            whenField: event.target.value as ProfileField,
-                            whenValues: [],
-                          })
-                        }
-                      >
-                        {PROFILE_FIELDS.map((field) => (
-                          <option key={field.id} value={field.id}>
-                            {field.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <ValuePicker
-                      label="Matching choices"
-                      values={rule.whenValues}
-                      options={options[rule.whenField] || []}
-                      disabled={disabled}
-                      onChange={(whenValues) => setRule(index, { whenValues })}
-                    />
-                    <label>
-                      Then
-                      <select
-                        value={rule.action}
-                        disabled={disabled}
-                        onChange={(event) =>
-                          setRule(index, {
-                            action: event.target
-                              .value as CombinationRule["action"],
-                          })
-                        }
-                      >
-                        <option value="require">Use one of</option>
-                        <option value="exclude">Skip</option>
-                      </select>
-                    </label>
-                    <label>
-                      Filter
-                      <select
-                        value={rule.targetField}
-                        disabled={disabled}
-                        onChange={(event) =>
-                          setRule(index, {
-                            targetField: event.target.value as ProfileField,
-                            targetValues: [],
-                          })
-                        }
-                      >
-                        {PROFILE_FIELDS.filter(
-                          (field) => field.id !== rule.whenField,
-                        ).map((field) => (
-                          <option key={field.id} value={field.id}>
-                            {field.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <ValuePicker
-                      label="Choices to use or skip"
-                      values={rule.targetValues}
-                      options={options[rule.targetField] || []}
-                      disabled={disabled}
-                      onChange={(targetValues) =>
-                        setRule(index, { targetValues })
-                      }
-                    />
-                    <button
-                      type="button"
-                      disabled={disabled}
-                      onClick={() => {
-                        setPreview(null);
-                        setDefinition((current) => ({
-                          ...current,
-                          rules: current.rules.filter(
-                            (_, position) => position !== index,
-                          ),
-                        }));
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                {!definition.rules.length && (
-                  <p>
-                    No rules yet. Add a rule to control which filter choices can
-                    be used together.
-                  </p>
-                )}
-              </div>
-              <div className="profile-picker-footer">
-                <span>{definition.rules.length} rules</span>
-                <button
-                  type="button"
-                  disabled={disabled || definition.rules.length >= 30}
-                  onClick={() =>
-                    setDefinition((current) => ({
-                      ...current,
-                      rules: [
-                        ...current.rules,
-                        {
-                          whenField: "fuels",
-                          whenValues: [],
-                          targetField: "evTypes",
-                          targetValues: [],
-                          action: "exclude",
-                        },
-                      ],
-                    }))
-                  }
-                >
-                  Add rule
-                </button>
-                <button
-                  type="button"
-                  className="profile-picker-done"
-                  onClick={() => setRulesOpen(false)}
-                >
-                  Done
-                </button>
-              </div>
-            </dialog>,
-            document.body,
-          )}
           <div className="profile-save-bar">
             <button
               type="button"
