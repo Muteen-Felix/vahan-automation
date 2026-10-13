@@ -84,9 +84,6 @@ export function AccountSettings({signingOut, onSignOut, onTimeZoneChange}: {
               <option value={RUN_TIME_ZONE}>Vietnam time (UTC+07:00)</option>
               <option value={INDIA_TIME_ZONE}>India time (UTC+05:30)</option>
             </select>
-            <small className="account-timezone-hint">{user?.role === 'admin'
-              ? 'Used across the interface and for saved schedules. Their next run times stay the same.'
-              : 'Used for timestamps throughout the interface.'}</small>
           </label>
           <button type="button" className="secondary-button" disabled={busy || signingOut || timeZoneBusy} onClick={() => {void onSignOut().finally(() => setOpen(false));}}>{signingOut ? 'Signing out…' : 'Log out'}</button></div>
         {timeZoneError && <p className="account-feedback account-feedback-error account-timezone-feedback" role="alert">{timeZoneError}</p>}

@@ -34,6 +34,7 @@ try {
  assert.equal(await page.getByRole('button',{name:'Log out',exact:true}).count(),0);
  await page.getByRole('button',{name:'Account',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Account settings'});
  await dialog.locator('.account-identity strong').filter({hasText:'admin-fixture'}).waitFor();assert.equal(await dialog.locator('.account-identity strong').innerText(),'admin-fixture');
+ assert.equal(await dialog.locator('.account-timezone-hint').count(),0,'Display time zone has no explanatory line under the selector');
  await dialog.getByLabel('Display time zone',{exact:true}).selectOption('Asia/Kolkata');
  await dialog.getByRole('status').getByText(/Times across the interface now use India time \(UTC\+05:30\)/).waitFor();
  assert.deepEqual(timeZoneChanges,[{timeZone:'Asia/Kolkata'}]);
@@ -68,6 +69,7 @@ try {
  await dialog.screenshot({path:testArtifactPath('account-settings-mobile.png')});
  await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
  role='user';await page.getByRole('button',{name:'Account',exact:true}).click();await dialog.getByText('Workspace member',{exact:true}).waitFor();
+ assert.equal(await dialog.locator('.account-timezone-hint').count(),0,'Members also see no explanatory line under the selector');
  await dialog.getByLabel('Display time zone',{exact:true}).selectOption('Asia/Ho_Chi_Minh');
  await dialog.getByRole('status').getByText(/Times across the interface now use Vietnam time/).waitFor();
  assert.deepEqual(timeZoneChanges,[{timeZone:'Asia/Kolkata'}],'Members change display time without changing administrator schedules');
