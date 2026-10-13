@@ -40,8 +40,7 @@ password tài khoản SQL đã tồn tại. Giữ encryption key khi nâng cấp
    mỗi runner xử lý một case, concurrency theo pool runner khả dụng. Số
    worker cũ trong lịch bị bỏ qua; form lịch không nhập worker count.
 4. Runner điền filter có dependency, xác minh DOM, Apply và dùng Tesseract OCR
-   trong image. Mỗi OCR start cần reservation SQL; giới hạn chung 20/10 phút.
-   Hết quota fail job với lý do trên web. Không log chữ OCR thô.
+   trong image. Ứng dụng không giới hạn số lần bắt đầu OCR. Không log chữ OCR thô.
 5. No data là kết quả hợp lệ. Workbook được parse/commit vào bảng chính và
    lịch sử. Retry giữ case/session, không tăng case hay nhân đôi dữ liệu.
 6. Export lấy toàn bộ dòng khớp State/RTO, kể cả hơn 100 dòng đang hiển thị.

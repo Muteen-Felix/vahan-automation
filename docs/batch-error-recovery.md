@@ -15,8 +15,8 @@ Chính sách attempt/checkpoint thực thi ở
 `apps/api-server/app/run_scheduler.py`,
 `apps/api-server/app/repositories/postgres.py` và worker `runner.mjs`.
 Không tăng quota/attempt bằng sửa trực tiếp SQL trong vận hành.
-OCR hết quota báo `OCR_RATE_LIMIT`, fail case hiện tại và giải phóng runner;
-chờ window 10 phút trước retry. Không restart để reset quota.
+Ứng dụng không đặt quota bắt đầu OCR. Nếu OCR không chạy, kiểm tra runner,
+challenge hiện tại và Tesseract; VAHAN vẫn có thể giới hạn xác minh ở phía họ.
 
 Test lease/concurrency/restart từ Đợt 2–4 và kiểm runtime gói Đợt 5 có phạm vi
 khác nhau; xem [báo cáo](round5-review-evidence.md) để biết phần nào đã chạy

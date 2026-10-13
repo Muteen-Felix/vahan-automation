@@ -1,7 +1,7 @@
 # SQL, migration và worker
 
 PostgreSQL giữ business state: tài khoản/session, profile, lịch, queue/task/job,
-case identity, browser state mã hóa, dữ liệu báo cáo và quota OCR.
+case identity, browser state mã hóa, dữ liệu báo cáo và quyền runner cho OCR.
 Image nền PostgreSQL chính thức 17.11-bookworm được pin digest trong
 `docker/postgres.Dockerfile`. Provisioning chạy qua service `migrate` bằng
 DB owner; runtime API dùng role DML riêng, không sở hữu schema hay quyền DDL.

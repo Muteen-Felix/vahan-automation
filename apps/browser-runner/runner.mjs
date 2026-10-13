@@ -151,20 +151,15 @@ async function refreshCaptchaInternal(job, captchaId) {
 }
 
 async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
+  if (job.ocrInFlightCaptchaId === captchaId) return;
+  job.ocrInFlightCaptchaId = captchaId;
   try {
     if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
         || job.captchaId !== captchaId || job.refreshingCaptchaId === captchaId) return;
-    const reservation = await http('/api/runner/ocr/start', {method: 'POST',
+    const start = await http('/api/runner/ocr/start', {method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({jobId: job.jobId, captchaId})});
-    if (!reservation.allowed) {
-      if (reservation.code === 'OCR_RATE_LIMIT') {
-        job.status = 'FAILED';
-        if (active === job) active = null;
-        await saveState().catch(error => console.error('Could not save browser state after OCR limit:', error.message));
-      }
-      return;
-    }
+    if (!start.allowed) return;
     if (job !== active || job.cancelled || job.status !== 'WAITING_CAPTCHA'
         || job.captchaId !== captchaId || job.refreshingCaptchaId === captchaId) return;
     const { stdout } = await runImageCommand('tesseract', ['stdin', 'stdout', '-l', 'eng', '--psm', '6'], imageBytes(imageDataUrl), {
@@ -187,6 +182,8 @@ async function autoSolveCaptcha(job, captchaId, imageDataUrl) {
         || job.captchaId !== captchaId || job.refreshingCaptchaId === captchaId) return;
     console.error('Auto-OCR failed, auto-refreshing...', err.message);
     await refreshCaptchaInternal(job, captchaId);
+  } finally {
+    if (job.ocrInFlightCaptchaId === captchaId) job.ocrInFlightCaptchaId = null;
   }
 }
 async function status(value, error, job = active) {

@@ -82,7 +82,7 @@ jobs:
           npm run test:image-pipe
           npm run test:profile-options
           npm run test:main-report-save
-          npm run test:ocr-rate-limit
+          npm run test:ocr-start
 
       - name: Install dashboard dependencies
         working-directory: apps/web-ui

@@ -18,7 +18,7 @@ riêng và identity; token UI không thay quyền runner.
 | Hàng đợi | `/api/batch-queue/sessions` và các thao tác session | Admin |
 | Worker | `GET /api/runners`, `/api/worker-pool` | Admin |
 | UI Health | `/api/ui-health/status`, `/preflight`, `/logs`, `/reports/{file}/download` | Admin; runner có quyền gửi log |
-| OCR quota | `POST /api/runner/ocr/start` | Runner token và identity/job/challenge hợp lệ |
+| Bắt đầu OCR CAPTCHA | `POST /api/runner/ocr/start` | Runner token và identity/job/challenge hợp lệ |
 
 Export nhận `year`, `dataset`, `state`, `rto`; không phân trang khi export.
 Không lọc State/RTO phải có `confirmAll=true`; thiếu xác nhận trả 409.

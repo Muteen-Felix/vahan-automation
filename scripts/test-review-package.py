@@ -251,7 +251,7 @@ asyncio.run(main())"""
             for test in ('test-image-pipe.mjs','test-filter-fill.mjs','test-options.mjs','test-profile-options.mjs',
                          'test-ui-health-contract.mjs','test-health-trigger.mjs','test-health-navigation.mjs',
                          'test-navigation.mjs','test-page-recovery.mjs','test-results.mjs','test-job-lifecycle.mjs',
-                         'test-main-report-save.mjs','test-ocr-rate-limit.mjs'):
+                         'test-main-report-save.mjs','test-ocr-start.mjs'):
                 run([*compose,'exec','-T','runner','node',test],test.removesuffix('.mjs'),timeout=300)
             # Run host Playwright test scripts against the package's Nginx-built assets.
             # API/Socket.IO fixtures within these scripts remain simulated and are labelled as such.

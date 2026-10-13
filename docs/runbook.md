@@ -86,7 +86,7 @@ không tương thích; dùng bản image/backup tương ứng tại project tác
 | Login 429 | Chờ quota nginx hồi; không retry login liên tục. Kiểm proxy/IP nguồn. |
 | Origin bị từ chối | So sánh URL dashboard với HTTP và Socket.IO allowlist trong `.docker.env`. |
 | UI Health blocked | Giữ diagnostics; kiểm TLS, form/selector và source VAHAN. Không tắt gate. |
-| OCR_RATE_LIMIT | Job FAILED với lý do rõ; giới hạn chung 20 start trong rolling 10 phút. Chờ lượt hết hạn rồi retry case theo chính sách; restart API không reset quota. |
+| OCR không tự hoàn thành | Kiểm trạng thái runner, CAPTCHA hiện tại và log Tesseract; ứng dụng không giới hạn số lần bắt đầu OCR. VAHAN có thể tự giới hạn hoặc yêu cầu xác minh. |
 | Worker reconnecting | Kiểm API/socket/browser logs, chờ grace/lease. Đối chiếu caseId/jobId trước khi thao tác lại. |
 | `/api/ready` lỗi | Kiểm PostgreSQL, migrate exit status và DB role; không cấp superuser cho API. |
 | Dữ liệu không hiển thị | Kiểm year/dataset/State/RTO, coverage và lịch sử commit báo cáo. Không bật mẫu để che dữ liệu thiếu. |

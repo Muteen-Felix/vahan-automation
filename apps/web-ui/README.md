@@ -7,8 +7,9 @@ Admin quản lý profile, lịch, Run History, UI Health và tài khoản. Membe
 xem Exported Reports. Báo cáo có search State/RTO, phân trang 100 và export mọi
 dòng khớp. Export all cần xác nhận. Cài mới không nạp mẫu; lịch không nhập worker.
 
-Retry giữ identity case/session, không tăng case count. Pause/resume, ETA,
-network/error banners và OCR_RATE_LIMIT hiển thị theo trạng thái API/SQL.
+Retry giữ identity case/session, không tăng case count. Pause/resume, ETA và
+network/error banners hiển thị theo trạng thái API/SQL. Ứng dụng không giới hạn
+số lần bắt đầu OCR tự động.
 
 ```bash
 npm ci
