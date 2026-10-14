@@ -1,6 +1,5 @@
 """Verify a restored 0005 snapshot before/after sharing, in a disposable DB only."""
 import asyncio
-import copy
 import json
 import os
 from pathlib import Path

@@ -1,9 +1,7 @@
 """Self-test for evidence-check.py and config-snapshot.py (PLAN T28/T28b, appendix B.2)."""
 import importlib.util
 import json
-import os
 import subprocess
-import sys
 import tempfile
 import unittest
 from pathlib import Path

@@ -17,7 +17,6 @@ import json
 import re
 import subprocess
 import sys
-from fnmatch import fnmatchcase
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -142,7 +141,6 @@ def value_ok(spec: dict, value: str) -> bool:
 
 def compare_snapshots(old: dict, new: dict, path_map: dict):
     """Apply the section 2.2 reopen rules. Returns {row: [reasons]}; every row for fail-closed cases."""
-    every = sorted(path_map["rows"])
     reasons: dict[str, list[str]] = {}
 
     def add(target, text):

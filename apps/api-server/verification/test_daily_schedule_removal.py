@@ -20,7 +20,7 @@ if not target.startswith('vahan_migration_') or not target.endswith('_test'):
     raise RuntimeError('Use a disposable vahan_migration_*_test database.')
 os.environ['DATABASE_URL'] = make_url(os.environ['DATABASE_URL']).set(database=target).render_as_string(hide_password=False)
 
-from sqlalchemy import insert, select, text
+from sqlalchemy import insert, text
 from app.db import engine, schema as db
 from app.repositories.postgres import now
 from app.repositories.run_history import list_runs
@@ -174,7 +174,7 @@ class DailyScheduleRemovalTest(unittest.IsolatedAsyncioTestCase):
         await migrate('upgrade', TARGET)
         second = json.loads((await rows(f"SELECT value::text FROM app_settings WHERE key = '{AUDIT_KEY}'"))[0][0])
         self.assertEqual(second['count'], first['count'] + 1)
-        self.assertEqual(await rows(f"SELECT count(*) FROM app_settings WHERE value->>'repeat' = 'daily'"), [(0,)])
+        self.assertEqual(await rows("SELECT count(*) FROM app_settings WHERE value->>'repeat' = 'daily'"), [(0,)])
 
 
 if __name__ == '__main__':

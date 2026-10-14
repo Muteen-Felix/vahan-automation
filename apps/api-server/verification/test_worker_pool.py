@@ -2,8 +2,8 @@
 import asyncio
 import unittest
 from uuid import uuid4
-import test_report_results as fixture
-from sqlalchemy import select, update
+import test_report_results as fixture  # noqa: F401  (import has side effects: guards the DB and migrates)
+from sqlalchemy import update
 from app.db import engine, schema as db
 from app.models.job import Job, JobStatus
 from app.services import services

@@ -24,7 +24,7 @@ subprocess.run([sys.executable, '-m', 'app.migrate'], check=True)
 
 from fastapi import HTTPException
 from openpyxl import Workbook
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import func, select, update
 from starlette.requests import Request
 from app.api.jobs import create_job
 from app.api.excel import (list_exported_report_sessions, download_job_file,

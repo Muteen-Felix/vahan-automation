@@ -1,5 +1,4 @@
 """Compose, CI and the package/scan tooling must use the same official PostgreSQL pin (T21a, D-33)."""
-import re
 import unittest
 from pathlib import Path
 

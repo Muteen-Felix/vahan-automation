@@ -1,7 +1,6 @@
 """Use the same strictly guarded disposable PostgreSQL database as report verification."""
 import io
 from datetime import datetime, timedelta, timezone
-from uuid import uuid4
 import unittest
 import asyncio
 
@@ -10,7 +9,7 @@ from sqlalchemy import delete, func, select
 from starlette.requests import Request
 from openpyxl import Workbook
 from app.db import engine, schema as db
-from app.repositories.annual_reports import import_rows, parse_rows, backfill
+from app.repositories.annual_reports import import_rows, parse_rows
 from app.repositories.file_store import PostgresFileStore
 from app.models.job import Job, JobStatus
 from app.api.annual_reports import annual_reports, annual_history, export_annual_reports
@@ -314,6 +313,41 @@ class AnnualReportsTest(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual([row[4] for row in exported[:100]], [row['maker'] for row in view['rows']])
                 workbook.close()
 
+    async def test_every_page_of_one_thousand_rows_matches_the_export_row_for_row(self):
+        # T16 (1): the export must be the ten 100-row pages the table shows, in the same order, not only the same set.
+        groups = [('ASSAM', 'UDALGURI - AS27', 600), ('TRIPURA', 'AGARTALA - TR1', 400)]
+        for index, (state, office, amount) in enumerate(groups):
+            await self.ingest(f'paged-export-{index}', rows(['Maker', "JAN'26"],
+                [[f'PAGED {index} MAKER {i:04}', i] for i in range(amount)]),
+                filters={**FILTERS, 'states': [state], 'rtos': [office]})
+        first = await self.read()
+        self.assertEqual(first['summary']['rows'], 1000)
+        paged = []
+        for offset in range(0, 1000, 100):
+            page = await self.read(dataset=first['datasetId'], offset=offset)
+            self.assertEqual(len(page['rows']), 100, f'page at offset {offset}')
+            paged += [row['maker'] for row in page['rows']]
+        self.assertEqual(len(set(paged)), 1000)
+        response = await export_annual_reports(request(), year=2026, dataset=first['datasetId'],
+            state='', rto='', confirm_all=True)
+        self.assertEqual(response.headers['x-report-row-count'], '1000')
+        workbook = load_workbook(io.BytesIO(response.body), read_only=True, data_only=True)
+        exported = [row[4] for row in workbook.active.iter_rows(min_row=4, values_only=True)]
+        workbook.close()
+        self.assertEqual(exported, paged)
+
+    async def test_spreadsheet_formula_prefixes_are_exported_as_text(self):
+        # S11: a maker name that starts with =, +, - or @ must be stored as a string cell, never as a formula.
+        hostile = ['=SUM(A1)', '+CMD', '-CMD', '@SUM(A1)']
+        await self.ingest('formula-prefixes', rows(['Maker', "JAN'26"],
+            [[name, i] for i, name in enumerate([*hostile, 'SAFE MAKER'])]))
+        view = await self.read(rto='AS27')
+        response = await export_annual_reports(request(), year=2026, dataset=view['datasetId'],
+            state='', rto='AS27', confirm_all=False)
+        sheet = load_workbook(io.BytesIO(response.body), data_only=False).active
+        kinds = {sheet.cell(r, 5).value: sheet.cell(r, 5).data_type for r in range(4, sheet.max_row + 1)}
+        for name in hostile:
+            self.assertEqual(kinds.get(name), 's', f'{name!r} must be a string cell, got {kinds}')
     async def test_export_filtered_reads_all_pages_real_name_null_zero_and_safe_text(self):
         values = [[f'MAKER {i:03d}', i, 0] for i in range(150)]
         values[0][0] = '=UNTRUSTED NAME'

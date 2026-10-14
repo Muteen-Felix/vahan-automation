@@ -1,5 +1,4 @@
 """Profiles and constrained combinations; SQL checks use an isolated *_test database."""
-import asyncio
 import json
 import unittest
 from datetime import datetime, timedelta, timezone
