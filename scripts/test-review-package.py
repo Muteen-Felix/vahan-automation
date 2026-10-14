@@ -20,12 +20,40 @@ from pathlib import Path
 from test_container_security import free_port, request, require, header_value
 
 
+def d3_status(d3: dict) -> str:
+    """NOT_RUN unless the operator asked for the live VAHAN checks; never PASS without a recorded PASS."""
+    if not d3['requested']:
+        return 'NOT_RUN'
+    parts = [d3['livePreflight']['status']]
+    if d3['liveCaseRequested']:
+        parts.append(d3['liveSingleCase']['status'])
+    return 'PASS' if all(part == 'PASS' for part in parts) else 'FAIL'
+
+
+def classify_outcome(checks: list[dict], error: str | None, d3: dict) -> tuple[str, int]:
+    """Package checks and D3 live VAHAN checks are separate. Exit: 0 package PASS (D3 NOT_RUN or PASS),
+    1 package FAIL, 2 package PASS but the requested D3 live check did not pass."""
+    package_failed = bool(error) or any(
+        entry.get('passed') is False or entry.get('exitCode', 0) != 0 for entry in checks)
+    if package_failed:
+        return 'PACKAGE_FAIL', 1
+    status = d3_status(d3)
+    if status == 'NOT_RUN':
+        return 'PACKAGE_PASS_D3_NOT_RUN', 0
+    if status == 'PASS':
+        return 'PACKAGE_PASS_D3_PASS', 0
+    return 'PACKAGE_PASS_D3_FAIL', 2
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--package-dir', required=True)
     parser.add_argument('--output-dir', required=True)
-    parser.add_argument('--live-case', action='store_true', help='After live preflight, attempt one real VAHAN case with native State/RTO options (at most 180 seconds).')
+    parser.add_argument('--vahan-preflight', action='store_true', help='Also run the D3 UI Health preflight against the real VAHAN site. Off by default; without it the result is recorded as NOT_RUN. Its result is reported separately from the package checks (exit status 2 if it fails).')
+    parser.add_argument('--live-case', action='store_true', help='Requires --vahan-preflight. After the live preflight passes, attempt one real VAHAN case with native State/RTO options (at most 180 seconds).')
     args = parser.parse_args()
+    if args.live_case and not args.vahan_preflight:
+        parser.error('--live-case requires --vahan-preflight.')
     package = Path(args.package_dir).resolve()
     output = Path(args.output_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -40,7 +68,12 @@ def main() -> None:
     project = f'vahan-review-{secrets.token_hex(6)}'
     evidence = {'sourceCommit':manifest['sourceCommit'], 'packageSha256':manifest['files'],
                 'project':project, 'startedAt':datetime.now(timezone.utc).isoformat(), 'checks':[],
-                'limits':['Synthetic data/fixtures are explicitly labelled; external VAHAN collection is a separate check.']}
+                'driverScriptSha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                'd3':{'requested':args.vahan_preflight,'liveCaseRequested':args.live_case,
+                      'livePreflight':{'status':'NOT_RUN','reason':'Not requested; D3 is a separate check (--vahan-preflight).'},
+                      'liveSingleCase':{'status':'NOT_RUN','reason':'Not requested (--live-case).'}},
+                'limits':['Synthetic data/fixtures are explicitly labelled; external VAHAN collection is a separate check.',
+                          'The D3 live VAHAN preflight is reported under "d3", never in "checks"; NOT_RUN is not a pass.']}
     with tempfile.TemporaryDirectory(prefix='vahan-review-install-') as temporary:
         root = Path(temporary)
         source_zip = next(package.glob('*-source.zip'))
@@ -271,20 +304,25 @@ asyncio.run(main())"""
                 run(['node',str(web_root/'scripts'/f'{name}.mjs')],'built-ui-fixture-'+name,timeout=300)
             run([*compose,'ps','--format','json'],'final-container-status')
             runner = next(r for r in call('/api/runners',token=admin_token) if r['status']=='ONLINE')
-            preflight_request = urllib.request.Request(api+'/api/ui-health/preflight',method='POST',
-                data=json.dumps({'runnerIds':[runner['id']]}).encode(),
-                headers={'Content-Type':'application/json','Authorization':f'Bearer {admin_token}'})
-            try:
-                with urllib.request.urlopen(preflight_request,timeout=130) as response:
-                    preflight_status, preflight_body = response.status,response.read()
-            except urllib.error.HTTPError as response:
-                preflight_status, preflight_body = response.code,response.read()
-            preflight = {'httpStatus':preflight_status,'body':json.loads(preflight_body)}
-            (output/'live-preflight.json').write_text(json.dumps(preflight,indent=2),encoding='utf-8')
-            evidence['checks'].append({'name':'live-vahan-preflight','passed':preflight_status==200,
-                'httpStatus':preflight_status,'log':'live-preflight.json',
-                'scope':'Actual VAHAN DOM through installed runner/API; failure remains an open finding, not a skipped test.'})
-            print(f'live-vahan-preflight: {"PASS" if preflight_status==200 else "OPEN FINDING"}',flush=True)
+            # D3: the real-VAHAN preflight is opt-in and is recorded under evidence['d3'], not in 'checks'.
+            preflight_status = None
+            if args.vahan_preflight:
+                preflight_request = urllib.request.Request(api+'/api/ui-health/preflight',method='POST',
+                    data=json.dumps({'runnerIds':[runner['id']]}).encode(),
+                    headers={'Content-Type':'application/json','Authorization':f'Bearer {admin_token}'})
+                try:
+                    with urllib.request.urlopen(preflight_request,timeout=130) as response:
+                        preflight_status, preflight_body = response.status,response.read()
+                except urllib.error.HTTPError as response:
+                    preflight_status, preflight_body = response.code,response.read()
+                preflight = {'httpStatus':preflight_status,'body':json.loads(preflight_body)}
+                (output/'d3-live-preflight.json').write_text(json.dumps(preflight,indent=2),encoding='utf-8')
+                evidence['d3']['livePreflight'] = {'status':'PASS' if preflight_status==200 else 'FAIL',
+                    'httpStatus':preflight_status,'log':'d3-live-preflight.json',
+                    'scope':'Actual VAHAN DOM through installed runner/API; failure stays an open D3 finding.'}
+                print(f'live-vahan-preflight (D3): {"PASS" if preflight_status==200 else "FAIL"}',flush=True)
+            else:
+                print('live-vahan-preflight (D3): NOT_RUN (separate check; pass --vahan-preflight to request it)',flush=True)
             if args.live_case and preflight_status==200:
                 live = {'scope':'One actual VAHAN case, using native State/RTO options; no synthetic page or CAPTCHA.',
                     'observations':[]}
@@ -328,10 +366,12 @@ asyncio.run(main())"""
                     live.update(passed=False,error=str(error).split('\n')[0])
                     if job and job.get('status') not in ('COMPLETED','NO_DATA','FAILED','CANCELLED'):
                         call('/api/jobs/'+job['id']+'/cancel','POST',token=admin_token)
-                evidence['checks'].append({'name':'live-vahan-single-case','passed':live['passed'],
-                    'workbookImported':live.get('workbookImported',False),'log':'live-single-case.json'})
-                (output/'live-single-case.json').write_text(json.dumps(live,indent=2),encoding='utf-8')
-                print(f'live-vahan-single-case: {"PASS" if live["passed"] else "OPEN FINDING"}',flush=True)
+                evidence['d3']['liveSingleCase'] = {'status':'PASS' if live['passed'] else 'FAIL',
+                    'workbookImported':live.get('workbookImported',False),'log':'d3-live-single-case.json'}
+                (output/'d3-live-single-case.json').write_text(json.dumps(live,indent=2),encoding='utf-8')
+                print(f'live-vahan-single-case (D3): {"PASS" if live["passed"] else "FAIL"}',flush=True)
+            elif args.live_case:
+                evidence['d3']['liveSingleCase'] = {'status':'NOT_RUN','reason':'The D3 live preflight did not pass.'}
             # Reproduce an existing product behavior without changing product code.
             # Deliberately incompatible evidence is synthetic and lives only in this disposable DB.
             payload = {'runnerId':runner['id'],'pageUrl':'https://round5-synthetic.invalid/',
@@ -368,11 +408,13 @@ asyncio.run(main())"""
         finally:
             run([*compose,'down','--volumes','--remove-orphans','--timeout','15'],'disposable-project-cleanup',timeout=120,optional=True)
             evidence['finishedAt'] = datetime.now(timezone.utc).isoformat()
-            evidence['outcome'] = ('FAIL_OR_OPEN_FINDINGS' if evidence.get('error') or any(
-                entry.get('passed') is False or entry.get('exitCode',0) != 0 for entry in evidence['checks']) else 'PASS')
+            evidence['outcome'], evidence['exitStatus'] = classify_outcome(
+                evidence['checks'], evidence.get('error'), evidence['d3'])
+            evidence['d3Status'] = d3_status(evidence['d3'])
             (output / 'results.json').write_text(json.dumps(evidence,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
-    if evidence['outcome'] != 'PASS':
-        raise SystemExit(1)
+    print(f"package outcome: {evidence['outcome']}; D3 live VAHAN: {evidence['d3Status']}; exit {evidence['exitStatus']}",flush=True)
+    if evidence['exitStatus']:
+        raise SystemExit(evidence['exitStatus'])
 
 
 if __name__ == '__main__':
