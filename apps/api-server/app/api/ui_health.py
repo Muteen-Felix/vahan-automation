@@ -7,6 +7,7 @@ from app.repositories.postgres import now
 from app.repositories import ui_contract
 from app.repositories.filter_profiles import PreflightUnavailable, reserve_preflight_runners
 from app.models.filter_profile import StrictModel
+from app.access import require_admin
 from pydantic import Field
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -115,7 +116,7 @@ async def contract_status():
     state=await ui_contract.current()
     async with engine.connect() as c:
         latest=(await c.execute(select(db.ui_preflight_checks).order_by(db.ui_preflight_checks.c.created_at.desc()).limit(1))).mappings().first()
-    return {**state,'latestPreflight':dict(latest) if latest else None}
+    return {**state,'latestPreflight':dict(latest) if latest else None,'gateGeneration':await ui_contract.gate_generation()}
 
 
 @router.post('/preflight')
@@ -126,6 +127,8 @@ async def preflight(command:PreflightInput,request:Request):
     async with engine.connect() as connection:
         concurrency = (await pool_value(connection))['desiredCount']
     check_id=str(uuid4());semaphore=asyncio.Semaphore(min(2, max(1, concurrency)))
+    # Evidence is only valid at the gate generation it was started in (retire/invalidate bump it).
+    start_generation=await ui_contract.gate_generation()
     waiting=False
 
     def deferred(runner_id,code,title):
@@ -136,8 +139,10 @@ async def preflight(command:PreflightInput,request:Request):
         last=None
         for attempt in range(2):
             request_id=str(uuid4())
+            # Issued under the worker reservation, so a larger sequence means a later check.
+            check_seq=await ui_contract.next_check_seq()
             try:
-                result=await sio.call('ui-health:preflight',{'requestId':request_id,'trigger':'preflight'},to=socket_id,namespace='/runner',timeout=55)
+                result=await sio.call('ui-health:preflight',{'requestId':request_id,'trigger':'preflight','checkSeq':check_seq},to=socket_id,namespace='/runner',timeout=55)
             except Exception as error:
                 return deferred(runner_id,'WORKER_NO_RESPONSE',
                     f'{runner_id} did not answer the website check. The check will retry automatically.')
@@ -179,9 +184,16 @@ async def preflight(command:PreflightInput,request:Request):
     waiting=waiting or any(report.get('waiting') for report in reports)
     allowed=not waiting and not state['blocked'] and all(report.get('allowed') and report.get('versionId')==state['versionId'] for report in reports)
     status_value='PASS' if allowed else 'WAITING' if waiting and not state['blocked'] and not any(not report.get('allowed') and not report.get('waiting') for report in reports) else 'BLOCKED'
+    if await ui_contract.gate_generation()!=start_generation:
+        # The gate was retired/invalidated while workers were being checked: this evidence belongs
+        # to an older generation. Never report it as allowed.
+        allowed=False;waiting=True;status_value='WAITING'
+        for report in reports:
+            if report.get('allowed'):report.update(allowed=False,waiting=True,reports=[{'code':'GATE_GENERATION_CHANGED','title':'The gate was reset while the website check ran. The check will retry automatically.'}])
     async with engine.begin() as c:
         await c.execute(insert(db.ui_preflight_checks).values(id=check_id,owner_username=request.state.authenticated_user,
-            runner_ids=ids,version_id=state['versionId'],status=status_value,reports=reports,created_at=now()))
+            runner_ids=ids,version_id=state['versionId'],status=status_value,reports=reports,created_at=now(),
+            gate_generation=start_generation))
     response={'allowed':allowed,'preflightId':check_id,'revision':state['revision'],'versionId':state['versionId'],'reports':reports}
     if status_value=='WAITING':
         response.update(status='WAITING',retryAfterMs=5000)
@@ -192,3 +204,42 @@ async def preflight(command:PreflightInput,request:Request):
         raise HTTPException(409,{'code':'UI_HEALTH_BLOCKED','message':'Preflight failed; no Maker data or tasks were loaded. Open UI Health and copy the error for dev.','diagnostics':response})
     await sio.emit('ui-health:verified',response,namespace='/ui')
     return response
+
+
+class GateReason(StrictModel):
+    reason:str=Field(min_length=1,max_length=500)
+
+
+def _gate_http_error(error):
+    return HTTPException(error.status_code,{'code':error.code,'message':error.message})
+
+
+async def _publish_gate_state():
+    state=await ui_contract.current()
+    await sio.emit('ui-health:blocked' if state['blocked'] else 'ui-health:verified',state,namespace='/ui')
+    return state
+
+
+@router.post('/admin/runner-errors/{runner_id}/retire')
+async def admin_retire_runner_error(runner_id:str,command:GateReason,request:Request):
+    """Retire the stored error of a worker that is gone. Admin only; every precondition is
+    verified inside the transaction and the audit event is written in that same transaction."""
+    require_admin(request)
+    try:
+        result=await ui_contract.retire_runner_error(request.state.authenticated_user,runner_id,command.reason)
+    except ui_contract.GateOpError as error:
+        raise _gate_http_error(error) from error
+    state=await _publish_gate_state()
+    return {**result,'blocked':state['blocked'],'blockedRunnerIds':state['blockedRunnerIds']}
+
+
+@router.post('/admin/gates/invalidate')
+async def admin_invalidate_gates(command:GateReason,request:Request):
+    """Make every existing PASS preflight unusable (before a rollback). Admin only, audited."""
+    require_admin(request)
+    try:
+        result=await ui_contract.invalidate_gates(request.state.authenticated_user,command.reason)
+    except ui_contract.GateOpError as error:
+        raise _gate_http_error(error) from error
+    await _publish_gate_state()
+    return result

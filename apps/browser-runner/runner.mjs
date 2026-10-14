@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {inspectControls,selectorOverrides} from './ui-health-contract.mjs';
 import { normalizeJobFilters, VAHAN_OPTION_SELECTORS } from './config.mjs';
+import {StateStore, runHealthCheck, BUDGET as HEALTH_BUDGET} from './health-cookie-recovery.mjs';
 
 const API = process.env.VAHAN_API_URL || 'http://api:8000';
 const TOKEN = process.env.VAHAN_API_RUNNER_TOKEN;
@@ -32,6 +33,10 @@ if (!LOCAL_FIXTURE && (target.origin !== 'https://analytics.parivahan.gov.in' ||
 let browser, browserPromise, context, page, active, optionsBusy = false, authRequired = false, stopping = false;
 let optionsCancellation = null;
 let pageNeedsReset = false;
+// Bumped on every (re)creation of the live browser context so a health check can tell that the
+// context it started with is gone; `tainted` quarantines a context whose cookies cannot be trusted.
+let contextEpoch = 0;
+let tainted = false;
 const socket = io(`${API}/runner`, {autoConnect: false, transports: ['websocket'], auth: {
   runnerId: ID, runnerName: process.env.VAHAN_RUNNER_NAME || 'Chromium Playwright', token: TOKEN,
   source: 'new', engine: 'playwright', version: '0.2.0',
@@ -39,10 +44,21 @@ const socket = io(`${API}/runner`, {autoConnect: false, transports: ['websocket'
 const headers = {'X-VAHAN-RUNNER-TOKEN': TOKEN, 'X-VAHAN-RUNNER-ID': ID};
 let queueConsumerPromise = null;
 async function http(path, init = {}) {
-  const response = await fetch(`${API}${path}`, {...init, headers: {...headers, ...init.headers}, signal: AbortSignal.timeout(60_000)});
-  if (!response.ok) throw new Error(`API ${response.status}: ${await response.text()}`);
+  const {timeoutMs, ...options} = init;
+  // The timeout must be positive: AbortSignal.timeout(0) aborts at once.
+  const limit = Number.isFinite(timeoutMs) && timeoutMs > 0 ? Math.floor(timeoutMs) : 60_000;
+  const response = await fetch(`${API}${path}`, {...options, headers: {...headers, ...options.headers}, signal: AbortSignal.timeout(limit)});
+  if (!response.ok) {
+    const text = await response.text();
+    const error = new Error(`API ${response.status}: ${text}`);
+    error.status = response.status;
+    try { error.body = JSON.parse(text); } catch { /* plain text body */ }
+    throw error;
+  }
   return response.json();
 }
+// Browser-state writes are serialized and fenced by revision (PLAN_STATE_VAHAN WP-S).
+const stateStore = new StateStore({http: (path, init) => http(path, init), id: ID, isConnected: () => socket.connected});
 async function ack(event, payload, timeout = 15_000) {
   const response = await socket.timeout(timeout).emitWithAck(event, payload);
   if (!response?.ok) throw new Error(response?.error || `${event} was rejected.`);
@@ -54,7 +70,7 @@ async function consumeQueue() {
   queueConsumerPromise = (async () => {
     while (!stopping) {
       try {
-        while (!stopping && (!socket.connected || !context || !browser?.isConnected() || active || optionsBusy)) {
+        while (!stopping && (!socket.connected || !context || !browser?.isConnected() || active || optionsBusy || tainted)) {
           await sleep(500);
         }
         if (stopping) break;
@@ -197,7 +213,9 @@ async function launch() {
   browserPromise = (async () => {
     browser = await chromium.launch({headless: true, chromiumSandbox: process.env.VAHAN_CHROMIUM_SANDBOX !== 'false'});
     const saved = await http(`/api/runner-state/${ID}`);
+    stateStore.setRevision(saved.revision);
     context = await browser.newContext({acceptDownloads: true, storageState: saved.state || undefined, viewport: {width: 1440, height: 1000}});
+    contextEpoch += 1;
     await context.addInitScript({path: DRIVER});
     await newPage();
   })();
@@ -263,8 +281,23 @@ async function ensurePage(isCancelled = () => false) {
   if (!isReportPage()) throw new Error('VAHAN_REPORT_NAVIGATED_AWAY: VAHAN redirected away before filters could be filled.');
 }
 async function saveState() {
-  if (context && socket.connected) await http(`/api/runner-state/${ID}`, {method: 'PUT',
-    headers: {'Content-Type': 'application/json'}, body: JSON.stringify({value: await context.storageState()})});
+  // Serialized and fenced: the body is read when the write runs, and a conflict re-reads the
+  // revision and the state instead of re-sending stale bytes.
+  if (context && socket.connected) await stateStore.persist(() => context.storageState());
+}
+// Rebuild the live context from the stored state. Used only when a cookie operation left the
+// live jar in an unknown condition (the stored state was not changed by that operation).
+async function rebuildPrimaryContext() {
+  const saved = await http(`/api/runner-state/${ID}`);
+  stateStore.setRevision(saved.revision);
+  const fresh = await browser.newContext({acceptDownloads: true, storageState: saved.state || undefined, viewport: {width: 1440, height: 1000}});
+  await fresh.addInitScript({path: DRIVER});
+  const old = context;
+  context = fresh;
+  contextEpoch += 1;
+  pageNeedsReset = true;
+  await old?.close().catch(() => {});
+  await newPage();
 }
 async function snapshot(label, job = active) {
   if (!job || job !== active || job.cancelled || page?.isClosed()) return;
@@ -515,48 +548,32 @@ socket.on('runner:cancel-options', async (request, respond) => {
 let contractRevision=0;
 let approvedSelectors=VAHAN_OPTION_SELECTORS;
 let approvedApplySelector='#applyTrigger';
-async function healthCheck(request = {}) {
-  let result;let isolated;
-  try {
-    await launch();
-    const contract=await http('/api/ui-health/contract');
-    isolated=await browser.newContext({storageState:await context.storageState(),viewport:{width:1440,height:1000}});
-    const healthPage=await isolated.newPage();
-    // Preflight only needs the document response committed. Waiting for
-    // DOMContentLoaded can time out on slow VAHAN assets even when the report
-    // document is already available; a bounded control probe follows, then SQL
-    // evaluates the observed controls and blocks any incomplete or changed UI.
-    const response=await healthPage.goto(URL,{waitUntil:'commit',timeout:30000});
-    const location=new globalThis.URL(healthPage.url());
-    if(response?.status()===401||location.origin!==target.origin||location.pathname!==target.pathname)throw new Error('Health check did not reach the expected public report page.');
-    if(response && response.status()>=400)throw new Error(`Health check received HTTP ${response.status()} from VAHAN.`);
-    // Allow asynchronous controls to settle, including uniquely renamed controls.
-    // This reads option metadata only; Maker requests and report jobs start later.
-    await healthPage.waitForFunction(controls=>controls.every(control=>{
-      try {
-        const direct=document.querySelector(control.selector);
-        const semantic=control.name?[...document.querySelectorAll('select,input,button')].filter(el=>el.getAttribute('name')===control.name):[];
-        const element=direct||(semantic.length===1?semantic[0]:null);
-        // Dependent selects such as RTO and Maker can legitimately be empty.
-        return element && (control.field!=='states'||element.options?.length);
-      }catch{return false;}
-    }),contract.controls,{timeout:10000}).catch(()=>{});
-    const observedControls=await inspectControls(healthPage,contract);
-    result={status:'PASS',observedControls,checkedAt:new Date().toISOString(),contract:{path:target.pathname,revision:contract.revision}};
-  }catch(error){result={status:'CHECK_ERROR',error:error.message,observedControls:[],checkedAt:new Date().toISOString()};}
-  finally{await isolated?.close().catch(()=>{});}
-  result.trigger=request.trigger||'preflight';result.logId=request.requestId||randomUUID();result.checkId=result.logId;
-  const saved=await http('/api/ui-health/logs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runnerId:ID,pageUrl:URL,healthCheck:result})});
-  return saved;
+// The check itself (navigation, bounded cookie recovery, fenced state save, one SQL log) lives in
+// health-cookie-recovery.mjs so it can be tested without the runner process.
+async function healthCheck(request = {}, extra = {}) {
+  return runHealthCheck({
+    browser: () => browser, context: () => context, launch, http, URL, target, ID, randomUUID, inspectControls,
+    store: stateStore, epoch: () => contextEpoch, isTainted: () => tainted,
+    setTainted: () => { tainted = true; }, markPageNeedsReset: () => { pageNeedsReset = true; },
+    rebuildPrimary: rebuildPrimaryContext, UrlCtor: globalThis.URL, budget: HEALTH_BUDGET,
+  }, {...request, ...extra});
 }
 socket.on('ui-health:preflight',async(request,respond)=>{
+  // The whole check, including this wait, shares one deadline that ends before the API's 55 s.
+  const startedAt=Date.now();
   // SQL can release a committed job just before the worker finishes its final
   // acknowledgement. Let that bounded cleanup finish before checking the page.
-  if(active?.finishing)await active.finishPromise;
+  if(active?.finishing){
+    let waitTimer;
+    const settled=await Promise.race([active.finishPromise.then(()=>true),
+      new Promise(resolve=>{waitTimer=setTimeout(()=>resolve(false),HEALTH_BUDGET.finishWait);})]);
+    clearTimeout(waitTimer);
+    if(!settled){respond({ok:false,error:'Worker is busy.',code:'RUNNER_BUSY',retryAfterMs:1000});return;}
+  }
   if(active||optionsBusy){respond({ok:false,error:'Worker is busy.',code:'RUNNER_BUSY',retryAfterMs:1000});return;}
   optionsBusy=true;
-  try{const result=await healthCheck(request);respond({ok:true,...result});}
-  catch(error){respond({ok:false,error:error.message});}
+  try{const result=await healthCheck(request,{startedAt});respond({ok:true,...result});}
+  catch(error){respond({ok:false,error:error.message,code:error.code});}
   finally{optionsBusy=false;}
 });
 const timer = setInterval(async () => {
@@ -567,9 +584,9 @@ const timer = setInterval(async () => {
   } catch (error) { console.error('Worker heartbeat:', error.message); }
 }, 15_000);
 createServer((request, response) => {
-  const ready = socket.connected && context && browser?.isConnected();
+  const ready = socket.connected && context && browser?.isConnected() && !tainted;
   response.writeHead(ready ? 200 : 503, {'Content-Type': 'application/json'});
-  response.end(JSON.stringify({connected: socket.connected, browserReady: !!context && !!browser?.isConnected(), activeJobId: active?.jobId || null, optionsBusy}));
+  response.end(JSON.stringify({connected: socket.connected, browserReady: !!context && !!browser?.isConnected(), activeJobId: active?.jobId || null, optionsBusy, tainted}));
 }).listen(3001, '0.0.0.0');
 async function stop() {
   if (stopping) return; stopping = true; clearInterval(timer);

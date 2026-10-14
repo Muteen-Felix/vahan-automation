@@ -9,7 +9,8 @@ const context={socket:{connected:true,on:(name,handler)=>events.set(name,handler
   consumeQueue:()=>{},active:null,optionsBusy:false,stopping:false,launch:async()=>calls.push('launch'),
   ack:async name=>{calls.push(name);return {};},saveState:async()=>calls.push('save'),
   http:async path=>{throw new Error(`Unexpected health schedule request: ${path}`);},console,
-  healthCheck:async request=>{assert.equal(context.optionsBusy,true);calls.push(request);return {validation:{allowed:true}};},
+  healthCheck:async (request,extra)=>{assert.equal(context.optionsBusy,true);context.startedAtSeen=extra?.startedAt;calls.push(request);return {validation:{allowed:true}};},
+  HEALTH_BUDGET:{finishWait:50},setTimeout,clearTimeout,
   Date:{now:()=>Date.parse('2099-01-01T00:00:00Z')},setInterval:handler=>{context.heartbeat=handler;return 1;},
 };
 runInNewContext(source.slice(source.indexOf("socket.on('connect', async"),source.indexOf("socket.on('connect_error'")),context);
@@ -29,4 +30,16 @@ assert.equal(calls.length,1);assert.equal(calls[0],request);assert.equal(reply.o
 context.active={jobId:'running-job'};
 await events.get('ui-health:preflight')(request,value=>{reply=value;});
 assert.equal(reply.ok,false);assert.equal(calls.length,1,'A busy report worker is not interrupted by another check');
+// The check shares one deadline with the wait for a finishing job: it must not wait forever.
+context.active={jobId:'finishing-job',finishing:true,finishPromise:new Promise(()=>{})};
+const waitStarted=Date.now();
+await events.get('ui-health:preflight')(request,value=>{reply=value;});
+assert.equal(reply.ok,false);assert.equal(reply.code,'RUNNER_BUSY');
+assert.ok(Date.now()-waitStarted<2000,'a job that never finishes is answered as busy within the finish wait');
+assert.equal(calls.length,1,'no check ran');
+context.active=null;
+await events.get('ui-health:preflight')(request,value=>{reply=value;});
+assert.equal(reply.ok,true);
+assert.equal(typeof calls.at(-1),'object');
+assert.equal(typeof context.startedAtSeen,'number','the handler passes the time it received the request');
 console.log('Runner health checks: explicit preflight only, no connection/heartbeat schedule, and busy-job protection passed.');

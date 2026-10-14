@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node runner.mjs",
-    "check": "node --check runner.mjs && node --check page-driver.js && node --check ui-health-contract.mjs && node --check image-pipe.mjs && node --check page-recovery.mjs",
-    "test:ui-health": "node test-ui-health-contract.mjs && node test-health-trigger.mjs && node test-health-navigation.mjs",
+    "check": "node --check runner.mjs && node --check page-driver.js && node --check ui-health-contract.mjs && node --check image-pipe.mjs && node --check page-recovery.mjs && node --check health-cookie-recovery.mjs",
+    "test:ui-health": "node test-ui-health-contract.mjs && node test-health-trigger.mjs && node test-health-navigation.mjs && node test-health-cookie-recovery.mjs",
     "test:results": "node test-results.mjs",
     "test:lifecycle": "node test-job-lifecycle.mjs",
     "test:filters": "node test-filter-fill.mjs",

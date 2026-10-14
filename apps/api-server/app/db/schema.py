@@ -1,11 +1,13 @@
 """Durable PostgreSQL schema. JSONB retains complete versioned application payloads."""
 from sqlalchemy import (
     MetaData, Table, Column, String, Text, Boolean, Integer, BigInteger,
-    DateTime, LargeBinary, ForeignKey, JSON, Index, UniqueConstraint, CheckConstraint, text,
+    DateTime, LargeBinary, ForeignKey, JSON, Index, UniqueConstraint, CheckConstraint, Sequence, text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
 metadata = MetaData()
+# Server-issued order of health checks (migration 0016 creates it for upgraded databases).
+ui_health_check_seq = Sequence("ui_health_check_seq", metadata=metadata)
 document = JSON().with_variant(JSONB(), "postgresql")
 users = Table("users", metadata,
     Column("username", String(128), primary_key=True),
@@ -108,7 +110,8 @@ ui_health_checks = Table("ui_health_checks", metadata,
 browser_states = Table("browser_states", metadata,
     Column("runner_id", String(128), primary_key=True),
     Column("encrypted_state", LargeBinary, nullable=False),
-    Column("updated_at", DateTime(timezone=True), nullable=False))
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Column("revision", BigInteger, nullable=False, server_default="0"))
 audit_events = Table('audit_events', metadata,
     Column('id', String(36), primary_key=True),
     Column('actor', String(128), nullable=True, index=True),
@@ -199,4 +202,5 @@ ui_preflight_checks = Table('ui_preflight_checks', metadata,
     Column('id', String(36), primary_key=True), Column('owner_username', ForeignKey('users.username'), nullable=False),
     Column('runner_ids', document, nullable=False), Column('version_id', String(36)),
     Column('status', String(24), nullable=False), Column('reports', document, nullable=False),
-    Column('created_at', DateTime(timezone=True), nullable=False))
+    Column('created_at', DateTime(timezone=True), nullable=False),
+    Column('gate_generation', Integer, nullable=False, server_default='0'))
