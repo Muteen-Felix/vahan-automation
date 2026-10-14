@@ -100,3 +100,8 @@ cùng log đã che secrets. Chỉ project có tên ngẫu nhiên `vahan-review-*
 dọn sau kiểm; stack đang dùng và `outputs/` của repository được giữ nguyên.
 Phạm vi dữ liệu tổng hợp và phần VAHAN chưa kiểm được phải được đọc cùng
 [báo cáo bằng chứng](round5-review-evidence.md).
+
+Mặc định script **không** gọi VAHAN: preflight D3 được ghi `NOT_RUN` (không phải Pass).
+Chỉ khi thêm `--vahan-preflight` nó mới chạy và được ghi riêng ở `d3` trong `results.json`
+(`--live-case` cần kèm cờ này). Exit status: `0` = kiểm gói đạt (D3 `NOT_RUN` hoặc `PASS`),
+`1` = kiểm gói lỗi, `2` = kiểm gói đạt nhưng D3 được yêu cầu mà không đạt.

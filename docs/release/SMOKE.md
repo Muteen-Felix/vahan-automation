@@ -33,3 +33,17 @@ py -3 scripts/release-smoke.py --base-url http://127.0.0.1:5173 --admin-user adm
 
 Smoke **không** chứng minh VAHAN, CAPTCHA hay tải báo cáo hoạt động; dùng `qa/e2e-checklist.md`.
 Mật khẩu chỉ đọc từ biến môi trường và không được in ra.
+
+## Kiểm gói tự động (T32) và preflight VAHAN (D3) là hai kết quả riêng
+
+`scripts/test-review-package.py` kiểm gói offline (nạp image, cài, backup/restore, test runner/UI). Mặc định nó **không gọi VAHAN**;
+preflight D3 được ghi `NOT_RUN` trong `results.json` (`d3.livePreflight.status`) và **không** được tính là Pass.
+Chỉ khi chạy với `--vahan-preflight` thì preflight mới chạy; kết quả nằm ở `d3-live-preflight.json` và mục `d3`, tách khỏi `checks`.
+
+| Exit status | Ý nghĩa |
+| --- | --- |
+| `0` | Kiểm gói đạt; D3 `NOT_RUN` hoặc `PASS` (xem `d3Status`, không suy ra D3 đạt từ exit 0) |
+| `1` | Kiểm gói lỗi (kể cả khi D3 được yêu cầu) |
+| `2` | Kiểm gói đạt nhưng D3 được yêu cầu mà không đạt (R6 giữ Not verified) |
+
+CI xanh và kiểm gói đạt **không thay thế** D3 trên VAHAN thật.
