@@ -676,6 +676,7 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid rg
 .profile-save-bar { display:flex; align-items:end; flex-wrap:wrap; gap:9px; margin-top:18px; }
 .profile-save-bar label { max-width:140px; margin:0; }
 .profile-save-bar > button:first-of-type { background:#285d37; color:#fff; border-color:#285d37; }
+.filter-profiles-page .profile-save-bar > button:first-of-type:hover:not(:disabled) { background:#1f492b; color:#fff; border-color:#1f492b; }
 .profile-save-bar .profile-delete { margin-left:auto; color:#a02f22; }
 .profile-message { color:#285d37; font-size:12px; margin:14px 0 0; overflow-wrap:anywhere; }
 .profile-preview { border-top:1px solid #dbe3dd; margin-top:18px; padding-top:16px; }
