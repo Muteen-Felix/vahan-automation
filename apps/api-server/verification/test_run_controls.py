@@ -117,8 +117,15 @@ class RunControlsTest(unittest.IsolatedAsyncioTestCase):
         coverage = await report_coverage(CoverageQuery(year=2024, scenarios=[{
             'name': task.name, 'filters': task.filters.model_dump(mode='json', by_alias=True)
         } for task in self.tasks]), request)
-        self.assertEqual(coverage['covered'], 1)
-        self.assertTrue(coverage['canContinue'], 'historical years can continue missing offices')
+        self.assertEqual((coverage['hasRun'], coverage['status'], coverage['total'], coverage['processed']),
+                         (False, 'NO_RUN', 0, 0), 'a saved workbook is data, not run progress')
+        self.assertTrue(coverage['matrixLoaded'])
+        await self.queue.start(uuid4(), self.owner, self.tasks, 1)
+        started = await report_coverage(CoverageQuery(year=2024, scenarios=[{
+            'name': task.name, 'filters': task.filters.model_dump(mode='json', by_alias=True)
+        } for task in self.tasks]), request)
+        self.assertEqual((started['hasRun'], started['total'], started['processed'], started['withData']),
+                         (True, 12, 0, 0), 'the saved cell does not complete the queued case')
         self.assertEqual(month_column("JAN'99", 1999), (1999, 1))
 
     async def test_wrong_year_workbook_does_not_commit(self):

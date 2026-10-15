@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 from fastapi import HTTPException
 
-from sqlalchemy import select, text
+from sqlalchemy import and_, or_, select, text
 from app.db import engine, schema as db
 from app.models.job import Job, JobStatus
 from app.repositories.postgres import TERMINAL
@@ -23,6 +23,12 @@ queue = BatchQueueRepository()
 LEADER_LOCK = 846_217_035
 ACTIVE_SCHEDULE_STATUSES = {'PREPARING', 'RUNNING', 'PAUSING', 'RESUMING'}
 RELEASED_SCHEDULE_STATUSES = {'PAUSED', 'STOPPED', 'ERROR', 'COMPLETED', 'COMPLETED_WITH_ERRORS'}
+
+
+def holds_schedule_slot(value):
+    """Active runs hold the slot; a network pause keeps it and resumes on recovery, a manual pause releases it."""
+    status = value.get('status')
+    return status in ACTIVE_SCHEDULE_STATUSES or (status == 'PAUSED' and value.get('networkPaused') is True)
 
 
 def preflight_waiting(error):
@@ -52,10 +58,12 @@ async def another_scheduled_run_active(session_id):
     async with engine.connect() as connection:
         other_session = db.app_settings.c.value['sessionId'].as_string()
         other_status = db.app_settings.c.value['status'].as_string()
+        other_network_paused = db.app_settings.c.value['networkPaused'].as_boolean()
         active = await connection.scalar(select(db.app_settings.c.key).where(
             db.app_settings.c.key.like(SCHEDULE_PREFIX + '%'),
             other_session.is_not(None), other_session != session_id,
-            other_status.in_(tuple(ACTIVE_SCHEDULE_STATUSES))).limit(1))
+            or_(other_status.in_(tuple(ACTIVE_SCHEDULE_STATUSES)),
+                and_(other_status == 'PAUSED', other_network_paused.is_(True)))).limit(1))
         return bool(active)
 
 
@@ -337,8 +345,7 @@ async def scheduler_tick():
     if not connected:
         await suspend_runs()
     records = await repository.list()
-    active = [value for value in records if value.get('sessionId')
-        and value.get('status') in ACTIVE_SCHEDULE_STATUSES]
+    active = [value for value in records if value.get('sessionId') and holds_schedule_slot(value)]
     for value in active:
         if not await owner_active(value['owner']):
             await stop_scheduled_run(value, 'The schedule owner account is inactive.')

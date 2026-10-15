@@ -143,9 +143,10 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         from app.network_guard import record
         saved=await self.start();await record(False);await scheduler_tick()
         await self.repo.pause(saved['id'],saved['owner'])
-        await record(True);await scheduler_tick()
+        await record(True);await scheduler_tick();await scheduler_tick();await scheduler_tick()
         current=await self.repo.get(saved['id'])
         self.assertEqual(current['status'],'PAUSED');self.assertFalse(current['networkPaused'])
+        self.assertEqual(current['sessionId'],saved['sessionId'],'a manual pause keeps its saved session untouched')
 
     async def test_network_preparation_pause_prevents_maker_and_recovers_same_session(self):
         from app.network_guard import record
