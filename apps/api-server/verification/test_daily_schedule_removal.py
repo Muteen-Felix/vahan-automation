@@ -170,7 +170,7 @@ class DailyScheduleRemovalTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await rows("SELECT key FROM app_settings WHERE key LIKE 'report-run-history:%' ORDER BY key"),
                          history_before)
         # All or nothing: the terminal Daily schedule without a session was not deleted either.
-        self.assertEqual(await rows(f"SELECT count(*) FROM app_settings WHERE value->>'repeat' = 'daily'"),
+        self.assertEqual(await rows("SELECT count(*) FROM app_settings WHERE value->>'repeat' = 'daily'"),
                          [(2 + 1 + len(matrix),)])
         self.assertEqual(await rows(f"SELECT count(*) FROM app_settings WHERE key = '{PREFIX}{values['daily-done']['id']}'"),
                          [(1,)])
