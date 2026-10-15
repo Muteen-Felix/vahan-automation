@@ -9,9 +9,10 @@ that and raises (rolling the whole transaction back) if any other table or sched
 
 The deleted ids and the count are printed (visible in the ``migrate`` service log) and stored in
 ``app_settings`` under ``migration-audit:0015_remove_daily_schedules`` (ids and non-sensitive
-metadata only, never the filter definition). A Daily schedule that still owns an active queue
-session is deleted like any other; its queue session is kept and simply finishes without a
-schedule driving it. The downgrade cannot restore deleted schedules; use the pre-upgrade backup.
+metadata only, never the filter definition). The preceding revision ``0014a_daily_schedule_guard``
+aborts the upgrade before this one runs when a Daily schedule still owns a session, so only Daily
+schedules without a ``sessionId`` reach this migration (PLAN D-35, Q1 = A). The downgrade cannot
+restore deleted schedules; use the pre-upgrade backup.
 """
 import json
 import logging
@@ -22,7 +23,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
 revision = '0015_remove_daily_schedules'
-down_revision = '0014_postgresql_task_claims'
+down_revision = '0014a_daily_schedule_guard'
 branch_labels = None
 depends_on = None
 

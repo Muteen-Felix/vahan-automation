@@ -40,7 +40,8 @@ Kiểm: đăng nhập, bảng năm, Run History, lịch Once/Monthly còn. Xác 
 ## 4. Rollback
 
 Rollback = dừng stack hiện tại + restore backup vào volume mới + dùng image của bản trước. **Không** hạ binary qua migration không tương thích.
-Migration `0015` xóa lịch Daily và không có downgrade dữ liệu; khôi phục chỉ bằng backup.
+Migration `0015` xóa lịch Daily và không có downgrade dữ liệu; khôi phục chỉ bằng backup. Revision `0014a_daily_schedule_guard`
+chạy trước và dừng nâng cấp (không xóa, không ghi gì) nếu lịch Daily còn session — xử lý trên bản cũ theo INSTALL.md §7.
 
 ## 5. Sự cố thường gặp
 

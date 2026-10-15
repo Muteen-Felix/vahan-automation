@@ -88,15 +88,26 @@ Reset dữ liệu test: `TEST-DATA.md`.
 
 Áp dụng khi máy đã chạy một bản cũ. **Không** `down -v`; **không** dùng `docker compose up` với tag cũ.
 
-1. Pause lịch/queue trong Settings, chờ case đang chạy hoàn tất.
-2. `py -3 scripts/run-docker.py --check-release` — từ chối khi còn job/lịch đang chạy (chỉ đọc).
+1. Chờ mọi lượt chạy theo lịch hoàn tất (**ưu tiên**). Bản cũ còn lịch **Daily** (chỉ bản trước migration `0015`): **không** Pause
+   rồi để đó — lịch Daily `PAUSED` còn session vẫn **chặn migration** (bước 6). Nếu một lịch Daily đang `PAUSED`, Resume rồi chờ
+   nó hoàn tất. Lịch Once/Monthly `PAUSED` không chặn. Nếu không thể chờ, làm trên **bản cũ**, trước khi nạp gói mới:
+   - **Stop** lịch Daily: job đang chạy bị chuyển `CANCELLED` và runner được giải phóng; case chưa chạy ở lại hàng đợi
+     (`PAUSED`) nhưng sau migration không còn lịch để Resume (hàng đợi mồ côi; report và lịch sử vẫn còn). Lượt đã dừng có thể
+     hiện tên bộ lọc "Unnamed filter" trong Run History vì lịch không còn tham chiếu session đó (chưa kiểm trên UI).
+   - **Xóa** lịch Daily: chỉ khi hàng đợi `PAUSED` và không còn job đang chạy; **xóa hàng đợi cùng các case chưa hoàn tất**,
+     giữ report, job, file và Run History (tên bộ lọc được lưu). Không hoàn tác ngoài backup.
+2. `py -3 scripts/run-docker.py --check-release` — từ chối khi còn job/lịch đang chạy **hoặc lịch Daily còn session (kể cả
+   `PAUSED`)** (chỉ đọc).
 3. Backup: `py -3 scripts/backup-docker.py` (dump + `.docker.env` + manifest hash; **chứa secret**, lưu riêng, kiểm soát truy cập).
    Thử restore dump vào project tách biệt trước khi nâng cấp (`ops/runbook.md`).
 4. `docker load` gói mới (mục 2–3), đặt `VAHAN_IMAGE_TAG` mới, chạy `py -3 scripts/setup-docker.py` (bổ sung `DB_APP_USERNAME`/
    `DB_APP_PASSWORD` nếu `.docker.env` cũ chưa có; **không đổi khóa cũ**; `DB_APP_PASSWORD` ≥ 24 ký tự).
 5. `py -3 scripts/run-docker.py --no-build --workers <N>`; kiểm `migrate` exit 0 (migration tự chạy khi nâng cấp), API healthy, đăng nhập lại.
-6. Từ bản có migration `0015`: **lịch Daily đã lưu bị xóa** (chỉ Once/Monthly còn lại). Số lượng + ID được ghi vào log `migrate` và
-   `app_settings` key `migration-audit:0015_remove_daily_schedules`. Report/job/session/lịch sử không bị xóa.
+6. Từ bản có migration `0015`: **lịch Daily đã lưu bị xóa** (chỉ Once/Monthly còn lại). Trước đó revision
+   `0014a_daily_schedule_guard` **dừng cả lần nâng cấp, không xóa và không ghi gì** nếu còn lịch Daily có `sessionId` (bất kể
+   status): `migrate` thoát ≠ 0, API không lên, log `migrate` liệt kê ID/owner/tên/status của lịch bị chặn — gỡ trên bản cũ
+   (bước 1) rồi nâng cấp lại. Khi chạy được: số lượng + ID được ghi vào log `migrate` và `app_settings` key
+   `migration-audit:0015_remove_daily_schedules`. Report/job/session/lịch sử không bị xóa.
 7. Chạy lại `docker compose --env-file .docker.env run --rm migrate` lần hai: phải thoát 0 và không đổi gì (idempotent).
 
 Rollback = dừng stack và restore backup vào volume mới (`ops/runbook.md`); migration không có downgrade cho dữ liệu đã xóa.

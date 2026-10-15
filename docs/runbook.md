@@ -29,6 +29,8 @@ trong JSON; lỗi TLS không được bỏ qua bằng `ignoreHTTPSErrors`.
 
 1. Pause lịch/queue trong Settings; chờ case đang chạy drain. Kiểm trạng thái
    PAUSED và active job đã hoàn tất. Không dùng container restart thay Pause.
+   Ngoại lệ lịch **Daily** (chỉ có ở bản trước migration `0015`): lịch Daily còn session, kể cả `PAUSED`, chặn migration — Resume
+   rồi chờ hoàn tất, hoặc Stop/Delete trên bản cũ (hệ quả: `docs/release/INSTALL.md` §7).
 2. Chạy guard và backup:
 
    ```powershell
