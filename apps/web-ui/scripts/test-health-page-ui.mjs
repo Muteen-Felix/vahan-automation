@@ -65,7 +65,7 @@ try {
  assert.match(await page.locator('.website-alert-table tbody').innerText(),/playwright-1, playwright-2/);
  assert.match(await page.getByRole('alert').innerText(),/listed browser stays blocked until it reconnects and passes a valid UI Health check/);
  assert.match(await page.getByRole('alert').innerText(),/rerun preflight; every selected browser must pass before work resumes/);
- assert.equal(await page.locator('.website-alert-table tbody').getByText(report.title,{exact:true}).isVisible(),false,'Raw website errors are kept inside support details');
+ assert.equal(await page.locator('.website-alert-table details').count(),0,'Support diagnostics are hidden from the issue table');
  await page.getByRole('button',{name:'Hide form',exact:true}).click();
  await page.locator('.website-alert-table').getByRole('button',{name:'Copy for support',exact:true}).click();await page.getByRole('button',{name:'Copied',exact:true}).waitFor();
  const copied=JSON.parse(await page.evaluate(()=>navigator.clipboard.readText()));
@@ -78,11 +78,7 @@ try {
  for(const width of [1920,1440,1024,768,390,320]){
    await page.setViewportSize({width,height:1000});
    await layout();
-   const details=page.locator('.website-alert-table details');
-   await details.locator('summary').click();
-   await layout();
-   assert.ok(await details.locator('pre').evaluate(node=>node.scrollWidth<=node.clientWidth+1),'Long diagnostics wrap inside the report');
-   await details.locator('summary').click();
+   assert.equal(await page.locator('.website-alert-table details').count(),0,'Support diagnostics stay hidden at every viewport width');
    if(width===1440||width===390)await page.screenshot({path:testArtifactPath(`vahan-ui-health-fixed-${width}.png`),fullPage:true});
  }
  const blockedBounds=await scheduleBounds();

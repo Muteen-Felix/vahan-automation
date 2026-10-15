@@ -173,11 +173,11 @@ button { border-radius:var(--ui-radius); }
 }
 .main-nav {
   display:flex; min-width:0; align-items:center; gap:4px; overflow-x:auto;
-  padding:4px; border:1px solid #e7eaf0; border-radius:var(--ui-radius); background:#fff;
+  padding:4px; border:1px solid #e7eaf0; border-radius:999px; background:#fff;
 }
 .main-nav a {
   display:inline-flex; align-items:center; min-height:34px; padding:7px 13px;
-  border-radius:var(--ui-radius); color:#596579; font-size:12px; white-space:nowrap;
+  border-radius:999px; color:#596579; font-size:12px; white-space:nowrap;
 }
 .main-nav a:hover,.main-nav a.active { background:#eaf1ff; color:#174ea6; }
 .header-actions { display:flex; flex:0 0 auto; align-items:center; gap:12px; }
