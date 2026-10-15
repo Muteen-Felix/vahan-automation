@@ -57,6 +57,7 @@ jobs:
           python -m unittest discover -s ../../scripts -p 'test_worker_capacity.py'
           python -m unittest discover -s ../../scripts -p 'test_container_scan.py'
           python -m unittest discover -s ../../scripts -p 'test_postgres_pin.py'
+          python -m unittest discover -s ../../scripts -p 'test_nginx_conf.py'
           python -m unittest discover -s ../../scripts -p 'test_evidence_check.py'
           python -m unittest discover -s ../../scripts -p 'test_release_smoke.py'
           python -m unittest discover -s ../../scripts -p 'test_review_package.py'
