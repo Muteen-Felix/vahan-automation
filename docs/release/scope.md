@@ -1,6 +1,6 @@
 # Phạm vi bàn giao 1.0
 
-Nguồn quyết định: `PLAN.md` revision r26, §3 và §11 (12/10/2026; bản đầu 11/10/2026). Đối chiếu code: HEAD `b210529` (12/10/2026); **cột "Việc còn phải kiểm chứng" và "Code ở HEAD" đã đối chiếu lại với `6f686ea` (14/10/2026, WP-A1)**. Tài liệu này ghi **phạm vi đã chọn**, không xác nhận code hoặc test đã hoàn tất; phạm vi chỉ đổi theo quyết định đã ghi ở PLAN (D-35 bỏ Daily, D-18 không quota OCR). CI xanh trên `fa04898`/`6f686ea` (E-CI14) và `a406ce9` (E-CI15, run `38585468041`; cả hai ở `defects.md`) không phải D3. Gate RG0 cần thêm `defects.md`, `known-issues.md` và bằng chứng T02 (PLAN §11.1).
+Nguồn quyết định: `PLAN.md` revision r26, §3 và §11 (12/10/2026; bản đầu 11/10/2026). Baseline lịch sử đối chiếu code: HEAD `b210529` (12/10/2026). **Ở hai cột "Việc còn phải kiểm chứng" và "Code ở HEAD", chỉ các ô nêu `6f686ea` hoặc `grep 14/10` được đọc lại ở `6f686ea` (14/10/2026, WP-A1); ô còn lại giữ nội dung đọc ở `b210529`, chưa có bằng chứng đã đối chiếu lại.** Tài liệu này ghi **phạm vi đã chọn**, không xác nhận code hoặc test đã hoàn tất; phạm vi chỉ đổi theo quyết định đã ghi ở PLAN (D-35 bỏ Daily, D-18 không quota OCR). CI xanh trên `fa04898`/`6f686ea` (E-CI14) và `a406ce9` (E-CI15, run `38585468041`; cả hai ở `defects.md`) không phải D3. Gate RG0 cần thêm `defects.md`, `known-issues.md` và bằng chứng T02 (PLAN §11.1).
 
 | ID | Phạm vi 1.0 | Trạng thái | Việc còn phải kiểm chứng / hoàn thiện |
 | --- | --- | --- | --- |
@@ -19,7 +19,7 @@ Nguồn quyết định: `PLAN.md` revision r26, §3 và §11 (12/10/2026; bản
 | R11 | Retry, checkpoint, diagnostics; `NO_DATA` không retry | In | T30 |
 | R12 | Pause khi mất kết nối VAHAN, tự tiếp tục sau khi mạng ổn | In | T11, T30 |
 | R13 | Maker Update | Excluded | T17 gỡ `/api/maker-updates*` và từ chối `updateKind`/`updateRunId`/`updateTaskId` ở `POST /api/jobs`. HEAD `6f686ea`: **đã gỡ** (router không còn maker-update; `main.py:93-95` trả 404; `models/job.py:85-92` từ chối `updateKind`≠NORMAL); còn D3 |
-| R14 | CAPTCHA auto-solve, không có đường nhập tay | In | T19f bỏ raw OCR log; **không có quota OCR theo số lượt/10 phút** (D-18, Felix cập nhật 13/10); T33/T30. HEAD `6f686ea`: log OCR thô đã hết khỏi `runner.mjs` (grep 14/10); test: `apps/browser-runner/test-ocr-start.mjs:8-9` (source không còn `OCR raw output:`/`Auto-OCR result:`; 25 lượt start không bị chặn) và `apps/api-server/tests/test_ocr_unlimited.py`; chạy trong CI (E-CI15, step `Test browser runner` và `Run database-backed verification…` success, mức step) |
+| R14 | CAPTCHA auto-solve, không có đường nhập tay | In | T19f bỏ raw OCR log; **không có quota OCR theo số lượt/10 phút** (D-18, Felix cập nhật 13/10); T33/T30. HEAD `6f686ea`: log OCR thô đã hết khỏi `runner.mjs` (grep 14/10); test: `apps/browser-runner/test-ocr-start.mjs:9-10` (assertion tĩnh trên source: không còn `OCR raw output:`/`Auto-OCR result:`) và `:35-43` (vòng 25 lượt trên fixture: 25 `start`, 25 `ocr`, 25 `submit`; không gọi tesseract thật) và `apps/api-server/tests/test_ocr_unlimited.py`; chạy trong CI (E-CI15, step `Test browser runner` và `Run database-backed verification…` success, mức step) |
 | R15 | Gỡ **hết** API legacy: `upload-excel`, `GET`/`PUT /api/ui-health/schedule`, `POST /api/ui-health/run-now` | In (D-07 = A — gỡ nốt; Felix chốt 12/10) | HEAD đã gỡ `upload-excel`, `PUT schedule`, `HealthCheckSchedule.tsx`. **HEAD `6f686ea`: đã gỡ nốt** — `ui_health.py` không còn hai route; `main.py:93` trả 404; test 404 ở `tests/test_api.py:47-48,58`. Caller trong repo: không có (PLAN §11.1); client ngoài repo không xác minh được bằng code |
 | R16 | Đối chiếu kết quả tự động với người kiểm tra độc lập | In | T31/T46 trước RG4; người kiểm tra chưa thực hiện |
 | **R17** | **Trang Run History** (admin): mỗi lần chạy lọc một dòng, mới nhất trước, giờ Việt Nam; tên bộ lọc giữ nguyên sau khi xóa/đổi tên lịch; số case đếm một lần (retry không thêm dòng); `GET /api/annual-reports/run-history` chỉ admin | **In** (D-31, Felix chốt 12/10) | T15c, T11: đăng ký `verification/test_run_history.py` (DB `vahan_history_platform_test`) vào CI; **chế độ dữ liệu mẫu đã bỏ ở HEAD `6f686ea`** (`RunHistory.tsx` không còn; `test-permissions-ui.mjs:75` khẳng định không có ô "Show sample data"); member không thấy trang và API trả 403; D3 (T30). HEAD: `update_status.py:18-20`, `RunHistory.tsx`, `repositories/run_history.py` |
@@ -32,11 +32,11 @@ Nguồn quyết định: `PLAN.md` revision r26, §3 và §11 (12/10/2026; bản
 
 ## An ninh và vận hành
 
-Cột "Code ở HEAD" ghi những gì đã đọc được trong source ngày 12/10; đó **không** phải bằng chứng đã kiểm chứng (chưa có test/D3).
+Cột "Code ở HEAD" ghi những gì đã đọc được trong source: baseline lịch sử ở HEAD `b210529` (12/10); ô nêu `6f686ea`, `grep 14/10` hoặc E-CI15 đã được đọc lại ở revision đó. Đó **không** phải bằng chứng D3; test được nêu trong ô, nếu có, mới có bằng chứng CI mức step (E-CI15).
 
-| Mục | Trạng thái | Cam kết 1.0 | Code ở HEAD `b210529` |
+| Mục | Trạng thái | Cam kết 1.0 | Code ở HEAD (baseline `b210529`, 12/10; ô nêu `6f686ea`/14/10 đã đọc lại) |
 | --- | --- | --- | --- |
-| S1 | In | Bỏ raw OCR log theo R14 (D-18; không quota) | Đã bỏ khỏi `runner.mjs` (grep 14/10); `test-ocr-start.mjs:8-9` khẳng định (CI E-CI15 mức step) |
+| S1 | In | Bỏ raw OCR log theo R14 (D-18; không quota) | Đã bỏ khỏi `runner.mjs` (grep 14/10); `test-ocr-start.mjs:9-10` (assertion tĩnh trên source; CI E-CI15 mức step) |
 | S3 | In | Nginx rate limit cho login; bộ đếm DB theo tài khoản/IP Deferred (KI-22, Major) | `docker/nginx.conf:1,10-13` (`limit_req` 10 req/phút, burst 10); chưa có test |
 | S5 | In | Origin allowlist cho Socket.IO | `config.py:119`, `config.py:83-100` (từ chối `*` khi production); `test_production_config.py` |
 | S6 | In | Headers/CSP, kiểm web qua nginx | `docker/security-headers.conf:1-4`; CSP có `script-src 'self'`; chưa `server_tokens off`; chưa có web test qua nginx |
