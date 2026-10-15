@@ -1,0 +1,94 @@
+{
+ "sourceCommit": "c91f0866ad841bc438c0b2e1d62e23c01a4d17f0",
+ "project": "vahan-rg1-6e804bee0d",
+ "startedAt": "2026-10-15T07:11:10.210950+00:00",
+ "steps": [
+  {
+   "step": "setup-docker",
+   "command": "C:\\Users\\nghianc19\\AppData\\Local\\Programs\\Python\\Python312\\python.exe scripts/setup-docker.py",
+   "exitCode": 0,
+   "seconds": 0.5,
+   "log": "setup-docker.log"
+  },
+  {
+   "step": "image-load",
+   "command": "docker image load -i C:\\Dev\\personal\\vahan-automation\\outputs\\candidate-c91f0866ad84\\vahan-c91f0866ad84-images.tar",
+   "exitCode": 0,
+   "seconds": 48.5,
+   "log": "image-load.log"
+  },
+  {
+   "step": "run-docker",
+   "command": "C:\\Users\\nghianc19\\AppData\\Local\\Programs\\Python\\Python312\\python.exe scripts/run-docker.py --no-build --workers 1",
+   "exitCode": 0,
+   "seconds": 29.5,
+   "log": "run-docker.log"
+  },
+  {
+   "step": "compose-ps",
+   "command": "docker compose --env-file .docker.env -p vahan-rg1-6e804bee0d ps --all",
+   "exitCode": 0,
+   "seconds": 0.4,
+   "log": "compose-ps.log"
+  },
+  {
+   "step": "config-snapshot",
+   "command": "C:\\Users\\nghianc19\\AppData\\Local\\Programs\\Python\\Python312\\python.exe scripts/config-snapshot.py --env-file .docker.env --out C:\\Users\\nghianc19\\AppData\\Local\\Temp\\claude\\c--Dev-personal-vahan-automation\\5776b696-fec0-4c3e-9025-1e5d479b33f2\\scratchpad\\F-install-out\\config-snapshot-c91f0866ad84.json --project-dir C:\\Users\\nghianc19\\AppData\\Local\\Temp\\claude\\c--Dev-personal-vahan-automation\\5776b696-fec0-4c3e-9025-1e5d479b33f2\\scratchpad\\F-install-work\\vahan-installed --image-ids",
+   "exitCode": 0,
+   "seconds": 1.4,
+   "log": "config-snapshot.log"
+  },
+  {
+   "step": "release-smoke",
+   "command": "C:\\Users\\nghianc19\\AppData\\Local\\Programs\\Python\\Python312\\python.exe scripts/release-smoke.py --base-url http://127.0.0.1:61787 --admin-user admin --min-runners 1 --compose-project vahan-rg1-6e804bee0d --require-compose-checks --output C:\\Users\\nghianc19\\AppData\\Local\\Temp\\claude\\c--Dev-personal-vahan-automation\\5776b696-fec0-4c3e-9025-1e5d479b33f2\\scratchpad\\F-install-out\\smoke.json",
+   "exitCode": 0,
+   "seconds": 3.0,
+   "log": "release-smoke.log"
+  },
+  {
+   "step": "migrate-rerun",
+   "command": "docker compose --env-file .docker.env -p vahan-rg1-6e804bee0d run --rm migrate",
+   "exitCode": 0,
+   "seconds": 4.0,
+   "log": "migrate-rerun.log"
+  },
+  {
+   "step": "down",
+   "command": "docker compose --env-file .docker.env -p vahan-rg1-6e804bee0d down --volumes --remove-orphans --timeout 15",
+   "exitCode": 0,
+   "seconds": 2.6,
+   "log": "down.log"
+  }
+ ],
+ "packageSha256": {
+  "vahan-c91f0866ad84-source.zip": "6f2dbe79d41db903c6fee5404f5153c8ae17632001401543c86d4d8c0ee535df",
+  "vahan-c91f0866ad84-images.tar": "3b340d19038b3b4ca309ad9df7f09871f4d4a788e0745a4aaed06943cee1ee61"
+ },
+ "installedInstallMdSha256": "ec32274b61861ab4f662e784cca022119150a7c8a880b4ff7c0a8cecd2a6d331",
+ "imageIds": {
+  "vahan-review/web:c91f0866ad84": {
+   "expected": "sha256:334dee447287713fa4da56580bac5fdb7ab04f4caba7d306a13b2a94c95c72a1",
+   "actual": "sha256:334dee447287713fa4da56580bac5fdb7ab04f4caba7d306a13b2a94c95c72a1",
+   "match": true
+  },
+  "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826": {
+   "expected": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+   "actual": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+   "match": true
+  },
+  "vahan-review/api:c91f0866ad84": {
+   "expected": "sha256:bb05114b0fe53f4b96a6e8451a8c9bb5650e2cb56a8ce333fc0a4a9e4dea7448",
+   "actual": "sha256:bb05114b0fe53f4b96a6e8451a8c9bb5650e2cb56a8ce333fc0a4a9e4dea7448",
+   "match": true
+  },
+  "vahan-review/runner:c91f0866ad84": {
+   "expected": "sha256:51f4cfabc3a0721a3699d9f6f6f9b4d0825922ee877a09f4bb3c91e17c893b55",
+   "actual": "sha256:51f4cfabc3a0721a3699d9f6f6f9b4d0825922ee877a09f4bb3c91e17c893b55",
+   "match": true
+  }
+ },
+ "snapshotSecretValueHits": 0,
+ "snapshotSecretValuesChecked": 6,
+ "installDirRemoved": true,
+ "finishedAt": "2026-10-15T07:12:44.889216+00:00"
+}
