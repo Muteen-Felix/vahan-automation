@@ -603,6 +603,25 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid rg
 .annual-toolbar-actions .annual-export-button { background:#285d37; border-color:#285d37; color:#fff; }
 .annual-toolbar-actions button.annual-export-button:hover:not(:disabled) { background:#1f492b; border-color:#1f492b; color:#fff; }
 .annual-toolbar-actions button.annual-export-button:disabled { background:#e7f0e6; color:#506a55; border-color:#b9ccb9; opacity:1; }
+.annual-export-dialog { width:min(500px,calc(100vw - 28px)); max-width:calc(100vw - 28px); padding:0; border:1px solid #d7e2d9; border-radius:var(--ui-radius); color:#26332b; background:#fff; box-shadow:0 24px 70px rgba(28,48,33,.24); }
+.annual-export-dialog::backdrop { background:rgba(24,37,28,.42); backdrop-filter:blur(2px); }
+.annual-export-dialog-content { padding:24px; }
+.annual-export-dialog-eyebrow { margin:0 0 8px; color:#64806b; font-size:10px; font-weight:750; letter-spacing:.12em; }
+.annual-export-dialog h2 { margin:0; color:#203b29; font-size:20px; line-height:1.3; }
+.annual-export-dialog-summary { margin:15px 0 8px; color:#34483a; font-size:14px; line-height:1.6; }
+.annual-export-dialog-summary strong { color:#234d30; }
+.annual-export-dialog-scope { margin:0; padding:10px 12px; border:1px solid #e2eae3; border-radius:var(--ui-radius); background:#f6f9f5; color:#53685a; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.annual-export-dialog-note { margin:12px 0 0; color:#748078; font-size:12px; line-height:1.5; }
+.annual-export-dialog-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:22px; }
+.annual-export-dialog-actions button { min-height:38px; padding:8px 15px; }
+.annual-export-dialog-actions .annual-export-dialog-confirm { border-color:#285d37; background:#285d37; color:#fff; }
+.annual-export-dialog-actions .annual-export-dialog-confirm:hover:not(:disabled) { border-color:#1f492b; background:#1f492b; color:#fff; }
+.annual-export-dialog-actions button:focus-visible { outline:3px solid rgba(73,132,79,.32); outline-offset:2px; }
+@media (max-width:500px) {
+  .annual-export-dialog-content { padding:20px; }
+  .annual-export-dialog-actions { flex-direction:column-reverse; }
+  .annual-export-dialog-actions button { width:100%; }
+}
 
 .captcha-inbox-worker:focus-visible { outline:3px solid rgba(40,105,186,.35); outline-offset:2px; }
 

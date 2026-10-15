@@ -1,5 +1,5 @@
 import {operatorMessage} from '../operator-language';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, request } from '../services/api-client';
 import { uiSocket } from '../services/socket-client';
 import { ReportCoverage } from './ReportCoverage';
@@ -12,6 +12,8 @@ import {formatUiDateTime, runTimeZoneLabel} from '../run-schedules';
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 type AnnualRow = {id: string; state: string; rto: string; rto_code: string; maker: string; months: (number | null)[]};
 type SavedReport = {savedAt: string};
+type ExportConfirmation = {year: number; datasetId: string; datasetLabel: string; state: string; rto: string;
+  total: number; hasSearch: boolean};
 type AnnualData = {year: number; datasetId: string; datasets: {id: string; label: string}[];
   years: number[]; states: string[]; rtos: string[]; rows: AnnualRow[]; coverage: number[];
   runningJobs: number; updatePaused: boolean; lastSaved?: SavedReport | null;
@@ -37,6 +39,11 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
   const [refresh, setRefresh] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
+  const [exportConfirmation, setExportConfirmation] = useState<ExportConfirmation | null>(null);
+  const exportDialog = useRef<HTMLDialogElement>(null);
+  const exportCancelButton = useRef<HTMLButtonElement>(null);
+  const exportConfirmButton = useRef<HTMLButtonElement>(null);
+  const exportTriggerButton = useRef<HTMLButtonElement>(null);
   const viewKey = JSON.stringify([year, dataset, search.state, search.rto, offset]);
   const {data, loading, error: readError, refresh: refreshData} = useLiveQuery<AnnualData>(viewKey, signal => {
     const params = new URLSearchParams({year: String(year), dataset, state: search.state, rto: search.rto,
@@ -73,18 +80,35 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
     if (offset > 0 && offset >= data.summary.rows) setOffset(0);
   }, [data, dataset, year, offset]);
   useEffect(() => {refreshData();}, [refreshTrigger, refreshData]);
+  useEffect(() => {
+    const dialog = exportDialog.current;
+    if (!dialog) return;
+    if (exportConfirmation && !dialog.open) {
+      dialog.showModal();
+      exportCancelButton.current?.focus();
+    } else if (!exportConfirmation && dialog.open) {
+      dialog.close();
+    }
+  }, [exportConfirmation]);
   const shownData = data;
   const freshness = dataFreshness(shownData);
   const total = shownData?.summary.rows ?? 0;
   const searchPending = state !== search.state || rto !== search.rto;
   const hasSearch = Boolean(state.trim() || rto.trim() || search.state.trim() || search.rto.trim());
-  const exportExcel = async () => {
+  const exportExcel = () => {
     if (!shownData || searchPending || exporting || !total) return;
-    const scope = hasSearch ? 'matching the State/RTO filters' : 'in the selected report';
-    if (!window.confirm(`Export all ${total.toLocaleString()} manufacturer rows ${scope} for ${year} to Excel? This includes rows on every page.`)) return;
-    const params = new URLSearchParams({year: String(year), dataset: shownData.datasetId,
-      state: search.state.trim(), rto: search.rto.trim()});
-    if (!hasSearch) params.set('confirmAll', 'true');
+    setExportConfirmation({year, datasetId: shownData.datasetId,
+      datasetLabel: shownData.datasets.find(item => item.id === shownData.datasetId)?.label ?? shownData.datasetId,
+      state: search.state.trim(), rto: search.rto.trim(), total, hasSearch});
+  };
+  const confirmExport = async () => {
+    if (!exportConfirmation || exporting) return;
+    const confirmation = exportConfirmation;
+    const params = new URLSearchParams({year: String(confirmation.year), dataset: confirmation.datasetId,
+      state: confirmation.state, rto: confirmation.rto});
+    if (!confirmation.hasSearch) params.set('confirmAll', 'true');
+    exportDialog.current?.close();
+    setExportConfirmation(null);
     setExporting(true); setExportError('');
     try { await api.downloadFile(`/api/annual-reports/export?${params}`); }
     catch (reason) {setExportError(reason instanceof Error ? reason.message : 'Could not export Excel.');}
@@ -115,7 +139,7 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
       </select></label>}
       <div className="annual-toolbar-actions">
         {(state || rto) && <button type="button" onClick={() => {setState(''); setRto('');}}>Clear</button>}
-        <button type="button" className="annual-export-button" onClick={() => void exportExcel()}
+        <button ref={exportTriggerButton} type="button" className="annual-export-button" onClick={exportExcel}
           disabled={searchPending || exporting || !shownData || !total}
           title={hasSearch ? 'Export all rows matching the State and RTO filters' : 'Confirm and export the entire selected report'}>
           {exporting ? 'Exporting…' : hasSearch ? 'Export filtered to Excel' : 'Export all to Excel'}
@@ -162,6 +186,40 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
           plan={coveragePlan} refreshTrigger={(refreshTrigger ?? 0) + refresh} />}
       </aside>
     </div>
+    <dialog ref={exportDialog} className="annual-export-dialog" aria-labelledby="annual-export-title"
+      aria-describedby="annual-export-description"
+      onCancel={event => {event.preventDefault(); setExportConfirmation(null);}}
+      onClose={() => {exportTriggerButton.current?.focus();}}
+      onClick={event => {if (event.target === event.currentTarget) setExportConfirmation(null);}}
+      onKeyDown={event => {
+        if (event.key !== 'Tab') return;
+        if (event.shiftKey && document.activeElement === exportCancelButton.current) {
+          event.preventDefault(); exportConfirmButton.current?.focus();
+        } else if (!event.shiftKey && document.activeElement === exportConfirmButton.current) {
+          event.preventDefault(); exportCancelButton.current?.focus();
+        }
+      }}>
+      {exportConfirmation && <div className="annual-export-dialog-content">
+        <p className="annual-export-dialog-eyebrow">EXCEL EXPORT</p>
+        <h2 id="annual-export-title">{exportConfirmation.hasSearch ? 'Export filtered results?' : 'Export the full report?'}</h2>
+        <p id="annual-export-description" className="annual-export-dialog-summary">
+          Export <strong>{exportConfirmation.total.toLocaleString()}</strong> manufacturer rows for <strong>{exportConfirmation.year}</strong> to Excel?
+        </p>
+        <p className="annual-export-dialog-scope">
+          {exportConfirmation.hasSearch
+            ? `Filters: ${[exportConfirmation.state && `State: ${exportConfirmation.state}`,
+              exportConfirmation.rto && `RTO: ${exportConfirmation.rto}`].filter(Boolean).join(' · ')}`
+            : `Report: ${exportConfirmation.datasetLabel}`}
+        </p>
+        <p className="annual-export-dialog-note">Rows from every page will be included in the Excel file.</p>
+        <div className="annual-export-dialog-actions">
+          <button ref={exportCancelButton} type="button" onClick={() => setExportConfirmation(null)}>Cancel</button>
+          <button ref={exportConfirmButton} type="button" className="annual-export-dialog-confirm" onClick={() => void confirmExport()}>
+            Export to Excel
+          </button>
+        </div>
+      </div>}
+    </dialog>
   </>;
 }
 

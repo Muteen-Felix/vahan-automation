@@ -9,12 +9,15 @@ try {
   const exportRequests = [];
   const exportFiltered = async (state, rto) => {
     const before = exportRequests.length;
-    page.once('dialog', async dialog => {assert.match(dialog.message(), /matching the State\/RTO filters/); await dialog.dismiss();});
     await page.getByRole('button',{name:'Export filtered to Excel',exact:true}).click();
+    const confirmation = page.getByRole('dialog',{name:'Export filtered results?'});
+    await confirmation.waitFor();
+    await confirmation.getByText(/Filters:/).waitFor();
+    await confirmation.getByRole('button',{name:'Cancel',exact:true}).click();
     assert.equal(exportRequests.length, before, 'Cancelling a filtered export sends no request');
-    page.once('dialog', async dialog => {assert.match(dialog.message(), /rows on every page/); await dialog.accept();});
     const download = page.waitForEvent('download');
     await page.getByRole('button',{name:'Export filtered to Excel',exact:true}).click();
+    await page.getByRole('dialog',{name:'Export filtered results?'}).getByRole('button',{name:'Export to Excel',exact:true}).click();
     const file = await download;
     const params = exportRequests.at(-1);
     assert.equal(params.state,state);
@@ -168,12 +171,15 @@ try {
   assert.equal(await page.locator('.annual-export-button').isDisabled(),true,'Empty filtered results cannot be exported');
   await page.getByRole('button',{name:'Clear',exact:true}).click();
   await page.getByRole('rowheader',{name:'OLA ELECTRIC TECHNOLOGIES PVT LTD',exact:true}).waitFor();
-  page.once('dialog',async dialog=>{assert.match(dialog.message(),/Export all 1,000 manufacturer rows.*2026/);await dialog.dismiss();});
   await page.getByRole('button',{name:'Export all to Excel',exact:true}).click();
+  const fullConfirmation = page.getByRole('dialog',{name:'Export the full report?'});
+  await fullConfirmation.getByText(/1,000 manufacturer rows for 2026/).waitFor();
+  await fullConfirmation.getByText(/Rows from every page/).waitFor();
+  await fullConfirmation.getByRole('button',{name:'Cancel',exact:true}).click();
   assert.equal(exportRequests.length,3,'cancelled full export sends no download request');
-  page.once('dialog',dialog=>dialog.accept());
   const allDownload=page.waitForEvent('download');
   await page.getByRole('button',{name:'Export all to Excel',exact:true}).click();
+  await page.getByRole('dialog',{name:'Export the full report?'}).getByRole('button',{name:'Export to Excel',exact:true}).click();
   const full=await allDownload;
   assert.equal(full.suggestedFilename(),'Maker Month Wise Data of All RTOs, All States (2026).xlsx');
   assert.equal(exportRequests[3].state,'');
