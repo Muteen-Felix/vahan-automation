@@ -45,7 +45,7 @@ export function ReportCoverage({context, plan, refreshTrigger}: {
         <strong>{hasRun ? `${Math.round(percent)}%` : '—'}</strong>
         <span>{hasRun ? `${processed.toLocaleString('en-GB')} / ${shown!.total.toLocaleString('en-GB')} cases processed`
           : 'No update run for this year'}</span>
-        {hasRun && remaining > 0 && <small>{remaining.toLocaleString('en-GB')} remaining · {shown!.running.toLocaleString('en-GB')} running</small>}
+        {hasRun && remaining > 0 && <small>{remaining.toLocaleString('en-GB')} remaining</small>}
       </div>
     </div>
     <div className="coverage-progress-track" role="progressbar" aria-label="Latest report update progress"
@@ -57,7 +57,6 @@ export function ReportCoverage({context, plan, refreshTrigger}: {
       {hasRun ? <>
         <p><span>Results</span><strong>{shown.withData.toLocaleString('en-GB')} with data · {shown.noData.toLocaleString('en-GB')} no data
           {shown.failed > 0 && ` · ${shown.failed.toLocaleString('en-GB')} failed`}</strong></p>
-        {shown.running > 0 && <p><span>Running now</span><strong>{shown.running.toLocaleString('en-GB')} reports</strong></p>}
       </> : <p><span>Latest update</span><strong>No matching update run has started.</strong></p>}
     </div>}
     {error && <p className="annual-error" role="alert">{operatorMessage(error)}</p>}
