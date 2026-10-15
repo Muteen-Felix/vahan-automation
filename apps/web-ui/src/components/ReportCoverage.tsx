@@ -3,13 +3,21 @@ import {useEffect, useMemo} from 'react';
 import type {MatrixPlan} from '../matrix-plan';
 import {useLiveQuery} from '../hooks/use-live-query';
 import {loadReportCoverage, type CoverageContext, type ReportCoverageData} from '../report-coverage';
-import {useDisplayTimeZone} from '../display-time-zone';
-import {formatUiDateTime, runTimeZoneLabel} from '../run-schedules';
+
+function statusLabel(data: ReportCoverageData | null | undefined) {
+  if (!data) return 'Loading';
+  if (!data.hasRun) return 'No update yet';
+  const labels: Record<string, string> = {
+    RUNNING: 'In progress', PAUSED: 'Paused', PAUSING: 'Pausing', STOPPED: 'Stopped',
+    RESUMING: 'Resuming', PREPARING: 'Preparing', COMPLETED: 'Complete',
+    COMPLETED_WITH_ERRORS: 'Completed with errors', ERROR: 'Update error', UNKNOWN: 'Progress unavailable',
+  };
+  return labels[data.status] ?? data.status;
+}
 
 export function ReportCoverage({context, plan, refreshTrigger}: {
   context: CoverageContext; plan: MatrixPlan; refreshTrigger?: number;
 }) {
-  const {timeZone} = useDisplayTimeZone();
   const viewKey = JSON.stringify(context);
   const queryKey = useMemo(() => [viewKey, plan], [viewKey, plan]);
   const {data: shown, error, refresh} = useLiveQuery<ReportCoverageData>(queryKey,
@@ -21,33 +29,37 @@ export function ReportCoverage({context, plan, refreshTrigger}: {
     return () => {window.clearInterval(timer); window.removeEventListener('focus', refreshVisible);};
   }, [refresh]);
   useEffect(() => {refresh();}, [refreshTrigger, refresh]);
-  const percent = shown?.total ? 100 * shown.covered / shown.total : 0;
-  const complete = Boolean(shown?.matrixLoaded && shown.total > 0 && shown.missing === 0);
-  const status = shown?.matrixLoaded ? complete ? 'Complete' : 'In progress' : 'Loading';
-  return <section className="report-coverage" aria-label="Report collection progress">
+
+  const hasRun = Boolean(shown?.hasRun && shown.total > 0);
+  const processed = Math.min(shown?.processed ?? 0, shown?.total ?? 0);
+  const percent = hasRun ? Math.max(0, Math.min(100, processed / shown!.total * 100)) : 0;
+  const complete = hasRun && ['COMPLETED', 'COMPLETED_WITH_ERRORS'].includes(shown!.status);
+  const remaining = hasRun ? Math.max(0, shown!.total - processed) : 0;
+  const label = statusLabel(shown);
+
+  return <section className="report-coverage" aria-label="Latest report update progress" aria-busy={!shown}>
     <div className="report-coverage-heading">
       <div><h3>Reports collected · {context.year}</h3>
-        <span className="coverage-status" data-complete={complete}>{status}</span></div>
-      <div className="report-coverage-count"><strong>{shown?.matrixLoaded ? shown.covered.toLocaleString('en-GB') : '—'}</strong>
-        <span>/ {shown?.matrixLoaded ? shown.total.toLocaleString('en-GB') : '—'}</span>
-        {shown?.matrixLoaded && shown.missing > 0 && <small>{shown.missing.toLocaleString('en-GB')} remaining</small>}</div>
+        <span className="coverage-status" data-complete={complete} data-status={shown?.status ?? 'LOADING'}>{label}</span></div>
+      <div className="report-coverage-count">
+        <strong>{hasRun ? `${Math.round(percent)}%` : '—'}</strong>
+        <span>{hasRun ? `${processed.toLocaleString('en-GB')} / ${shown!.total.toLocaleString('en-GB')} cases processed`
+          : 'No update run for this year'}</span>
+        {hasRun && remaining > 0 && <small>{remaining.toLocaleString('en-GB')} remaining · {shown!.running.toLocaleString('en-GB')} running</small>}
+      </div>
     </div>
-    <div className="coverage-progress-track" role="progressbar" aria-label="Report collection progress"
+    <div className="coverage-progress-track" role="progressbar" aria-label="Latest report update progress"
       aria-valuemin={0} aria-valuemax={100} aria-valuenow={Number(percent.toFixed(1))}
-      aria-valuetext={shown ? `${shown.covered} of ${shown.total} reports collected` : 'Loading progress'}>
+      aria-valuetext={hasRun ? `${processed} of ${shown!.total} update cases processed (${percent.toFixed(1)}%)`
+        : 'No update has run for this report year'}>
       <span style={{width: `${percent}%`}} /></div>
     {shown?.matrixLoaded && <div className="report-coverage-details">
-      <p><span>Results</span><strong>{shown.withData} with data · {shown.noData} no data</strong></p>
-      {shown.firstMissing && <p><span>Next</span><strong>#{shown.firstMissing.index + 1} · {shown.firstMissing.state} · {shown.firstMissing.rto}</strong></p>}
+      {hasRun ? <>
+        <p><span>Results</span><strong>{shown.withData.toLocaleString('en-GB')} with data · {shown.noData.toLocaleString('en-GB')} no data
+          {shown.failed > 0 && ` · ${shown.failed.toLocaleString('en-GB')} failed`}</strong></p>
+        {shown.running > 0 && <p><span>Running now</span><strong>{shown.running.toLocaleString('en-GB')} reports</strong></p>}
+      </> : <p><span>Latest update</span><strong>No matching update run has started.</strong></p>}
     </div>}
-    {shown?.matrixLoaded && shown.lastSaved && <p className="report-coverage-updated">
-      <span>Last data saved · {runTimeZoneLabel(timeZone)}</span>
-      <time dateTime={shown.lastSaved.savedAt}>{formatUiDateTime(shown.lastSaved.savedAt, timeZone, {second: '2-digit'})}</time>
-    </p>}
-    <details className="report-coverage-more"><summary>Details</summary>
-      {shown?.matrixLoaded && <p>Last saved <strong>{shown.lastSaved ? `#${shown.lastSaved.index + 1} · ${shown.lastSaved.state} · ${shown.lastSaved.rto}` : 'No reports yet'}</strong></p>}
-    </details>
-    {shown?.blockedReason && <p className="report-coverage-note">{operatorMessage(shown.blockedReason)}</p>}
     {error && <p className="annual-error" role="alert">{operatorMessage(error)}</p>}
   </section>;
 }

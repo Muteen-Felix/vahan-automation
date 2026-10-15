@@ -1,17 +1,15 @@
-"""Coverage is proven by imported report data, never by attempted-job counts."""
-from datetime import datetime
+"""Progress for the latest report update run, independent of saved month cells."""
 import json
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import cast, func, literal, select
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import case, func, select
 
 from app.db import engine, schema as db
 from app.repositories.annual_reports import clean, context_year, dataset
+from app.repositories.run_history import run_details
 
 router = APIRouter(prefix='/annual-reports', tags=['annual-reports'])
-TERMINAL = {'COMPLETED', 'NO_DATA', 'FAILED', 'CANCELLED'}
 
 
 class PlannedReport(BaseModel):
@@ -27,6 +25,12 @@ class CoverageQuery(BaseModel):
     scenarios: list[PlannedReport]
 
 
+def has_office(filters):
+    states, rtos = filters.get('states'), filters.get('rtos')
+    return (isinstance(states, list) and len(states) == 1 and isinstance(states[0], str) and states[0].strip()
+            and isinstance(rtos, list) and len(rtos) == 1 and isinstance(rtos[0], str) and rtos[0].strip())
+
+
 def normalized(filters):
     return {key: sorted({clean(item).upper() for item in value}) if isinstance(value, list)
             else clean(value).upper() for key, value in filters.items()
@@ -37,16 +41,10 @@ def filter_key(filters):
     return json.dumps(normalized(filters), sort_keys=True)
 
 
-def office(filters):
-    states, rtos = filters.get('states', []), filters.get('rtos', [])
-    if len(states) != 1 or len(rtos) != 1:
-        return None
-    return clean(states[0]).upper(), clean(rtos[0]).upper()
-
-
-def describe(index, scenario):
-    return {'index': index, 'state': scenario.filters['states'][0],
-            'rto': scenario.filters['rtos'][0], 'name': scenario.name}
+def empty_progress(year, dataset_id, matrix_loaded):
+    return {'year': year, 'datasetId': dataset_id, 'hasRun': False, 'matrixLoaded': matrix_loaded,
+            'total': 0, 'processed': 0, 'withData': 0, 'noData': 0, 'failed': 0,
+            'pending': 0, 'running': 0, 'status': 'NO_RUN', 'startedAt': None, 'lastActivityAt': None}
 
 
 @router.post('/coverage')
@@ -54,85 +52,56 @@ async def report_coverage(command: CoverageQuery, request: Request):
     username = request.state.authenticated_user
     own_scope = dataset(username, command.scenarios[0].filters) if command.scenarios else None
     selected = command.dataset or (own_scope['id'] if own_scope else '')
-    ledger = db.report_update_history
-    async with engine.connect() as connection:
-        scope = await connection.scalar(select(ledger.c.scope_key)
-            .where(ledger.c.scope_key == selected).limit(1))
-        if command.dataset and not scope:
-            scope = await connection.scalar(select(db.main_reports.c.scope_key)
-                .where(db.main_reports.c.scope_key == selected).limit(1))
+    matrix_loaded = bool(command.scenarios)
+    sessions, tasks = db.batch_queue_sessions, db.batch_queue_tasks
+
+    if command.dataset:
+        async with engine.connect() as connection:
+            scope = await connection.scalar(select(db.report_update_history.c.scope_key)
+                .where(db.report_update_history.c.scope_key == selected).limit(1))
+            if not scope:
+                scope = await connection.scalar(select(db.main_reports.c.scope_key)
+                    .where(db.main_reports.c.scope_key == selected).limit(1))
             if not scope:
                 raise HTTPException(404, 'Report filters not found.')
-        # Shared coverage includes committed imports by every account. Job control
-        # and the active-run guard remain attached to the requesting account.
-        # Coverage needs filters and committed evidence, not browser images,
-        # verification proofs or every historical attempt's full job payload.
-        # Reduce repeated imports in SQL before decoding JSON in the API loop.
-        empty_warnings = literal([], type_=JSONB)
-        imports = (await connection.execute(select(
-            db.jobs.c.filters,
-            func.max(ledger.c.imported_at).label('imported_at'),
-            func.bool_or(ledger.c.status != 'no-data').label('with_data'),
-        ).select_from(ledger.join(db.jobs, ledger.c.job_id == db.jobs.c.id)).where(
-            ledger.c.scope_key == selected,
-            cast(ledger.c.years, JSONB).contains([command.year]),
-            ledger.c.status.in_(['added', 'updated', 'unchanged', 'no-data']),
-            func.coalesce(ledger.c.details['issueCount'].as_integer(), 0) == 0,
-            func.coalesce(ledger.c.details['warnings'], empty_warnings) == empty_warnings,
-            (ledger.c.status == 'no-data')
-            | (func.coalesce(ledger.c.details['newCells'].as_integer(), 0) > 0)
-            | (func.coalesce(ledger.c.details['duplicates'].as_integer(), 0) > 0)
-            | (func.coalesce(ledger.c.details['replacedCells'].as_integer(), 0) > 0),
-        ).group_by(db.jobs.c.filters))).mappings().all()
-        active = await connection.scalar(select(db.jobs.c.id).where(
-            db.jobs.c.owner_username == username, db.jobs.c.status.not_in(TERMINAL)).limit(1))
-    planned, seen = [], set()
-    for index, scenario in enumerate(command.scenarios):
-        key = office(scenario.filters)
-        if not key or context_year(scenario.filters) != command.year:
+
+    for scenario in command.scenarios:
+        if not has_office(scenario.filters) or context_year(scenario.filters) != command.year:
             raise HTTPException(400, 'Each report must select one State, one RTO and the requested year.')
-        identity = filter_key(scenario.filters)
-        if identity in seen:
-            raise HTTPException(400, 'The office list contains duplicate filter combinations.')
-        seen.add(identity)
-        if dataset(username, scenario.filters)['id'] != selected:
-            continue
-        if command.state.strip().upper() not in key[0] or command.rto.strip().upper() not in key[1]:
-            continue
-        planned.append((index, scenario, normalized(scenario.filters)))
-    successful = {}
-    for item in imports:
-        key = filter_key(item['filters'])
-        previous = successful.get(key)
-        # Existing saved values remain covered even if a later attempt fails or returns no data.
-        latest_item = previous[0] if previous and previous[0]['imported_at'] > item['imported_at'] else item
-        successful[key] = (latest_item, bool(previous and previous[1]) or item['with_data'])
-    covered, missing, with_data, no_data, through = [], [], 0, 0, 0
-    gap = False
-    latest = None
-    for index, scenario, filters in planned:
-        evidence = successful.get(filter_key(filters))
-        if evidence:
-            covered.append(index)
-            with_data += int(evidence[1])
-            no_data += int(not evidence[1])
-            if not gap:
-                through += 1
-            item = evidence[0]
-            if latest is None or item['imported_at'] > latest['savedAt']:
-                latest = describe(index, scenario) | {'savedAt': item['imported_at']}
-        else:
-            gap = True
-            missing.append(index)
-    compatible = bool(planned) and all(
-        dataset(username, scenario.filters)['id'] == selected for _, scenario, _ in planned)
-    can_continue = compatible and command.year <= datetime.now().year and not active
-    reason = ('A report is already running for this account.' if active else
-              'Future report years cannot be crawled.' if command.year > datetime.now().year else
-              'These report filters do not match the State–RTO matrix.' if not compatible else '')
-    missing_set = set(missing)
-    first_missing = next((describe(i, scenario) for i, scenario, _ in planned if i in missing_set), None)
-    return {'year': command.year, 'datasetId': selected, 'total': len(planned), 'covered': len(covered),
-            'withData': with_data, 'noData': no_data, 'missing': len(missing), 'missingIndices': missing,
-            'coveredThrough': through, 'firstMissing': first_missing, 'lastSaved': latest,
-            'canContinue': can_continue, 'blockedReason': reason, 'matrixLoaded': bool(command.scenarios)}
+
+    # Use queue cases for this year and report scope. Saved monthly cells never
+    # contribute to the progress value.
+    has_year = select(tasks.c.position).where(tasks.c.session_id == sessions.c.session_id,
+        tasks.c.filters['fromYear'].as_string() == str(command.year),
+        tasks.c.filters['toYear'].as_string() == str(command.year)).exists()
+
+    async with engine.connect() as connection:
+        candidates = (await connection.execute(select(
+            sessions.c.session_id, sessions.c.created_at,
+        ).where(has_year).order_by(case((sessions.c.status == 'RUNNING', 0),
+                        (sessions.c.status == 'PAUSED', 1),
+                        (sessions.c.status == 'STOPPED', 2), else_=3),
+                   sessions.c.updated_at.desc(), sessions.c.created_at.desc()).limit(1000))).mappings().all()
+
+        for candidate in candidates:
+            task_rows = (await connection.execute(select(tasks.c.filters, tasks.c.status).where(
+                tasks.c.session_id == candidate['session_id'],
+                tasks.c.filters['fromYear'].as_string() == str(command.year),
+                tasks.c.filters['toYear'].as_string() == str(command.year)))).mappings().all()
+            scoped_tasks = [row for row in task_rows if dataset(username, row['filters'])['id'] == selected]
+            if not scoped_tasks:
+                continue
+            progress = (await run_details(connection, [candidate['session_id']])).get(candidate['session_id'])
+            if not progress:
+                continue
+            counts = {status: sum(row['status'] == status for row in scoped_tasks)
+                for status in ('COMPLETED', 'NO_DATA', 'FAILED', 'PENDING', 'PROCESSING')}
+            processed = counts['COMPLETED'] + counts['NO_DATA'] + counts['FAILED']
+            return {'year': command.year, 'datasetId': selected, 'hasRun': True,
+                'matrixLoaded': matrix_loaded, 'total': len(scoped_tasks), 'processed': processed,
+                'withData': counts['COMPLETED'], 'noData': counts['NO_DATA'],
+                'failed': counts['FAILED'], 'pending': counts['PENDING'], 'running': counts['PROCESSING'],
+                'status': progress['status'], 'startedAt': candidate['created_at'].isoformat(),
+                'lastActivityAt': progress['lastActivityAt']}
+
+    return empty_progress(command.year, selected, matrix_loaded)

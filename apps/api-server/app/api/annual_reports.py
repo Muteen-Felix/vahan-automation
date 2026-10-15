@@ -63,6 +63,14 @@ async def annual_reports(request: Request, year: int = Query(2026, ge=1900, le=9
             *[func.bool_or(records.c[m].is_not(None)).label(m) for m in db.MONTH_COLUMNS],
         ).select_from(records).where(*conditions))).mappings().one()
         summary = {key: aggregates[key] for key in ('rows', 'makers', 'offices', 'updatedAt')}
+        running_jobs = await connection.scalar(select(func.count()).select_from(db.jobs).where(
+            db.jobs.c.status.not_in(['QUEUED', 'COMPLETED', 'NO_DATA', 'FAILED', 'CANCELLED']))) or 0
+        interrupted_update = await connection.scalar(select(db.batch_queue_sessions.c.session_id)
+            .select_from(db.batch_queue_sessions.join(db.batch_queue_tasks,
+                db.batch_queue_tasks.c.session_id == db.batch_queue_sessions.c.session_id))
+            .where(db.batch_queue_sessions.c.status == 'PAUSED',
+                db.batch_queue_tasks.c.status.in_(['PENDING', 'PROCESSING']))
+            .limit(1))
         options = [records.c.scope_key == selected, records.c.year == year]
         states = list(await connection.scalars(select(records.c.state)
             .where(*options).distinct().order_by(records.c.state)))
@@ -82,6 +90,7 @@ async def annual_reports(request: Request, year: int = Query(2026, ge=1900, le=9
             .order_by(ledger.c.imported_at.desc(), ledger.c.source_key).limit(1))).mappings().first()
     return {'year': year, 'datasetId': selected, 'datasets': [dict(d) for d in datasets],
             'years': years, 'states': states, 'rtos': rtos, 'summary': dict(summary),
+            'runningJobs': running_jobs, 'updatePaused': bool(interrupted_update),
             'coverage': [i for i, m in enumerate(db.MONTH_COLUMNS, 1) if aggregates[m]],
             'lastSaved': saved_report_summary(latest) if latest else None,
             'offset': offset, 'limit': limit, 'rows': [{k: r[k] for k in

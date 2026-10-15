@@ -11,13 +11,20 @@ import {formatUiDateTime, runTimeZoneLabel} from '../run-schedules';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 type AnnualRow = {id: string; state: string; rto: string; rto_code: string; maker: string; months: (number | null)[]};
-type SavedReport = {status: string; states: string[]; rtos: string[]; savedAt: string;
-  manufacturerRows: number; newRows: number; newMonthValues: number; updatedMonthValues?: number;
-  alreadySavedMonthValues: number; conflicts: number};
+type SavedReport = {savedAt: string};
 type AnnualData = {year: number; datasetId: string; datasets: {id: string; label: string}[];
   years: number[]; states: string[]; rtos: string[]; rows: AnnualRow[]; coverage: number[];
-  lastSaved?: SavedReport | null; summary: {rows: number; makers: number; offices: number; updatedAt: string | null}};
+  runningJobs: number; updatePaused: boolean; lastSaved?: SavedReport | null;
+  summary: {rows: number; makers: number; offices: number; updatedAt: string | null}};
 const PAGE_SIZE = 100;
+function dataFreshness(data: AnnualData | null) {
+  if (!data) return null;
+  const updatedAt = [data.summary.updatedAt, data.lastSaved?.savedAt].filter((value): value is string => Boolean(value))
+    .reduce<string | null>((latest, value) => !latest || Date.parse(value) > Date.parse(latest) ? value : latest, null);
+  if (data.runningJobs > 0) return {state: 'updating', label: 'Data is being updated', updatedAt};
+  if (data.updatePaused) return {state: 'paused', label: 'Data update paused before completion', updatedAt};
+  return {state: 'current', label: 'Data is up to date', updatedAt};
+}
 function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; coveragePlan?: MatrixPlan | null}) {
   const {timeZone} = useDisplayTimeZone();
   const dateTime = (value: string | null) => formatUiDateTime(value, timeZone, {second: '2-digit'});
@@ -67,6 +74,7 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
   }, [data, dataset, year, offset]);
   useEffect(() => {refreshData();}, [refreshTrigger, refreshData]);
   const shownData = data;
+  const freshness = dataFreshness(shownData);
   const total = shownData?.summary.rows ?? 0;
   const searchPending = state !== search.state || rto !== search.rto;
   const hasSearch = Boolean(state.trim() || rto.trim() || search.state.trim() || search.rto.trim());
@@ -97,6 +105,10 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
       <label>Search RTO / code<input type="search" list="annual-rtos" value={rto} placeholder="Name or RTO code"
         onChange={event => setRto(event.target.value)} /></label>
       <datalist id="annual-rtos">{data?.rtos.map(value => <option key={value} value={value} />)}</datalist>
+      {freshness && <p className="annual-data-status" data-status={freshness.state} role="status"
+        aria-label={`${freshness.label}${freshness.updatedAt ? ` · Last updated ${dateTime(freshness.updatedAt)}` : ''}`}
+        title={freshness.updatedAt ? `Last updated ${dateTime(freshness.updatedAt)}` : 'No saved data date is available'}>
+        <span className="annual-data-status-dot" aria-hidden="true" />{freshness.label}</p>}
       {(data?.datasets.length ?? 0) > 1 && <label className="annual-scope">Report filters<select aria-label="Report filters" value={dataset || data?.datasetId}
         onChange={event => {setDataset(event.target.value); setOffset(0);}}>
         {data?.datasets.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
@@ -113,23 +125,9 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
       </div>
     </div>
     {error && <p className="annual-error" role="alert">{operatorMessage(error)}</p>}
-    {shownData?.lastSaved && <div className="annual-save-confirmation" role="status" aria-live="polite">
-      <strong>{shownData.lastSaved.status === 'no-data' ? 'No records found · Result saved'
-        : shownData.lastSaved.status === 'unchanged' ? 'Report already saved'
-        : shownData.lastSaved.status === 'review' ? 'Report saved · Needs review'
-        : shownData.lastSaved.status === 'updated' ? 'Saved report updated'
-        : 'Report saved'}</strong>
-      <span>{shownData.lastSaved.states.join(', ')} · {shownData.lastSaved.rtos.join(', ')} · {dateTime(shownData.lastSaved.savedAt)}</span>
-      {shownData.lastSaved.status !== 'no-data' && <span>
-        {shownData.lastSaved.newRows.toLocaleString()} new rows · {shownData.lastSaved.newMonthValues.toLocaleString()} new month values · {shownData.lastSaved.alreadySavedMonthValues.toLocaleString()} month values already saved
-        {(shownData.lastSaved.updatedMonthValues ?? 0) > 0 && ` · ${shownData.lastSaved.updatedMonthValues!.toLocaleString()} month values updated`}
-        {shownData.lastSaved.conflicts > 0 && ` · ${shownData.lastSaved.conflicts.toLocaleString()} differences recorded`}
-      </span>}
-    </div>}
     <div className="annual-workspace">
       <section className="annual-sheet" aria-label="Annual manufacturer registrations">
-        <div className="annual-table-meta"><span><strong>{total.toLocaleString()}</strong> manufacturer rows · {year}</span>
-          <span>{loading ? 'Updating…' : 'Auto-updated'} <span className="annual-dot" /> <b>—</b> no data for this month · <b>0</b> zero registrations</span></div>
+        <div className="annual-table-meta"><span><strong>{total.toLocaleString()}</strong> manufacturer rows · {year}</span></div>
         <div className="annual-table-scroll" tabIndex={0} role="region" aria-label="Manufacturer data, all 12 months" aria-busy={loading}>
           <table className="annual-table">
             <colgroup><col className="annual-col-number" /><col className="annual-col-state" /><col className="annual-col-rto" />
