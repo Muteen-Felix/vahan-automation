@@ -1,0 +1,35 @@
+Command: ['node', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\web-ui\\scripts\\test-platform.mjs']
+
+  VITE v7.3.6  ready in 646 ms
+
+  ➜  Local:   http://127.0.0.1:5184/
+Aggregate throughput ETA, ten-worker pace, stalled queue and pause recovery passed.
+Schedule ETA: reload, system throughput, Vietnam finish time, slowdown, stalls, stale polls and run reset passed.
+Session UI: idle logout despite polling, no renewal, login recovery and shared-tab logout passed.
+Annual reports UI: live committed updates, slow reads under continuous worker updates, removed workspace absent, search, pagination, exports and responsive layout passed.
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.inputValue: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByLabel('Report year', { exact: true })[22m
+
+    at C:\Users\huyvv12\Desktop\vahan-automation\apps\web-ui\scripts\test-filter-profiles-ui.mjs:146:66 {
+  log: [ "  - waiting for getByLabel('Report year', { exact: true })" ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0
+file:///C:/Users/huyvv12/Desktop/vahan-automation/apps/web-ui/scripts/test-platform.mjs:29
+      else reject(new Error(`Command failed with exit code ${code}: ${args.join(' ')}`));
+                  ^
+
+Error: Command failed with exit code 1: scripts/test-filter-profiles-ui.mjs
+    at ChildProcess.<anonymous> (file:///C:/Users/huyvv12/Desktop/vahan-automation/apps/web-ui/scripts/test-platform.mjs:29:19)
+    at Object.onceWrapper (node:events:631:26)
+    at ChildProcess.emit (node:events:509:28)
+    at maybeClose (node:internal/child_process:1141:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:306:5)
+
+Node.js v24.19.0

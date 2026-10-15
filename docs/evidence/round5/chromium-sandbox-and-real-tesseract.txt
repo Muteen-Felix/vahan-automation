@@ -1,0 +1,20 @@
+{
+  "uid": 1000,
+  "chromium": "153.0.8010.12",
+  "sandbox": true,
+  "ocr": {
+    "passed": true,
+    "input": "synthetic six-character text",
+    "transport": "stdin",
+    "rawOutputLogged": false
+  },
+  "liveVahan": {
+    "status": 200,
+    "title": "Welcome to Data Analytics Portal",
+    "url": "https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en",
+    "note": "Navigation only; this does not prove a valid CAPTCHA submission or report download."
+  }
+}
+
+ Container vahan-review-2d456f37b8d2-runner-run-914392cf6cd7 Creating 
+ Container vahan-review-2d456f37b8d2-runner-run-914392cf6cd7 Created 

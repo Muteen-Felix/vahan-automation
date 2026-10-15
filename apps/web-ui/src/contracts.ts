@@ -12,21 +12,6 @@ export interface Runner {
   lastSeenAt: string;
 }
 
-export interface UiHealthSchedule {
-  intervalDays: number;
-  updatedAt: string;
-  nextCheckAt: string;
-}
-
-export interface UiHealthCheckNowResponse {
-  ok: boolean;
-  requestId: string;
-  runnerId: string;
-  runnerName: string;
-  requestedAt: string;
-  status: "REQUESTED";
-}
-
 export interface PendingUiHealthCheck {
   requestId: string;
   requestedAt: string;
@@ -109,6 +94,7 @@ export interface VahanFilters {
 
 export interface Scenario {
   name: string;
+  caseKey?: string;
   filters: VahanFilters;
 }
 
@@ -118,6 +104,8 @@ export interface Job {
   id: string;
   runnerId: string;
   sessionId: string;
+  retryOfJobId?: string | null;
+  caseId?: string | null;
   status: JobStatus;
   filters: VahanFilters & Record<string, unknown>;
   scenarioName?: string | null;
@@ -127,9 +115,38 @@ export interface Job {
   excelFileName?: string | null;
   noDataFileName?: string | null;
   excelFileSize?: number | null;
+  mainReportSavedAt?: string | null;
+  mainReportSummary?: {parsedRows: number; newRows: number; newCells: number; duplicates: number; conflicts: number} | null;
+  resultMessage?: string | null;
+  resultObservedAt?: string | null;
+  reportTableCount?: number | null;
+  reportRowCount?: number | null;
   successfulApplyCount?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MakerUpdateTask {
+  id: string;
+  kind: "DISCOVER" | "REFRESH";
+  maker: string;
+  state: string;
+  rto: string;
+  status: "PENDING" | "RUNNING" | "DONE" | "FAILED";
+  jobId: string | null;
+  error: string | null;
+}
+
+export interface MakerUpdateRun {
+  id: string;
+  year: number;
+  status: "BASELINE" | "RUNNING" | "UNCHANGED" | "COMPLETED";
+  changedMakers: string[];
+  states: string[];
+  createdAt: string;
+  updatedAt: string;
+  tasks?: MakerUpdateTask[];
+  locations?: Array<{maker: string; states: number; rtos: number}>;
 }
 
 export interface ExportedReportItem {
@@ -163,6 +180,7 @@ export interface ExportedReportJob {
 
 export interface ExportedReportSession {
   sessionId: string;
+  deletedAt?: string | null;
   sessionFolder?: string | null;
   startedAt: string;
   updatedAt: string;
@@ -181,7 +199,6 @@ export interface ExportedReportSession {
 export interface CaptchaChallenge {
   jobId: string;
   captchaId: string;
-  imageDataUrl: string;
   invalid?: boolean;
   refreshed?: boolean;
 }

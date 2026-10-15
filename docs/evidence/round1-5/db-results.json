@@ -1,0 +1,98 @@
+[
+  {
+    "command": "python -m pytest tests",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_permissions.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python ../../scripts/test_runtime_role_lifecycle.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_account_passwords.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_report_results.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_annual_reports.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_filter_profiles.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_ui_contract.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_run_controls.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_update_status.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_worker_pool.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_session_limits.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_retry_sessions.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_report_coverage.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_run_schedules.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_queue_retry_checkpoints.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_run_history.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_worker_lifecycle.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python -m pytest verification/test_queue_migrations.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python verification/test_shared_batch_queue.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python verification/prepare_report_test_fixtures.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python verification/test_main_migration.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python verification/test_shared_migration.py",
+    "exitCode": 0
+  },
+  {
+    "command": "python verification/test_main_live_workbook.py",
+    "exitCode": 0
+  }
+]

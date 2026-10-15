@@ -1,40 +1,26 @@
-# VAHAN RPA Web UI — MVP Phase 3
+# VAHAN Dashboard
 
-React control center for creating VAHAN filter jobs, viewing extension runners,
-tracking job status and entering CAPTCHA challenges forwarded by the backend.
+React/TypeScript/Vite. Docker build static assets; Nginx proxy API/Socket.IO
+cùng origin với CSP/headers và login throttle. `VITE_API_URL` để trống trong Docker.
 
-The **Lịch kiểm tra giao diện** section lets an operator set the UI health-check
-interval from 1 to 365 days. The value is saved through the backend and sent to
-connected extensions, which reset their alarm and send health results back to the
-backend. The connected extension checks the currently visible official VAHAN Public
-Report tab at `https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en`;
-the manual **Kiểm tra ngay** request never falls back to a background tab, opens a
-tab, or probes a different URL. If the visible tab is missing or redirects to
-another URL, the check is recorded as `CHECK_ERROR`. Scheduled alarm checks may
-use an already-open official tab because they run without a user click.
-**Báo cáo kiểm tra theo ngày** reads the backend CSV log, shows detailed
-diagnostics for the selected day and provides a download link for each matching
-CSV file. The small **Kiểm tra ngay** button sends an immediate read-only check
-request to a connected extension runner; the runner uses the visible official tab and
-pushes the result back to the report panel automatically. If no official tab is
-open, the request is recorded as a check error so it can be fixed explicitly.
+Admin quản lý profile, lịch, Run History, UI Health và tài khoản. Member chỉ
+xem Exported Reports. Báo cáo có search State/RTO, phân trang 100 và export mọi
+dòng khớp. Export all cần xác nhận. Cài mới không nạp mẫu; lịch không nhập worker.
 
-## Run
+Retry giữ identity case/session, không tăng case count. Pause/resume, ETA và
+network/error banners hiển thị theo trạng thái API/SQL. Ứng dụng không giới hạn
+số lần bắt đầu OCR tự động.
 
-Start the backend first, then:
-
-```powershell
-cd apps/web-ui
-npm.cmd install
-npm.cmd run dev
+```bash
+npm ci
+npm run check
+npm run build
+npm run test:platform
 ```
 
-Open `http://127.0.0.1:5173`. The backend URL defaults to
-`http://127.0.0.1:8000` and can be changed with `VITE_API_URL`.
+`test:platform` dùng fixtures trên Vite. Bộ kiểm gói chạy cùng script trên
+assets production Nginx; hai phạm vi này không chứng minh report VAHAN live.
+Đặt `UI_TEST_ARTIFACT_DIR` để ảnh Run History đi vào diagnostics thay `outputs/`.
 
-The main screen shows the admin login configured in the API. Set
-`VAHAN_UI_AUTH_USERNAME`, `VAHAN_UI_AUTH_PASSWORD` (at least 12 characters), and
-`VAHAN_UI_AUTH_TOKEN_SECRET` (at least 32 characters) in the API process before
-starting it. Access tokens do not expire automatically and remain in browser local
-storage across tab and browser restarts. Signing out or changing the server signing
-secret returns the browser to the login screen.
+Xem [README gốc](../../README.md), [hướng dẫn cài](../../docs/deployment.md),
+[runbook](../../docs/runbook.md) và [bằng chứng Đợt 5](../../docs/round5-review-evidence.md).

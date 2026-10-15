@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { api } from "../services/api-client";
+import {operatorMessage} from '../operator-language';
 
 interface Props {
   path: string;
@@ -37,7 +38,7 @@ export function AuthenticatedDownload({ path, fileName, className, children, sty
       >
         {loading ? "Downloading…" : children}
       </button>
-      {error && <small className="download-error" role="alert">{error}</small>}
+      {error && <small className="download-error" role="alert">{operatorMessage(error)}</small>}
     </span>
   );
 }

@@ -1,0 +1,1 @@
+Command: ['node', '--check', 'runner.mjs']

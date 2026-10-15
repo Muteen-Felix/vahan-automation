@@ -1,0 +1,21 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\verification\\test_main_live_workbook.py']
+Traceback (most recent call last):
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\verification\test_main_live_workbook.py", line 59, in <module>
+    asyncio.run(main())
+  File "C:\Users\huyvv12\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\verification\test_main_live_workbook.py", line 32, in main
+    ORDER BY f.created_at DESC LIMIT 1"""))).mappings().one()
+                                                        ^^^^^
+  File "C:\Users\huyvv12\Desktop\vahan-automation\apps\api-server\.venv\Lib\site-packages\sqlalchemy\engine\result.py", line 1726, in one
+    return self._only_one_row(
+           ^^^^^^^^^^^^^^^^^^^
+  File "lib/sqlalchemy/engine/_result_cy.py", line 539, in sqlalchemy.engine._result_cy.BaseResultInternal._only_one_row
+sqlalchemy.exc.NoResultFound: No row was found when one was required

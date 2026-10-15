@@ -3,6 +3,7 @@ import socket
 from collections.abc import AsyncIterator
 
 import pytest_asyncio
+import pytest
 import socketio
 import uvicorn
 from httpx import AsyncClient
@@ -41,7 +42,7 @@ async def live_server_url() -> AsyncIterator[str]:
         await asyncio.wait_for(task, timeout=5)
 
 
-async def test_runner_job_and_captcha_round_trip(live_server_url: str) -> None:
+async def test_runner_job_and_captcha_round_trip(live_server_url: str, admin_token, admin_headers, approve_workers) -> None:
     runner = socketio.AsyncClient()
     ui = socketio.AsyncClient()
     assigned = asyncio.Event()
@@ -114,14 +115,17 @@ async def test_runner_job_and_captcha_round_trip(live_server_url: str) -> None:
                 "runnerName": "E2E Chrome",
                 "version": "0.1.0",
                 "token": settings.runner_token,
+                "engine": "playwright",
             },
         )
         await ui.connect(
             live_server_url,
             namespaces=["/ui"],
             transports=["websocket"],
+            auth={"token": admin_token},
         )
 
+        await approve_workers(["runner-e2e"])
         options_response = await ui.call(
             "ui:runner-options",
             {"runnerId": "runner-e2e", "request": {"type": "GET_ALL_OPTIONS"}},
@@ -130,7 +134,7 @@ async def test_runner_job_and_captcha_round_trip(live_server_url: str) -> None:
         )
         assert options_response == {"ok": True, "options": {"states": ["Delhi"]}}
 
-        async with AsyncClient(base_url=live_server_url) as client:
+        async with AsyncClient(base_url=live_server_url, headers=admin_headers) as client:
             response = await client.post(
                 "/api/jobs",
                 json={
@@ -190,7 +194,7 @@ async def test_runner_job_and_captcha_round_trip(live_server_url: str) -> None:
             "ui:subscribe-job", {"jobId": job_id}, namespace="/ui", timeout=2,
         )
         assert recovered["captcha"]["captchaId"] == captcha_id
-        assert recovered["captcha"]["imageDataUrl"].startswith("data:image/")
+        assert "imageDataUrl" not in recovered["captcha"]
 
         refreshed = await ui.call(
             "captcha:refresh",
@@ -248,44 +252,7 @@ async def test_runner_job_and_captcha_round_trip(live_server_url: str) -> None:
             await runner.disconnect()
 
 
-async def test_ui_health_schedule_update_reaches_runner(live_server_url: str) -> None:
-    runner = socketio.AsyncClient()
-    schedule_updated = asyncio.Event()
-    received_schedule: dict = {}
-
-    @runner.on("ui-health:schedule-updated", namespace="/runner")
-    async def on_schedule_updated(payload: dict) -> None:
-        received_schedule.update(payload)
-        schedule_updated.set()
-
-    try:
-        await runner.connect(
-            live_server_url,
-            namespaces=["/runner"],
-            transports=["websocket"],
-            auth={
-                "runnerId": "schedule-runner",
-                "runnerName": "Schedule Chrome",
-                "version": "0.1.0",
-                "token": settings.runner_token,
-            },
-        )
-        async with AsyncClient(base_url=live_server_url) as client:
-            response = await client.put(
-                "/api/ui-health/schedule",
-                json={"intervalDays": 11},
-            )
-
-        assert response.status_code == 200
-        await asyncio.wait_for(schedule_updated.wait(), timeout=2)
-        assert received_schedule["intervalDays"] == 11
-        assert received_schedule["nextCheckAt"] > received_schedule["updatedAt"]
-    finally:
-        if runner.connected:
-            await runner.disconnect()
-
-
-async def test_ui_health_manual_check_request_reaches_runner(live_server_url: str) -> None:
+async def test_retired_ui_health_request_does_not_reach_connected_runner(live_server_url: str, admin_headers) -> None:
     runner = socketio.AsyncClient()
     request_received = asyncio.Event()
     received_payload: dict = {}
@@ -305,24 +272,22 @@ async def test_ui_health_manual_check_request_reaches_runner(live_server_url: st
                 "runnerName": "Manual Check Chrome",
                 "version": "0.1.0",
                 "token": settings.runner_token,
+                "engine": "playwright",
             },
         )
-        async with AsyncClient(base_url=live_server_url) as client:
+        async with AsyncClient(base_url=live_server_url, headers=admin_headers) as client:
             response = await client.post("/api/ui-health/run-now", json={})
 
-        assert response.status_code == 202
-        body = response.json()
-        assert body["runnerId"] == "manual-check-runner"
-        assert body["runnerName"] == "Manual Check Chrome"
-        await asyncio.wait_for(request_received.wait(), timeout=2)
-        assert received_payload["requestId"] == body["requestId"]
-        assert received_payload["trigger"] == "manual-web"
+        assert response.status_code == 404
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(request_received.wait(), timeout=.25)
+        assert received_payload == {}
     finally:
         if runner.connected:
             await runner.disconnect()
 
 
-async def test_ui_health_log_received_is_broadcast_to_web_ui(live_server_url: str) -> None:
+async def test_ui_health_log_received_is_broadcast_to_web_ui(live_server_url: str, admin_token, admin_headers) -> None:
     ui = socketio.AsyncClient()
     log_received = asyncio.Event()
     received_payload: dict = {}
@@ -333,8 +298,8 @@ async def test_ui_health_log_received_is_broadcast_to_web_ui(live_server_url: st
         log_received.set()
 
     try:
-        await ui.connect(live_server_url, namespaces=["/ui"], transports=["websocket"])
-        async with AsyncClient(base_url=live_server_url) as client:
+        await ui.connect(live_server_url, namespaces=["/ui"], transports=["websocket"], auth={"token": admin_token})
+        async with AsyncClient(base_url=live_server_url, headers=admin_headers) as client:
             response = await client.post(
                 "/api/ui-health/logs",
                 json={

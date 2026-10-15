@@ -1,0 +1,57 @@
+Using existing C:\Users\huyvv12\AppData\Local\Temp\vahan-review-install-tcqxd5hv\.docker.env
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+NAME                                   IMAGE                                COMMAND                  SERVICE    CREATED          STATUS                    PORTS
+vahan-review-2d456f37b8d2-api-1        vahan-review/api:e40a40298742        "uvicorn app.main:ap…"   api        24 seconds ago   Up 16 seconds (healthy)   127.0.0.1:59458->8000/tcp
+vahan-review-2d456f37b8d2-postgres-1   vahan-review/postgres:e40a40298742   "docker-entrypoint.s…"   postgres   24 seconds ago   Up 23 seconds (healthy)   5432/tcp
+vahan-review-2d456f37b8d2-runner-1     vahan-review/runner:e40a40298742     "docker-entrypoint.s…"   runner     24 seconds ago   Up 10 seconds (healthy)   3001/tcp
+vahan-review-2d456f37b8d2-web-1        vahan-review/web:e40a40298742        "/docker-entrypoint.…"   web        24 seconds ago   Up 10 seconds (healthy)   127.0.0.1:59459->80/tcp
+Using the manually configured worker count: 1.
+
+ Network vahan-review-2d456f37b8d2_default Creating 
+ Network vahan-review-2d456f37b8d2_default Creating 
+ Volume vahan-review-2d456f37b8d2_postgres_data Creating 
+ Volume vahan-review-2d456f37b8d2_postgres_data Creating 
+ Volume vahan-review-2d456f37b8d2_postgres_data Created 
+ Volume vahan-review-2d456f37b8d2_postgres_data Created 
+ Network vahan-review-2d456f37b8d2_default Created 
+ Network vahan-review-2d456f37b8d2_default Created 
+ Container vahan-review-2d456f37b8d2-postgres-1 Creating 
+ Container vahan-review-2d456f37b8d2-postgres-1 Created 
+ Container vahan-review-2d456f37b8d2-migrate-1 Creating 
+ Container vahan-review-2d456f37b8d2-migrate-1 Created 
+ Container vahan-review-2d456f37b8d2-api-1 Creating 
+ Container vahan-review-2d456f37b8d2-api-1 Created 
+ Container vahan-review-2d456f37b8d2-web-1 Creating 
+ Container vahan-review-2d456f37b8d2-runner-1 Creating 
+ Container vahan-review-2d456f37b8d2-web-1 Created 
+ Container vahan-review-2d456f37b8d2-runner-1 Created 
+ Container vahan-review-2d456f37b8d2-postgres-1 Starting 
+ Container vahan-review-2d456f37b8d2-postgres-1 Started 
+ Container vahan-review-2d456f37b8d2-postgres-1 Waiting 
+ Container vahan-review-2d456f37b8d2-postgres-1 Healthy 
+ Container vahan-review-2d456f37b8d2-migrate-1 Starting 
+ Container vahan-review-2d456f37b8d2-migrate-1 Started 
+ Container vahan-review-2d456f37b8d2-migrate-1 Waiting 
+ Container vahan-review-2d456f37b8d2-postgres-1 Waiting 
+ Container vahan-review-2d456f37b8d2-postgres-1 Healthy 
+ Container vahan-review-2d456f37b8d2-migrate-1 Exited 
+ Container vahan-review-2d456f37b8d2-api-1 Starting 
+ Container vahan-review-2d456f37b8d2-api-1 Started 
+ Container vahan-review-2d456f37b8d2-api-1 Waiting 
+ Container vahan-review-2d456f37b8d2-api-1 Waiting 
+ Container vahan-review-2d456f37b8d2-api-1 Healthy 
+ Container vahan-review-2d456f37b8d2-web-1 Starting 
+ Container vahan-review-2d456f37b8d2-api-1 Healthy 
+ Container vahan-review-2d456f37b8d2-runner-1 Starting 
+ Container vahan-review-2d456f37b8d2-web-1 Started 
+ Container vahan-review-2d456f37b8d2-runner-1 Started 
+ Container vahan-review-2d456f37b8d2-api-1 Waiting 
+ Container vahan-review-2d456f37b8d2-runner-1 Waiting 
+ Container vahan-review-2d456f37b8d2-web-1 Waiting 
+ Container vahan-review-2d456f37b8d2-postgres-1 Waiting 
+ Container vahan-review-2d456f37b8d2-migrate-1 Waiting 
+ Container vahan-review-2d456f37b8d2-postgres-1 Healthy 
+ Container vahan-review-2d456f37b8d2-api-1 Healthy 
+ Container vahan-review-2d456f37b8d2-migrate-1 Exited 
+ Container vahan-review-2d456f37b8d2-web-1 Healthy 
+ Container vahan-review-2d456f37b8d2-runner-1 Healthy 

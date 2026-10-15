@@ -1,0 +1,2 @@
+Command: ['node', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\web-ui\\scripts\\test-batch-timing.mjs']
+Aggregate throughput ETA, ten-worker pace, stalled queue and pause recovery passed.

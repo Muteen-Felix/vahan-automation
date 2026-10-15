@@ -1,0 +1,2 @@
+OCR rate-limit runner checks passed: shared reservation precedes Tesseract, denied work stops without refreshing, and OCR text is not logged.
+

@@ -1,0 +1,2 @@
+Run History: navigation, lazy loading, run numbering, Vietnam time, pagination, refresh recovery, direct route and mobile passed.
+

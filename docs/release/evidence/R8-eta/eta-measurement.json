@@ -1,0 +1,409 @@
+{
+  "status": "PASS",
+  "ineligibleReasons": [],
+  "thresholdsMet": {
+    "50-75%": true,
+    "75-100%": true
+  },
+  "sampleIntervalSeconds": 60,
+  "medianObservedIntervalSeconds": 60.078999999997905,
+  "etaNullSamples": 1,
+  "totalSamples": 37,
+  "progressBands": {
+    "0-25%": {
+      "samples": 9,
+      "medianAbsoluteSeconds": 170.9019,
+      "medianRemainingErrorPercent": 10.028846067651491,
+      "maxRemainingErrorPercent": 184.17587425572464,
+      "meanAbsoluteSeconds": 665.8311666666666,
+      "maxAbsoluteSeconds": 3913.1389,
+      "p90AbsoluteSeconds": 3913.1389
+    },
+    "25-50%": {
+      "samples": 9,
+      "medianAbsoluteSeconds": 67.5319,
+      "medianRemainingErrorPercent": 5.805106836344864,
+      "maxRemainingErrorPercent": 10.683395896450522,
+      "meanAbsoluteSeconds": 73.9841,
+      "maxAbsoluteSeconds": 143.5421,
+      "p90AbsoluteSeconds": 143.5421
+    },
+    "50-75%": {
+      "samples": 9,
+      "medianAbsoluteSeconds": 71.1951,
+      "medianRemainingErrorPercent": 9.777263329845375,
+      "maxRemainingErrorPercent": 22.53566642146419,
+      "meanAbsoluteSeconds": 87.69198888888889,
+      "maxAbsoluteSeconds": 235.0839,
+      "p90AbsoluteSeconds": 235.0839
+    },
+    "75-100%": {
+      "samples": 9,
+      "medianAbsoluteSeconds": 35.2449,
+      "medianRemainingErrorPercent": 7.969432277876471,
+      "maxRemainingErrorPercent": 33.070095437489314,
+      "meanAbsoluteSeconds": 36.18385555555555,
+      "maxAbsoluteSeconds": 126.3989,
+      "p90AbsoluteSeconds": 126.3989
+    }
+  },
+  "thresholds": {
+    "50-75%": 25,
+    "75-100%": 15
+  },
+  "workload": "SYNTHETIC protocol workers, real wall clock/HTTP/Socket.IO/SQL",
+  "sessionId": "c0c758a1-1530-4ef4-9892-aaadd8f0504f",
+  "startedAt": "2026-10-13T15:41:34.206633+00:00",
+  "finishedAt": "2026-10-13T16:17:59.869100+00:00",
+  "elapsedSeconds": 2185.6560000000027,
+  "uniqueAssigned": 100,
+  "uniqueCompleted": 100,
+  "peakConcurrent": 3,
+  "cases": 100,
+  "attempts": 100,
+  "interruptions": [],
+  "allForecasts": {
+    "samples": 36,
+    "medianAbsoluteSeconds": 71.7756,
+    "medianRemainingErrorPercent": 8.871701900230667,
+    "maxRemainingErrorPercent": 184.17587425572464,
+    "meanAbsoluteSeconds": 215.92277777777778,
+    "maxAbsoluteSeconds": 3913.1389,
+    "p90AbsoluteSeconds": 235.0839
+  },
+  "after20Completed": {
+    "samples": 29,
+    "medianAbsoluteSeconds": 56.6229,
+    "medianRemainingErrorPercent": 8.79613787375192,
+    "maxRemainingErrorPercent": 33.070095437489314,
+    "meanAbsoluteSeconds": 72.37014827586206,
+    "maxAbsoluteSeconds": 235.0839,
+    "p90AbsoluteSeconds": 147.0929
+  },
+  "predictions": [
+    {
+      "done": 1,
+      "observedAt": "2026-10-13T15:42:35.194022+00:00",
+      "predictedFinish": "2026-10-13T17:23:13.008Z",
+      "signedErrorSeconds": 3913.1389,
+      "absoluteErrorSeconds": 3913.1389,
+      "remainingErrorPercent": 184.17587425572464,
+      "totalDurationErrorPercent": 179.0372730200908
+    },
+    {
+      "done": 4,
+      "observedAt": "2026-10-13T15:43:35.311820+00:00",
+      "predictedFinish": "2026-10-13T16:32:01.851Z",
+      "signedErrorSeconds": 841.9819,
+      "absoluteErrorSeconds": 841.9819,
+      "remainingErrorPercent": 40.78268538037366,
+      "totalDurationErrorPercent": 38.5230749944181
+    },
+    {
+      "done": 7,
+      "observedAt": "2026-10-13T15:44:35.379290+00:00",
+      "predictedFinish": "2026-10-13T16:24:42.395Z",
+      "signedErrorSeconds": 402.5259,
+      "absoluteErrorSeconds": 402.5259,
+      "remainingErrorPercent": 20.08121458098108,
+      "totalDurationErrorPercent": 18.41670875929238
+    },
+    {
+      "done": 10,
+      "observedAt": "2026-10-13T15:45:35.468550+00:00",
+      "predictedFinish": "2026-10-13T16:21:46.831Z",
+      "signedErrorSeconds": 226.9619,
+      "absoluteErrorSeconds": 226.9619,
+      "remainingErrorPercent": 11.672589786091143,
+      "totalDurationErrorPercent": 10.384154688569462
+    },
+    {
+      "done": 13,
+      "observedAt": "2026-10-13T15:46:35.569871+00:00",
+      "predictedFinish": "2026-10-13T16:20:12.389Z",
+      "signedErrorSeconds": 132.5199,
+      "absoluteErrorSeconds": 132.5199,
+      "remainingErrorPercent": 7.032847965995745,
+      "totalDurationErrorPercent": 6.063163645148177
+    },
+    {
+      "done": 16,
+      "observedAt": "2026-10-13T15:47:35.622789+00:00",
+      "predictedFinish": "2026-10-13T16:16:47.513Z",
+      "signedErrorSeconds": -72.3561,
+      "absoluteErrorSeconds": 72.3561,
+      "remainingErrorPercent": 3.9663558349385633,
+      "totalDurationErrorPercent": 3.3104980838704674
+    },
+    {
+      "done": 19,
+      "observedAt": "2026-10-13T15:48:35.683144+00:00",
+      "predictedFinish": "2026-10-13T16:16:34.868Z",
+      "signedErrorSeconds": -85.0011,
+      "absoluteErrorSeconds": 85.0011,
+      "remainingErrorPercent": 4.81814854669436,
+      "totalDurationErrorPercent": 3.8890429234975628
+    },
+    {
+      "done": 20,
+      "observedAt": "2026-10-13T15:49:35.765768+00:00",
+      "predictedFinish": "2026-10-13T16:20:50.771Z",
+      "signedErrorSeconds": 170.9019,
+      "absoluteErrorSeconds": 170.9019,
+      "remainingErrorPercent": 10.028846067651491,
+      "totalDurationErrorPercent": 7.81924968979564
+    },
+    {
+      "done": 23,
+      "observedAt": "2026-10-13T15:50:35.870797+00:00",
+      "predictedFinish": "2026-10-13T16:20:26.962Z",
+      "signedErrorSeconds": 147.0929,
+      "absoluteErrorSeconds": 147.0929,
+      "remainingErrorPercent": 8.947265926709413,
+      "totalDurationErrorPercent": 6.729919987408806
+    },
+    {
+      "done": 26,
+      "observedAt": "2026-10-13T15:51:35.949427+00:00",
+      "predictedFinish": "2026-10-13T16:20:06.781Z",
+      "signedErrorSeconds": 126.9119,
+      "absoluteErrorSeconds": 126.9119,
+      "remainingErrorPercent": 8.01252122587911,
+      "totalDurationErrorPercent": 5.806581639562669
+    },
+    {
+      "done": 30,
+      "observedAt": "2026-10-13T15:52:36.026305+00:00",
+      "predictedFinish": "2026-10-13T16:17:52.559Z",
+      "signedErrorSeconds": -7.3101,
+      "absoluteErrorSeconds": 7.3101,
+      "remainingErrorPercent": 0.4797148383012829,
+      "totalDurationErrorPercent": 0.33445793848620237
+    },
+    {
+      "done": 33,
+      "observedAt": "2026-10-13T15:53:36.094566+00:00",
+      "predictedFinish": "2026-10-13T16:17:43.444Z",
+      "signedErrorSeconds": -16.4251,
+      "absoluteErrorSeconds": 16.4251,
+      "remainingErrorPercent": 1.1221058720782475,
+      "totalDurationErrorPercent": 0.7514952032707791
+    },
+    {
+      "done": 36,
+      "observedAt": "2026-10-13T15:54:36.171886+00:00",
+      "predictedFinish": "2026-10-13T16:15:37.677Z",
+      "signedErrorSeconds": -142.1921,
+      "absoluteErrorSeconds": 142.1921,
+      "remainingErrorPercent": 10.12982704402518,
+      "totalDurationErrorPercent": 6.5056944002166786
+    },
+    {
+      "done": 39,
+      "observedAt": "2026-10-13T15:55:36.269168+00:00",
+      "predictedFinish": "2026-10-13T16:15:36.327Z",
+      "signedErrorSeconds": -143.5421,
+      "absoluteErrorSeconds": 143.5421,
+      "remainingErrorPercent": 10.683395896450522,
+      "totalDurationErrorPercent": 6.567460753201777
+    },
+    {
+      "done": 40,
+      "observedAt": "2026-10-13T15:56:36.375665+00:00",
+      "predictedFinish": "2026-10-13T16:18:26.177Z",
+      "signedErrorSeconds": 26.3079,
+      "absoluteErrorSeconds": 26.3079,
+      "remainingErrorPercent": 2.0497105230616155,
+      "totalDurationErrorPercent": 1.2036615094049552
+    },
+    {
+      "done": 43,
+      "observedAt": "2026-10-13T15:57:36.472333+00:00",
+      "predictedFinish": "2026-10-13T16:19:18.882Z",
+      "signedErrorSeconds": 79.0129,
+      "absoluteErrorSeconds": 79.0129,
+      "remainingErrorPercent": 6.458485270788689,
+      "totalDurationErrorPercent": 3.615065682797289
+    },
+    {
+      "done": 46,
+      "observedAt": "2026-10-13T15:58:36.550286+00:00",
+      "predictedFinish": "2026-10-13T16:19:07.401Z",
+      "signedErrorSeconds": 67.5319,
+      "absoluteErrorSeconds": 67.5319,
+      "remainingErrorPercent": 5.805106836344864,
+      "totalDurationErrorPercent": 3.089777165299567
+    },
+    {
+      "done": 49,
+      "observedAt": "2026-10-13T15:59:36.609866+00:00",
+      "predictedFinish": "2026-10-13T16:18:56.492Z",
+      "signedErrorSeconds": 56.6229,
+      "absoluteErrorSeconds": 56.6229,
+      "remainingErrorPercent": 5.1323295790334615,
+      "totalDurationErrorPercent": 2.5906592803259034
+    },
+    {
+      "done": 50,
+      "observedAt": "2026-10-13T16:00:36.705363+00:00",
+      "predictedFinish": "2026-10-13T16:21:54.953Z",
+      "signedErrorSeconds": 235.0839,
+      "absoluteErrorSeconds": 235.0839,
+      "remainingErrorPercent": 22.53566642146419,
+      "totalDurationErrorPercent": 10.755759369269443
+    },
+    {
+      "done": 53,
+      "observedAt": "2026-10-13T16:01:36.803627+00:00",
+      "predictedFinish": "2026-10-13T16:19:35.986Z",
+      "signedErrorSeconds": 96.1169,
+      "absoluteErrorSeconds": 96.1169,
+      "remainingErrorPercent": 9.777263329845375,
+      "totalDurationErrorPercent": 4.3976224986914625
+    },
+    {
+      "done": 59,
+      "observedAt": "2026-10-13T16:02:36.857109+00:00",
+      "predictedFinish": "2026-10-13T16:16:01.145Z",
+      "signedErrorSeconds": -118.7241,
+      "absoluteErrorSeconds": 118.7241,
+      "remainingErrorPercent": 12.862682300732972,
+      "totalDurationErrorPercent": 5.431966421065339
+    },
+    {
+      "done": 60,
+      "observedAt": "2026-10-13T16:03:36.937671+00:00",
+      "predictedFinish": "2026-10-13T16:18:03.292Z",
+      "signedErrorSeconds": 3.4229,
+      "absoluteErrorSeconds": 3.4229,
+      "remainingErrorPercent": 0.39665955891380567,
+      "totalDurationErrorPercent": 0.15660744417236727
+    },
+    {
+      "done": 63,
+      "observedAt": "2026-10-13T16:04:37.025247+00:00",
+      "predictedFinish": "2026-10-13T16:17:57.248Z",
+      "signedErrorSeconds": -2.6211,
+      "absoluteErrorSeconds": 2.6211,
+      "remainingErrorPercent": 0.32647693448803183,
+      "totalDurationErrorPercent": 0.11992280578462469
+    },
+    {
+      "done": 66,
+      "observedAt": "2026-10-13T16:05:37.116481+00:00",
+      "predictedFinish": "2026-10-13T16:16:48.674Z",
+      "signedErrorSeconds": -71.1951,
+      "absoluteErrorSeconds": 71.1951,
+      "remainingErrorPercent": 9.585304471339736,
+      "totalDurationErrorPercent": 3.2573790203032824
+    },
+    {
+      "done": 69,
+      "observedAt": "2026-10-13T16:06:37.191654+00:00",
+      "predictedFinish": "2026-10-13T16:16:48.753Z",
+      "signedErrorSeconds": -71.1161,
+      "absoluteErrorSeconds": 71.1161,
+      "remainingErrorPercent": 10.417232972421942,
+      "totalDurationErrorPercent": 3.2537645448323027
+    },
+    {
+      "done": 70,
+      "observedAt": "2026-10-13T16:07:37.388399+00:00",
+      "predictedFinish": "2026-10-13T16:20:17.568Z",
+      "signedErrorSeconds": 137.6989,
+      "absoluteErrorSeconds": 137.6989,
+      "remainingErrorPercent": 22.1209910249089,
+      "totalDurationErrorPercent": 6.300117676340642
+    },
+    {
+      "done": 73,
+      "observedAt": "2026-10-13T16:08:37.472675+00:00",
+      "predictedFinish": "2026-10-13T16:18:53.118Z",
+      "signedErrorSeconds": 53.2489,
+      "absoluteErrorSeconds": 53.2489,
+      "remainingErrorPercent": 9.468214525012316,
+      "totalDurationErrorPercent": 2.4362891507172186
+    },
+    {
+      "done": 76,
+      "observedAt": "2026-10-13T16:09:37.570243+00:00",
+      "predictedFinish": "2026-10-13T16:18:44.052Z",
+      "signedErrorSeconds": 44.1829,
+      "absoluteErrorSeconds": 44.1829,
+      "remainingErrorPercent": 8.79613787375192,
+      "totalDurationErrorPercent": 2.021493775781731
+    },
+    {
+      "done": 79,
+      "observedAt": "2026-10-13T16:10:37.618024+00:00",
+      "predictedFinish": "2026-10-13T16:18:35.114Z",
+      "signedErrorSeconds": 35.2449,
+      "absoluteErrorSeconds": 35.2449,
+      "remainingErrorPercent": 7.969432277876471,
+      "totalDurationErrorPercent": 1.6125547661663113
+    },
+    {
+      "done": 80,
+      "observedAt": "2026-10-13T16:11:37.653995+00:00",
+      "predictedFinish": "2026-10-13T16:20:06.268Z",
+      "signedErrorSeconds": 126.3989,
+      "absoluteErrorSeconds": 126.3989,
+      "remainingErrorPercent": 33.070095437489314,
+      "totalDurationErrorPercent": 5.783110425428331
+    },
+    {
+      "done": 86,
+      "observedAt": "2026-10-13T16:12:37.722301+00:00",
+      "predictedFinish": "2026-10-13T16:17:13.419Z",
+      "signedErrorSeconds": -46.4501,
+      "absoluteErrorSeconds": 46.4501,
+      "remainingErrorPercent": 14.41892334308124,
+      "totalDurationErrorPercent": 2.125224646513447
+    },
+    {
+      "done": 89,
+      "observedAt": "2026-10-13T16:13:37.767577+00:00",
+      "predictedFinish": "2026-10-13T16:17:14.189Z",
+      "signedErrorSeconds": -45.6801,
+      "absoluteErrorSeconds": 45.6801,
+      "remainingErrorPercent": 17.42839930006817,
+      "totalDurationErrorPercent": 2.089994948884909
+    },
+    {
+      "done": 90,
+      "observedAt": "2026-10-13T16:14:37.870242+00:00",
+      "predictedFinish": "2026-10-13T16:18:14.401Z",
+      "signedErrorSeconds": 14.5319,
+      "absoluteErrorSeconds": 14.5319,
+      "remainingErrorPercent": 7.19405057230571,
+      "totalDurationErrorPercent": 0.6648758999586386
+    },
+    {
+      "done": 93,
+      "observedAt": "2026-10-13T16:15:37.946926+00:00",
+      "predictedFinish": "2026-10-13T16:18:09.374Z",
+      "signedErrorSeconds": 9.5049,
+      "absoluteErrorSeconds": 9.5049,
+      "remainingErrorPercent": 6.697262120576027,
+      "totalDurationErrorPercent": 0.4348763025837546
+    },
+    {
+      "done": 96,
+      "observedAt": "2026-10-13T16:16:38.006421+00:00",
+      "predictedFinish": "2026-10-13T16:17:57.062Z",
+      "signedErrorSeconds": -2.8071,
+      "absoluteErrorSeconds": 2.8071,
+      "remainingErrorPercent": 3.4290351040185234,
+      "totalDurationErrorPercent": 0.12843283664034946
+    },
+    {
+      "done": 99,
+      "observedAt": "2026-10-13T16:17:38.072192+00:00",
+      "predictedFinish": "2026-10-13T16:18:00.723Z",
+      "signedErrorSeconds": 0.8539,
+      "absoluteErrorSeconds": 0.8539,
+      "remainingErrorPercent": 3.9175281191258877,
+      "totalDurationErrorPercent": 0.03906836208442678
+    }
+  ]
+}

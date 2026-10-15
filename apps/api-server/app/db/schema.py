@@ -1,0 +1,206 @@
+"""Durable PostgreSQL schema. JSONB retains complete versioned application payloads."""
+from sqlalchemy import (
+    MetaData, Table, Column, String, Text, Boolean, Integer, BigInteger,
+    DateTime, LargeBinary, ForeignKey, JSON, Index, UniqueConstraint, CheckConstraint, Sequence, text,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+
+metadata = MetaData()
+# Server-issued order of health checks (migration 0016 creates it for upgraded databases).
+ui_health_check_seq = Sequence("ui_health_check_seq", metadata=metadata)
+document = JSON().with_variant(JSONB(), "postgresql")
+users = Table("users", metadata,
+    Column("username", String(128), primary_key=True),
+    Column("password_hash", Text, nullable=False),
+    Column("role", String(16), nullable=False),
+    Column("active", Boolean, nullable=False),
+    Column("profile", document, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False))
+auth_sessions = Table("auth_sessions", metadata,
+    Column("id", String(64), primary_key=True),
+    Column("username", ForeignKey("users.username"), nullable=False, index=True),
+    Column("revoked", Boolean, nullable=False),
+    Column("expires_at", DateTime(timezone=True), nullable=False),
+    Column("last_activity_at", DateTime(timezone=True), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False))
+report_sessions = Table("report_sessions", metadata,
+    Column("id", String(36), primary_key=True),
+    Column("owner_username", ForeignKey("users.username"), nullable=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("deleted_at", DateTime(timezone=True), nullable=True))
+jobs = Table("jobs", metadata,
+    Column("id", String(36), primary_key=True),
+    Column("owner_username", ForeignKey("users.username"), nullable=True, index=True),
+    Column("session_id", ForeignKey("report_sessions.id"), nullable=False, index=True),
+    Column("runner_id", String(128), nullable=False, index=True),
+    Column("status", String(32), nullable=False, index=True),
+    Column("filters", document, nullable=False),
+    Column("payload", document, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False))
+runners = Table("runners", metadata,
+    Column("id", String(128), primary_key=True),
+    Column("socket_id", String(128), nullable=True, unique=True),
+    Column("connected", Boolean, nullable=False),
+    Column("current_job_id", ForeignKey("jobs.id"), nullable=True),
+    Column("payload", document, nullable=False))
+batch_queue_sessions = Table("batch_queue_sessions", metadata,
+    Column("session_id", ForeignKey("report_sessions.id", ondelete="CASCADE"), primary_key=True),
+    Column("owner_username", ForeignKey("users.username"), nullable=False, index=True),
+    Column("status", String(16), nullable=False),
+    Column("total", Integer, nullable=False),
+    Column("max_workers", Integer, nullable=False, server_default=text('1')),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    CheckConstraint('max_workers >= 1', name='ck_batch_queue_worker_count'))
+batch_queue_tasks = Table("batch_queue_tasks", metadata,
+    Column("session_id", ForeignKey("batch_queue_sessions.session_id", ondelete="CASCADE"), primary_key=True),
+    Column("position", Integer, primary_key=True),
+    Column("scenario_name", Text, nullable=False),
+    Column("filters", document, nullable=False),
+    Column("status", String(16), nullable=False, index=True),
+    Column("attempts", Integer, nullable=False),
+    Column("failures", Integer, nullable=False),
+    Column("runner_id", String(128)),
+    Column("job_id", ForeignKey("jobs.id", ondelete="SET NULL")),
+    Column("error", Text),
+    Column("updated_at", DateTime(timezone=True), nullable=False))
+Index('ix_batch_queue_claim', batch_queue_tasks.c.session_id, batch_queue_tasks.c.position,
+      postgresql_where=text("status = 'PENDING'"))
+Index('ix_batch_queue_job', batch_queue_tasks.c.job_id, unique=True,
+      postgresql_where=text('job_id IS NOT NULL'))
+job_events = Table("job_events", metadata,
+    Column("id", String(36), primary_key=True),
+    Column("job_id", ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True),
+    Column("event", String(64), nullable=False),
+    Column("payload", document, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False))
+app_settings = Table("app_settings", metadata,
+    Column("key", String(128), primary_key=True), Column("value", document, nullable=False))
+user_state = Table("user_state", metadata,
+    Column("username", ForeignKey("users.username"), primary_key=True),
+    Column("key", String(128), primary_key=True),
+    Column("value", document, nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False))
+filter_profiles = Table('filter_profiles', metadata,
+    Column('id', String(36), primary_key=True),
+    Column('owner_username', ForeignKey('users.username'), nullable=False, index=True),
+    Column('name', String(120), nullable=False), Column('definition', document, nullable=False),
+    Column('revision', Integer, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False),
+    Column('updated_at', DateTime(timezone=True), nullable=False))
+runner_planning_leases = Table('runner_planning_leases', metadata,
+    Column('runner_id', ForeignKey('runners.id', ondelete='CASCADE'), primary_key=True),
+    Column('owner_username', ForeignKey('users.username'), nullable=False),
+    Column('token', String(36), nullable=False), Column('expires_at', DateTime(timezone=True), nullable=False))
+stored_files = Table("stored_files", metadata,
+    Column("id", String(36), primary_key=True),
+    Column("owner_username", ForeignKey("users.username"), nullable=True, index=True),
+    Column("job_id", ForeignKey("jobs.id"), nullable=True, index=True),
+    Column("kind", String(32), nullable=False), Column("name", Text, nullable=False),
+    Column("mime_type", String(128), nullable=False),
+    Column("size", BigInteger, nullable=False), Column("sha256", String(64), nullable=False, index=True),
+    Column("content", LargeBinary, nullable=False), Column("metadata", document, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("job_id", "kind", "name", name="uq_job_file"))
+ui_health_checks = Table("ui_health_checks", metadata,
+    Column("id", String(128), primary_key=True), Column("check_date", String(10), nullable=False, index=True),
+    Column("payload", document, nullable=False), Column("csv_row", document, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False))
+browser_states = Table("browser_states", metadata,
+    Column("runner_id", String(128), primary_key=True),
+    Column("encrypted_state", LargeBinary, nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Column("revision", BigInteger, nullable=False, server_default="0"))
+audit_events = Table('audit_events', metadata,
+    Column('id', String(36), primary_key=True),
+    Column('actor', String(128), nullable=True, index=True),
+    Column('event', String(128), nullable=False, index=True),
+    Column('payload', document, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False))
+Index("ix_jobs_filters_gin", jobs.c.filters, postgresql_using="gin")
+MONTH_COLUMNS = ('jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec')
+main_reports = Table('main_reports', metadata,
+    Column('id', String(64), primary_key=True),
+    Column('scope_key', String(64), nullable=False, index=True),
+    Column('scope_label', Text, nullable=False), Column('filters', document, nullable=False),
+    Column('year', Integer, nullable=False, index=True),
+    Column('state', Text, nullable=False), Column('rto', Text, nullable=False),
+    Column('rto_code', String(64), nullable=False), Column('maker', Text, nullable=False),
+    *[Column(month, BigInteger, nullable=True) for month in MONTH_COLUMNS],
+    Column('month_sources', document, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False),
+    Column('updated_at', DateTime(timezone=True), nullable=False))
+report_update_history = Table('report_update_history', metadata,
+    Column('source_key', String(80), primary_key=True),
+    Column('owner_key', String(128), nullable=False, index=True),
+    Column('scope_key', String(64), nullable=False, index=True),
+    Column('scope_label', Text, nullable=False), Column('filters', document, nullable=False),
+    Column('job_id', ForeignKey('jobs.id', ondelete='SET NULL'), nullable=True),
+    Column('name', Text, nullable=False), Column('status', String(24), nullable=False),
+    Column('years', document, nullable=False), Column('states', document, nullable=False),
+    Column('rtos', document, nullable=False), Column('details', document, nullable=False),
+    Column('observed_at', DateTime(timezone=True), nullable=False),
+    Column('imported_at', DateTime(timezone=True), nullable=False, index=True))
+
+# The all-State Maker workbook is a separate grain from main_reports (RTO/Maker).
+maker_global_reports = Table('maker_global_reports', metadata,
+    Column('id', String(64), primary_key=True),
+    Column('scope_key', String(64), nullable=False, index=True),
+    Column('year', Integer, nullable=False, index=True),
+    Column('maker', Text, nullable=False),
+    *[Column(month, BigInteger, nullable=True) for month in MONTH_COLUMNS],
+    Column('total', BigInteger, nullable=False),
+    Column('source_job_id', ForeignKey('jobs.id', ondelete='SET NULL'), nullable=True),
+    Column('checksum', String(64), nullable=False),
+    Column('observed_at', DateTime(timezone=True), nullable=False),
+    Column('updated_at', DateTime(timezone=True), nullable=False),
+    UniqueConstraint('scope_key', 'year', 'maker', name='uq_maker_global_scope_year_maker'))
+maker_office_index = Table('maker_office_index', metadata,
+    Column('id', String(64), primary_key=True),
+    Column('scope_key', String(64), nullable=False, index=True),
+    Column('year', Integer, nullable=False, index=True),
+    Column('maker', Text, nullable=False),
+    Column('state', Text, nullable=False),
+    Column('rto', Text, nullable=False),
+    Column('rto_code', String(64), nullable=False),
+    *[Column(month, BigInteger, nullable=True) for month in MONTH_COLUMNS],
+    Column('total', BigInteger, nullable=False),
+    Column('source_job_id', ForeignKey('jobs.id', ondelete='SET NULL'), nullable=True),
+    Column('observed_at', DateTime(timezone=True), nullable=False),
+    Column('updated_at', DateTime(timezone=True), nullable=False))
+Index('ix_maker_office_lookup', maker_office_index.c.scope_key,
+      maker_office_index.c.year, maker_office_index.c.maker)
+maker_update_runs = Table('maker_update_runs', metadata,
+    Column('id', String(36), primary_key=True),
+    Column('owner_username', ForeignKey('users.username'), nullable=True, index=True),
+    Column('scope_key', String(64), nullable=False, index=True),
+    Column('year', Integer, nullable=False),
+    Column('status', String(32), nullable=False),
+    Column('changed_makers', document, nullable=False),
+    Column('states', document, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False),
+    Column('updated_at', DateTime(timezone=True), nullable=False))
+maker_update_tasks = Table('maker_update_tasks', metadata,
+    Column('id', String(64), primary_key=True),
+    Column('run_id', ForeignKey('maker_update_runs.id', ondelete='CASCADE'), nullable=False, index=True),
+    Column('kind', String(16), nullable=False),
+    Column('maker', Text, nullable=False),
+    Column('state', Text, nullable=False),
+    Column('rto', Text, nullable=False),
+    Column('rto_code', String(64), nullable=False),
+    Column('status', String(16), nullable=False),
+    Column('job_id', ForeignKey('jobs.id', ondelete='SET NULL'), nullable=True),
+    Column('error', Text, nullable=True),
+    Column('updated_at', DateTime(timezone=True), nullable=False))
+
+ui_contract_versions = Table('ui_contract_versions', metadata,
+    Column('id', String(36), primary_key=True), Column('revision', Integer, nullable=False, unique=True),
+    Column('fingerprint', String(64), nullable=False, unique=True), Column('controls', document, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False))
+ui_preflight_checks = Table('ui_preflight_checks', metadata,
+    Column('id', String(36), primary_key=True), Column('owner_username', ForeignKey('users.username'), nullable=False),
+    Column('runner_ids', document, nullable=False), Column('version_id', String(36)),
+    Column('status', String(24), nullable=False), Column('reports', document, nullable=False),
+    Column('created_at', DateTime(timezone=True), nullable=False),
+    Column('gate_generation', Integer, nullable=False, server_default='0'))

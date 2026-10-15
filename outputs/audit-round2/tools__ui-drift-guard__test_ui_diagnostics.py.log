@@ -1,0 +1,6 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\tools\\ui-drift-guard\\test_ui_diagnostics.py']
+DIAGNOSTIC missing fuel PASS target=Fuel (#vehicleFuel)
+DIAGNOSTIC renamed category option PASS target=Category Group (#vehicleCategoryGroup)
+DIAGNOSTIC fuel wrapper moved PASS target=Fuel (#vehicleFuel)
+DIAGNOSTIC category selection not synced PASS target=Category Group > option 'Two Wheeler'
+DIAGNOSTIC axis hidden field mismatch PASS target=Y-Axis/X-Axis và hidden fields

@@ -1,0 +1,10 @@
+file:///C:/Users/huyvv12/Desktop/vahan-automation/apps/web-ui/scripts/smoke-ui.mjs:18
+  const timer = setTimeout(() => reject(new Error(`Timed out waiting for ${name}`)), 5_000);
+                                        ^
+
+Error: Timed out waiting for connect
+    at Timeout._onTimeout (file:///C:/Users/huyvv12/Desktop/vahan-automation/apps/web-ui/scripts/smoke-ui.mjs:18:41)
+    at listOnTimeout (node:internal/timers:635:17)
+    at process.processTimers (node:internal/timers:571:7)
+
+Node.js v24.19.0

@@ -1,0 +1,2 @@
+Settings schedules: create, fixed desktop/mobile layout, pause/drain, automatic connected workers, same session and report refresh passed.
+

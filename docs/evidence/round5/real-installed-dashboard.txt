@@ -1,0 +1,11 @@
+{
+  "scope": "Real installed Nginx build + production API/SQL; explicitly synthetic report data",
+  "passed": true,
+  "results": [
+    "Real admin login and paginated synthetic SQL reports on the Nginx build.",
+    "Real UI export confirmation cancel/accept; full and filtered workbook downloads.",
+    "Admin Run History/Settings navigation; removed schedule worker inputs absent; responsive reports.",
+    "Real member login: reports visible, private navigation/direct history route denied, no private API requests."
+  ]
+}
+

@@ -6,14 +6,16 @@ from socketio.exceptions import TimeoutError as SocketIOTimeoutError
 
 from app.models.job import JobStatus, can_transition
 from app.realtime.server import sio
-from app.security import access_token_expiry, verify_access_token
+from app.security import access_token_expiry, authenticate_access_token
 from app.services import services
-from app.ocr import ocr_to_text
+from app.repositories.postgres import audit
 
 
 CAPTCHA_FORWARD_TIMEOUT_SECONDS = 45
 CAPTCHA_REFRESH_TIMEOUT_SECONDS = 20
+RUNNER_OPTIONS_TIMEOUT_SECONDS = 115
 _ui_token_expiry_tasks: dict[str, asyncio.Task] = {}
+_ui_sessions: dict[str, str] = {}
 
 
 async def _fail_captcha_submission(job_id: UUID, runner_id: str, error: str) -> None:
@@ -26,7 +28,7 @@ async def _fail_captcha_submission(job_id: UUID, runner_id: str, error: str) -> 
     failed = await services.jobs.update_status(job_id, JobStatus.FAILED, error=error)
     if not failed:
         return
-    await services.runners.set_job(runner_id, None)
+    await services.runners.release_job(runner_id, str(job_id))
     await sio.emit(
         "job:status",
         failed.model_dump(mode="json", by_alias=True),
@@ -35,55 +37,35 @@ async def _fail_captcha_submission(job_id: UUID, runner_id: str, error: str) -> 
     )
 
 
-async def _forward_captcha_submission(
-    job_id: UUID,  # UUID của công việc đang chờ gửi mã CAPTCHA.
-    runner_id: str,  # ID của extension runner để cập nhật lỗi nếu gửi thất bại.
-    runner_socket_id: str,  # Socket ID của extension nhận sự kiện.
-    captcha_id: str,  # ID ảnh CAPTCHA mà người dùng đã nhập mã.
-    text1: str,  # Giá trị CAPTCHA nhận từ giao diện qua biến text1.
-) -> None:  # Hàm chạy nền, không trả về dữ liệu.
-    """Chuyển mã CAPTCHA tới extension ngoài thời gian chờ phản hồi của giao diện."""  # Nêu mục đích của hàm.
-    try:  # Bắt đầu gửi mã và chờ extension xác nhận đã xử lý.
-        acknowledgement = await sio.call(  # Gửi sự kiện Socket.IO và chờ phản hồi từ extension.
-            "captcha:submit",  # Tên sự kiện mà extension đang lắng nghe.
-            {  # Tạo dữ liệu gửi kèm sự kiện.
-                "jobId": str(job_id),  # Gửi ID công việc dưới dạng chuỗi.
-                "captchaId": captcha_id,  # Gửi ID CAPTCHA để đối chiếu ảnh hiện hành.
-                "value": ocr_to_text.OCR_RESULT or text1,  # Gán kết quả OCR hoặc text1 vào trường value.
-            },  # Kết thúc dữ liệu sự kiện.
-            to=runner_socket_id,  # Chỉ gửi tới đúng kết nối của extension runner.
-            namespace="/runner",  # Gửi trên namespace dành cho runner.
-            timeout=CAPTCHA_FORWARD_TIMEOUT_SECONDS,  # Giới hạn thời gian chờ extension phản hồi.
-        )  # Hoàn tất lệnh gửi sự kiện và nhận xác nhận.
-    except SocketIOTimeoutError:  # Xử lý trường hợp extension không phản hồi đúng hạn.
-        await _fail_captcha_submission(  # Đánh dấu công việc thất bại và thông báo lỗi lên giao diện.
-            job_id,  # Chỉ rõ công việc cần cập nhật trạng thái.
-            runner_id,  # Chỉ rõ runner liên quan đến lỗi.
-            "The extension did not complete the CAPTCHA action within the allowed time.",  # Timeout reason.
-        )  # Hoàn tất cập nhật lỗi cho công việc.
-        return  # Dừng hàm vì đã xử lý xong lỗi timeout.
-    except Exception as error:  # pragma: no cover - xử lý dự phòng cho lỗi trong tác vụ nền.
-        await _fail_captcha_submission(  # Đánh dấu công việc thất bại khi phát sinh lỗi khác.
-            job_id,  # Chỉ rõ công việc cần cập nhật trạng thái.
-            runner_id,  # Chỉ rõ runner liên quan đến lỗi.
-            f"Could not send CAPTCHA to the extension: {error}",  # Record the error for review.
-        )  # Hoàn tất cập nhật lỗi cho công việc.
-        return  # Dừng hàm sau khi lỗi đã được xử lý.
-
-    if acknowledgement and acknowledgement.get("ok"):  # Kiểm tra extension có xác nhận xử lý thành công không.
-        return  # Kết thúc bình thường khi extension xác nhận thành công.
-    error = (acknowledgement or {}).get("error", "The extension rejected the CAPTCHA submission.")  # Use the returned or default error.
-    await _fail_captcha_submission(job_id, runner_id, error)  # Cập nhật trạng thái thất bại và gửi lỗi lên giao diện.
+async def _forward_captcha_submission(job_id: UUID, runner_id: str, runner_socket_id: str,
+                                      captcha_id: str, text1: str) -> None:
+    """Forward only the text entered by the human operator."""
+    try:
+        acknowledgement = await sio.call('captcha:submit',
+            {'jobId': str(job_id), 'captchaId': captcha_id, 'value': text1},
+            to=runner_socket_id, namespace='/runner', timeout=CAPTCHA_FORWARD_TIMEOUT_SECONDS)
+    except SocketIOTimeoutError:
+        await _fail_captcha_submission(job_id, runner_id, 'Browser worker did not acknowledge CAPTCHA in time.')
+        return
+    except Exception as error:
+        await _fail_captcha_submission(job_id, runner_id, f'Could not forward CAPTCHA: {error}')
+        return
+    if not acknowledgement or not acknowledgement.get('ok'):
+        await _fail_captcha_submission(job_id, runner_id,
+            (acknowledgement or {}).get('error', 'Browser worker rejected the submission.'))
 
 
 @sio.event(namespace="/ui")
 async def connect(_sid: str, _environ: dict, auth: dict | None) -> bool:
     auth = auth or {}
     token = str(auth.get("token", ""))
-    username = verify_access_token(token)
+    user = await authenticate_access_token(token)
     expires_at = access_token_expiry(token)
-    if not username:
+    if not user or user['role'] != 'admin':
         return False
+    await sio.save_session(_sid, {"token": token, 'username': user['username']}, namespace="/ui")
+    await sio.enter_room(_sid, 'reports:shared', namespace='/ui')
+    _ui_sessions[_sid] = user["session_id"]
     previous_task = _ui_token_expiry_tasks.pop(_sid, None)
     if previous_task:
         previous_task.cancel()
@@ -94,12 +76,24 @@ async def connect(_sid: str, _environ: dict, auth: dict | None) -> bool:
 
 async def _disconnect_after_expiry(sid: str, expires_at: int) -> None:
     try:
-        await asyncio.sleep(max(0, expires_at - time.time()))
-        await sio.disconnect(sid, namespace="/ui")
+        while True:
+            session = await sio.get_session(sid, namespace='/ui')
+            user = await authenticate_access_token(session.get('token', ''))
+            if not user:
+                await sio.disconnect(sid, namespace='/ui')
+                return
+            from app.security import IDLE_TIMEOUT_SECONDS
+            idle_deadline = user['session_last_activity_at'].timestamp() + IDLE_TIMEOUT_SECONDS
+            deadline = min(expires_at, user['session_expires_at'].timestamp(), idle_deadline)
+            await asyncio.sleep(max(0, min(5, deadline - time.time())))
     except asyncio.CancelledError:
         return
-    except Exception:  # The socket may have disconnected before its token expired.
+    except KeyError:  # The socket may already have disconnected.
         return
+    except Exception:
+        # Never leave an authenticated feed open after its session can no
+        # longer be validated (for example during a database outage).
+        await sio.disconnect(sid, namespace='/ui')
     finally:
         current_task = asyncio.current_task()
         if _ui_token_expiry_tasks.get(sid) is current_task:
@@ -108,6 +102,7 @@ async def _disconnect_after_expiry(sid: str, expires_at: int) -> None:
 
 @sio.event(namespace="/ui")
 async def disconnect(sid: str) -> None:
+    _ui_sessions.pop(sid, None)
     task = _ui_token_expiry_tasks.pop(sid, None)
     if task and task is not asyncio.current_task():
         task.cancel()
@@ -115,29 +110,34 @@ async def disconnect(sid: str) -> None:
 
 @sio.on("ui:subscribe-job", namespace="/ui")
 async def subscribe_job(sid: str, payload: dict) -> dict:
+    user = await authenticated_ui(sid)
+    if not user:
+        return {"ok": False, "error": "Authentication required."}
     try:
         job_id = UUID(str(payload["jobId"]))
     except (KeyError, TypeError, ValueError):
         return {"ok": False, "error": "Invalid job ID."}
     job = await services.jobs.get(job_id)
-    if not job:
+    if not job or (user["role"] != "admin" and job.owner_username != user["username"]):
         return {"ok": False, "error": "Job not found."}
     await sio.enter_room(sid, f"job:{job_id}", namespace="/ui")
     response = {
         "ok": True,
         "job": job.model_dump(mode="json", by_alias=True),
     }
-    if job.status == JobStatus.WAITING_CAPTCHA and job.captcha_id and job.captcha_image_data_url:
+    if job.status == JobStatus.WAITING_CAPTCHA and job.captcha_id:
         response["captcha"] = {
             "jobId": str(job.id),
             "captchaId": job.captcha_id,
-            "imageDataUrl": job.captcha_image_data_url,
         }
     return response
 
 
 @sio.on("ui:runner-options", namespace="/ui")
 async def runner_options(_sid: str, payload: dict) -> dict:
+    user = await authenticated_ui(_sid, activity=True)
+    if not user:
+        return {"ok": False, "error": "Authentication required."}
     runner_id = str(payload.get("runnerId", "")).strip()
     request = payload.get("request")
     if not runner_id or not isinstance(request, dict):
@@ -150,20 +150,38 @@ async def runner_options(_sid: str, payload: dict) -> dict:
     runner = await services.runners.get(runner_id)
     if not runner:
         return {"ok": False, "error": "Runner is offline."}
+    from app.repositories.ui_contract import require_gate
     try:
-        return await sio.call(
+        await require_gate(user['username'], [runner_id], fresh=True)
+    except ValueError as error:
+        return {'ok': False, 'error': str(error), 'code': 'UI_PREFLIGHT_REQUIRED'}
+    from app.db import engine, schema as db
+    from sqlalchemy import select
+    from app.repositories.postgres import now
+    async with engine.connect() as connection:
+        reserved = await connection.scalar(select(db.runner_planning_leases.c.runner_id).where(
+            db.runner_planning_leases.c.runner_id == runner_id, db.runner_planning_leases.c.expires_at > now()))
+    if reserved:
+        return {'ok': False, 'error': 'Worker is preparing a filter preview.', 'code': 'RUNNER_BUSY', 'retryAfterMs': 1000}
+    try:
+        result = await sio.call(
             "runner:options",
             request,
             to=runner.socket_id,
             namespace="/runner",
-            timeout=20,
+            timeout=RUNNER_OPTIONS_TIMEOUT_SECONDS,
         )
+        await audit(user['username'], 'runner.options', {'runnerId': runner_id, 'request': request, 'response': result})
+        return result
     except SocketIOTimeoutError:
         return {"ok": False, "error": "Runner did not return VAHAN options in time."}
 
 
 @sio.on("captcha:submitted", namespace="/ui")
 async def submit_captcha(_sid: str, payload: dict) -> dict:
+    user = await authenticated_ui(_sid, activity=True)
+    if not user:
+        return {"ok": False, "error": "Authentication required."}
     try:
         job_id = UUID(str(payload["jobId"]))
         captcha_id = str(payload["captchaId"])
@@ -174,7 +192,7 @@ async def submit_captcha(_sid: str, payload: dict) -> dict:
         return {"ok": False, "error": "CAPTCHA must contain exactly 6 characters."}
 
     job = await services.jobs.get(job_id)
-    if not job:
+    if not job or (user["role"] != "admin" and job.owner_username != user["username"]):
         return {"ok": False, "error": "Job not found."}
     if job.status != JobStatus.WAITING_CAPTCHA:
         return {"ok": False, "error": "Job is not waiting for CAPTCHA."}
@@ -187,12 +205,15 @@ async def submit_captcha(_sid: str, payload: dict) -> dict:
     if not runner:
         return {"ok": False, "error": "Runner is offline."}
 
-    updated = await services.jobs.update_status(job_id, JobStatus.SUBMITTING)
+    updated = await services.jobs.update_status(job_id, JobStatus.SUBMITTING,
+        expected_status=JobStatus.WAITING_CAPTCHA, expected_captcha_id=captcha_id)
+    if updated is None:
+        return {"ok": False, "error": "Job changed before submission."}
     await sio.emit("job:status", updated.model_dump(mode="json", by_alias=True), room=f"job:{job_id}", namespace="/ui")
     # Filling the official form and verifying that VAHAN did not refresh the
     # CAPTCHA can take longer than a browser Socket.IO ACK timeout. Return the
     # UI ACK now; the background task will publish a real FAILED state if the
-    # extension rejects or times out.
+    # browser worker rejects or times out.
     sio.start_background_task(
         _forward_captcha_submission,
         job_id,
@@ -206,7 +227,10 @@ async def submit_captcha(_sid: str, payload: dict) -> dict:
 
 @sio.on("captcha:refresh", namespace="/ui")
 async def refresh_captcha(_sid: str, payload: dict) -> dict:
-    """Ask the extension to click VAHAN's official CAPTCHA refresh control."""
+    user = await authenticated_ui(_sid, activity=True)
+    if not user:
+        return {"ok": False, "error": "Authentication required."}
+    """Ask the browser worker to click VAHAN's official CAPTCHA refresh control."""
     try:
         job_id = UUID(str(payload["jobId"]))
         captcha_id = str(payload["captchaId"])
@@ -214,7 +238,7 @@ async def refresh_captcha(_sid: str, payload: dict) -> dict:
         return {"ok": False, "error": "Invalid CAPTCHA refresh request."}
 
     job = await services.jobs.get(job_id)
-    if not job:
+    if not job or (user["role"] != "admin" and job.owner_username != user["username"]):
         return {"ok": False, "error": "Job not found."}
     if job.status != JobStatus.WAITING_CAPTCHA:
         return {"ok": False, "error": "Job is not waiting for CAPTCHA."}
@@ -233,23 +257,47 @@ async def refresh_captcha(_sid: str, payload: dict) -> dict:
             timeout=CAPTCHA_REFRESH_TIMEOUT_SECONDS,
         )
     except SocketIOTimeoutError:
-        return {"ok": False, "error": "Extension did not refresh CAPTCHA in time."}
+        return {"ok": False, "error": "Browser worker did not refresh CAPTCHA in time."}
     except Exception as error:  # pragma: no cover - runner transport boundary
-        return {"ok": False, "error": f"Could not refresh CAPTCHA through extension: {error}"}
+        return {"ok": False, "error": f"Could not refresh CAPTCHA through browser worker: {error}"}
 
     if not acknowledgement or not acknowledgement.get("ok"):
-        return {"ok": False, "error": (acknowledgement or {}).get("error", "Extension rejected CAPTCHA refresh.")}
+        return {"ok": False, "error": (acknowledgement or {}).get("error", "Browser worker rejected CAPTCHA refresh.")}
 
     refreshed = await services.jobs.get(job_id)
     if not refreshed or refreshed.status != JobStatus.WAITING_CAPTCHA:
         return {"ok": False, "error": "CAPTCHA refresh did not complete."}
-    if not refreshed.captcha_id or not refreshed.captcha_image_data_url:
-        return {"ok": False, "error": "VAHAN did not return a CAPTCHA image."}
+    if not refreshed.captcha_id:
+        return {"ok": False, "error": "VAHAN did not return a CAPTCHA ID."}
     return {
         "ok": True,
         "captcha": {
             "jobId": str(job_id),
             "captchaId": refreshed.captcha_id,
-            "imageDataUrl": refreshed.captcha_image_data_url,
         },
     }
+
+
+async def authenticated_ui(sid, *, activity=False):
+    try:
+        session = await sio.get_session(sid, namespace="/ui")
+        user = await authenticate_access_token(session.get("token", ""), activity=activity)
+        if not user:
+            await sio.disconnect(sid, namespace="/ui")
+        return user if user and user['role'] == 'admin' else None
+    except KeyError:
+        return None
+
+async def invalidate_session(session_id):
+    for sid, stored_id in list(_ui_sessions.items()):
+        if stored_id == session_id:
+            await sio.disconnect(sid, namespace="/ui")
+
+async def invalidate_user(username, except_session=None):
+    for sid in list(_ui_sessions):
+        try:
+            session = await sio.get_session(sid, namespace='/ui')
+            if session.get('username') == username and (except_session is None or _ui_sessions.get(sid) != except_session):
+                await sio.disconnect(sid, namespace='/ui')
+        except KeyError:
+            continue

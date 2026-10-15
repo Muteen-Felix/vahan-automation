@@ -1,0 +1,2 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\verification\\test_shared_batch_queue.py']
+Shared queue: 1,600 unique tasks, ten workers, checkpoint ordering and complete SQL state passed in 135.5s; claims per worker: [160, 160, 160, 160, 160, 160, 160, 160, 160, 160].

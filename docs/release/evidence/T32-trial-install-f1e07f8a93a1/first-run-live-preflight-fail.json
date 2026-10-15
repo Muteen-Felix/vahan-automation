@@ -1,0 +1,574 @@
+{
+  "httpStatus": 409,
+  "body": {
+    "detail": {
+      "code": "UI_HEALTH_BLOCKED",
+      "message": "Preflight failed; no Maker data or tasks were loaded. Open UI Health and copy the error for dev.",
+      "diagnostics": {
+        "allowed": false,
+        "preflightId": "6e75e5b3-d9a2-4242-bee0-49a04470f95e",
+        "revision": 0,
+        "versionId": null,
+        "reports": [
+          {
+            "status": "UI_DRIFT",
+            "allowed": false,
+            "blocked": true,
+            "checkId": "b842fd93-b881-445a-bb51-68a6ff391b53",
+            "repairs": [],
+            "reports": [
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "archivedFlags",
+                  "found": false,
+                  "selector": "#archivedFlags",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "archivedFlags",
+                "expected": {
+                  "tag": "select",
+                  "field": "archivedFlags",
+                  "multiple": true,
+                  "selector": "#archivedFlags",
+                  "optionsHash": null
+                },
+                "selector": "#archivedFlags"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "period",
+                  "found": false,
+                  "selector": "#reportType",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "period",
+                "expected": {
+                  "tag": "select",
+                  "field": "period",
+                  "multiple": false,
+                  "selector": "#reportType",
+                  "optionsHash": null
+                },
+                "selector": "#reportType"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "financialYears",
+                  "found": false,
+                  "selector": "#financialYearSelect",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "financialYears",
+                "expected": {
+                  "tag": "select",
+                  "field": "financialYears",
+                  "multiple": true,
+                  "selector": "#financialYearSelect",
+                  "optionsHash": null
+                },
+                "selector": "#financialYearSelect"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "reportYear",
+                  "found": false,
+                  "selector": "#reportYear",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "reportYear",
+                "expected": {
+                  "tag": "select",
+                  "field": "reportYear",
+                  "multiple": false,
+                  "selector": "#reportYear",
+                  "optionsHash": null
+                },
+                "selector": "#reportYear"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "reportMonth",
+                  "found": false,
+                  "selector": "#reportMonth",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "reportMonth",
+                "expected": {
+                  "tag": "select",
+                  "field": "reportMonth",
+                  "multiple": false,
+                  "selector": "#reportMonth",
+                  "optionsHash": null
+                },
+                "selector": "#reportMonth"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "states",
+                  "found": false,
+                  "selector": "#stateName",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "states",
+                "expected": {
+                  "tag": "select",
+                  "field": "states",
+                  "multiple": true,
+                  "selector": "#stateName",
+                  "optionsHash": null
+                },
+                "selector": "#stateName"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "rtos",
+                  "found": false,
+                  "selector": "#rtoCode",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "rtos",
+                "expected": {
+                  "tag": "select",
+                  "field": "rtos",
+                  "multiple": true,
+                  "selector": "#rtoCode",
+                  "optionsHash": null
+                },
+                "selector": "#rtoCode"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "emissions",
+                  "found": false,
+                  "selector": "#vehicleEmission",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "emissions",
+                "expected": {
+                  "tag": "select",
+                  "field": "emissions",
+                  "multiple": true,
+                  "selector": "#vehicleEmission",
+                  "optionsHash": null
+                },
+                "selector": "#vehicleEmission"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "categoryGroups",
+                  "found": false,
+                  "selector": "#vehicleCategoryGroup",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "categoryGroups",
+                "expected": {
+                  "tag": "select",
+                  "field": "categoryGroups",
+                  "multiple": true,
+                  "selector": "#vehicleCategoryGroup",
+                  "optionsHash": null
+                },
+                "selector": "#vehicleCategoryGroup"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "subCategories",
+                  "found": false,
+                  "selector": "#vehicleSubCategory",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "subCategories",
+                "expected": {
+                  "tag": "select",
+                  "field": "subCategories",
+                  "multiple": true,
+                  "selector": "#vehicleSubCategory",
+                  "optionsHash": null
+                },
+                "selector": "#vehicleSubCategory"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "classes",
+                  "found": false,
+                  "selector": "#vehicleClass",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "classes",
+                "expected": {
+                  "tag": "select",
+                  "field": "classes",
+                  "multiple": true,
+                  "selector": "#vehicleClass",
+                  "optionsHash": null
+                },
+                "selector": "#vehicleClass"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "fuels",
+                  "found": false,
+                  "selector": "#vehicleFuel",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "fuels",
+                "expected": {
+                  "tag": "select",
+                  "field": "fuels",
+                  "multiple": true,
+                  "selector": "#vehicleFuel",
+                  "optionsHash": null
+                },
+                "selector": "#vehicleFuel"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "evTypes",
+                  "found": false,
+                  "selector": "#evType",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "evTypes",
+                "expected": {
+                  "tag": "select",
+                  "field": "evTypes",
+                  "multiple": true,
+                  "selector": "#evType",
+                  "optionsHash": null
+                },
+                "selector": "#evType"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "statuses",
+                  "found": false,
+                  "selector": "#vehicleStatus",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "statuses",
+                "expected": {
+                  "tag": "select",
+                  "field": "statuses",
+                  "multiple": true,
+                  "selector": "#vehicleStatus",
+                  "optionsHash": null
+                },
+                "selector": "#vehicleStatus"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "ownerTypes",
+                  "found": false,
+                  "selector": "#vehicleOwnerType",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "ownerTypes",
+                "expected": {
+                  "tag": "select",
+                  "field": "ownerTypes",
+                  "multiple": true,
+                  "selector": "#vehicleOwnerType",
+                  "optionsHash": null
+                },
+                "selector": "#vehicleOwnerType"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "vehicleType",
+                  "found": false,
+                  "selector": "#vehicleType",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "vehicleType",
+                "expected": {
+                  "tag": "select",
+                  "field": "vehicleType",
+                  "multiple": false,
+                  "selector": "#vehicleType",
+                  "optionsHash": null
+                },
+                "selector": "#vehicleType"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "fitness",
+                  "found": false,
+                  "selector": "#fitnessCheck",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "fitness",
+                "expected": {
+                  "tag": "select",
+                  "field": "fitness",
+                  "multiple": false,
+                  "selector": "#fitnessCheck",
+                  "optionsHash": null
+                },
+                "selector": "#fitnessCheck"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "delhiNcr",
+                  "found": false,
+                  "selector": "#delhiNcr",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "delhiNcr",
+                "expected": {
+                  "tag": "select",
+                  "field": "delhiNcr",
+                  "multiple": false,
+                  "selector": "#delhiNcr",
+                  "optionsHash": null
+                },
+                "selector": "#delhiNcr"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "yAxis",
+                  "found": false,
+                  "selector": "#yAxis",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "yAxis",
+                "expected": {
+                  "tag": "select",
+                  "field": "yAxis",
+                  "multiple": false,
+                  "selector": "#yAxis",
+                  "optionsHash": null
+                },
+                "selector": "#yAxis"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "xAxis",
+                  "found": false,
+                  "selector": "#xAxis",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "xAxis",
+                "expected": {
+                  "tag": "select",
+                  "field": "xAxis",
+                  "multiple": false,
+                  "selector": "#xAxis",
+                  "optionsHash": null
+                },
+                "selector": "#xAxis"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "makers",
+                  "found": false,
+                  "selector": "#vehicleMaker",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "makers",
+                "expected": {
+                  "tag": "select",
+                  "field": "makers",
+                  "multiple": true,
+                  "selector": "#vehicleMaker",
+                  "optionsHash": null
+                },
+                "selector": "#vehicleMaker"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "fromYear",
+                  "found": false,
+                  "selector": "#fromYear",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "fromYear",
+                "expected": {
+                  "tag": "input",
+                  "field": "fromYear",
+                  "selector": "#fromYear",
+                  "optionsHash": null
+                },
+                "selector": "#fromYear"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "toYear",
+                  "found": false,
+                  "selector": "#toYear",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "toYear",
+                "expected": {
+                  "tag": "input",
+                  "field": "toYear",
+                  "selector": "#toYear",
+                  "optionsHash": null
+                },
+                "selector": "#toYear"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "fromDate",
+                  "found": false,
+                  "selector": "#fromDate",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "fromDate",
+                "expected": {
+                  "tag": "input",
+                  "field": "fromDate",
+                  "selector": "#fromDate",
+                  "optionsHash": null
+                },
+                "selector": "#fromDate"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "toDate",
+                  "found": false,
+                  "selector": "#toDate",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "toDate",
+                "expected": {
+                  "tag": "input",
+                  "field": "toDate",
+                  "selector": "#toDate",
+                  "optionsHash": null
+                },
+                "selector": "#toDate"
+              },
+              {
+                "code": "UI_CONTRACT_MISMATCH",
+                "title": "Control missing or ambiguous",
+                "actual": {
+                  "count": 0,
+                  "field": "apply",
+                  "found": false,
+                  "selector": "#applyTrigger",
+                  "optionCount": 0,
+                  "optionsHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+                },
+                "target": "apply",
+                "expected": {
+                  "tag": "button",
+                  "field": "apply",
+                  "selector": "#applyTrigger",
+                  "optionsHash": null
+                },
+                "selector": "#applyTrigger"
+              }
+            ],
+            "revision": 0,
+            "runnerId": "worker-2fc9e232-7ff0-48e0-9b8f-2311f083320b",
+            "checkedAt": "2026-10-14T02:45:31.821Z",
+            "versionId": null,
+            "errorCount": 26,
+            "dataChanges": [],
+            "attempts": 2
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "ui-health-blocked-after-disconnect",
+  "passed": false,
+  "beforeBlocked": true,
+  "afterBlocked": false,
+  "storedRunnerDiagnosticRetained": true,
+  "scope": "Controlled incompatible synthetic DOM evidence; actual HTTP API and actual runner disconnect.",
+  "source": "apps/api-server/app/repositories/ui_contract.py:current",
+  "productChanged": false
+}

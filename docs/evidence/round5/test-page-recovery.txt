@@ -1,0 +1,4 @@
+Page recovery passed: damaged page retired, fresh hidden State loaded, bounded close, navigation reads, SQL gate and assignment race.
+Only transport failures trigger connectivity rechecks; report/parser/selector errors remain distinct.
+A transport outage acknowledged as cancellation does not consume a case failure.
+

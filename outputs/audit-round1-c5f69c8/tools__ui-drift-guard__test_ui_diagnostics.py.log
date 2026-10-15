@@ -1,0 +1,7 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\tools\\ui-drift-guard\\test_ui_diagnostics.py']
+Traceback (most recent call last):
+  File "C:\Users\huyvv12\Desktop\vahan-automation\tools\ui-drift-guard\test_ui_diagnostics.py", line 5, in <module>
+    from ui_contract import UIDriftError, format_ui_drift
+  File "C:\Users\huyvv12\Desktop\vahan-automation\tools\ui-drift-guard\ui_contract.py", line 14, in <module>
+    from playwright.sync_api import Locator, Page
+ModuleNotFoundError: No module named 'playwright'

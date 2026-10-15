@@ -8,18 +8,10 @@ from pathlib import Path
 DEFAULT_UI_HEALTH_LOG_DIR = Path(__file__).resolve().parents[1] / "runtime" / "ui-health-logs"
 DEFAULT_EXCEL_REPORT_DIR = Path(__file__).resolve().parents[1] / "runtime" / "excel-reports"
 DEFAULT_CAPTCHA_IMAGE_DIR = Path(__file__).resolve().parents[1] / "runtime" / "images1"
-DEFAULT_CAPTCHA_IMAGE_PATH_TEMPLATE = "ảnh1"
+DEFAULT_CAPTCHA_IMAGE_PATH_TEMPLATE = "{job_id}/ảnh1"
 DEFAULT_WEB_CORS_ORIGINS = (
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-)
-# manifest.json now pins a fixed "key", so the unpacked extension ID is the
-# same on every machine regardless of the clone path. Other installations can
-# still override it with VAHAN_API_EXTENSION_IDS without changing the web
-# origins (e.g. if someone loads a fork with a different key).
-DEFAULT_EXTENSION_IDS = (
-    "lnlmikbapplimecdenhhadbhmbenddpd",
-    "ooplajjjjphdcaolokpaenmkjlbcmlhk",
 )
 
 
@@ -61,14 +53,12 @@ def _local_ui_auth_values() -> dict[str, str]:
 
 @dataclass(frozen=True, slots=True)
 class Settings:
+    environment: str = 'development'
     app_name: str = "VAHAN RPA API"
     host: str = "127.0.0.1"
     port: int = 8000
     debug: bool = False
-    cors_origins: tuple[str, ...] = (
-        *DEFAULT_WEB_CORS_ORIGINS,
-        *(f"chrome-extension://{extension_id}" for extension_id in DEFAULT_EXTENSION_IDS),
-    )
+    cors_origins: tuple[str, ...] = DEFAULT_WEB_CORS_ORIGINS
     socketio_cors_origins: str | tuple[str, ...] = "*"
     runner_token: str = "change-me"
     ui_auth_username: str = ""
@@ -80,14 +70,34 @@ class Settings:
     captcha_image_dir: str = str(DEFAULT_CAPTCHA_IMAGE_DIR)
     captcha_image_path_template: str = DEFAULT_CAPTCHA_IMAGE_PATH_TEMPLATE
     max_excel_upload_bytes: int = 50 * 1024 * 1024  # 50 MB
+    database_url: str = "postgresql+asyncpg://vahan@127.0.0.1:5432/vahan"
+    browser_state_key: str = ""
+    runner_health_checks: bool = False
 
     @property
     def ui_auth_configured(self) -> bool:
         return (
-            bool(self.ui_auth_username.strip())
-            and len(self.ui_auth_password) >= 12
-            and len(self.ui_auth_token_secret) >= 32
+            len(self.ui_auth_token_secret) >= 32
         )
+
+    def validate_startup(self) -> None:
+        if self.environment not in {'development','test','production'}:
+            raise RuntimeError('VAHAN_ENVIRONMENT must be development, test or production.')
+        if not self.ui_auth_configured:
+            raise RuntimeError('VAHAN_UI_AUTH_TOKEN_SECRET must contain at least 32 characters.')
+        if self.environment != 'production':
+            return
+        if self.debug:
+            raise RuntimeError('Debug mode must be disabled in production.')
+        if len(self.runner_token) < 24 or self.runner_token == 'change-me':
+            raise RuntimeError('A private VAHAN_API_RUNNER_TOKEN of at least 24 characters is required.')
+        from cryptography.fernet import Fernet
+        try:
+            Fernet(self.browser_state_key.encode())
+        except (ValueError, TypeError) as error:
+            raise RuntimeError('VAHAN_BROWSER_STATE_KEY must be a valid Fernet key; preserve the existing key on upgrades.') from error
+        if not self.cors_origins or '*' in self.cors_origins or not self.socketio_cors_origins or '*' in self.socketio_cors_origins:
+            raise RuntimeError('Production requires explicit HTTP and Socket.IO dashboard origins.')
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -105,18 +115,8 @@ class Settings:
             ).split(",")
             if origin.strip()
         )
-        extension_ids = tuple(
-            extension_id.strip()
-            for extension_id in os.getenv(
-                "VAHAN_API_EXTENSION_IDS",
-                ",".join(DEFAULT_EXTENSION_IDS),
-            ).split(",")
-            if extension_id.strip()
-        )
-        origins = tuple(dict.fromkeys(
-            (*web_origins, *(f"chrome-extension://{extension_id}" for extension_id in extension_ids))
-        ))
-        socketio_origins_value = os.getenv("VAHAN_API_SOCKETIO_CORS_ORIGINS", "*").strip()
+        origins = web_origins
+        socketio_origins_value = os.getenv("VAHAN_API_SOCKETIO_CORS_ORIGINS", ','.join(web_origins)).strip()
         socketio_origins: str | tuple[str, ...] = (
             "*"
             if socketio_origins_value == "*"
@@ -127,6 +127,10 @@ class Settings:
             )
         )
         return cls(
+            environment=os.getenv('VAHAN_ENVIRONMENT', 'development').strip().lower(),
+            database_url=os.getenv("DATABASE_URL", "postgresql+asyncpg://vahan@127.0.0.1:5432/vahan"),
+            browser_state_key=os.getenv("VAHAN_BROWSER_STATE_KEY", ""),
+            runner_health_checks=_as_bool(os.getenv('VAHAN_API_RUNNER_HEALTH_CHECKS')),
             host=os.getenv("VAHAN_API_HOST", "127.0.0.1"),
             port=int(os.getenv("VAHAN_API_PORT", "8000")),
             debug=_as_bool(os.getenv("VAHAN_API_DEBUG")),

@@ -1,0 +1,55 @@
+{
+  "format": 1,
+  "sourceCommit": "f1e07f8a93a1fcc22d68ad2c81430dbb4ec11168",
+  "imageNamespace": "vahan-review",
+  "imageTag": "f1e07f8a93a1",
+  "files": {
+    "vahan-f1e07f8a93a1-source.zip": "d626def6da87a8811a129633dc6e71a332cefc48b22627c87d71f9708edf100e",
+    "vahan-f1e07f8a93a1-images.tar": "6f9d081702cf6a815ab21c10662fabc8e504da577c598c2e408e6e46d88887e0"
+  },
+  "imageIds": {
+    "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+    "vahan-review/api:f1e07f8a93a1": "sha256:6e35808a7fb09f49cbdadf908b57fc81f6effb0239e5a4ec13aa5593b982d5c4",
+    "vahan-review/runner:f1e07f8a93a1": "sha256:794cb55c689167df48c94aa3ef90e5ad25874be1270ea3e7415283d6691e4864",
+    "vahan-review/web:f1e07f8a93a1": "sha256:1c4a6c2fa0a03c9d4971987745e9a86c90642b5f693e0c079669f32149546030"
+  },
+  "images": {
+    "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826": {
+      "id": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+      "repoDigests": [
+        "postgres@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826"
+      ],
+      "platform": "linux/amd64",
+      "upstream": true,
+      "revisionLabel": null
+    },
+    "vahan-review/api:f1e07f8a93a1": {
+      "id": "sha256:6e35808a7fb09f49cbdadf908b57fc81f6effb0239e5a4ec13aa5593b982d5c4",
+      "repoDigests": [
+        "vahan-review/api@sha256:6e35808a7fb09f49cbdadf908b57fc81f6effb0239e5a4ec13aa5593b982d5c4"
+      ],
+      "platform": "linux/amd64",
+      "upstream": false,
+      "revisionLabel": null
+    },
+    "vahan-review/runner:f1e07f8a93a1": {
+      "id": "sha256:794cb55c689167df48c94aa3ef90e5ad25874be1270ea3e7415283d6691e4864",
+      "repoDigests": [
+        "vahan-review/runner@sha256:794cb55c689167df48c94aa3ef90e5ad25874be1270ea3e7415283d6691e4864"
+      ],
+      "platform": "linux/amd64",
+      "upstream": false,
+      "revisionLabel": null
+    },
+    "vahan-review/web:f1e07f8a93a1": {
+      "id": "sha256:1c4a6c2fa0a03c9d4971987745e9a86c90642b5f693e0c079669f32149546030",
+      "repoDigests": [
+        "vahan-review/web@sha256:1c4a6c2fa0a03c9d4971987745e9a86c90642b5f693e0c079669f32149546030"
+      ],
+      "platform": "linux/amd64",
+      "upstream": false,
+      "revisionLabel": null
+    }
+  },
+  "scope": "Committed source only; outputs, secrets, local CA, backups and Git metadata are excluded."
+}

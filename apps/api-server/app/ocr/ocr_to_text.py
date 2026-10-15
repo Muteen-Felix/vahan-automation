@@ -20,9 +20,11 @@ OCR_RESULT: str | None = None
 def find_tesseract() -> str | None:
     configured = os.environ.get("TESSERACT_CMD")
     candidates = [configured] if configured else []
-    candidates.extend(
-        (shutil.which("tesseract"), "/opt/homebrew/bin/tesseract", "/usr/local/bin/tesseract")
-    )
+    candidates.append(shutil.which("tesseract"))
+    for program_files in (os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)")):
+        if program_files:
+            candidates.append(str(Path(program_files) / "Tesseract-OCR" / "tesseract.exe"))
+    candidates.extend(("/opt/homebrew/bin/tesseract", "/usr/local/bin/tesseract"))
 
     for candidate in candidates:
         if not candidate:
@@ -79,18 +81,23 @@ def recognize(
     tesseract = find_tesseract()
     if not tesseract:
         raise FileNotFoundError(
-            "Không tìm thấy Tesseract. Cài bằng `brew install tesseract tesseract-lang` "
+            "Không tìm thấy Tesseract OCR. Cài Tesseract, thêm executable vào PATH "
             "hoặc đặt biến TESSERACT_CMD."
         )
 
-    languages = available_languages(tesseract)
-    requested = language.split("+")
-    missing = [item for item in requested if item not in languages]
-    if missing:
-        raise ValueError(
-            f"Chưa cài ngôn ngữ OCR: {', '.join(missing)}. "
-            f"Ngôn ngữ hiện có: {', '.join(languages) or 'không có'}."
-        )
+    # The browser workers request English for every small report image. Their
+    # Docker image installs eng at build time, so spawning Tesseract again for
+    # --list-langs on each image wastes CPU and can exceed the worker deadline.
+    # Keep the descriptive language check for other CLI callers.
+    if language != "eng":
+        languages = available_languages(tesseract)
+        requested = language.split("+")
+        missing = [item for item in requested if item not in languages]
+        if missing:
+            raise ValueError(
+                f"Chưa cài ngôn ngữ OCR: {', '.join(missing)}. "
+                f"Ngôn ngữ hiện có: {', '.join(languages) or 'không có'}."
+            )
 
     cmd = [tesseract, str(image_path), "stdout", "-l", language, "--psm", str(psm)]
     if whitelist:
@@ -102,6 +109,7 @@ def recognize(
         text=True,
         encoding="utf-8",
         errors="replace",
+        env={**os.environ, "OMP_THREAD_LIMIT": os.environ.get("OMP_THREAD_LIMIT") or "1"},
         timeout=90,
         check=False,
     )

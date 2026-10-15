@@ -1,0 +1,2 @@
+Options checks passed: hidden State readiness, bounded waits, busy lock, page cleanup, retry and late initialization.
+

@@ -10,6 +10,9 @@ from typing import Any
 
 from app.config import settings
 
+ABSOLUTE_TTL_SECONDS = 12 * 60 * 60
+IDLE_TIMEOUT_SECONDS = 60 * 60
+
 
 def credentials_match(username: str, password: str) -> bool:
     username_matches = secrets.compare_digest(username.encode(), settings.ui_auth_username.encode())
@@ -17,14 +20,17 @@ def credentials_match(username: str, password: str) -> bool:
     return settings.ui_auth_configured and username_matches and password_matches
 
 
-def issue_access_token(username: str) -> str:
+def issue_access_token(username: str, session_id: str | None = None, *, expires_at: int | None = None) -> str:
     now = int(time.time())
     payload = {
         "sub": username,
         "iat": now,
+        "exp": expires_at if expires_at is not None else now + ABSOLUTE_TTL_SECONDS,
         "aud": "vahan-rpa-ui",
         "typ": "access",
     }
+    if session_id:
+        payload["sid"] = session_id
     encoded_payload = base64.urlsafe_b64encode(
         json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     ).rstrip(b"=")
@@ -59,12 +65,15 @@ def _verified_payload(token: str) -> dict[str, Any] | None:
             return None
         username = payload.get("sub")
         expires_at = payload.get("exp")
+        issued_at = payload.get("iat")
         if (
             payload.get("aud") != "vahan-rpa-ui"
             or payload.get("typ") != "access"
             or not isinstance(username, str)
-            or not secrets.compare_digest(username.encode(), settings.ui_auth_username.encode())
-            or ("exp" in payload and (type(expires_at) is not int or expires_at <= int(time.time())))
+            or type(issued_at) is not int
+            or type(expires_at) is not int
+            or expires_at <= int(time.time())
+            or expires_at > issued_at + ABSOLUTE_TTL_SECONDS
         ):
             return None
         return payload
@@ -85,6 +94,15 @@ def access_token_expiry(token: str) -> int | None:
 
 
 def runner_token_matches(candidate: str | None) -> bool:
-    if not candidate or not settings.runner_token:
+    if not candidate or len(settings.runner_token) < 24 or settings.runner_token == 'change-me':
         return False
     return secrets.compare_digest(candidate.encode(), settings.runner_token.encode())
+
+
+async def authenticate_access_token(token: str, *, activity: bool = False):
+    from app.services import services
+    payload = _verified_payload(token)
+    if not payload or not isinstance(payload.get("sid"), str):
+        return None
+    user = await services.users.session_user(payload["sub"], payload["sid"], touch=activity)
+    return {**user, "session_id": payload["sid"]} if user else None

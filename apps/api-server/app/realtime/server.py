@@ -4,7 +4,7 @@ from app.config import settings
 
 sio = socketio.AsyncServer(
     async_mode="asgi",
-    # An unpacked Chrome extension has a generated chrome-extension:// origin.
+    # Runner connections are authenticated independently of browser CORS.
     # The API listens on loopback for this MVP and runner authentication is
     # still enforced independently by the /runner namespace token.
     cors_allowed_origins=settings.socketio_cors_origins,

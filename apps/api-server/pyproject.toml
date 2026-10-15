@@ -1,7 +1,7 @@
 [project]
 name = "vahan-rpa-api"
 version = "0.1.0"
-description = "MVP control plane for the VAHAN RPA web UI and browser extension"
+description = "PostgreSQL control plane for the VAHAN Playwright worker and dashboard"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115,<1",
@@ -11,6 +11,11 @@ dependencies = [
   "python-multipart>=0.0.18,<1",
   "aiofiles>=24,<25",
   "openpyxl>=3.1,<4",
+  "sqlalchemy[asyncio]>=2.0.40,<3",
+  "asyncpg>=0.30,<1",
+  "alembic>=1.15,<2",
+  "cryptography>=50.0.2,<51",
+  "tzdata>=2025.1; sys_platform == 'win32'",
 ]
 
 [project.optional-dependencies]
@@ -18,6 +23,7 @@ dev = [
   "httpx>=0.28,<1",
   "pytest>=8,<10",
   "pytest-asyncio>=0.25,<2",
+  "ruff>=0.17,<0.18",
 ]
 
 [build-system]
@@ -37,3 +43,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
+# Release gate (PLAN T14, D-17): syntax errors and pyflakes only.
+select = ["E9", "F"]

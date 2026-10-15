@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import {
   ACCESS_TOKEN_STORAGE_KEY,
@@ -8,6 +8,10 @@ import {
   clearAccessToken,
   getAccessToken,
 } from "../services/api-client";
+import { hydratePersistentState, resetPersistentState } from '../services/persistent-state';
+import {observeSessionActivity} from '../services/session-activity';
+import {operatorMessage} from '../operator-language';
+import {Brand} from './Brand';
 
 type GateState = "checking" | "setup" | "login" | "unavailable" | "authenticated";
 
@@ -17,16 +21,25 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const generation = useRef(0);
+
+  useEffect(() => {
+    if (gate === 'authenticated') return observeSessionActivity();
+  }, [gate]);
 
   useEffect(() => {
     let active = true;
     const expireSession = () => {
+      generation.current++;
+      resetPersistentState();
       clearAccessToken();
       setPassword("");
       setGate("login");
-      setError("Your session is no longer valid. Please sign in again.");
+      setError("Your sign-in has ended. Please sign in again.");
     };
     const signOut = () => {
+      generation.current++;
+      resetPersistentState();
       setPassword("");
       setError("You have signed out.");
       setGate("login");
@@ -35,9 +48,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
     window.addEventListener(AUTH_LOGOUT_EVENT, signOut);
 
     async function restoreSession() {
+      const expected = ++generation.current;
+      const current = () => active && generation.current === expected;
       try {
         const status = await api.authStatus();
-        if (!active) return;
+        if (!current()) return;
         if (!status.configured) {
           setGate("setup");
           return;
@@ -47,48 +62,56 @@ export function AuthGate({ children }: { children: ReactNode }) {
           return;
         }
         try {
+          const token = getAccessToken();
           await api.currentUser();
-          try {
-            const renewed = await api.renewSession();
-            window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, renewed.accessToken);
-          } catch {
-            // The current token remains usable; retry renewal the next time the page opens.
-            if (!getAccessToken()) {
-              if (active) setGate("login");
-              return;
-            }
-          }
-          if (active) setGate("authenticated");
+          if (!current() || getAccessToken() !== token) return;
+          await hydratePersistentState();
+          if (current() && getAccessToken() === token) setGate("authenticated");
         } catch {
+          if (!current()) return;
           clearAccessToken();
-          if (active) setGate("login");
+          setGate("login");
         }
       } catch (reason) {
-        if (!active) return;
+        if (!current()) return;
         setError(reason instanceof Error ? reason.message : "Could not connect to the API.");
         setGate("unavailable");
       }
     }
 
     void restoreSession();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== ACCESS_TOKEN_STORAGE_KEY) return;
+      resetPersistentState();
+      if (!event.newValue) signOut();
+      else {
+        setGate('checking');
+        void restoreSession();
+      }
+    };
+    window.addEventListener('storage', onStorage);
     return () => {
       active = false;
       window.removeEventListener(AUTH_REQUIRED_EVENT, expireSession);
       window.removeEventListener(AUTH_LOGOUT_EVENT, signOut);
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const expected = ++generation.current;
     setError("");
     setSubmitting(true);
     try {
       const result = await api.login(username.trim(), password);
+      if (generation.current !== expected) return;
       window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, result.accessToken);
       setPassword("");
-      setGate("authenticated");
+      await hydratePersistentState();
+      if (generation.current === expected && getAccessToken() === result.accessToken) setGate("authenticated");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Sign-in failed.");
+      if (generation.current === expected) setError(reason instanceof Error ? reason.message : "Sign-in failed.");
     } finally {
       setSubmitting(false);
     }
@@ -96,42 +119,50 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (gate === "authenticated") return children;
 
-  if (gate === "checking") {
-    return <main className="auth-shell"><p>Checking your session…</p></main>;
-  }
-
   return (
-    <main className="auth-shell">
-      <section className="auth-card">
-        {gate === "setup" ? (
+    <div className="auth-layout">
+      <header className="site-header auth-header">
+        <Brand />
+        <span className="auth-header-label">Account access</span>
+      </header>
+      <main className="auth-shell auth-content">
+      <section className="auth-card" aria-labelledby="auth-title" aria-busy={gate === "checking" || submitting}>
+        <span className="auth-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 10V7a4 4 0 0 1 8 0v3M7 10h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/><path d="M12 14v3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span>
+        {gate === "checking" ? (
           <>
-            <p className="eyebrow dark">DASHBOARD SECURITY</p>
-            <h1>Sign-in is not configured</h1>
+            <p className="eyebrow dark">ACCOUNT ACCESS</p>
+            <h1 id="auth-title">Checking your sign-in…</h1>
+            <p className="auth-description" role="status">Please wait while we check your account access.</p>
+          </>
+        ) : gate === "setup" ? (
+          <>
+            <p className="eyebrow dark">ACCOUNT SETUP</p>
+            <h1 id="auth-title">Sign-in is not ready yet</h1>
             <p className="auth-description">
-              Set a username, a password of at least 12 characters, and a random token secret of at least 32 characters in the API terminal, then restart the backend.
+              Ask the person managing this system to set up your sign-in account.
             </p>
-            <pre className="auth-setup-code">{`export VAHAN_UI_AUTH_USERNAME="admin"
+            <details><summary>Setup instructions for support</summary><p>Set the account and signing secret, then restart the system.</p><pre className="auth-setup-code">{`export VAHAN_UI_AUTH_USERNAME="admin"
 export VAHAN_UI_AUTH_PASSWORD="password-at-least-12-characters"
 export VAHAN_UI_AUTH_TOKEN_SECRET="$(python -c 'import secrets; print(secrets.token_hex(32))')"
-python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</pre>
+python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</pre></details>
             <p className="auth-footnote">
-              Keep the password and token secret on the server. Sign-in tokens do not expire automatically.
+              For account security, you may need to sign in again after 12 hours or 60 minutes without activity.
             </p>
           </>
         ) : gate === "unavailable" ? (
           <>
-            <p className="eyebrow dark">API CONNECTION</p>
-            <h1>Could not connect</h1>
-            <p className="auth-description">{error || "Could not check the sign-in configuration."}</p>
+            <p className="eyebrow dark">SYSTEM CONNECTION</p>
+            <h1 id="auth-title">Could not connect</h1>
+            <p className="auth-description">{operatorMessage(error) || "Could not check your sign-in. Check the connection and try again."}</p>
             <button className="primary-button" type="button" onClick={() => window.location.reload()}>
               Try again
             </button>
           </>
         ) : (
           <>
-            <p className="eyebrow dark">ADMIN SIGN-IN</p>
-            <h1>Welcome back</h1>
-            <p className="auth-description">Sign in to open the VAHAN RPA dashboard.</p>
+            <p className="eyebrow dark">ACCOUNT SIGN-IN</p>
+            <h1 id="auth-title">Welcome back</h1>
+            <p className="auth-description">Sign in to collect and view VAHAN reports.</p>
             <form className="auth-form" onSubmit={handleLogin}>
               <label>
                 Username
@@ -155,15 +186,16 @@ python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload`}</
                   required
                 />
               </label>
-              {error && <p className="auth-error" role="alert">{error}</p>}
+              {error && <p className="auth-error" role="alert">{operatorMessage(error)}</p>}
               <button className="primary-button" type="submit" disabled={submitting}>
                 {submitting ? "Signing in…" : "Sign in"}
               </button>
             </form>
-            <p className="auth-footnote">Your sign-in stays active until you log out or the server signing secret changes.</p>
+            <p className="auth-footnote">You may be asked to sign in again after a period of inactivity or an account security change.</p>
           </>
         )}
       </section>
-    </main>
+      </main>
+    </div>
   );
 }

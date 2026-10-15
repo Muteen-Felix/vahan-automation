@@ -1,356 +1,138 @@
-# VAHAN Report Automation
+# VAHAN Automation
 
-MVP attended RPA dùng Web UI để chọn bộ lọc VAHAN, chuyển CAPTCHA hiện tại cho
-người dùng nhập thủ công và điều khiển Chrome Extension tạo/tải báo cáo Excel.
+Thu thập báo cáo Calendar Year / Maker / Month Wise từ VAHAN Public Report.
+Admin lưu filter profiles và lịch; Chromium worker thực thi case; PostgreSQL
+giữ tiến độ, kết quả, tài khoản và browser state mã hóa. React dashboard
+hiển thị báo cáo dùng chung, search State/RTO và export Excel.
 
-```text
-React Web UI  <── Socket.IO/REST ──>  FastAPI Backend  <── Socket.IO ──>  Chrome Extension  <──>  VAHAN
+## Cài mới bằng Docker Compose
+
+Ứng dụng chạy trong Linux containers. Máy cài cần Docker Engine đang chạy và
+Docker Compose v2. Cài Docker theo hệ điều hành:
+
+- Windows: [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/), bật Linux containers.
+- macOS: [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/).
+- Linux: [Docker Engine](https://docs.docker.com/engine/install/) và [Compose plugin](https://docs.docker.com/compose/install/linux/).
+
+Sau khi cài, mở terminal mới và kiểm tra Docker daemon cùng Compose:
+
+```sh
+docker --version
+docker compose version
+docker info
 ```
+
+Lấy source bằng Git hoặc tải ZIP từ [trang repository](https://github.com/Muteen-Felix/vahan-automation):
+
+```sh
+git clone https://github.com/Muteen-Felix/vahan-automation.git
+cd vahan-automation
+```
+
+Trong thư mục repository, tạo cấu hình và secrets riêng cho máy này. Python
+3.12+ chỉ dùng cho bước tạo file `.docker.env`; PostgreSQL, API, Chromium,
+Tesseract và web dashboard đều chạy trong Docker:
+
+```powershell
+# Windows PowerShell
+py -3 scripts/setup-docker.py
+```
+
+```sh
+# Linux hoặc macOS
+python3 scripts/setup-docker.py
+```
+
+Khởi động toàn bộ hệ thống từ source. Lần đầu Docker sẽ tải image nền và build
+các service, nên máy cần Internet tới Docker registries, npm/PyPI và VAHAN:
+
+```sh
+docker compose --env-file .docker.env up -d --build --scale runner=1
+docker compose --env-file .docker.env ps --all
+```
+
+Khi `postgres`, `api`, `runner` và `web` báo `healthy`, mở
+`http://localhost:5173`. Service `migrate` hoàn tất với trạng thái `Exited (0)`.
+Thông tin đăng nhập khởi tạo nằm trong `.docker.env`; đổi password admin sau
+khi đăng nhập lần đầu và không commit hoặc gửi file này. Nếu cổng mặc định
+8000 hoặc 5173 đang được dùng, đổi `API_PORT` hoặc `WEB_PORT` trong `.docker.env`
+rồi chạy lại lệnh `up`.
+
+Dashboard mặc định chỉ mở trên chính máy chạy Docker. Readiness API là
+`http://localhost:8000/api/ready`. Production API không có `/docs`, `/redoc`
+hay `/openapi.json`.
+
+Dừng service nhưng giữ database:
+
+```sh
+docker compose --env-file .docker.env down
+```
+
+Không thêm `-v` nếu muốn giữ dữ liệu PostgreSQL. Mỗi máy cài mới tự tạo
+`.docker.env`; giữ nguyên file đó và encryption key khi nâng cấp/restore.
+Để nâng cấp stack đang có dữ liệu, dùng [deployment guide](docs/deployment.md)
+và [runbook](docs/runbook.md), không dùng quy trình cài mới ở trên.
+
+Compose không gắn đường dẫn cài đặt riêng của một máy. Bằng chứng build/runtime
+hiện có trong repo là trên Linux amd64; Windows, macOS và các kiến trúc khác
+chưa được xác nhận end-to-end. Xem [bằng chứng và giới hạn hiện tại](docs/round5-review-evidence.md).
+
+- [Runbook: readiness, pause/drain, backup, restart, restore, chẩn đoán](docs/runbook.md).
+- [Bảo mật, image pin, lock, scan/SBOM Đợt 4](docs/round4-security-validation.md).
+
+## Luồng thực thi
+
+1. Admin lưu profile gồm report year, bộ lọc và quy tắc kết hợp. Preview cần
+   options VAHAN thật. Lịch tạo một lần hoặc hằng tháng, múi giờ Việt Nam/Ấn Độ.
+2. UI Health preflight kiểm trang/control, lưu diagnostics trong SQL và chặn
+   thao tác khi không xác minh được. Trạng thái blocked khi disconnect còn là
+   điểm cần duyệt trong danh sách defect.
+3. SQL queue claim từng case bằng transaction. Không có runner thì chờ;
+   mỗi runner xử lý một case, concurrency theo pool runner khả dụng. Số
+   worker cũ trong lịch bị bỏ qua; form lịch không nhập worker count.
+4. Runner điền filter có dependency, xác minh DOM, Apply và dùng Tesseract OCR
+   trong image. Ứng dụng không giới hạn số lần bắt đầu OCR. Không log chữ OCR thô.
+5. No data là kết quả hợp lệ. Workbook được parse/commit vào bảng chính và
+   lịch sử. Retry giữ case/session, không tăng case hay nhân đôi dữ liệu.
+6. Export lấy toàn bộ dòng khớp State/RTO, kể cả hơn 100 dòng đang hiển thị.
+   Export all cần xác nhận trước download.
+
+Pause ngừng giao mới và drain job hiện có; resume cùng queue. Run History chỉ
+admin xem; member chỉ vào Exported Reports. Maker Update đã gỡ; hai API
+UI Health lịch/run-now cũ trả 404. Cài mới không nạp dữ liệu mẫu.
 
 ## Thành phần
 
-| Thành phần | Thư mục | Công nghệ | Cổng mặc định |
-|---|---|---|---|
-| Backend | `apps/api-server` | Python, FastAPI, python-socketio | `8000` |
-| Web UI | `apps/web-ui` | React, TypeScript, Vite | `5173` |
-| Runner | `vahan-chrome-extension` | Chrome Extension Manifest V3 | Không có |
+| Thành phần | Vai trò |
+| --- | --- |
+| `apps/api-server` | FastAPI/Socket.IO, auth, scheduler, SQL repositories/migrations, import/export. |
+| `apps/browser-runner` | Node/Playwright, Chromium sandbox, DOM driver, Tesseract qua stdin. |
+| `apps/web-ui` | React static build; Nginx proxy API/socket, login throttle và CSP. |
+| `docker` | Nginx, seccomp, CA tùy chọn. PostgreSQL dùng image chính thức 17.11 pin digest trong `compose.yaml` (không tự build). |
+| `scripts` | Launcher, backup, package, runtime/security/DB-role verification. |
 
-## Yêu cầu
+Compose dùng một host, một API scheduler và PostgreSQL. Runtime API dùng role
+DML hạn chế; migration dùng owner. Image nền pin digest, Python dependencies
+có lock/hash. Scan còn phát hiện chưa được vendor vá; không coi là sạch.
+Healthy container không chứng minh CAPTCHA/download VAHAN thành công.
 
-- Windows 10/11 và PowerShell.
-- Python 3.11 trở lên.
-- Node.js 20.19+ hoặc 22.12+.
-- Google Chrome 116 trở lên.
-- Có thể truy cập `https://analytics.parivahan.gov.in`.
-- Các cổng `8000` và `5173` chưa bị ứng dụng khác sử dụng.
-
-Kiểm tra phiên bản:
+## Kiểm thử và bàn giao
 
 ```powershell
-python --version
-node --version
-npm.cmd --version
+py -3 scripts/check-doc-links.py
+py -3 scripts/build-review-package.py --ref HEAD --with-images --output-dir diagnostics/review-package
+py -3 scripts/test-review-package.py --package-dir diagnostics/review-package --output-dir diagnostics/review-install
 ```
 
-## 1. Chuẩn bị Backend
-
-Mở PowerShell thứ nhất:
-
-```powershell
-cd I:\MinhDuc\Coding\VinAI\VSF\Vahan-RPA-Team\vahan-rpa\apps\api-server
-
-python -m venv .venv
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
-
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-```
-
-File `.env.example` ghi lại các giá trị mặc định:
-
-```dotenv
-VAHAN_API_HOST=127.0.0.1
-VAHAN_API_PORT=8000
-VAHAN_API_DEBUG=false
-VAHAN_API_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-VAHAN_API_EXTENSION_IDS=ooplajjjjphdcaolokpaenmkjlbcmlhk
-VAHAN_API_SOCKETIO_CORS_ORIGINS=*
-VAHAN_API_RUNNER_TOKEN=change-me
-VAHAN_API_RUNNER_DISCONNECT_GRACE_SECONDS=30
-VAHAN_UI_HEALTH_LOG_DIR=runtime/ui-health-logs
-VAHAN_CAPTCHA_IMAGE_DIR=runtime/images1
-```
-
-Backend hiện đọc biến môi trường của process và chưa tự load file `.env`. Nếu
-muốn dùng giá trị khác mặc định, đặt biến trong cùng PowerShell trước khi chạy:
-
-```powershell
-$env:VAHAN_API_RUNNER_TOKEN = "your-secret-token"
-$env:VAHAN_CAPTCHA_IMAGE_DIR = "runtime/images1"
-```
-
-Backend mặc định cho phép Web UI và extension unpacked hiện tại gọi REST API.
-Nếu Chrome tạo extension ID khác, đặt `VAHAN_API_EXTENSION_IDS` bằng một hoặc
-nhiều ID cách nhau bằng dấu phẩy rồi khởi động lại backend.
-
-## 2. Chạy Backend
-
-Trong PowerShell thứ nhất:
-
-```powershell
-cd I:\MinhDuc\Coding\VinAI\VSF\Vahan-RPA-Team\vahan-rpa\apps\api-server
-.\.venv\Scripts\Activate.ps1
-python -m uvicorn app.main:application --host 127.0.0.1 --port 8000 --reload
-```
-
-Kiểm tra:
-
-- Health: `http://127.0.0.1:8000/api/health`
-- OpenAPI: `http://127.0.0.1:8000/docs`
-
-Health response hợp lệ:
-
-```json
-{"status":"ok"}
-```
-
-## 3. Build và cài Chrome Extension
-
-Mở PowerShell thứ hai:
-
-```powershell
-cd I:\MinhDuc\Coding\VinAI\VSF\Vahan-RPA-Team\vahan-rpa\vahan-chrome-extension
-npm.cmd install
-npm.cmd run build
-npm.cmd run check
-```
-
-Cài extension:
-
-1. Mở `chrome://extensions`.
-2. Bật **Developer mode**.
-3. Chọn **Load unpacked**.
-4. Chọn thư mục `vahan-chrome-extension`.
-5. Chấp nhận quyền `storage`, `downloads` và truy cập trang VAHAN chính thức.
-
-Không chọn thư mục `src`. Chrome phải load toàn bộ thư mục
-`vahan-chrome-extension` chứa `manifest.json`.
-
-### Cấu hình Runner
-
-Bấm biểu tượng extension, mở phần kết nối backend và đặt:
-
-```text
-Server URL: http://127.0.0.1:8000
-Runner name: VAHAN Chrome
-Runner token: change-me
-```
-
-Token phải giống `VAHAN_API_RUNNER_TOKEN` của backend. Bấm **Lưu & Kết nối
-lại**. Popup phải hiển thị trạng thái backend đã kết nối.
-
-Mở VAHAN:
-
-```text
-https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
-```
-
-Nếu VAHAN yêu cầu đăng nhập, cookie, disclaimer hoặc xác nhận ban đầu, hoàn
-thành trực tiếp trên tab này trước.
-
-## 4. Chạy Web UI
-
-Mở PowerShell thứ ba:
-
-```powershell
-cd I:\MinhDuc\Coding\VinAI\VSF\Vahan-RPA-Team\vahan-rpa\apps\web-ui
-npm.cmd install
-npm.cmd run dev
-```
-
-Mở:
-
-```text
-http://127.0.0.1:5173
-```
-
-Web UI mặc định gọi backend tại `http://127.0.0.1:8000`. Có thể thay đổi bằng
-file `apps/web-ui/.env`:
-
-```dotenv
-VITE_API_URL=http://127.0.0.1:8000
-```
-
-Sau khi sửa `.env`, phải khởi động lại Vite.
-
-## 5. Chạy full flow
-
-Trong Web UI, phần **Lịch kiểm tra giao diện** cho phép nhập số ngày giữa hai
-lần kiểm tra. Khi bấm **Lưu lịch kiểm tra**, backend lưu cấu hình và báo ngay cho
-extension đang kết nối để đặt lại `chrome.alarm`. Health-check định kỳ và nút
-**Kiểm tra ngay** chỉ kiểm tra tab VAHAN chính thức đang mở đúng URL
-`https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en`.
-Extension không tự mở tab và không bị ảnh hưởng khi Web UI đang là tab active; nếu
-chưa mở đúng trang hoặc URL thay đổi sau khi tải, lượt kiểm tra ghi `CHECK_ERROR`
-kèm URL thực tế để Dev biết nguyên nhân.
-
-Extension gửi kết quả PASS, DATA_CHANGED hoặc lỗi giao diện về backend; backend
-ghi CSV để xem theo ngày và tải lại từ Web UI.
-
-Phần **Báo cáo kiểm tra theo ngày** cho phép chọn ngày, xem diagnostic của từng
-lần kiểm tra và tải các file `report-YYYY-MM-DD-to-YYYY-MM-DD*.csv` chứa ngày đó.
-Backend lưu file tại `apps/api-server/runtime/ui-health-logs` mặc định, tự
-rollover sau tối đa 10 ngày hoặc 512 KiB.
-
-1. Xác nhận backend đang chạy.
-2. Xác nhận popup extension báo đã kết nối backend.
-3. Mở Web UI và kiểm tra có runner `VAHAN Chrome` khả dụng.
-4. Bấm **Load State–RTO matrix**. Web UI đọc danh sách State và RTO trực tiếp từ
-   runner, kiểm tra các lựa chọn filter cố định, rồi hiển thị số văn phòng theo
-   từng bang. Nếu không đọc được một bang, ma trận sẽ không được lưu.
-5. Bấm **Run all** để chạy lần lượt mọi cặp State–RTO. Có thể chọn một văn phòng
-   rồi bấm **Run from here** hoặc **Run one**. Bộ lọc cố định gồm bốn Active/Archive
-   type, Calendar Year, Two Wheeler và ba Sub-Category, hai Fuel `ELECTRIC(BOV)`
-   và `PURE EV`, Y-Axis `Maker`, X-Axis `Month Wise`. Năm bắt đầu/kết thúc lấy
-   từ năm hiện tại khi bắt đầu lượt chạy.
-6. Với mỗi báo cáo, người dùng đọc CAPTCHA và nhập sáu ký tự trên Web UI.
-   Extension tự Apply và tải Excel. Trường hợp không có dữ liệu được ghi là
-   `No data`; lỗi được ghi riêng và có nút thử lại các báo cáo lỗi.
-7. Excel được lưu tại backend theo cấu trúc
-   `<session>/<State>/Maker Month Wise Data  of <RTO> , <State> (<Year>).xlsx`.
-   Nếu chạy lại đúng văn phòng trong cùng session, tên file có thêm số thứ tự.
-   Có thể tải từng file tại **Exported Reports**.
-
-Luồng trạng thái chuẩn:
-
-```text
-ASSIGNED
-  → OPENING_VAHAN
-  → FILLING_FILTERS
-  → WAITING_CAPTCHA
-  → SUBMITTING
-  → WAITING_RESULT
-  → COMPLETED
-```
-
-CAPTCHA sai quay lại `WAITING_CAPTCHA`; tối đa ba lần liên tiếp. Lỗi xử lý
-chuyển job sang `FAILED`. Người dùng có thể chuyển job sang `CANCELLED` bằng
-nút hủy.
-
-## 6. Chạy kiểm thử
-
-### Backend
-
-```powershell
-cd I:\MinhDuc\Coding\VinAI\VSF\Vahan-RPA-Team\vahan-rpa\apps\api-server
-.\.venv\Scripts\Activate.ps1
-python -m pytest -q
-```
-
-### Extension
-
-```powershell
-cd I:\MinhDuc\Coding\VinAI\VSF\Vahan-RPA-Team\vahan-rpa\vahan-chrome-extension
-npm.cmd run build
-npm.cmd run check
-```
-
-### Web UI
-
-```powershell
-cd I:\MinhDuc\Coding\VinAI\VSF\Vahan-RPA-Team\vahan-rpa\apps\web-ui
-npm.cmd run check
-npm.cmd run build
-```
-
-## 7. Quy trình sau khi sửa code
-
-### Sửa Extension
-
-`src/background.js` là source của service worker. `background.js` ở thư mục
-gốc là bundle được sinh ra.
-
-Sau mỗi lần sửa extension:
-
-```powershell
-cd vahan-chrome-extension
-npm.cmd run build
-npm.cmd run check
-```
-
-Sau đó vào `chrome://extensions`, bấm **Reload** và refresh tab VAHAN. Nếu sửa
-`manifest.json` hoặc thêm permission, Chrome có thể yêu cầu xác nhận lại quyền.
-
-### Sửa Backend
-
-Uvicorn `--reload` thường tự restart. Khi dependency hoặc biến môi trường thay
-đổi, nên dừng bằng `Ctrl+C` rồi chạy lại hoàn toàn.
-
-### Sửa Web UI
-
-Vite hỗ trợ hot reload. Nếu sửa `.env`, dependency hoặc gặp state cũ, restart
-Vite và refresh trình duyệt.
-
-## 8. Troubleshooting
-
-### WebSocket trả về 403
-
-```text
-Unexpected response code: 403
-```
-
-- Restart backend để nhận cấu hình Socket.IO CORS mới.
-- Kiểm tra biến môi trường `VAHAN_API_SOCKETIO_CORS_ORIGINS` hoặc để mặc định `*`.
-- Đảm bảo không có process Uvicorn cũ đang chiếm cổng 8000.
-
-Kiểm tra process:
-
-```powershell
-Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue
-```
-
-### Web UI báo chưa có extension khả dụng
-
-- Mở popup extension và kiểm tra trạng thái kết nối.
-- Server URL và token phải trùng backend.
-- Reload extension tại `chrome://extensions`.
-- Refresh Web UI.
-- Runner ở trạng thái `BUSY` hoặc `RECONNECTING` sẽ tạm thời không khả dụng.
-
-### Không tải được option động
-
-- Tab VAHAN phải tải hoàn chỉnh.
-- Kiểm tra VAHAN có hiển thị form report hay trang đăng nhập/disclaimer.
-- Refresh tab VAHAN rồi chọn lại runner trên Web UI.
-- Mở DevTools của tab VAHAN để xem lỗi content script.
-
-### RTO không có dữ liệu
-
-- Chọn đúng một State. VAHAN không trả RTO khi chọn nhiều State.
-- Chờ State tải xong trước khi mở dropdown RTO.
-- Không nhập label thủ công; chọn option do VAHAN trả về.
-
-### Maker không có gợi ý
-
-- Nhập ít nhất hai ký tự.
-- Chờ trạng thái tìm kiếm hoàn tất.
-- VAHAN phải còn phiên truy cập hợp lệ vì endpoint Maker dùng cookie của tab.
-
-### CAPTCHA trên Web UI không đổi
-
-- Đảm bảo extension và tab VAHAN đã được reload sau lần build mới nhất.
-- Job phải đang ở `WAITING_CAPTCHA`.
-- Refresh CAPTCHA trên VAHAN; Web UI sẽ xóa mã đang nhập khi nhận ảnh mới.
-
-### Không tự tải Excel
-
-- Kiểm tra `Tự động tải Excel` đã bật.
-- Extension phải có permission `downloads`.
-- Kiểm tra download có bị Chrome chặn hoặc chuyển sang `interrupted` không.
-- Job sẽ `FAILED` nếu download không hoàn tất trong 60 giây.
-
-### Extension báo Receiving end does not exist
-
-Content script chưa có trong tab hiện tại. Reload extension, sau đó refresh tab
-VAHAN. Background cũng sẽ thử reload tab và gửi lại message tự động.
-
-## 9. Giới hạn của MVP
-
-- Job và runner được lưu in-memory; restart backend sẽ mất trạng thái.
-- Web UI chưa có đăng nhập/phân quyền.
-- Socket.IO cho Web UI chưa có authentication.
-- Log UI health được lưu ở backend và tải CSV từ Web UI; Excel được lưu theo
-  thư mục session và State trên backend.
-- Một runner chỉ xử lý một job tại một thời điểm.
-
-## 10. Dừng hệ thống
-
-Trong terminal Backend và Web UI, nhấn:
-
-```text
-Ctrl+C
-```
-
-Extension có thể giữ nguyên trong Chrome. Khi backend dừng, popup/widget sẽ báo
-mất kết nối và tự reconnect khi backend chạy lại.
+Diagnostics có manifest, SHA-256, log đã che secrets và `results.json`.
+Test UI build có fixtures được phân biệt với HTTP/DB/runtime thật và VAHAN
+live. Giữ nguyên `outputs/` cho tới khi có danh sách giữ/xóa.
+
+## Tài liệu chi tiết
+
+- [API](docs/api-reference.md), [SQL/worker](docs/postgres-playwright.md).
+- [Lịch/queue](docs/run-schedules.md), [UI Health/preflight](docs/ui-health-sql.md).
+- [Retry/recovery](docs/batch-error-recovery.md), [báo cáo/Excel](docs/annual-reports.md).
+- [Trạng thái và giới hạn](docs/system-status.md).
+- [API server](apps/api-server/README.md), [runner](apps/browser-runner/README.md),
+  [dashboard](apps/web-ui/README.md).

@@ -1,0 +1,2 @@
+Main report worker checks passed: direct save, waiting for SQL before next case, no-data, incomplete export rejection and failed commit cleanup.
+

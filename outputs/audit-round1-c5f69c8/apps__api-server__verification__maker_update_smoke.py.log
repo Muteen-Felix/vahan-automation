@@ -1,0 +1,2 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', 'verification/maker_update_smoke.py']
+Maker update smoke passed: baseline, changed RTO, new Maker, no-data discovery, SQL replacement.

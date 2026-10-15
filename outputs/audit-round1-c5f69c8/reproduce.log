@@ -1,0 +1,4 @@
+Shared report migration: {"afterRows": 0, "beforeRows": 0, "conflictingMonths": 0, "overlappingMonths": 0}
+{"probe": "health", "blockedBeforeDisconnect": true, "blockedDuringGrace": true, "blockedAfterOffline": false, "errorRetained": true, "healthyRunnerOldGateAllowed": true, "blockedOnReconnect": true}
+{"probe": "reclaim", "lostResponseSameJob": true, "oldJobStatus": "FAILED", "oldJobError": "Worker stopped responding. The report will be retried from its saved filters.", "taskAfterSettlement": "PENDING", "failures": 1, "newWorker": "good-worker", "newJob": true, "sameCaseId": true, "sameFilters": true}
+{"probe": "preflight", "scheduleWorkerCount": 1, "selectedWorkers": ["bad-worker", "good-worker", "third-worker"], "peakPlanningLeases": 1, "queueMaxWorkers": 1, "runStatus": "RUNNING"}

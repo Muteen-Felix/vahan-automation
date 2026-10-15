@@ -1,0 +1,549 @@
+[
+  {
+    "file": "apps/api-server/scripts/test-user-state-codec.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.12,
+    "log": "apps__api-server__scripts__test-user-state-codec.py.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_account_passwords.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 35.27,
+    "log": "apps__api-server__verification__test_account_passwords.py.log",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_account_passwords.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.16,
+    "log": "apps__api-server__verification__test_account_passwords.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_annual_reports.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 34.17,
+    "log": "apps__api-server__verification__test_annual_reports.py.log",
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_annual_reports.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 4.56,
+    "log": "apps__api-server__verification__test_annual_reports.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_captcha_ephemeral.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.12,
+    "log": "apps__api-server__verification__test_captcha_ephemeral.py.log",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_captcha_ephemeral.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.78,
+    "log": "apps__api-server__verification__test_captcha_ephemeral.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_captcha_refresh_race.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.64,
+    "log": "apps__api-server__verification__test_captcha_refresh_race.py.log",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_captcha_refresh_race.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.91,
+    "log": "apps__api-server__verification__test_captcha_refresh_race.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_filter_profiles.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 20.14,
+    "log": "apps__api-server__verification__test_filter_profiles.py.log",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_filter_profiles.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.8,
+    "log": "apps__api-server__verification__test_filter_profiles.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_main_live_workbook.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.62,
+    "log": "apps__api-server__verification__test_main_live_workbook.py.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_main_migration.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.12,
+    "log": "apps__api-server__verification__test_main_migration.py.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_ocr_platform.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.97,
+    "log": "apps__api-server__verification__test_ocr_platform.py.log",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_ocr_platform.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.67,
+    "log": "apps__api-server__verification__test_ocr_platform.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_permissions.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 3.66,
+    "log": "apps__api-server__verification__test_permissions.py.log",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_permissions.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.17,
+    "log": "apps__api-server__verification__test_permissions.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_production_config.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 6.38,
+    "log": "apps__api-server__verification__test_production_config.py.log",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_production_config.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.92,
+    "log": "apps__api-server__verification__test_production_config.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_queue_migrations.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 21.55,
+    "log": "apps__api-server__verification__test_queue_migrations.py.log",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_queue_migrations.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.77,
+    "log": "apps__api-server__verification__test_queue_migrations.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_queue_retry_checkpoints.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 103.56,
+    "log": "apps__api-server__verification__test_queue_retry_checkpoints.py.log",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_queue_retry_checkpoints.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.61,
+    "log": "apps__api-server__verification__test_queue_retry_checkpoints.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_report_coverage.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 26.0,
+    "log": "apps__api-server__verification__test_report_coverage.py.log",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_report_coverage.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 136.58,
+    "log": "apps__api-server__verification__test_report_coverage.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_report_results.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 43.95,
+    "log": "apps__api-server__verification__test_report_results.py.log",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_report_results.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.55,
+    "log": "apps__api-server__verification__test_report_results.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_retry_sessions.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 74.14,
+    "log": "apps__api-server__verification__test_retry_sessions.py.log",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_retry_sessions.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.39,
+    "log": "apps__api-server__verification__test_retry_sessions.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_run_controls.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 42.08,
+    "log": "apps__api-server__verification__test_run_controls.py.log",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_run_controls.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.86,
+    "log": "apps__api-server__verification__test_run_controls.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_run_history.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 9.8,
+    "log": "apps__api-server__verification__test_run_history.py.log",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_run_history.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.2,
+    "log": "apps__api-server__verification__test_run_history.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_run_schedules.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 214.88,
+    "log": "apps__api-server__verification__test_run_schedules.py.log",
+    "tests": 39,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_run_schedules.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.81,
+    "log": "apps__api-server__verification__test_run_schedules.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_session_limits.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 29.31,
+    "log": "apps__api-server__verification__test_session_limits.py.log",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_session_limits.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.36,
+    "log": "apps__api-server__verification__test_session_limits.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_shared_batch_queue.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 136.48,
+    "log": "apps__api-server__verification__test_shared_batch_queue.py.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_shared_batch_queue.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.8,
+    "log": "apps__api-server__verification__test_shared_batch_queue.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_shared_migration.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.81,
+    "log": "apps__api-server__verification__test_shared_migration.py.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_ui_contract.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 29.61,
+    "log": "apps__api-server__verification__test_ui_contract.py.log",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_ui_contract.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.59,
+    "log": "apps__api-server__verification__test_ui_contract.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_update_status.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 11.39,
+    "log": "apps__api-server__verification__test_update_status.py.log",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_update_status.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.98,
+    "log": "apps__api-server__verification__test_update_status.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_worker_lifecycle.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 34.62,
+    "log": "apps__api-server__verification__test_worker_lifecycle.py.log",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_worker_lifecycle.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.7,
+    "log": "apps__api-server__verification__test_worker_lifecycle.py-migrate.log"
+  },
+  {
+    "file": "apps/api-server/verification/test_worker_pool.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 46.44,
+    "log": "apps__api-server__verification__test_worker_pool.py.log",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "apps/api-server/verification/test_worker_pool.py-migrate",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.47,
+    "log": "apps__api-server__verification__test_worker_pool.py-migrate.log"
+  },
+  {
+    "file": "apps/browser-runner/test-filter-fill.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 41.03,
+    "log": "apps__browser-runner__test-filter-fill.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-health-navigation.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.92,
+    "log": "apps__browser-runner__test-health-navigation.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-health-trigger.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.12,
+    "log": "apps__browser-runner__test-health-trigger.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-image-pipe.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.41,
+    "log": "apps__browser-runner__test-image-pipe.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-job-lifecycle.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.17,
+    "log": "apps__browser-runner__test-job-lifecycle.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-main-report-save.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.17,
+    "log": "apps__browser-runner__test-main-report-save.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-navigation.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.92,
+    "log": "apps__browser-runner__test-navigation.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-options.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.64,
+    "log": "apps__browser-runner__test-options.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-page-recovery.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.41,
+    "log": "apps__browser-runner__test-page-recovery.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-profile-options.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 2.64,
+    "log": "apps__browser-runner__test-profile-options.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-results.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 8.67,
+    "log": "apps__browser-runner__test-results.mjs.log"
+  },
+  {
+    "file": "apps/browser-runner/test-ui-health-contract.mjs",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.64,
+    "log": "apps__browser-runner__test-ui-health-contract.mjs.log"
+  },
+  {
+    "file": "historical-fixture-setup",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 14.41,
+    "log": "historical-fixture-setup.log"
+  },
+  {
+    "file": "scripts/test_deployment_guard.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 1.03,
+    "log": "scripts__test_deployment_guard.py.log",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "scripts/test_worker_capacity.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.75,
+    "log": "scripts__test_worker_capacity.py.log",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "tools/ui-drift-guard/test_ui_contract.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 7.02,
+    "log": "tools__ui-drift-guard__test_ui_contract.py.log"
+  },
+  {
+    "file": "tools/ui-drift-guard/test_ui_diagnostics.py",
+    "exit_code": 0,
+    "status": "PASS",
+    "seconds": 0.31,
+    "log": "tools__ui-drift-guard__test_ui_diagnostics.py.log"
+  }
+]

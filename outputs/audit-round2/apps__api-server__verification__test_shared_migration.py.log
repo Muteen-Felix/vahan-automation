@@ -1,0 +1,2 @@
+Command: ['C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\.venv\\Scripts\\python.exe', 'C:\\Users\\huyvv12\\Desktop\\vahan-automation\\apps\\api-server\\verification\\test_shared_migration.py']
+{"migration": "passed", "beforeRows": 0, "sharedRows": 0, "allOriginalMonthValuesAccountedFor": 0, "overlappingMonths": 0, "conflictsPreserved": 0, "historyItemsUnchanged": 0, "operationalJobsFilesSessionsUnchanged": true}

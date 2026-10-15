@@ -52,6 +52,22 @@ async def test_runner_registry_preserves_job_on_reconnect() -> None:
     assert await registry.get_by_socket("socket-1") is None
 
 
+async def test_runner_heartbeat_repairs_reconnecting_status_only_for_current_socket() -> None:
+    registry = InMemoryRunnerRegistry()
+    await registry.register(runner_id="runner-1", name="Chrome", socket_id="socket-1")
+    await registry.mark_reconnecting("socket-1")
+    assert (await registry.heartbeat("socket-1")).status == RunnerStatus.ONLINE
+
+    await registry.set_job("runner-1", str(UUID(int=3)))
+    await registry.mark_reconnecting("socket-1")
+    assert (await registry.heartbeat("socket-1")).status == RunnerStatus.BUSY
+
+    await registry.register(runner_id="runner-1", name="Chrome", socket_id="socket-2")
+    assert await registry.mark_reconnecting("socket-1") is None
+    assert await registry.heartbeat("socket-1") is None
+    assert (await registry.get("runner-1")).status == RunnerStatus.BUSY
+
+
 def test_job_state_machine_rejects_stale_terminal_updates() -> None:
     assert can_transition(JobStatus.ASSIGNED, JobStatus.OPENING_VAHAN)
     assert can_transition(JobStatus.OPENING_VAHAN, JobStatus.CAPTURING_CAPTCHA)

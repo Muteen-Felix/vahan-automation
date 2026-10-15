@@ -1,0 +1,2 @@
+Command: ['node', 'test-health-trigger.mjs']
+Runner health checks: explicit preflight only, no connection/heartbeat schedule, and busy-job protection passed.

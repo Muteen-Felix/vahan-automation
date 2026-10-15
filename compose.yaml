@@ -1,0 +1,111 @@
+name: vahan-automation
+x-logging: &bounded-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+services:
+  postgres:
+    logging: *bounded-logging
+    # Official upstream image, pinned by multi-arch index digest (linux/amd64 is
+    # the supported platform). Keep identical to .github/workflows/platform.yml
+    # and docs/release/pins.md; scripts/test_container_security.py enforces it.
+    image: docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
+    environment:
+      POSTGRES_DB: vahan
+      POSTGRES_USER: vahan
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/setup-docker.py first}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U vahan -d vahan]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  migrate:
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/api:${VAHAN_IMAGE_TAG:-local}
+    logging: *bounded-logging
+    command: [python, -m, app.provision_database]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://vahan:${POSTGRES_PASSWORD}@postgres:5432/vahan
+      DB_APP_USERNAME: ${DB_APP_USERNAME:-vahan_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Run scripts/setup-docker.py first}
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: 'no'
+  api:
+    logging: *bounded-logging
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/api:${VAHAN_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/api-server/Dockerfile
+      args:
+        VCS_REF: ${VAHAN_VCS_REF:-unknown}
+        VERSION: ${VAHAN_IMAGE_TAG:-unknown}
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_APP_USERNAME:-vahan_app}:${DB_APP_PASSWORD}@postgres:5432/vahan
+      VAHAN_UI_AUTH_USERNAME: ${VAHAN_UI_AUTH_USERNAME:-admin}
+      VAHAN_UI_AUTH_PASSWORD: ${VAHAN_UI_AUTH_PASSWORD:?Configure bootstrap password}
+      VAHAN_UI_AUTH_TOKEN_SECRET: ${VAHAN_UI_AUTH_TOKEN_SECRET:?Configure signing secret}
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token}
+      VAHAN_API_RUNNER_HEALTH_CHECKS: 'true'
+      VAHAN_BROWSER_STATE_KEY: ${VAHAN_BROWSER_STATE_KEY:?Configure encryption key}
+      VAHAN_ENVIRONMENT: production
+      VAHAN_API_CORS_ORIGINS: ${VAHAN_API_CORS_ORIGINS:-${VAHAN_ALLOWED_ORIGINS:-http://localhost:${WEB_PORT:-5173},http://127.0.0.1:${WEB_PORT:-5173}}}
+      VAHAN_API_SOCKETIO_CORS_ORIGINS: ${VAHAN_API_SOCKETIO_CORS_ORIGINS:-${VAHAN_API_CORS_ORIGINS:-${VAHAN_ALLOWED_ORIGINS:-http://localhost:${WEB_PORT:-5173},http://127.0.0.1:${WEB_PORT:-5173}}}}
+    ports: ["${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8000}:8000"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/ready')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  runner:
+    logging: *bounded-logging
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/runner:${VAHAN_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/browser-runner/Dockerfile
+      args:
+        VCS_REF: ${VAHAN_VCS_REF:-unknown}
+        VERSION: ${VAHAN_IMAGE_TAG:-unknown}
+    init: true
+    shm_size: 1gb
+    security_opt: ["seccomp=./docker/seccomp_profile.json"]
+    environment:
+      VAHAN_API_URL: http://api:8000
+      VAHAN_API_RUNNER_TOKEN: ${VAHAN_API_RUNNER_TOKEN:?Configure runner token in .docker.env}
+      VAHAN_URL: https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    deploy:
+      replicas: ${VAHAN_WORKER_REPLICAS:-1}
+    restart: unless-stopped
+  web:
+    logging: *bounded-logging
+    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/web:${VAHAN_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/web-ui/Dockerfile
+      args:
+        VCS_REF: ${VAHAN_VCS_REF:-unknown}
+        VERSION: ${VAHAN_IMAGE_TAG:-unknown}
+    ports: ["${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-5173}:80"]
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  postgres_data:
