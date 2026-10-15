@@ -56,7 +56,8 @@ def main() -> None:
             # CA files are operator-specific and are never redistributed in a package.
             # Build uses the committed cert directory, even when empty.
             subprocess.run([os.sys.executable, 'scripts/setup-docker.py'], cwd=build_root, check=True)
-            env = {**os.environ, 'VAHAN_IMAGE_NAMESPACE': namespace, 'VAHAN_IMAGE_TAG': tag}
+            env = {**os.environ, 'VAHAN_IMAGE_NAMESPACE': namespace, 'VAHAN_IMAGE_TAG': tag,
+                   'VAHAN_VCS_REF': sha}
             compose = ['docker', 'compose', '--env-file', '.docker.env']
             # Only the three application images are built; PostgreSQL is the
             # official upstream image pinned by digest in compose.yaml (D-33).
@@ -88,6 +89,11 @@ def main() -> None:
                     'id': info['Id'], 'repoDigests': info.get('RepoDigests', []), 'platform': platform,
                     'upstream': ref == pinned, 'revisionLabel': (info['Config'].get('Labels') or {}).get(
                         'org.opencontainers.image.revision') if ref != pinned else None}
+            # T29: a release package must carry the declared revision; an `unknown` or foreign label is refused.
+            for ref, item in manifest['images'].items():
+                if not item['upstream']:
+                    require(item['revisionLabel'] == sha,
+                            f"{ref} carries revision label {item['revisionLabel']!r}, expected {sha}.")
             require(manifest['images'][pinned]['platform'] == application_platform,
                     'PostgreSQL platform differs from the application images.')
             subprocess.run(['docker', 'image', 'save', '-o', str(images), *refs], check=True)

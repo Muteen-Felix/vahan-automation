@@ -21,6 +21,23 @@ def run(command: list[str]) -> None:
     subprocess.run(command, cwd=ROOT, check=True)
 
 
+def declare_revision() -> None:
+    """Pass the checked-out commit to `compose build` as the declared image revision (T29).
+
+    A value already in the environment wins. Without Git metadata the label stays `unknown`; release packages
+    are built by build-review-package.py, which refuses an `unknown` label.
+    """
+    if os.environ.get("VAHAN_VCS_REF"):
+        return
+    try:
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+                                       stderr=subprocess.DEVNULL).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return
+    if len(head) == 40:
+        os.environ["VAHAN_VCS_REF"] = head
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -75,6 +92,7 @@ def main() -> int:
         return 0
 
     if not args.no_build:
+        declare_revision()
         run([*COMPOSE, "build"])
     if worker_count is None:
         assessment = assess_worker_capacity()

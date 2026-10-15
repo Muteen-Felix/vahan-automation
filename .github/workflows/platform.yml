@@ -58,6 +58,7 @@ jobs:
           python -m unittest discover -s ../../scripts -p 'test_container_scan.py'
           python -m unittest discover -s ../../scripts -p 'test_postgres_pin.py'
           python -m unittest discover -s ../../scripts -p 'test_nginx_conf.py'
+          python -m unittest discover -s ../../scripts -p 'test_image_labels.py'
           python -m unittest discover -s ../../scripts -p 'test_evidence_check.py'
           python -m unittest discover -s ../../scripts -p 'test_release_smoke.py'
           python -m unittest discover -s ../../scripts -p 'test_review_package.py'
@@ -265,6 +266,8 @@ jobs:
       - name: Validate Compose package
         run: docker compose --env-file .docker.env config --quiet
       - name: Test production container security
+        env:
+          VAHAN_VCS_REF: ${{ github.sha }}
         run: python scripts/test_container_security.py
       - name: Test packaged Chromium sandbox and real Tesseract
         run: docker run --rm --init --shm-size=1g --security-opt seccomp=./docker/seccomp_profile.json --entrypoint node vahan-security-test/runner:round4 test-container-runtime.mjs

@@ -11,4 +11,9 @@ RUN apk upgrade --no-cache
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html
+# Declared build provenance (T29): supplied by the build, so `docker image inspect` shows the revision the image
+# was declared to be built from. It is not proof of the image bytes (docs/release/pins.md).
+ARG VCS_REF=unknown
+ARG VERSION=unknown
+LABEL org.opencontainers.image.revision=$VCS_REF org.opencontainers.image.version=$VERSION
 EXPOSE 80

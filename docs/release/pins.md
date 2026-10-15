@@ -32,9 +32,9 @@ Quyết định **tạm thời** (phương án A, Felix duyệt 14/10/2026; đ�
 | Điều cần biết | Trạng thái |
 | --- | --- |
 | Trường `sha:` trong ledger `docs/release/evidence/R*.md` | SHA của **source revision đang được đánh giá**. Nó không xác định SHA hay digest của image đã chạy. `evidence-check.py` chỉ đọc `row`/`sha`/`snapshot`/`fingerprint` và phân loại theo path (`path-map.json`). |
-| D3 đợt 4: source SHA của build | **Not verified** — bằng chứng hiện có không liên kết image D3 với source SHA; image không có label revision (3 Dockerfile ứng dụng chưa có `LABEL`: `defects.md` DEF-27, T29). |
+| D3 đợt 4: source SHA của build | **Not verified** — bằng chứng hiện có không liên kết image D3 với source SHA; image D3 đợt 4 được dựng trước T29 nên không có label revision. Từ T29 3 Dockerfile ứng dụng khai báo `org.opencontainers.image.revision`/`version` lúc build (DEF-27); chỉ build sau T29 mới có nhãn. |
 | D3 đợt 4: digest image, và việc D3 chạy cùng image với candidate | **Not verified**. |
-| `LABEL` revision / `VCS_REF` (khi T29 làm) | Chỉ **khai báo** revision lúc build. Nó không chứng minh bytes hay digest image giống nhau, và không chứng minh image được build từ SHA đó nếu không có provenance xác thực. |
+| `LABEL` revision / `VCS_REF` (T29: đã làm, chưa có E-CI) | Chỉ **khai báo** revision lúc build. Nó không chứng minh bytes hay digest image giống nhau, và không chứng minh image được build từ SHA đó nếu không có provenance xác thực. |
 | `test-*.mjs` trong image runner | `apps/browser-runner/Dockerfile:26` có `COPY apps/browser-runner/ ./`; `.dockerignore` không loại `test-*.mjs`; `path-map.json` xếp `apps/browser-runner/test-*.mjs` là `non_runtime`. Không file chạy-thật nào import `./test-*`, `CMD` là `node runner.mjs`. Sửa một test đổi layer `COPY` nên **image ID/digest đổi (suy từ cơ chế Docker, chưa kiểm bằng build)**, trong khi `evidence-check.py` vẫn báo D3 hợp lệ (`build_inputs` không có khóa digest image ứng dụng). |
 | API image | Chỉ copy `app/`, `migrations/`, `alembic.ini` (`apps/api-server/Dockerfile:10-12`), nên thay đổi test không đổi image API. |
 
