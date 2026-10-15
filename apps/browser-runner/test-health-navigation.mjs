@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFileSync} from 'node:fs';
-import {runInNewContext} from 'node:vm';
 import {chromium} from 'playwright';
 import {inspectControls} from './ui-health-contract.mjs';
+import {runHealthCheck, StateStore} from './health-cookie-recovery.mjs';
 
-const source=readFileSync(new URL('./runner.mjs',import.meta.url),'utf8');
-const code=source.slice(source.indexOf('async function healthCheck('),source.indexOf("socket.on('ui-health:preflight'"))+'\nhealthCheck';
 const controls=[{field:'states',selector:'#stateName',tag:'select',multiple:true},
   {field:'apply',selector:'#applyTrigger',tag:'button'}];
 let mode='slow-assets';
@@ -23,13 +20,20 @@ const browser=await chromium.launch({headless:true});
 const context=await browser.newContext();
 try {
   let saved;
-  const run=runInNewContext(code,{browser,context,launch:async()=>{},URL:origin+'/report',target:new URL(origin+'/report'),
-    globalThis:{URL},Date,ID:'fixture-worker',randomUUID:()=> 'fixture-check',inspectControls,
-    http:async(path,options)=>{
-      if(path==='/api/ui-health/contract') return {controls,revision:1};
-      assert.equal(path,'/api/ui-health/logs');saved=JSON.parse(options.body).healthCheck;
-      return {ok:true,validation:{allowed:saved.status==='PASS'}};
-    }});
+  let revision=1;
+  const http=async(path,options={})=>{
+    if(path==='/api/ui-health/contract') return {controls,revision:1};
+    if(path==='/api/runner-state/fixture-worker') return options.method==='PUT'?{ok:true,revision:++revision}:{state:null,revision};
+    assert.equal(path,'/api/ui-health/logs');saved=JSON.parse(options.body).healthCheck;
+    assert.ok(options.timeoutMs>0,'the log POST always gets a positive timeout');
+    return {ok:true,validation:{allowed:saved.status==='PASS'}};
+  };
+  const deps={browser:()=>browser,context:()=>context,launch:async()=>{},http,URL:origin+'/report',target:new URL(origin+'/report'),
+    ID:'fixture-worker',randomUUID:()=> 'fixture-check',inspectControls,epoch:()=>1,isTainted:()=>false,setTainted(){},
+    markPageNeedsReset(){},rebuildPrimary:async()=>{},UrlCtor:URL,
+    store:new StateStore({http,id:'fixture-worker'})};
+  deps.store.setRevision(revision);
+  const run=request=>runHealthCheck(deps,request);
   const started=Date.now();
   const passing=await run({requestId:'pending-asset'});
   assert.equal(passing.validation.allowed,true);

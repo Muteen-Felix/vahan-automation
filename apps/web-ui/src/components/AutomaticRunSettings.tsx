@@ -153,11 +153,11 @@ export function AutomaticRunSettings({profiles, selectedProfileId, year, schedul
             <dl className="run-schedule-details">
               <div className="run-schedule-start"><dt>{schedule.nextRunAt ? 'Next start' : 'Scheduled start'}</dt><dd title={formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, timeZone)}>{formatScheduledTime(schedule.nextRunAt ?? schedule.startsAt, timeZone)}</dd><small>{runTimeZoneLabel(timeZone)}</small></div>
               <div><dt>Repeat</dt><dd>{schedule.annualSuccessorScheduleId ? `Ended after ${schedule.year}`
-                : schedule.repeat === 'monthly' ? 'Every month' : schedule.repeat === 'daily' ? 'Every day' : 'Once'}</dd>
+                : schedule.repeat === 'monthly' ? 'Every month' : 'Once'}</dd>
                 <small>{schedule.annualSuccessorScheduleId
                   ? `A separate ${schedule.annualRolloverYear ?? schedule.year + 1} filter and schedule are active`
                   : schedule.repeat === 'monthly' ? `Day ${scheduledDayOfMonth(schedule.startsAt, timeZone)} · month-end if needed · new filter each year`
-                  : schedule.repeat === 'daily' ? 'At the same time' : 'One scheduled run'}</small></div>
+                  : 'One scheduled run'}</small></div>
               <div><dt>Report browsers</dt><dd>Automatic</dd><small>Uses connected browsers; waits when none are available</small></div>
             </dl>
             <RunScheduleProgress schedule={schedule} statusLabel={!schedule.enabled && !schedule.sessionId && schedule.nextRunAt ? 'Disabled' : schedule.networkPaused ? 'Waiting for network' : STATUS_LABELS[schedule.status]} />

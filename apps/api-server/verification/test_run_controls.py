@@ -5,7 +5,7 @@ import unittest
 from datetime import datetime, timezone
 from uuid import uuid4
 
-import test_report_results as fixture  # Guards the database and migrates before app imports.
+import test_report_results as fixture  # noqa: F401  Guards the database and migrates before app imports.
 from openpyxl import Workbook
 from sqlalchemy import select, update
 from starlette.requests import Request

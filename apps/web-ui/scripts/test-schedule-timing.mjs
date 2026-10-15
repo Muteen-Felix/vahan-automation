@@ -45,7 +45,7 @@ assert.equal(slowed.stalled, false);
 const newRun = {...schedule, sessionId:'run-2', lastRunAt:new Date(start + 300_000).toISOString(), done:1};
 assert.equal(estimateScheduleTiming(newRun, observation, start + 310_000).remainingMs, 990_000);
 observation = observeScheduleTiming(observation, newRun, start + 310_000);
-assert.equal(observation.samples.length, 1, 'Daily executions discard the previous run checkpoints.');
+assert.equal(observation.samples.length, 1, 'Repeated executions discard the previous run checkpoints.');
 observation = observeScheduleTiming(observation, {...newRun, done:0}, start + 311_000);
 assert.equal(observation.samples.length, 1, 'Counter rollback resets observed throughput.');
 assert.equal(estimateScheduleTiming({...newRun, done:100}, null, start + 310_000).remainingMs, 0);

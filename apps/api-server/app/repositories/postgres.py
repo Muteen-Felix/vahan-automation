@@ -483,7 +483,12 @@ async def recover_after_restart():
             await connection.execute(delete(db.runner_planning_leases))
             await connection.execute(update(db.runners).values(connected=False, socket_id=None))
 
+async def audit_in(connection, actor, event, payload):
+    """Write an audit event on the caller's connection, so it commits or rolls back together
+    with the business change it describes. ``audit()`` opens its own transaction and cannot."""
+    await connection.execute(insert(db.audit_events).values(id=str(uuid4()), actor=actor,
+        event=event, payload=payload, created_at=now()))
+
 async def audit(actor, event, payload):
     async with engine.begin() as connection:
-        await connection.execute(insert(db.audit_events).values(id=str(uuid4()), actor=actor,
-            event=event, payload=payload, created_at=now()))
+        await audit_in(connection, actor, event, payload)

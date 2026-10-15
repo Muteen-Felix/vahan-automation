@@ -1,0 +1,141 @@
+{
+ "BEFORE": {
+  "counts": {
+   "users": 1,
+   "report_sessions": 5,
+   "batch_queue_sessions": 5,
+   "batch_queue_tasks": 20,
+   "jobs": 20,
+   "app_settings": 8
+  },
+  "schedules": [
+   {
+    "id": "33b6477c-ed6d-40e6-98c6-cb0e335511b9",
+    "repeat": "daily",
+    "status": "COMPLETED",
+    "profileName": "Daily finished",
+    "sessionId": "-",
+    "lastSessionId": "d3e3691d-08ff-4d8b-9b7a-59c36ded754f"
+   },
+   {
+    "id": "450a9138-a195-4305-8ae8-baf4a5892b44",
+    "repeat": "daily",
+    "status": "RUNNING",
+    "profileName": "Daily running",
+    "sessionId": "4ce89f1a-2869-4bb0-ada8-08fe1753bc4a",
+    "lastSessionId": "-"
+   },
+   {
+    "id": "cc47755d-22e7-4a91-80fd-ae04b92ecf4a",
+    "repeat": "daily",
+    "status": "PAUSED",
+    "profileName": "Daily paused",
+    "sessionId": "15f9dadb-6d9f-46e6-819e-8d6660516aeb",
+    "lastSessionId": "-"
+   },
+   {
+    "id": "c58d8041-eb56-445b-988d-126c0ed10fe2",
+    "repeat": "monthly",
+    "status": "WAITING",
+    "profileName": "Monthly schedule",
+    "sessionId": "-",
+    "lastSessionId": "b9e0e931-295a-4210-9615-99c443b9c4a5"
+   },
+   {
+    "id": "68138e99-b861-42e2-86e8-4fe9e6898435",
+    "repeat": "once",
+    "status": "COMPLETED",
+    "profileName": "Once schedule",
+    "sessionId": "-",
+    "lastSessionId": "57e254ea-205d-4983-9535-a0c2ba271c92"
+   },
+   {
+    "id": "odd-non-object",
+    "repeat": null,
+    "status": null,
+    "profileName": null,
+    "sessionId": "-",
+    "lastSessionId": "-"
+   }
+  ],
+  "historyKeys": [
+   "report-run-history:57e254ea-205d-4983-9535-a0c2ba271c92"
+  ]
+ },
+ "MIGRATION_LOG": [
+  "0015_remove_daily_schedules: deleted 3 Daily schedule(s); kept 3 Once/Monthly schedule(s); ids=['33b6477c-ed6d-40e6-98c6-cb0e335511b9', '450a9138-a195-4305-8ae8-baf4a5892b44', 'cc47755d-22e7-4a91-80fd-ae04b92ecf4a']"
+ ],
+ "AFTER": {
+  "counts": {
+   "users": 1,
+   "report_sessions": 5,
+   "batch_queue_sessions": 5,
+   "batch_queue_tasks": 20,
+   "jobs": 20,
+   "app_settings": 9
+  },
+  "schedules": [
+   {
+    "id": "c58d8041-eb56-445b-988d-126c0ed10fe2",
+    "repeat": "monthly",
+    "status": "WAITING",
+    "profileName": "Monthly schedule",
+    "sessionId": "-",
+    "lastSessionId": "b9e0e931-295a-4210-9615-99c443b9c4a5"
+   },
+   {
+    "id": "68138e99-b861-42e2-86e8-4fe9e6898435",
+    "repeat": "once",
+    "status": "COMPLETED",
+    "profileName": "Once schedule",
+    "sessionId": "-",
+    "lastSessionId": "57e254ea-205d-4983-9535-a0c2ba271c92"
+   },
+   {
+    "id": "odd-non-object",
+    "repeat": null,
+    "status": null,
+    "profileName": null,
+    "sessionId": "-",
+    "lastSessionId": "-"
+   }
+  ],
+  "historyKeys": [
+   "report-run-history:15f9dadb-6d9f-46e6-819e-8d6660516aeb",
+   "report-run-history:4ce89f1a-2869-4bb0-ada8-08fe1753bc4a",
+   "report-run-history:57e254ea-205d-4983-9535-a0c2ba271c92",
+   "report-run-history:d3e3691d-08ff-4d8b-9b7a-59c36ded754f"
+  ],
+  "alembic": "0015_remove_daily_schedules",
+  "audit": {
+   "at": "2026-10-15T04:21:38+00:00",
+   "count": 3,
+   "removed": [
+    {
+     "id": "33b6477c-ed6d-40e6-98c6-cb0e335511b9",
+     "owner": "migration-owner",
+     "status": "COMPLETED",
+     "profileName": "Daily finished",
+     "hadActiveSession": false
+    },
+    {
+     "id": "450a9138-a195-4305-8ae8-baf4a5892b44",
+     "owner": "migration-owner",
+     "status": "RUNNING",
+     "profileName": "Daily running",
+     "hadActiveSession": true
+    },
+    {
+     "id": "cc47755d-22e7-4a91-80fd-ae04b92ecf4a",
+     "owner": "migration-owner",
+     "status": "PAUSED",
+     "profileName": "Daily paused",
+     "hadActiveSession": true
+    }
+   ],
+   "decision": "D-35",
+   "migration": "0015_remove_daily_schedules",
+   "keptNonDailySchedules": 3
+  }
+ }
+}

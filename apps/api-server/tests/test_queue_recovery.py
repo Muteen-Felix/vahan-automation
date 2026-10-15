@@ -195,7 +195,7 @@ async def test_real_retry_keeps_one_run_and_one_case_in_admin_history(admin_toke
     assert len(during) == 1 and during[0]['totalCases'] == 1 and during[0]['running'] == 1
     command = await waiting_result(retry['jobId'])
     await commit_report_result(UUID(retry['jobId']), workers[0], command)
-    settled = await queue.snapshot(session, 'test-admin')  # Settle the canonical case, as the scheduler does.
+    await queue.snapshot(session, 'test-admin')  # Settle the canonical case, as the scheduler does.
     final = (await list_runs())['runs']
     assert len(final) == 1 and final[0]['totalRuns'] == 1
     assert (final[0]['totalCases'], final[0]['processed'], final[0]['noData'], final[0]['failed']) == (1, 1, 1, 0)

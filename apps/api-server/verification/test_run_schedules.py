@@ -2,7 +2,7 @@
 import asyncio
 import os
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 from uuid import UUID, uuid4
@@ -27,7 +27,7 @@ from app.models.job import Job, JobStatus
 from app.models.run_schedule import RunScheduleCreate, RunScheduleResume
 from app.repositories.filter_profiles import FilterProfileRepository
 from app.repositories.postgres import job_document, release_runner
-from app.repositories.run_schedules import RunScheduleRepository, next_daily_run, next_monthly_run, now
+from app.repositories.run_schedules import RunScheduleRepository, next_monthly_run, now
 from app.repositories import ui_contract
 from app.run_scheduler import automatic_preflight, scheduler_tick as control_tick, stop_scheduled_run, still_current, checkpoint, queue, LEADER_LOCK
 from app.services import services
@@ -307,7 +307,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(await self.jobs()), 2)
         self.assertTrue(all(job.status == JobStatus.ASSIGNED for job in await self.jobs()))
 
-    async def test_dates_validation_and_daily_and_monthly_time_zones(self):
+    async def test_dates_validation_and_monthly_time_zones(self):
         future = now()+timedelta(days=1)
         command = RunScheduleCreate(profileId=self.profile['id'], startsAt=future,
             workerCount=8, year=now().year)
@@ -318,8 +318,8 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         for starts_at in [future.replace(tzinfo=None), now()-timedelta(minutes=1)]:
             with self.assertRaises(ValidationError):
                 RunScheduleCreate(profileId=self.profile['id'], startsAt=starts_at, year=now().year)
-        next_run = next_daily_run('2026-10-07T09:30:00+07:00', datetime.fromisoformat('2026-10-10T18:00:00+07:00'))
-        self.assertEqual(next_run, '2026-10-11T02:30:00+00:00')
+        with self.assertRaises(ValidationError):
+            RunScheduleCreate(profileId=self.profile['id'], startsAt=future, year=now().year, repeat='daily')
         february = next_monthly_run('2026-01-31T09:30:00+07:00', datetime.fromisoformat('2026-02-01T09:00:00+07:00'))
         self.assertEqual(february, '2026-02-28T02:30:00+00:00')
         march = next_monthly_run('2026-01-31T09:30:00+07:00', datetime.fromisoformat('2026-02-28T10:00:00+07:00'))
@@ -504,7 +504,7 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(await still_current(saved))
         self.assertIsNone(await checkpoint(saved, {'status': 'RUNNING'}))
         await scheduler_tick()
-        self.assertEqual(len(await self.jobs()), 2, 'Deleted daily schedules cannot publish more work.')
+        self.assertEqual(len(await self.jobs()), 2, 'Deleted schedules cannot publish more work.')
 
     async def test_delete_rejects_active_draining_and_resuming_runs(self):
         saved = await self.start()
@@ -758,6 +758,34 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(record['runner_ids'], ['playwright-1', 'playwright-2'])
         self.assertEqual(record['owner_username'], 'schedule-test')
         self.assertEqual(record['status'], 'PASS')
+
+    async def test_three_idle_workers_above_the_stored_limit_do_not_leave_the_schedule_waiting_for_preflight(self):
+        """DEF-33 / BF-06: three idle workers and a stored limit of one must still reach a running queue."""
+        await services.runners.register(runner_id='playwright-3', name='Worker 3', socket_id='socket-3')
+        from app.worker_pool import apply_pool
+        await apply_pool(1)
+        real_preflight = automatic_preflight
+        checked = []
+        async def inspected(_event, payload, **kwargs):
+            async with engine.connect() as connection:
+                runner_id = await connection.scalar(select(db.runners.c.id).where(db.runners.c.socket_id == kwargs['to']))
+            current = await ui_contract.current()
+            observed = [{**control, 'found': True, 'count': 1, 'matchedBy': 'selector'} for control in current['controls']]
+            validation = await ui_contract.evaluate({'status': 'PASS', 'observedControls': observed}, runner_id)
+            saved = await services.ui_health_logs.append({'status': 'PASS', 'checkId': payload['requestId'], 'checkedAt': now().isoformat(),
+                'trigger': 'preflight', 'observedControls': observed, 'contractValidation': validation})
+            checked.append(runner_id)
+            return {**saved, 'validation': validation}
+        async def through_real_gate(value, runner_ids):
+            with patch('app.api.ui_health.sio.call', side_effect=inspected):
+                return await real_preflight(value, runner_ids)
+        self.preflight.side_effect = through_real_gate
+        saved = await self.schedule()
+        for _ in range(6): await scheduler_tick()
+        saved = await self.repo.get(saved['id'])
+        self.assertTrue(checked, 'The real UI health gate never inspected a worker.')
+        self.assertEqual(saved['status'], 'RUNNING', saved.get('message'))
+        self.assertGreater(len(await self.jobs()), 0, 'No case was assigned: the schedule is still waiting for preflight.')
 
     async def test_ui_health_block_prevents_any_new_assignment(self):
         saved = await self.start()

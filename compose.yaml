@@ -7,10 +7,10 @@ x-logging: &bounded-logging
 services:
   postgres:
     logging: *bounded-logging
-    image: ${VAHAN_IMAGE_NAMESPACE:-vahan-automation}/postgres:${VAHAN_IMAGE_TAG:-local}
-    build:
-      context: .
-      dockerfile: docker/postgres.Dockerfile
+    # Official upstream image, pinned by multi-arch index digest (linux/amd64 is
+    # the supported platform). Keep identical to .github/workflows/platform.yml
+    # and docs/release/pins.md; scripts/test_container_security.py enforces it.
+    image: docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
     environment:
       POSTGRES_DB: vahan
       POSTGRES_USER: vahan
@@ -39,6 +39,9 @@ services:
     build:
       context: .
       dockerfile: apps/api-server/Dockerfile
+      args:
+        VCS_REF: ${VAHAN_VCS_REF:-unknown}
+        VERSION: ${VAHAN_IMAGE_TAG:-unknown}
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_APP_USERNAME:-vahan_app}:${DB_APP_PASSWORD}@postgres:5432/vahan
       VAHAN_UI_AUTH_USERNAME: ${VAHAN_UI_AUTH_USERNAME:-admin}
@@ -66,6 +69,9 @@ services:
     build:
       context: .
       dockerfile: apps/browser-runner/Dockerfile
+      args:
+        VCS_REF: ${VAHAN_VCS_REF:-unknown}
+        VERSION: ${VAHAN_IMAGE_TAG:-unknown}
     init: true
     shm_size: 1gb
     security_opt: ["seccomp=./docker/seccomp_profile.json"]
@@ -89,6 +95,9 @@ services:
     build:
       context: .
       dockerfile: apps/web-ui/Dockerfile
+      args:
+        VCS_REF: ${VAHAN_VCS_REF:-unknown}
+        VERSION: ${VAHAN_IMAGE_TAG:-unknown}
     ports: ["${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-5173}:80"]
     depends_on:
       api: {condition: service_healthy}

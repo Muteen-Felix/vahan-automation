@@ -1,0 +1,26 @@
+{
+  "httpStatus": 200,
+  "body": {
+    "allowed": true,
+    "preflightId": "1b70392c-d09f-4cc2-a2b1-6ae2db3ca707",
+    "revision": 1,
+    "versionId": "396687fb-1051-473b-823c-b46d06de68a6",
+    "reports": [
+      {
+        "status": "PASS",
+        "allowed": true,
+        "blocked": false,
+        "checkId": "5781e920-ea8c-4210-813f-b78ec2c1550a",
+        "repairs": [],
+        "reports": [],
+        "revision": 1,
+        "runnerId": "worker-f35bb609-0c77-45ef-aef8-aaa04b053998",
+        "checkedAt": "2026-10-13T15:40:10.013Z",
+        "versionId": "396687fb-1051-473b-823c-b46d06de68a6",
+        "errorCount": 0,
+        "dataChanges": [],
+        "attempts": 1
+      }
+    ]
+  }
+}

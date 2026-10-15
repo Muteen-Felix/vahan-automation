@@ -3,13 +3,12 @@ from uuid import uuid4
 from app.models.job import Job
 
 import pytest
-from sqlalchemy import select
 from sqlalchemy import text
 
 from httpx import ASGITransport, AsyncClient
 
 from app.main import application, fastapi_app
-from app.db import engine, schema as db
+from app.db import engine
 from app.repositories.postgres import PostgresStateStore
 from app.services import services
 

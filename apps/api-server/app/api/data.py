@@ -19,6 +19,9 @@ router = APIRouter(tags=['persistent-data'])
 class StateValue(BaseModel):
     value: object
 
+class RunnerStateValue(StateValue):
+    expectedRevision: int | None = Field(default=None, ge=0)
+
 class UserCreate(BaseModel):
     username: str = Field(min_length=1, max_length=128, pattern=r'^[a-zA-Z0-9_.@-]+$')
     password: str = Field(min_length=12, max_length=1024)
@@ -169,16 +172,46 @@ async def runner_state_access(runner_id, header, request):
 async def get_browser_state(runner_id: str, request: Request, identity: str | None = Header(None, alias='X-VAHAN-RUNNER-ID')):
     cipher = await runner_state_access(runner_id, identity, request)
     async with engine.connect() as connection:
-        value = await connection.scalar(select(db.browser_states.c.encrypted_state).where(db.browser_states.c.runner_id == runner_id))
-    return {'state': json.loads(cipher.decrypt(value)) if value else None}
+        row = (await connection.execute(select(db.browser_states.c.encrypted_state, db.browser_states.c.revision)
+            .where(db.browser_states.c.runner_id == runner_id))).first()
+    # Clients that predate fencing ignore ``revision``; a missing row is revision 0.
+    return {'state': json.loads(cipher.decrypt(row[0])) if row else None, 'revision': int(row[1]) if row else 0}
 
 @router.put('/runner-state/{runner_id}')
-async def put_browser_state(runner_id: str, command: StateValue, request: Request, identity: str | None = Header(None, alias='X-VAHAN-RUNNER-ID')):
+async def put_browser_state(runner_id: str, command: RunnerStateValue, request: Request, identity: str | None = Header(None, alias='X-VAHAN-RUNNER-ID')):
+    """Store the encrypted state. With ``expectedRevision`` this is an atomic compare-and-swap:
+    the write commits only while the stored revision still equals the revision the client read, so
+    a write built from an older revision can never overwrite a newer one (PLAN_STATE_VAHAN I13).
+    Without it (clients that predate fencing) the write is unconditional but still advances the
+    revision, so a fenced writer sees the interference as a conflict and re-reads."""
     cipher = await runner_state_access(runner_id, identity, request)
     value = json.dumps(command.value).encode()
     if len(value) > 5 * 1024 * 1024:
         raise HTTPException(413, 'Browser state exceeds 5 MB.')
+    encrypted = cipher.encrypt(value)
+    table = db.browser_states
     async with engine.begin() as connection:
-        await connection.execute(pg_insert(db.browser_states).values(runner_id=runner_id, encrypted_state=cipher.encrypt(value), updated_at=now())
-            .on_conflict_do_update(index_elements=[db.browser_states.c.runner_id], set_={'encrypted_state': cipher.encrypt(value), 'updated_at': now()}))
-    return {'ok': True}
+        if command.expectedRevision is None:
+            revision = (await connection.execute(pg_insert(table).values(
+                runner_id=runner_id, encrypted_state=encrypted, updated_at=now(), revision=1)
+                .on_conflict_do_update(index_elements=[table.c.runner_id], set_={
+                    'encrypted_state': encrypted, 'updated_at': now(), 'revision': table.c.revision + 1})
+                .returning(table.c.revision))).scalar_one()
+            return {'ok': True, 'revision': int(revision)}
+        expected = command.expectedRevision
+        # The WHERE clause is re-evaluated under the row lock, so two writers holding the same
+        # expected revision cannot both commit.
+        revision = (await connection.execute(update(table).where(
+            table.c.runner_id == runner_id, table.c.revision == expected)
+            .values(encrypted_state=encrypted, updated_at=now(), revision=table.c.revision + 1)
+            .returning(table.c.revision))).scalar_one_or_none()
+        if revision is None and expected == 0:
+            revision = (await connection.execute(pg_insert(table).values(
+                runner_id=runner_id, encrypted_state=encrypted, updated_at=now(), revision=1)
+                .on_conflict_do_nothing(index_elements=[table.c.runner_id])
+                .returning(table.c.revision))).scalar_one_or_none()
+        if revision is None:
+            current = await connection.scalar(select(table.c.revision).where(table.c.runner_id == runner_id))
+            raise HTTPException(409, {'code': 'STATE_REVISION_CONFLICT', 'currentRevision': int(current or 0),
+                'message': 'Browser state changed since it was read.'})
+        return {'ok': True, 'revision': int(revision)}

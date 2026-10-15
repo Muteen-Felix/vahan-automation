@@ -27,6 +27,11 @@ COPY --chown=node:node apps/browser-runner/ ./
 # The running worker uses node directly; npm/npx are build tools only.
 RUN rm -rf /usr/local/lib/node_modules/npm /opt/yarn* \
     && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg
+# Declared build provenance (T29): supplied by the build, so `docker image inspect` shows the revision the image
+# was declared to be built from. It is not proof of the image bytes (docs/release/pins.md).
+ARG VCS_REF=unknown
+ARG VERSION=unknown
+LABEL org.opencontainers.image.revision=$VCS_REF org.opencontainers.image.version=$VERSION
 USER node
 EXPOSE 3001
 CMD ["node", "runner.mjs"]

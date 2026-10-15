@@ -205,10 +205,29 @@ async def main():
                 p90AbsoluteSeconds=errors[min(len(errors)-1, int(len(errors)*.9))])
         bands={f'{lo}-{hi}%':metrics([v for v in forecasts if lo <= v['done'] < hi])
                for lo,hi in [(0,25),(25,50),(50,75),(75,100)]}
-        passed=all(bands[key]['samples'] > 0 and bands[key]['medianRemainingErrorPercent'] <= limit
-                   for key,limit in [('50-75%',25),('75-100%',15)])
-        result = dict(status='PASS' if passed else 'FAIL', sampleIntervalSeconds=60, progressBands=bands,
-            thresholds={'50-75%':25,'75-100%':15},
+        # D-28 / T15(1): a run only counts when nothing paused, restarted or lost a worker or the
+        # network between its first and last case.
+        ineligible = []
+        if resumed:
+            ineligible.append('run was resumed from a previous process (--resume)')
+        ineligible += [f"interruption: {item['type']} at {item['observedAt']}" for item in interruptions]
+        if len(completed) != 100 or len(assigned) != 100 or len(jobs) != 100:
+            ineligible.append(f'attempts/assigned/completed = {len(jobs)}/{len(assigned)}/{len(completed)}, expected 100/100/100')
+        if duration < 1800:
+            ineligible.append(f'duration {duration:.0f}s is below 1800s')
+        for key in ('25-50%', '50-75%', '75-100%'):
+            if bands[key]['samples'] == 0:
+                ineligible.append(f'no ETA samples in {key}')
+        thresholds = {'50-75%': 25, '75-100%': 15}
+        met = {key: bands[key]['samples'] > 0 and bands[key]['medianRemainingErrorPercent'] <= limit
+               for key, limit in thresholds.items()}
+        status = 'INVALID' if ineligible else ('PASS' if all(met.values()) else 'FAIL')
+        passed = status == 'PASS'
+        gaps = sorted(b['elapsedSeconds']-a['elapsedSeconds'] for a, b in zip(samples, samples[1:]))
+        result = dict(status=status, ineligibleReasons=ineligible, thresholdsMet=met,
+            sampleIntervalSeconds=60, medianObservedIntervalSeconds=statistics.median(gaps) if gaps else None,
+            etaNullSamples=sum(sample['remainingMs'] is None for sample in samples), totalSamples=len(samples),
+            progressBands=bands, thresholds=thresholds,
             workload='SYNTHETIC protocol workers, real wall clock/HTTP/Socket.IO/SQL',
             sessionId=str(session), startedAt=started.isoformat(), finishedAt=finished.isoformat(),
             elapsedSeconds=duration, uniqueAssigned=len(assigned), uniqueCompleted=len(completed),
@@ -217,7 +236,7 @@ async def main():
             after20Completed=metrics([v for v in forecasts if v['done'] >= 20]), predictions=forecasts)
         (OUTPUT / 'eta-measurement.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
         print(json.dumps({k:v for k,v in result.items() if k!='predictions'}), flush=True)
-        assert passed, 'ETA median relative remaining-time error exceeded required thresholds.'
+        assert passed, f'ETA measurement {status}: {ineligible or "median error above D-28 thresholds"}'
     finally:
         if heartbeat_task:
             heartbeat_task.cancel()

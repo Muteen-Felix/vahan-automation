@@ -2,7 +2,7 @@
 import unittest
 from datetime import datetime,timezone
 from uuid import uuid4
-import test_report_results as fixture
+import test_report_results as fixture  # noqa: F401  (import has side effects: guards the DB and migrates)
 from sqlalchemy import delete,insert,update
 from app.db import engine,schema as db
 from app.models.job import Job,JobStatus

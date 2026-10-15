@@ -23,6 +23,7 @@ dev = [
   "httpx>=0.28,<1",
   "pytest>=8,<10",
   "pytest-asyncio>=0.25,<2",
+  "ruff>=0.17,<0.18",
 ]
 
 [build-system]
@@ -42,3 +43,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
+# Release gate (PLAN T14, D-17): syntax errors and pyflakes only.
+select = ["E9", "F"]

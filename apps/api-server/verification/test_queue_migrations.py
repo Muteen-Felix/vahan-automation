@@ -16,7 +16,7 @@ if not target.startswith('vahan_migration_') or not target.endswith('_test'):
     raise RuntimeError('Use a disposable vahan_migration_*_test database.')
 os.environ['DATABASE_URL'] = make_url(os.environ['DATABASE_URL']).set(database=target).render_as_string(hide_password=False)
 
-from sqlalchemy import insert, select, text, update
+from sqlalchemy import insert, text, update
 from app.db import engine, schema as db
 from app.repositories.postgres import now
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import argparse
 import json
+import os
 import secrets
 import socket
 import subprocess
@@ -53,6 +54,11 @@ def main() -> None:
     api_port, web_port = free_port(), free_port()
     while web_port == api_port:
         web_port = free_port()
+    # T29: the images must carry the checked-out commit as their declared revision. CI passes github.sha; a local
+    # run may omit the variable (then HEAD is used), but a value that differs from HEAD is refused.
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    declared = os.environ.get("VAHAN_VCS_REF") or ("" if os.environ.get("GITHUB_ACTIONS") else head)
+    require(declared == head, f"VAHAN_VCS_REF must be the checked-out commit {head}; got {declared!r}.")
     project = f"vahan-security-{secrets.token_hex(6)}"
     allowed_origin = f"http://localhost:{web_port}"
     password = secrets.token_urlsafe(36)
@@ -73,6 +79,7 @@ def main() -> None:
         "WEB_PORT": str(web_port),
         "VAHAN_IMAGE_NAMESPACE": "vahan-security-test",
         "VAHAN_IMAGE_TAG": "round4",
+        "VAHAN_VCS_REF": declared,
         "VAHAN_WORKER_REPLICAS": "1",
     }
     with tempfile.TemporaryDirectory(prefix="vahan-security-") as temporary:
@@ -95,6 +102,17 @@ def main() -> None:
         try:
             if not args.no_build:
                 run("build", "--sbom=true", "--provenance=mode=max", timeout=1800)
+            for service in ("api", "runner", "web"):
+                image = f"{values['VAHAN_IMAGE_NAMESPACE']}/{service}:{values['VAHAN_IMAGE_TAG']}"
+                inspected = subprocess.run(["docker", "image", "inspect", "--format",
+                    '{{ index .Config.Labels "org.opencontainers.image.revision" }}|'
+                    '{{ index .Config.Labels "org.opencontainers.image.version" }}', image],
+                    text=True, capture_output=True, timeout=60)
+                require(inspected.returncode == 0, f"Could not inspect {image}.")
+                revision, version = inspected.stdout.strip().split("|", 1)
+                require(revision == declared, f"{image} revision label is {revision!r}, expected {declared}.")
+                require(version == values["VAHAN_IMAGE_TAG"],
+                        f"{image} version label is {version!r}, expected {values['VAHAN_IMAGE_TAG']}.")
             run("up", "-d", "--no-build", "--wait", "--wait-timeout", "300", "postgres", "api", "web")
             api_container = run("ps", "-q", "api", capture_output=True).stdout.strip()
             require(bool(api_container), "Could not find the isolated production API container.")

@@ -1,0 +1,465 @@
+{
+  "sourceCommit": "e46e39e627fac5e0e8ad5f36ca22e51e61f3e40a",
+  "packageSha256": {
+    "vahan-e46e39e627fa-source.zip": "854187c87f8c6a92c1b6583b07a790c56c8a6b679236100def25efe6953962db",
+    "vahan-e46e39e627fa-images.tar": "7257c0dd4cc5566d0e778f5a8596ec676e3fc56d2d9ee05cbd6d65bfc3afc639"
+  },
+  "project": "vahan-review-b6957cc28b26",
+  "startedAt": "2026-10-15T04:57:39.528455+00:00",
+  "checks": [
+    {
+      "name": "image-load",
+      "command": "docker image load -i C:\\Dev\\personal\\vahan-automation\\outputs\\trial-e46e39e627fa\\vahan-e46e39e627fa-images.tar",
+      "exitCode": 0,
+      "seconds": 37.25,
+      "log": "image-load.log"
+    },
+    {
+      "name": "fresh-install-launcher",
+      "command": "C:\\Users\\nghianc19\\AppData\\Local\\Programs\\Python\\Python312\\python.exe scripts/run-docker.py --no-build --workers 1",
+      "exitCode": 0,
+      "seconds": 28.86,
+      "log": "fresh-install-launcher.log"
+    },
+    {
+      "name": "external-readiness",
+      "passed": true,
+      "details": {
+        "status": "ok",
+        "storage": "postgresql",
+        "queue": "postgresql"
+      },
+      "seconds": 0.08
+    },
+    {
+      "name": "production-docs-disabled",
+      "passed": true,
+      "details": {
+        "/docs": 404,
+        "/redoc": 404,
+        "/openapi.json": 404
+      },
+      "seconds": 0.05
+    },
+    {
+      "name": "retired-routes-404",
+      "passed": true,
+      "details": [
+        {
+          "detail": "Not Found"
+        },
+        {
+          "detail": "Not Found"
+        }
+      ],
+      "seconds": 0.01
+    },
+    {
+      "name": "administrator-login",
+      "passed": true,
+      "details": "admin",
+      "seconds": 0.06
+    },
+    {
+      "name": "default-report-data-empty",
+      "passed": true,
+      "details": {
+        "year": 2026,
+        "datasetId": "",
+        "datasets": [],
+        "years": [],
+        "states": [],
+        "rtos": [],
+        "summary": {
+          "rows": 0,
+          "makers": 0,
+          "offices": 0,
+          "updatedAt": null
+        },
+        "coverage": [],
+        "lastSaved": null,
+        "offset": 0,
+        "limit": 100,
+        "rows": []
+      },
+      "seconds": 0.06
+    },
+    {
+      "name": "profile-crud-and-schedule-time-zones",
+      "passed": true,
+      "details": {
+        "profileRevisions": [
+          1,
+          2
+        ],
+        "zones": [
+          "Asia/Ho_Chi_Minh",
+          "Asia/Kolkata"
+        ],
+        "legacyWorkerCount": 999,
+        "legacySettingIgnored": true,
+        "futureSchedulesDeleted": true
+      },
+      "seconds": 0.34
+    },
+    {
+      "name": "member-access-and-admin-account-management",
+      "passed": true,
+      "details": "Member reports allowed; history/schedules/users/profiles forbidden; admin role changes persisted.",
+      "seconds": 0.22
+    },
+    {
+      "name": "api-restart",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 restart api",
+      "exitCode": 0,
+      "seconds": 1.62,
+      "log": "api-restart.log"
+    },
+    {
+      "name": "session-and-state-survive-api-restart",
+      "passed": true,
+      "details": {
+        "label": "ROUND5 SYNTHETIC",
+        "persisted": true
+      },
+      "seconds": 0.08
+    },
+    {
+      "name": "synthetic-import-1000",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T api python -c import asyncio\nfrom datetime import datetime, timezone\nfrom app.db import engine\nfrom app.repositories.annual_reports import import_rows\nasync def main():\n rows=[{'sheet':'Sheet1','row_number':0,'cells':['Maker','2026-Jan']}]\n rows += [{'sheet':'Sheet1','row_number':i+1,'cells':['ROUND5 SYNTHETIC MAKER %04d'%i,i]} for i in range(1000)]\n async with engine.begin() as c:\n  await import_rows(c,source_key='round5-synthetic-1000',name='ROUND5 SYNTHETIC FIXTURE - NOT VAHAN DATA',\n    rows=rows,owner='admin',observed_at=datetime.now(timezone.utc),filters={'states':['ROUND5 SYNTHETIC STATE'],'rtos':['ROUND5 SYNTHETIC RTO - ZZ01'],\n    'fromYear':'2026','toYear':'2026','categoryGroups':['Two Wheeler'],'fuels':['ELECTRIC(BOV)']})\n await engine.dispose()\n print('Imported 1000 explicitly synthetic makers through the built import_rows implementation.')\nasyncio.run(main())",
+      "exitCode": 0,
+      "seconds": 3.08,
+      "log": "synthetic-import-1000.log"
+    },
+    {
+      "name": "actual-excel-all-1000-matching-rows",
+      "passed": true,
+      "details": {
+        "displayed": 100,
+        "total": 1000,
+        "workbookDataRows": 1000,
+        "cases": [
+          "unfiltered-confirmed",
+          "State",
+          "RTO",
+          "State+RTO"
+        ]
+      },
+      "seconds": 8.48
+    },
+    {
+      "name": "backup-custom-dump-and-manifest",
+      "command": "C:\\Users\\nghianc19\\AppData\\Local\\Programs\\Python\\Python312\\python.exe scripts/backup-docker.py",
+      "exitCode": 0,
+      "seconds": 2.03,
+      "log": "backup-custom-dump-and-manifest.log"
+    },
+    {
+      "name": "restore-fresh-postgres",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26-restore up -d --no-build --wait postgres",
+      "exitCode": 0,
+      "seconds": 6.53,
+      "log": "restore-fresh-postgres.log"
+    },
+    {
+      "name": "restore-copy-binary-dump",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26-restore cp C:\\Users\\NGHIAN~1\\AppData\\Local\\Temp\\vahan-review-install-pk_3jnyf\\backups\\20261015T045905994137Z\\database.dump postgres:/tmp/restore.dump",
+      "exitCode": 0,
+      "seconds": 0.52,
+      "log": "restore-copy-binary-dump.log"
+    },
+    {
+      "name": "restore-sql-dump",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26-restore exec -T postgres pg_restore -U vahan -d vahan --clean --if-exists --no-owner --no-acl --exit-on-error /tmp/restore.dump",
+      "exitCode": 0,
+      "seconds": 0.8,
+      "log": "restore-sql-dump.log"
+    },
+    {
+      "name": "restore-provision-runtime-role",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26-restore run --rm --no-deps migrate",
+      "exitCode": 0,
+      "seconds": 2.77,
+      "log": "restore-provision-runtime-role.log"
+    },
+    {
+      "name": "restored-api-lifespan-and-data",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26-restore run --rm --no-deps --entrypoint python api -c import asyncio\nfrom sqlalchemy import text\nfrom app.db import engine\nfrom app.main import fastapi_app\nasync def main():\n async with fastapi_app.router.lifespan_context(fastapi_app):\n  async with engine.connect() as c:\n   assert await c.scalar(text('SELECT current_user')) == 'vahan_app'\n   assert await c.scalar(text('SELECT count(*) FROM main_reports')) == 1000\n   assert await c.scalar(text(\"SELECT value->>'persisted' FROM user_state WHERE key='round5Probe'\")) == 'true'\n   assert await c.scalar(text(\"SELECT count(*) FROM users WHERE username='round5-member'\")) == 1\n   assert not await c.scalar(text(\"SELECT has_schema_privilege(current_user,'public','CREATE')\"))\n   print('Restored 1000 synthetic reports, member account and persisted state; API lifespan works with DML-only role.')\nasyncio.run(main())",
+      "exitCode": 0,
+      "seconds": 5.17,
+      "log": "restored-api-lifespan-and-data.log"
+    },
+    {
+      "name": "restore-disposable-project-cleanup",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26-restore down --volumes --remove-orphans --timeout 15",
+      "exitCode": 0,
+      "seconds": 1.09,
+      "log": "restore-disposable-project-cleanup.log"
+    },
+    {
+      "name": "chromium-sandbox-and-real-tesseract",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 run --rm --no-deps -e VAHAN_RUNTIME_LIVE_PROBE=1 --entrypoint node runner test-container-runtime.mjs",
+      "exitCode": 0,
+      "seconds": 6.26,
+      "log": "chromium-sandbox-and-real-tesseract.log"
+    },
+    {
+      "name": "test-image-pipe",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-image-pipe.mjs",
+      "exitCode": 0,
+      "seconds": 0.56,
+      "log": "test-image-pipe.log"
+    },
+    {
+      "name": "test-filter-fill",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-filter-fill.mjs",
+      "exitCode": 0,
+      "seconds": 39.73,
+      "log": "test-filter-fill.log"
+    },
+    {
+      "name": "test-options",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-options.mjs",
+      "exitCode": 0,
+      "seconds": 1.27,
+      "log": "test-options.log"
+    },
+    {
+      "name": "test-profile-options",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-profile-options.mjs",
+      "exitCode": 0,
+      "seconds": 2.05,
+      "log": "test-profile-options.log"
+    },
+    {
+      "name": "test-ui-health-contract",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-ui-health-contract.mjs",
+      "exitCode": 0,
+      "seconds": 1.28,
+      "log": "test-ui-health-contract.log"
+    },
+    {
+      "name": "test-health-trigger",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-health-trigger.mjs",
+      "exitCode": 0,
+      "seconds": 0.55,
+      "log": "test-health-trigger.log"
+    },
+    {
+      "name": "test-health-navigation",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-health-navigation.mjs",
+      "exitCode": 0,
+      "seconds": 3.38,
+      "log": "test-health-navigation.log"
+    },
+    {
+      "name": "test-navigation",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-navigation.mjs",
+      "exitCode": 0,
+      "seconds": 2.39,
+      "log": "test-navigation.log"
+    },
+    {
+      "name": "test-page-recovery",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-page-recovery.mjs",
+      "exitCode": 0,
+      "seconds": 1.55,
+      "log": "test-page-recovery.log"
+    },
+    {
+      "name": "test-results",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-results.mjs",
+      "exitCode": 0,
+      "seconds": 7.56,
+      "log": "test-results.log"
+    },
+    {
+      "name": "test-job-lifecycle",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-job-lifecycle.mjs",
+      "exitCode": 0,
+      "seconds": 0.47,
+      "log": "test-job-lifecycle.log"
+    },
+    {
+      "name": "test-main-report-save",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-main-report-save.mjs",
+      "exitCode": 0,
+      "seconds": 0.51,
+      "log": "test-main-report-save.log"
+    },
+    {
+      "name": "test-ocr-start",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 exec -T runner node test-ocr-start.mjs",
+      "exitCode": 0,
+      "seconds": 0.45,
+      "log": "test-ocr-start.log"
+    },
+    {
+      "name": "real-installed-dashboard",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-installed-dashboard.mjs",
+      "exitCode": 0,
+      "seconds": 12.88,
+      "log": "real-installed-dashboard.log"
+    },
+    {
+      "name": "built-ui-fixture-test-batch-timing",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-batch-timing.mjs",
+      "exitCode": 0,
+      "seconds": 0.83,
+      "log": "built-ui-fixture-test-batch-timing.log"
+    },
+    {
+      "name": "built-ui-fixture-test-schedule-timing",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-schedule-timing.mjs",
+      "exitCode": 0,
+      "seconds": 1.06,
+      "log": "built-ui-fixture-test-schedule-timing.log"
+    },
+    {
+      "name": "built-ui-fixture-test-time-zones",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-time-zones.mjs",
+      "exitCode": 0,
+      "seconds": 0.91,
+      "log": "built-ui-fixture-test-time-zones.log"
+    },
+    {
+      "name": "built-ui-fixture-test-session-ui",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-session-ui.mjs",
+      "exitCode": 0,
+      "seconds": 10.61,
+      "log": "built-ui-fixture-test-session-ui.log"
+    },
+    {
+      "name": "built-ui-fixture-test-annual-reports",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-annual-reports.mjs",
+      "exitCode": 0,
+      "seconds": 14.66,
+      "log": "built-ui-fixture-test-annual-reports.log"
+    },
+    {
+      "name": "built-ui-fixture-test-filter-profiles-ui",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-filter-profiles-ui.mjs",
+      "exitCode": 0,
+      "seconds": 9.11,
+      "log": "built-ui-fixture-test-filter-profiles-ui.log"
+    },
+    {
+      "name": "built-ui-fixture-test-health-page-ui",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-health-page-ui.mjs",
+      "exitCode": 0,
+      "seconds": 3.75,
+      "log": "built-ui-fixture-test-health-page-ui.log"
+    },
+    {
+      "name": "built-ui-fixture-test-navigation-ui",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-navigation-ui.mjs",
+      "exitCode": 0,
+      "seconds": 4.12,
+      "log": "built-ui-fixture-test-navigation-ui.log"
+    },
+    {
+      "name": "built-ui-fixture-test-run-schedules-ui",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-run-schedules-ui.mjs",
+      "exitCode": 0,
+      "seconds": 50.86,
+      "log": "built-ui-fixture-test-run-schedules-ui.log"
+    },
+    {
+      "name": "built-ui-fixture-test-update-history-ui",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-update-history-ui.mjs",
+      "exitCode": 0,
+      "seconds": 4.73,
+      "log": "built-ui-fixture-test-update-history-ui.log"
+    },
+    {
+      "name": "built-ui-fixture-test-account-settings-ui",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-account-settings-ui.mjs",
+      "exitCode": 0,
+      "seconds": 5.41,
+      "log": "built-ui-fixture-test-account-settings-ui.log"
+    },
+    {
+      "name": "built-ui-fixture-test-network-ui",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-network-ui.mjs",
+      "exitCode": 0,
+      "seconds": 8.11,
+      "log": "built-ui-fixture-test-network-ui.log"
+    },
+    {
+      "name": "built-ui-fixture-test-permissions-ui",
+      "command": "node C:\\Dev\\personal\\vahan-automation\\apps\\web-ui\\scripts\\test-permissions-ui.mjs",
+      "exitCode": 0,
+      "seconds": 6.91,
+      "log": "built-ui-fixture-test-permissions-ui.log"
+    },
+    {
+      "name": "final-container-status",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 ps --format json",
+      "exitCode": 0,
+      "seconds": 0.39,
+      "log": "final-container-status.log"
+    },
+    {
+      "name": "runner-disconnect-diagnostic",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 stop runner",
+      "exitCode": 0,
+      "seconds": 0.62,
+      "log": "runner-disconnect-diagnostic.log"
+    },
+    {
+      "name": "ui-health-blocked-after-disconnect",
+      "passed": true,
+      "beforeBlocked": true,
+      "afterBlocked": true,
+      "storedRunnerDiagnosticRetained": true,
+      "scope": "Controlled incompatible synthetic DOM evidence; actual HTTP API and actual runner disconnect.",
+      "source": "apps/api-server/app/repositories/ui_contract.py:current",
+      "productChanged": false
+    },
+    {
+      "name": "runtime-logs",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 logs --no-color --tail 100 api runner",
+      "exitCode": 0,
+      "seconds": 0.58,
+      "log": "runtime-logs.log"
+    },
+    {
+      "name": "administrator-logout",
+      "passed": true,
+      "details": {
+        "ok": true
+      },
+      "seconds": 0.03
+    },
+    {
+      "name": "disposable-project-cleanup",
+      "command": "docker compose --env-file .docker.env -p vahan-review-b6957cc28b26 down --volumes --remove-orphans --timeout 15",
+      "exitCode": 0,
+      "seconds": 2.84,
+      "log": "disposable-project-cleanup.log"
+    }
+  ],
+  "driverScriptSha256": "b50da63cf0ce0339903c87d3555aa49faf75fcce7723f262f2db97df4fd2943e",
+  "d3": {
+    "requested": false,
+    "liveCaseRequested": false,
+    "livePreflight": {
+      "status": "NOT_RUN",
+      "reason": "Not requested; D3 is a separate check (--vahan-preflight)."
+    },
+    "liveSingleCase": {
+      "status": "NOT_RUN",
+      "reason": "Not requested (--live-case)."
+    }
+  },
+  "limits": [
+    "Synthetic data/fixtures are explicitly labelled; external VAHAN collection is a separate check.",
+    "The D3 live VAHAN preflight is reported under \"d3\", never in \"checks\"; NOT_RUN is not a pass."
+  ],
+  "webUrl": "http://127.0.0.1:55660",
+  "directApiUrl": "http://127.0.0.1:55659",
+  "finishedAt": "2026-10-15T05:03:21.275359+00:00",
+  "outcome": "PACKAGE_PASS_D3_NOT_RUN",
+  "exitStatus": 0,
+  "d3Status": "NOT_RUN"
+}

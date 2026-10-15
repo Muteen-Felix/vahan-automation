@@ -13,6 +13,9 @@ jobs:
   native-tests:
     name: Source and browser tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -53,8 +56,21 @@ jobs:
           python -m unittest discover -s ../../scripts -p 'test_deployment_guard.py'
           python -m unittest discover -s ../../scripts -p 'test_worker_capacity.py'
           python -m unittest discover -s ../../scripts -p 'test_container_scan.py'
+          python -m unittest discover -s ../../scripts -p 'test_postgres_pin.py'
+          python -m unittest discover -s ../../scripts -p 'test_nginx_conf.py'
+          python -m unittest discover -s ../../scripts -p 'test_image_labels.py'
+          python -m unittest discover -s ../../scripts -p 'test_evidence_check.py'
+          python -m unittest discover -s ../../scripts -p 'test_release_smoke.py'
+          python -m unittest discover -s ../../scripts -p 'test_review_package.py'
+          python -m unittest discover -s ../../scripts -p 'test_config_template.py'
+          python -m unittest discover -s ../../scripts -p 'test_check_test_registration.py'
           python ../../tools/ui-drift-guard/test_ui_diagnostics.py
           python scripts/test-user-state-codec.py
+
+      - name: Lint tests and scripts (ruff E9,F)
+        working-directory: apps/api-server
+        shell: bash
+        run: python -m ruff check --config pyproject.toml ../../scripts ../../tools tests verification scripts
 
       - name: Install runner dependencies
         working-directory: apps/browser-runner
@@ -158,6 +174,10 @@ jobs:
               'vahan_history_platform_test',
               'vahan_lifecycle_platform_test',
               'vahan_migration_platform_test',
+              'vahan_migration_daily_test',
+              'vahan_results_platform_state_test',
+              'vahan_results_platform_gate_test',
+              'vahan_migration_platform_state_test',
           ]
 
           async def main():
@@ -184,6 +204,7 @@ jobs:
           python -m pytest tests
           python -m pytest verification/test_permissions.py
           python ../../scripts/test_runtime_role_lifecycle.py
+          python ../../scripts/test_provision_database.py
           VAHAN_ACCOUNT_TEST_DATABASE=vahan_account_platform_test python -m pytest verification/test_account_passwords.py
           VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_report_test python -m pytest verification/test_report_results.py
           VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_annual_test python -m pytest verification/test_annual_reports.py
@@ -200,11 +221,28 @@ jobs:
           VAHAN_HISTORY_TEST_DATABASE=vahan_history_platform_test python -m pytest verification/test_run_history.py
           VAHAN_LIFECYCLE_TEST_DATABASE=vahan_lifecycle_platform_test python -m pytest verification/test_worker_lifecycle.py
           VAHAN_QUEUE_MIGRATION_TEST_DATABASE=vahan_migration_platform_test python -m pytest verification/test_queue_migrations.py
+          VAHAN_DAILY_MIGRATION_TEST_DATABASE=vahan_migration_daily_test python -m pytest verification/test_daily_schedule_removal.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_state_test python -m pytest verification/test_runner_state_fencing.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_gate_test python -m pytest verification/test_gate_ops.py
+          VAHAN_STATE_MIGRATION_TEST_DATABASE=vahan_migration_platform_state_test python -m pytest verification/test_state_gate_migration.py
           PYTHONPATH=. DATABASE_URL=postgresql+asyncpg://vahan:platform-test-password@127.0.0.1:5432/vahan_shared_batch_platform_test python verification/test_shared_batch_queue.py
           VAHAN_FIXTURE_POSTGRES_CONTAINER=${{ job.services.postgres.id }} python verification/prepare_report_test_fixtures.py
           VAHAN_MIGRATION_SOURCE_DATABASE=vahan_results_round2_legacy_source_test VAHAN_MIGRATION_TEST_DATABASE=vahan_results_round2_legacy_target_test python verification/test_main_migration.py
           VAHAN_SHARED_TEST_DATABASE=vahan_results_round2_shared_target_test python verification/test_shared_migration.py
           VAHAN_MIGRATION_SOURCE_DATABASE=vahan_results_round2_workbook_source_test VAHAN_MIGRATION_TEST_DATABASE=vahan_results_round2_workbook_target_test python verification/test_main_live_workbook.py
+
+  test-registration:
+    name: Test registration (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Every test file is registered and referenced by this workflow
+        run: python scripts/check-test-registration.py ${{ (startsWith(github.ref_name, 'release') || startsWith(github.base_ref, 'release')) && '--require-history' || '' }}
 
   container-build:
     name: Linux container packaging (Ubuntu)
@@ -228,6 +266,8 @@ jobs:
       - name: Validate Compose package
         run: docker compose --env-file .docker.env config --quiet
       - name: Test production container security
+        env:
+          VAHAN_VCS_REF: ${{ github.sha }}
         run: python scripts/test_container_security.py
       - name: Test packaged Chromium sandbox and real Tesseract
         run: docker run --rm --init --shm-size=1g --security-opt seccomp=./docker/seccomp_profile.json --entrypoint node vahan-security-test/runner:round4 test-container-runtime.mjs

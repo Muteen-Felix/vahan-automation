@@ -108,7 +108,7 @@ UI Health lịch/run-now cũ trả 404. Cài mới không nạp dữ liệu mẫ
 | `apps/api-server` | FastAPI/Socket.IO, auth, scheduler, SQL repositories/migrations, import/export. |
 | `apps/browser-runner` | Node/Playwright, Chromium sandbox, DOM driver, Tesseract qua stdin. |
 | `apps/web-ui` | React static build; Nginx proxy API/socket, login throttle và CSP. |
-| `docker` | PostgreSQL 17.11 chính thức pin digest, Nginx, seccomp, CA tùy chọn. |
+| `docker` | Nginx, seccomp, CA tùy chọn. PostgreSQL dùng image chính thức 17.11 pin digest trong `compose.yaml` (không tự build). |
 | `scripts` | Launcher, backup, package, runtime/security/DB-role verification. |
 
 Compose dùng một host, một API scheduler và PostgreSQL. Runtime API dùng role

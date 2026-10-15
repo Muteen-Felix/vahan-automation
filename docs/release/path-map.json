@@ -1,0 +1,858 @@
+{
+ "version": 1,
+ "description": "Anh xa dong R -> runtime path, global-impact, build-input va khoa cau hinh (PLAN 2.2, Phu luc B.2). Nguoi review phai xac nhan moi khoa plain=true.",
+ "ledger_header": "Moi ledger docs/release/evidence/*.md co cac dong \"- row: Rxx\", \"- sha: <40 hex>\", \"- snapshot: <file config-snapshot>\", \"- fingerprint: <file build-fingerprint>\".",
+ "ignore_version_only_changes": false,
+ "version_only_files": [
+  "apps/api-server/pyproject.toml",
+  "apps/web-ui/package.json",
+  "apps/browser-runner/package.json"
+ ],
+ "non_runtime": [
+  "docs/**",
+  ".github/**",
+  "outputs/**",
+  "PLAN.md",
+  "README.md",
+  "**/README.md",
+  "apps/api-server/verification/**",
+  "apps/api-server/tests/**",
+  "apps/web-ui/scripts/**",
+  "apps/browser-runner/test-*.mjs",
+  "scripts/test_*.py",
+  "scripts/test-*.py",
+  "scripts/test-manifest.json",
+  "scripts/check-test-registration.py",
+  "scripts/check-doc-links.py",
+  "scripts/evidence-check.py",
+  "scripts/config-snapshot.py",
+  "scripts/release-smoke.py",
+  "tools/**",
+  "**/__pycache__/**",
+  ".gitignore",
+  "CHANGELOG.md"
+ ],
+ "global_impact": [
+  "apps/api-server/pyproject.toml",
+  "apps/api-server/requirements*.lock",
+  "apps/*/package.json",
+  "apps/*/package-lock.json",
+  "**/Dockerfile",
+  ".dockerignore",
+  "compose.yaml",
+  "docker/**",
+  "scripts/setup-docker.py",
+  "scripts/run-docker.py",
+  "scripts/worker_capacity.py",
+  "scripts/deployment_guard.py",
+  "scripts/postgres_pin.py",
+  "scripts/backup-docker.py",
+  "apps/api-server/app/provision_database.py",
+  "apps/api-server/app/config.py",
+  "apps/api-server/app/worker_pool.py",
+  "apps/api-server/app/run_scheduler.py",
+  "apps/browser-runner/runner.mjs",
+  "apps/api-server/alembic.ini",
+  "apps/api-server/migrations/**",
+  "docs/release/config/config-template.env"
+ ],
+ "build_workflow": [
+  ".github/workflows/**"
+ ],
+ "build_inputs": {
+  "base_image_digests": "global",
+  "python_dependencies": "global",
+  "setuptools": "global",
+  "tesseract_version": [
+   "R14"
+  ],
+  "chromium_version": [
+   "R3",
+   "R6",
+   "R7",
+   "R9",
+   "R9b",
+   "R11",
+   "R12",
+   "R14"
+  ],
+  "custom_ca_sha256": [
+   "R3",
+   "R6",
+   "R7",
+   "R9",
+   "R9b",
+   "R11",
+   "R12",
+   "R14",
+   "R1"
+  ],
+  "lockfile_hashes": "global",
+  "postgres_image": "global"
+ },
+ "rows": {
+  "R1": {
+   "title": "API & PostgreSQL",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/health.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/migrate.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/postgres.py",
+    "apps/api-server/app/repositories/postgres_health.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py"
+   ]
+  },
+  "R2": {
+   "title": "Dang nhap & tai khoan",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/auth.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/AccountSettings.tsx",
+    "apps/web-ui/src/components/AuthGate.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/session-activity.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R3": {
+   "title": "Filter profiles",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/filter_profiles.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/filter_planner.py",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/models/filter_execution.py",
+    "apps/api-server/app/models/filter_profile.py",
+    "apps/api-server/app/models/filters.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/filter_profiles.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/browser-runner/config.mjs",
+    "apps/browser-runner/page-driver.js",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/components/FilterProfiles.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/filter-options-cache.ts",
+    "apps/web-ui/src/filter-profiles.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R4": {
+   "title": "Phien chay & Exported Reports",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/data.py",
+    "apps/api-server/app/api/excel.py",
+    "apps/api-server/app/api/jobs.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/excel_storage.py",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/models/report_result.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/file_store.py",
+    "apps/api-server/app/repositories/job_repository.py",
+    "apps/api-server/app/repositories/report_results.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/AuthenticatedDownload.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/components/DataManagement.tsx",
+    "apps/web-ui/src/components/ExportedReportsList.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R5": {
+   "title": "Bang nam & Excel",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/annual_reports.py",
+    "apps/api-server/app/api/report_coverage.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/annual_export.py",
+    "apps/api-server/app/repositories/annual_reports.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/api-server/app/sync_annual_reports.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/AnnualReports.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/components/ReportCoverage.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/report-coverage.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R6": {
+   "title": "UI Health preflight",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/ui_health.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/models/ui_health.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/ui_contract.py",
+    "apps/api-server/app/repositories/ui_health_log_store.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/browser-runner/ui-health-contract.mjs",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/components/HealthCheckReports.tsx",
+    "apps/web-ui/src/components/UiHealthContract.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css",
+    "apps/web-ui/src/ui-health-alerts.ts"
+   ]
+  },
+  "R7": {
+   "title": "Dat lich Once/Monthly",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/run_schedules.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/models/run_schedule.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/run_schedules.py",
+    "apps/api-server/app/scheduler_wakeup.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/AutomaticRunSettings.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/display-time-zone.tsx",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/run-schedules.ts",
+    "apps/web-ui/src/run-settings.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/services/use-run-schedules.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R7b": {
+   "title": "Mui gio lich",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/run_schedules.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/models/run_schedule.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/run_schedules.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/AccountSettings.tsx",
+    "apps/web-ui/src/components/AutomaticRunSettings.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/display-time-zone.tsx",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/run-schedules.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R8": {
+   "title": "ETA",
+   "paths": [
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/batch-timing.ts",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/components/RunScheduleProgress.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/hooks/use-schedule-timing.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/schedule-timing.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R9": {
+   "title": "Pause / tiep tuc / doi worker",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/batch_queue.py",
+    "apps/api-server/app/api/runners.py",
+    "apps/api-server/app/api/worker_pool.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/models/runner.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/batch_queue.py",
+    "apps/api-server/app/repositories/runner_registry.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/components/RunDiagnostics.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css",
+    "apps/web-ui/src/worker-settings.ts"
+   ]
+  },
+  "R9b": {
+   "title": "Worker dong + gioi han song song",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/batch_queue.py",
+    "apps/api-server/app/api/runners.py",
+    "apps/api-server/app/api/worker_pool.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/models/runner.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/batch_queue.py",
+    "apps/api-server/app/repositories/runner_registry.py",
+    "apps/api-server/app/run_diagnostics.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css",
+    "apps/web-ui/src/worker-settings.ts"
+   ]
+  },
+  "R10": {
+   "title": "Tat lich / dung / xoa",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/batch_queue.py",
+    "apps/api-server/app/api/run_schedules.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/batch_queue.py",
+    "apps/api-server/app/repositories/run_schedules.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/AutomaticRunSettings.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/services/use-run-schedules.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R11": {
+   "title": "Retry & diagnostics",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/batch_queue.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/batch_queue.py",
+    "apps/api-server/app/run_diagnostics.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/browser-runner/page-recovery.mjs",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/BatchRetryStatus.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/components/FailedBatchCases.tsx",
+    "apps/web-ui/src/components/RunDiagnostics.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R12": {
+   "title": "Mat / khoi phuc ket noi VAHAN",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/network_guard.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/browser-runner/page-recovery.mjs",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/components/ConnectionBanner.tsx",
+    "apps/web-ui/src/components/NetworkNotice.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R13": {
+   "title": "Maker Update (Excluded - kiem entry point)",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/jobs.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/models/job.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  },
+  "R14": {
+   "title": "CAPTCHA auto-solve",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/ocr.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/ocr/**",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/captcha_image_store.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/browser-runner/image-pipe.mjs"
+   ]
+  },
+  "R15": {
+   "title": "API legacy da go khoi UI",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/ui_health.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py"
+   ]
+  },
+  "R16": {
+   "title": "Ket luan thay the chay thu cong (manual, Phu luc D)",
+   "paths": []
+  },
+  "R17": {
+   "title": "Run History",
+   "paths": [
+    "apps/api-server/app/__init__.py",
+    "apps/api-server/app/access.py",
+    "apps/api-server/app/api/__init__.py",
+    "apps/api-server/app/api/update_status.py",
+    "apps/api-server/app/db/**",
+    "apps/api-server/app/main.py",
+    "apps/api-server/app/models/__init__.py",
+    "apps/api-server/app/realtime/**",
+    "apps/api-server/app/repositories/__init__.py",
+    "apps/api-server/app/repositories/run_history.py",
+    "apps/api-server/app/security.py",
+    "apps/api-server/app/services.py",
+    "apps/api-server/app/state_codec.py",
+    "apps/web-ui/src/App.tsx",
+    "apps/web-ui/src/components/Brand.tsx",
+    "apps/web-ui/src/components/ReportCoverage.tsx",
+    "apps/web-ui/src/components/RunHistory.tsx",
+    "apps/web-ui/src/contracts.ts",
+    "apps/web-ui/src/hooks/use-live-query.ts",
+    "apps/web-ui/src/main.tsx",
+    "apps/web-ui/src/operator-language.ts",
+    "apps/web-ui/src/services/api-client.ts",
+    "apps/web-ui/src/services/persistent-state.ts",
+    "apps/web-ui/src/services/socket-client.ts",
+    "apps/web-ui/src/styles.css"
+   ]
+  }
+ },
+ "config_keys": {
+  "VAHAN_WORKER_REPLICAS": {
+   "rows": [
+    "R9",
+    "R9b"
+   ],
+   "plain": true
+  },
+  "VAHAN_API_RUNNER_HEALTH_CHECKS": {
+   "rows": [
+    "R9b"
+   ],
+   "plain": true
+  },
+  "VAHAN_ENVIRONMENT": {
+   "rows": [
+    "R1",
+    "R2"
+   ],
+   "plain": true
+  },
+  "VAHAN_API_CORS_ORIGINS": {
+   "rows": [
+    "R1",
+    "R2"
+   ],
+   "plain": true,
+   "list_separator": ",",
+   "value_pattern": "^[a-z][a-z0-9+.-]*://[^/@?#\\s]+$"
+  },
+  "VAHAN_API_SOCKETIO_CORS_ORIGINS": {
+   "rows": [
+    "R1",
+    "R2"
+   ],
+   "plain": true,
+   "list_separator": ",",
+   "value_pattern": "^[a-z][a-z0-9+.-]*://[^/@?#\\s]+$"
+  },
+  "VAHAN_ALLOWED_ORIGINS": {
+   "rows": [
+    "R1",
+    "R2"
+   ],
+   "plain": true,
+   "list_separator": ",",
+   "value_pattern": "^[a-z][a-z0-9+.-]*://[^/@?#\\s]+$"
+  },
+  "VAHAN_URL": {
+   "rows": [
+    "R3",
+    "R6",
+    "R9b",
+    "R11",
+    "R14"
+   ],
+   "plain": true,
+   "value_pattern": "^https://analytics\\.parivahan\\.gov\\.in/analytics/vahanpublicreport(\\?lang=[a-z]{2})?$"
+  },
+  "VAHAN_API_URL": {
+   "rows": [
+    "R1",
+    "R9b"
+   ],
+   "plain": true,
+   "value_pattern": "^https?://[a-z0-9.-]+(:[0-9]{1,5})?$"
+  },
+  "API_BIND_ADDRESS": {
+   "rows": [
+    "R1"
+   ],
+   "plain": true
+  },
+  "WEB_BIND_ADDRESS": {
+   "rows": [
+    "R1"
+   ],
+   "plain": true
+  },
+  "API_PORT": {
+   "rows": [
+    "R1"
+   ],
+   "plain": true
+  },
+  "WEB_PORT": {
+   "rows": [
+    "R1"
+   ],
+   "plain": true
+  },
+  "VAHAN_IMAGE_NAMESPACE": {
+   "rows": "global",
+   "plain": true
+  },
+  "VAHAN_IMAGE_TAG": {
+   "rows": "global",
+   "plain": true
+  },
+  "DB_APP_USERNAME": {
+   "rows": [
+    "R1"
+   ],
+   "plain": true
+  },
+  "DB_APP_PASSWORD": {
+   "rows": [
+    "R1"
+   ],
+   "plain": false
+  },
+  "POSTGRES_PASSWORD": {
+   "rows": [
+    "R1"
+   ],
+   "plain": false
+  },
+  "POSTGRES_USER": {
+   "rows": [
+    "R1"
+   ],
+   "plain": false
+  },
+  "POSTGRES_DB": {
+   "rows": [
+    "R1"
+   ],
+   "plain": false
+  },
+  "DATABASE_URL": {
+   "rows": [
+    "R1"
+   ],
+   "plain": false,
+   "contains_secret": true
+  },
+  "VAHAN_UI_AUTH_USERNAME": {
+   "rows": [
+    "R2"
+   ],
+   "plain": false
+  },
+  "VAHAN_UI_AUTH_PASSWORD": {
+   "rows": [
+    "R2"
+   ],
+   "plain": false
+  },
+  "VAHAN_UI_AUTH_TOKEN_SECRET": {
+   "rows": [
+    "R2"
+   ],
+   "plain": false
+  },
+  "VAHAN_API_RUNNER_TOKEN": {
+   "rows": [
+    "R9b"
+   ],
+   "plain": false
+  },
+  "VAHAN_BROWSER_STATE_KEY": {
+   "rows": [
+    "R3"
+   ],
+   "plain": false
+  }
+ },
+ "config_derived_keys": {
+  "docker_certs_sha256": {
+   "rows": [
+    "R3",
+    "R6",
+    "R7",
+    "R9",
+    "R9b",
+    "R11",
+    "R12",
+    "R14",
+    "R1"
+   ],
+   "plain": true
+  },
+  "compose_files": {
+   "rows": "global",
+   "plain": true
+  },
+  "replicas": {
+   "rows": [
+    "R9",
+    "R9b"
+   ],
+   "plain": true,
+   "value_pattern": "^[0-9]{1,3}$"
+  },
+  "published_ports": {
+   "rows": [
+    "R1"
+   ],
+   "plain": true
+  },
+  "image": {
+   "rows": "global",
+   "plain": true,
+   "value_pattern": "^[a-z0-9][a-z0-9./_:-]*(@sha256:[0-9a-f]{64})?$"
+  },
+  "command": {
+   "rows": "global",
+   "plain": false
+  },
+  "entrypoint": {
+   "rows": "global",
+   "plain": false
+  },
+  "labels": {
+   "rows": "global",
+   "plain": false
+  },
+  "build_args": {
+   "rows": "global",
+   "plain": false
+  }
+ }
+}

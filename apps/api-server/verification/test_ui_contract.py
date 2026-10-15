@@ -1,10 +1,10 @@
 """SQL contract updates and preflight gate; guarded disposable DB only."""
-import unittest,asyncio,copy
+import unittest,copy
 from uuid import uuid4
 from unittest.mock import patch
-from sqlalchemy import delete,insert,select,func
+from sqlalchemy import delete,select,func
 from starlette.requests import Request
-import test_report_results as fixture
+import test_report_results as fixture  # noqa: F401  (import has side effects: guards the DB and migrates)
 from app.db import engine,schema as db
 from app.repositories import ui_contract
 from app.repositories.postgres import now

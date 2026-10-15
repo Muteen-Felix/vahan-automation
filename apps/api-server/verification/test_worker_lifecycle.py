@@ -10,7 +10,7 @@ import socket
 import sys
 import tempfile
 import unittest
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from sqlalchemy.engine import make_url
 

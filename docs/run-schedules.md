@@ -18,7 +18,8 @@ khớp lần giao/identity để không ghi đè case đã hoàn tất.
 ETA dựa throughput tổng của run, active elapsed time và số case còn lại;
 pause/stall không có tốc độ ổn định thì hiển thị chờ thay vì hứa thời gian.
 Lịch tháng giữ wall-clock time theo zone, clamp ngày cuối tháng và tạo profile
-năm tiếp theo khi cần. Không mặc định hỗ trợ daily trong API tạo lịch hiện tại.
+năm tiếp theo khi cần. Chỉ hỗ trợ `once` và `monthly`; API từ chối `repeat='daily'` và migration `0015` đã xóa các lịch Daily đã lưu (D-35); nếu lịch Daily còn `sessionId`, revision
+`0014a_daily_schedule_guard` dừng nâng cấp và không xóa gì.
 
 Xem [retry](batch-error-recovery.md), [runbook](runbook.md) và bảng kiểm thật/
 fixture/chưa kiểm trong [báo cáo Đợt 5](round5-review-evidence.md).
