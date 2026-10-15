@@ -1,0 +1,93 @@
+{
+  "baseUrl": "http://127.0.0.1:61823",
+  "finishedAt": "2026-10-15T04:56:54Z",
+  "passed": 14,
+  "failed": 0,
+  "skipped": 0,
+  "checks": [
+    {
+      "check": "GET /api/health returns 200 ok",
+      "result": "pass",
+      "detail": "status=200",
+      "seconds": 0.0
+    },
+    {
+      "check": "GET /api/ready returns 200 with PostgreSQL storage",
+      "result": "pass",
+      "detail": "status=200 body={'status': 'ok', 'storage': 'postgresql', 'queue': 'postgresql'}",
+      "seconds": 0.02
+    },
+    {
+      "check": "web / returns 200",
+      "result": "pass",
+      "detail": "status=200",
+      "seconds": 0.0
+    },
+    {
+      "check": "admin login returns an access token",
+      "result": "pass",
+      "detail": "status=200",
+      "seconds": 0.18
+    },
+    {
+      "check": "at least 1 runner(s) ONLINE",
+      "result": "pass",
+      "detail": "online=1",
+      "seconds": 0.03
+    },
+    {
+      "check": "throw-away member created",
+      "result": "pass",
+      "detail": "status=201",
+      "seconds": 0.16
+    },
+    {
+      "check": "member can sign in",
+      "result": "pass",
+      "detail": "status=200",
+      "seconds": 0.16
+    },
+    {
+      "check": "member gets 403 on /api/annual-reports/run-history",
+      "result": "pass",
+      "detail": "status=403",
+      "seconds": 0.03
+    },
+    {
+      "check": "member gets 403 on /api/users",
+      "result": "pass",
+      "detail": "status=403",
+      "seconds": 0.02
+    },
+    {
+      "check": "member gets 403 on /api/audit",
+      "result": "pass",
+      "detail": "status=403",
+      "seconds": 0.03
+    },
+    {
+      "check": "admin can read run-history",
+      "result": "pass",
+      "detail": "status=200",
+      "seconds": 0.06
+    },
+    {
+      "check": "throw-away member deactivated",
+      "result": "pass",
+      "detail": "status=200",
+      "seconds": 0.03
+    },
+    {
+      "check": "service migrate exited 0",
+      "result": "pass",
+      "detail": "docker compose ps -a migrate",
+      "seconds": 0.2
+    },
+    {
+      "check": "API connects as a DML-only database role (S12)",
+      "result": "pass",
+      "detail": "{'u': 'vahan_app', 'rolsuper': False, 'rolcreatedb': False, 'rolcreaterole': False, 'schema_create': False}",
+      "seconds": 0.8
+    }
+  ]
+}

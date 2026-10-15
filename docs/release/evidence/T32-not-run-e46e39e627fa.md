@@ -2,7 +2,8 @@
 
 - ngày: 2026-10-15
 - source cần kiểm: `e46e39e627fac5e0e8ad5f36ca22e51e61f3e40a` (BASE_SHA)
-- kết quả: **Not verified — không build gói, không cài thử, không tạo config snapshot thật.** Không có Pass nào được ghi cho BASE_SHA ở mục này.
+- kết quả (lần chạy đầu): **Not verified — không build gói, không cài thử, không tạo config snapshot thật.**
+- **ĐÃ THAY THẾ:** cài thử, config snapshot và smoke sau đó đã chạy được; xem `T32-trial-install-e46e39e627fa/README.md`. File này giữ lại làm lịch sử lần dừng vì thiếu RAM.
 - lý do: thiếu RAM host theo ngưỡng của chính repo; phương án duy nhất để có RAM là dừng stack `vahan-automation` đang chạy hoặc đóng ứng dụng của người dùng — cả hai bị cấm trong yêu cầu ("thiếu RAM hoặc cần dừng stack đang chạy ⇒ dừng và báo").
 
 ## Số đo (Verified, `python scripts/run-docker.py --assess-only`, chỉ đọc)
