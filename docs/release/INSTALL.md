@@ -104,7 +104,7 @@ Rollback = dừng stack và restore backup vào volume mới (`ops/runbook.md`);
 ## 8. HTTPS / proxy
 
 Stack không tự cấp TLS (KI-05). Giữ `WEB_BIND_ADDRESS=127.0.0.1` và đặt reverse proxy HTTPS phía trước; cập nhật
-`VAHAN_API_CORS_ORIGINS` / `VAHAN_API_SOCKETIO_CORS_ORIGINS` theo origin HTTPS thực tế. `/docs`, `/redoc`, `/openapi.json` bị tắt ở production.
+`VAHAN_API_CORS_ORIGINS` / `VAHAN_API_SOCKETIO_CORS_ORIGINS` theo origin HTTPS thực tế. Tài liệu API bị tắt ở production: `/api/docs`, `/api/openapi.json`, `/api/redoc` → 404 với token admin (401 không token). Ở gốc web, `/docs`, `/openapi.json`, `/redoc` trả shell SPA (200), không phải Swagger.
 
 ## 9. Lỗi thường gặp
 
