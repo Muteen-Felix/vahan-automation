@@ -58,6 +58,9 @@ export function operatorMessage(value: string | null | undefined): string {
   if (/UI_HEALTH_BLOCKED|UI_PREFLIGHT_REQUIRED|UI_CONTRACT_MISMATCH|UI_DRIFT|successful UI health check/i.test(message)) {
     return 'The VAHAN website check needs attention. Open Website check in Settings and copy the issue for support. Try again after it is fixed.';
   }
+  if (/VAHAN_REPORT_NAVIGATED_AWAY/i.test(message)) {
+    return 'VAHAN left the Public Report page before confirming this result. This attempt was not saved; check the case status before retrying it manually.';
+  }
   if (/VAHAN_REPORT_NAVIGATED_AWAY|navigated away|unexpected page|redirect/i.test(message)) {
     return 'VAHAN opened a different page, so this report could not finish. Try again. If it happens again, copy the issue for support.';
   }

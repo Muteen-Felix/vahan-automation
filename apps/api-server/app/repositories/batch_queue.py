@@ -25,12 +25,16 @@ def checkpoint_size(session):
 
 
 def task_document(row, policy=None):
+    recovery_pending = bool(policy and row['failures'] > 0 and (
+        row['status'] in {'PENDING', 'PROCESSING'}
+        or (row['status'] == 'FAILED' and not policy['finalPassStarted'])
+    ))
     return {
         'position': row['position'], 'name': row['scenario_name'],
         'status': row['status'], 'attempts': row['attempts'],
         'failures': row['failures'], 'runnerId': row['runner_id'],
         'jobId': row['job_id'], 'error': row['error'],
-        'recoveryPending': bool(policy and not policy['finalPassStarted'] and row['status'] == 'FAILED'),
+        'recoveryPending': recovery_pending,
     }
 
 
