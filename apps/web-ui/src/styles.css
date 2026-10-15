@@ -506,7 +506,7 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid rg
 .annual-data-status[data-status="current"] .annual-data-status-dot { background:#43884e; }
 .annual-error { margin:0 20px 16px; color:#a02f22; padding:12px; background:#fff0ed; border:1px solid #f0d3ce; border-radius:6px; }
 .annual-workspace { display:grid; grid-template-columns:minmax(0,1fr) 276px; align-items:start; gap:18px; padding-right:18px; padding-bottom:20px; }
-.annual-sheet { min-width:0; background:#fff; border:1px solid #dbe3dd; border-radius:7px 7px 0 0; overflow:hidden; }
+.annual-sheet { min-width:0; background:#fff; border:1px solid #dbe3dd; border-radius:7px; overflow:hidden; }
 .annual-table-meta { display:flex; justify-content:space-between; gap:14px; padding:12px 14px; font-size:11px; color:#6e7c73; border-bottom:1px solid #dbe3dd; }
 .annual-table-meta strong { color:#294832; font-size:13px; }
 .annual-table-scroll { overflow:auto; max-height:min(1200px, 90vh); min-height:min(75vh, 900px); scrollbar-color:#b7c6bb #eef3ef; }
