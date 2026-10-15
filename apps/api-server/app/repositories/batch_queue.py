@@ -390,7 +390,7 @@ class BatchQueueRepository:
                     db.batch_queue_tasks.c.status == 'PROCESSING'))).mappings().first()
                 if existing:
                     return {'type': 'assigned', 'task': task_document(existing), 'jobId': runner.current_job_id,
-                            'recovered': True}
+                            'recovered': True, 'sessionRevision': session['updated_at'].isoformat()}
                 return {'type': 'runner_unavailable'}
             if runner.status == RunnerStatus.RECONNECTING or runner.source != 'new':
                 return {'type': 'runner_unavailable'}
@@ -471,4 +471,5 @@ class BatchQueueRepository:
                 db.batch_queue_tasks.c.session_id == str(session_id),
                 db.batch_queue_tasks.c.position == row['position']).values(**values))
         return {'type': 'assigned', 'task': task_document({**row, **values}, policy), 'jobId': str(job.id),
-                'recovered': False, 'job': job, 'retry': progress}
+                'recovered': False, 'job': job, 'retry': progress,
+                'sessionRevision': session['updated_at'].isoformat()}
