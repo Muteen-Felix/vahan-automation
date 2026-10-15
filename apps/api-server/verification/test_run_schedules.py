@@ -759,6 +759,34 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(record['owner_username'], 'schedule-test')
         self.assertEqual(record['status'], 'PASS')
 
+    async def test_three_idle_workers_above_the_stored_limit_do_not_leave_the_schedule_waiting_for_preflight(self):
+        """DEF-33 / BF-06: three idle workers and a stored limit of one must still reach a running queue."""
+        await services.runners.register(runner_id='playwright-3', name='Worker 3', socket_id='socket-3')
+        from app.worker_pool import apply_pool
+        await apply_pool(1)
+        real_preflight = automatic_preflight
+        checked = []
+        async def inspected(_event, payload, **kwargs):
+            async with engine.connect() as connection:
+                runner_id = await connection.scalar(select(db.runners.c.id).where(db.runners.c.socket_id == kwargs['to']))
+            current = await ui_contract.current()
+            observed = [{**control, 'found': True, 'count': 1, 'matchedBy': 'selector'} for control in current['controls']]
+            validation = await ui_contract.evaluate({'status': 'PASS', 'observedControls': observed}, runner_id)
+            saved = await services.ui_health_logs.append({'status': 'PASS', 'checkId': payload['requestId'], 'checkedAt': now().isoformat(),
+                'trigger': 'preflight', 'observedControls': observed, 'contractValidation': validation})
+            checked.append(runner_id)
+            return {**saved, 'validation': validation}
+        async def through_real_gate(value, runner_ids):
+            with patch('app.api.ui_health.sio.call', side_effect=inspected):
+                return await real_preflight(value, runner_ids)
+        self.preflight.side_effect = through_real_gate
+        saved = await self.schedule()
+        for _ in range(6): await scheduler_tick()
+        saved = await self.repo.get(saved['id'])
+        self.assertTrue(checked, 'The real UI health gate never inspected a worker.')
+        self.assertEqual(saved['status'], 'RUNNING', saved.get('message'))
+        self.assertGreater(len(await self.jobs()), 0, 'No case was assigned: the schedule is still waiting for preflight.')
+
     async def test_ui_health_block_prevents_any_new_assignment(self):
         saved = await self.start()
         for job in await self.jobs(): await finish(str(job.id), JobStatus.NO_DATA)
