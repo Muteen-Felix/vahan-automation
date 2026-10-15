@@ -98,7 +98,7 @@ try {
   });
   await page.goto(process.env.SCHEDULE_UI_URL || 'http://127.0.0.1:5186/#settings');
   await page.getByRole('heading',{name:'Automatic report schedule',exact:true}).waitFor();
-  await page.getByRole('button',{name:'Show form',exact:true}).click();
+  await page.getByRole('button',{name:'Create schedule',exact:true}).click();
   await page.getByLabel('Saved filters',{exact:true}).selectOption(profile.id);
   assert.equal(await page.locator('#new-schedule-form input[type="number"]').count(),0,'The schedule form omits parallel task limit and report year');
   const future=new Date(Date.now()+86400_000);
@@ -188,6 +188,8 @@ try {
   await diagnosticsPanel.getByRole('button',{name:'View details',exact:true}).click();
   const activityDialog=diagnosticsPanel.getByRole('dialog',{name:'Activity details'});
   await activityDialog.getByText('Loading choices / checking website',{exact:true}).waitFor();
+  assert.equal(await activityDialog.getByText('Details for support',{exact:true}).count(),0,'Raw schedule JSON is hidden from activity details');
+  assert.equal(await activityDialog.getByText('Details for support',{exact:true}).count(),0,'Raw schedule JSON is hidden from activity details');
   await activityDialog.getByRole('button',{name:'Close details',exact:true}).click();
   schedules[0]={...schedules[0],status:'RUNNING',message:'Collected 2/10 cases.',operation:null,diagnostics:undefined};
   await card.locator('.schedule-status').getByText('Running',{exact:true}).waitFor();
