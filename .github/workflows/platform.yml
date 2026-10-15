@@ -201,30 +201,31 @@ jobs:
         working-directory: apps/api-server
         shell: bash
         run: |
-          python -m pytest tests
-          python -m pytest verification/test_permissions.py
+          python -m coverage run --source=app/api -m pytest tests
+          python -m coverage run --append --source=app/api -m pytest verification/test_permissions.py
           python ../../scripts/test_runtime_role_lifecycle.py
           python ../../scripts/test_provision_database.py
-          VAHAN_ACCOUNT_TEST_DATABASE=vahan_account_platform_test python -m pytest verification/test_account_passwords.py
-          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_report_test python -m pytest verification/test_report_results.py
-          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_annual_test python -m pytest verification/test_annual_reports.py
-          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_profiles_test python -m pytest verification/test_filter_profiles.py
-          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_contract_test python -m pytest verification/test_ui_contract.py
-          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_controls_test python -m pytest verification/test_run_controls.py
-          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_update_test python -m pytest verification/test_update_status.py
-          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_pool_test python -m pytest verification/test_worker_pool.py
-          VAHAN_SESSION_TEST_DATABASE=vahan_session_platform_test python -m pytest verification/test_session_limits.py
-          VAHAN_RETRY_TEST_DATABASE=vahan_retry_platform_test python -m pytest verification/test_retry_sessions.py
-          VAHAN_COVERAGE_TEST_DATABASE=vahan_coverage_platform_test python -m pytest verification/test_report_coverage.py
-          VAHAN_SCHEDULE_TEST_DATABASE=vahan_schedule_platform_test python -m pytest verification/test_run_schedules.py
-          VAHAN_QUEUE_TEST_DATABASE=vahan_queue_platform_test python -m pytest verification/test_queue_retry_checkpoints.py
-          VAHAN_HISTORY_TEST_DATABASE=vahan_history_platform_test python -m pytest verification/test_run_history.py
-          VAHAN_LIFECYCLE_TEST_DATABASE=vahan_lifecycle_platform_test python -m pytest verification/test_worker_lifecycle.py
-          VAHAN_QUEUE_MIGRATION_TEST_DATABASE=vahan_migration_platform_test python -m pytest verification/test_queue_migrations.py
-          VAHAN_DAILY_MIGRATION_TEST_DATABASE=vahan_migration_daily_test python -m pytest verification/test_daily_schedule_removal.py
-          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_state_test python -m pytest verification/test_runner_state_fencing.py
-          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_gate_test python -m pytest verification/test_gate_ops.py
-          VAHAN_STATE_MIGRATION_TEST_DATABASE=vahan_migration_platform_state_test python -m pytest verification/test_state_gate_migration.py
+          VAHAN_ACCOUNT_TEST_DATABASE=vahan_account_platform_test python -m coverage run --append --source=app/api -m pytest verification/test_account_passwords.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_report_test python -m coverage run --append --source=app/api -m pytest verification/test_report_results.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_annual_test python -m coverage run --append --source=app/api -m pytest verification/test_annual_reports.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_profiles_test python -m coverage run --append --source=app/api -m pytest verification/test_filter_profiles.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_contract_test python -m coverage run --append --source=app/api -m pytest verification/test_ui_contract.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_controls_test python -m coverage run --append --source=app/api -m pytest verification/test_run_controls.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_update_test python -m coverage run --append --source=app/api -m pytest verification/test_update_status.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_pool_test python -m coverage run --append --source=app/api -m pytest verification/test_worker_pool.py
+          VAHAN_SESSION_TEST_DATABASE=vahan_session_platform_test python -m coverage run --append --source=app/api -m pytest verification/test_session_limits.py
+          VAHAN_RETRY_TEST_DATABASE=vahan_retry_platform_test python -m coverage run --append --source=app/api -m pytest verification/test_retry_sessions.py
+          VAHAN_COVERAGE_TEST_DATABASE=vahan_coverage_platform_test python -m coverage run --append --source=app/api -m pytest verification/test_report_coverage.py
+          VAHAN_SCHEDULE_TEST_DATABASE=vahan_schedule_platform_test python -m coverage run --append --source=app/api -m pytest verification/test_run_schedules.py
+          VAHAN_QUEUE_TEST_DATABASE=vahan_queue_platform_test python -m coverage run --append --source=app/api -m pytest verification/test_queue_retry_checkpoints.py
+          VAHAN_HISTORY_TEST_DATABASE=vahan_history_platform_test python -m coverage run --append --source=app/api -m pytest verification/test_run_history.py
+          VAHAN_LIFECYCLE_TEST_DATABASE=vahan_lifecycle_platform_test python -m coverage run --append --source=app/api -m pytest verification/test_worker_lifecycle.py
+          VAHAN_QUEUE_MIGRATION_TEST_DATABASE=vahan_migration_platform_test python -m coverage run --append --source=app/api -m pytest verification/test_queue_migrations.py
+          VAHAN_DAILY_MIGRATION_TEST_DATABASE=vahan_migration_daily_test python -m coverage run --append --source=app/api -m pytest verification/test_daily_schedule_removal.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_state_test python -m coverage run --append --source=app/api -m pytest verification/test_runner_state_fencing.py
+          VAHAN_RESULT_TEST_DATABASE=vahan_results_platform_gate_test python -m coverage run --append --source=app/api -m pytest verification/test_gate_ops.py
+          VAHAN_STATE_MIGRATION_TEST_DATABASE=vahan_migration_platform_state_test python -m coverage run --append --source=app/api -m pytest verification/test_state_gate_migration.py
+          python -m coverage report --fail-under=90.1 --include='app/api/*'
           PYTHONPATH=. DATABASE_URL=postgresql+asyncpg://vahan:platform-test-password@127.0.0.1:5432/vahan_shared_batch_platform_test python verification/test_shared_batch_queue.py
           VAHAN_FIXTURE_POSTGRES_CONTAINER=${{ job.services.postgres.id }} python verification/prepare_report_test_fixtures.py
           VAHAN_MIGRATION_SOURCE_DATABASE=vahan_results_round2_legacy_source_test VAHAN_MIGRATION_TEST_DATABASE=vahan_results_round2_legacy_target_test python verification/test_main_migration.py

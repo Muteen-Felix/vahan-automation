@@ -117,8 +117,9 @@ class RunControlsTest(unittest.IsolatedAsyncioTestCase):
         coverage = await report_coverage(CoverageQuery(year=2024, scenarios=[{
             'name': task.name, 'filters': task.filters.model_dump(mode='json', by_alias=True)
         } for task in self.tasks]), request)
-        self.assertEqual(coverage['covered'], 1)
-        self.assertTrue(coverage['canContinue'], 'historical years can continue missing offices')
+        self.assertFalse(coverage['hasRun'], 'saved workbook data alone is not update-run progress')
+        self.assertTrue(coverage['matrixLoaded'])
+        self.assertEqual((coverage['total'], coverage['processed'], coverage['status']), (0, 0, 'NO_RUN'))
         self.assertEqual(month_column("JAN'99", 1999), (1999, 1))
 
     async def test_wrong_year_workbook_does_not_commit(self):
