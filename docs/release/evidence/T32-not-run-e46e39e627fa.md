@@ -28,3 +28,24 @@ Docker Engine 12 vCPU / 9,71 GiB; host 15,58 GiB tổng; 3 runner + api + web + 
 
 1. Giải phóng ≥ 0,8 GiB RAM host (đóng ứng dụng khác) **hoặc** chạy trên máy/VM khác (D-12 phương án A), rồi chạy lại: `python scripts/build-review-package.py --ref e46e39e627fa… --output-dir outputs/trial-e46e39e627fa --with-images` → `python scripts/test-review-package.py --package-dir … --output-dir …` → `python scripts/config-snapshot.py --env-file <env của project thử> --out …`.
 2. Hoặc cho phép dừng stack `vahan-automation` (cần quyết định riêng; stack giữ dữ liệu thật).
+
+## Cập nhật sau khi người dùng giải phóng RAM (2026-10-15, lần chạy thứ hai)
+
+- RAM đo lại: **2,70 GiB available** (đạt ngưỡng 2,66 GiB) ⇒ đã **build gói** từ đúng BASE_SHA.
+- Lệnh: `python scripts/build-review-package.py --ref e46e39e627fac5e0e8ad5f36ca22e51e61f3e40a --output-dir outputs/trial-e46e39e627fa --with-images` ⇒ exit 0. Gói thô (`images.tar` ~731 MiB, `source.zip`) để ngoài repo (`outputs/`, không commit); manifest: `T32-package-manifest-e46e39e627fa.json`.
+
+| File | sha256 (khớp `manifest.files`) |
+| --- | --- |
+| `vahan-e46e39e627fa-source.zip` | `854187c87f8c6a92c1b6583b07a790c56c8a6b679236100def25efe6953962db` |
+| `vahan-e46e39e627fa-images.tar` | `7257c0dd4cc5566d0e778f5a8596ec676e3fc56d2d9ee05cbd6d65bfc3afc639` |
+
+| Image | Nguồn | ID | Platform | Nhãn revision |
+| --- | --- | --- | --- | --- |
+| `vahan-review/api:e46e39e627fa` | tự build | `sha256:89586075522aefd153226c6a7de39bf4f2c940a687d32d5594efe521d7b01994` | linux/amd64 | null |
+| `vahan-review/runner:e46e39e627fa` | tự build | `sha256:61394f43a862e854af5d023e1893d51c236bbb30144a04d37987f6d3e3dd2c50` | linux/amd64 | null |
+| `vahan-review/web:e46e39e627fa` | tự build | `sha256:30125774f739cca751ac4e21c9025cfba150ff7ddb279674d4730b823be94f3c` | linux/amd64 | null |
+| `docker.io/library/postgres:17.11-bookworm@sha256:3645570c…3826` | upstream, pin digest | `sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826` | linux/amd64 | null |
+
+- Ngay sau khi build RAM host **tụt còn 0,49–0,61 GiB** (bốn lần đo cách 30 s; stack hiện có 4 runner, Docker engine không đổi). Vì vậy **cài thử, config snapshot và release-smoke vẫn Not run**; không dừng/đụng stack đang chạy, không dọn build cache hay image của người dùng.
+- Kết quả: **gói BASE_SHA = built (E-local); cài thử/T28b/T52a = Not verified.** Gói chưa được cài, chưa được kiểm ID sau `docker load` (ID ở bảng là ID image vừa build trên máy này).
+- Tài nguyên còn lại do lần này tạo: 3 tag `vahan-review/{api,runner,web}:e46e39e627fa` (Docker local) và `outputs/trial-e46e39e627fa/`; bản nháp trình điều khiển cài thử (làm theo INSTALL.md §2–§5, chụp snapshot, `release-smoke`, `down --volumes` chỉ project tạm) đang để ở scratchpad phiên làm việc, chưa chạy.
