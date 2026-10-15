@@ -139,7 +139,7 @@ try{
   assert.match(await page.getByLabel('Saved filters',{exact:true}).locator('option:checked').innerText(),/2023/);
   assert.equal(previewCalls,1,'Selecting a schedule profile must not start another preview or manual run');
   assert.equal(queueBody,undefined,'The dashboard never publishes a manual queue');
-  await page.reload();await page.getByRole('button',{name:'Show form',exact:true}).click();await page.getByLabel('Saved filters',{exact:true}).waitFor();
+  await page.reload();await page.getByRole('button',{name:'Create schedule',exact:true}).click();await page.getByLabel('Saved filters',{exact:true}).waitFor();
   await page.waitForFunction(id=>document.querySelector('select[aria-label="Saved filters"]')?.value===id,id);
   assert.equal(await page.getByLabel('Saved filters',{exact:true}).inputValue(),id,'profile choice persists through reload');
   await page.getByRole('button',{name:'Hide form',exact:true}).click();

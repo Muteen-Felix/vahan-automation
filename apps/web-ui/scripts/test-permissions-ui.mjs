@@ -59,9 +59,9 @@ try {
       }
       await page.goto(origin+'#reports');await nav.waitFor();
       await page.getByRole('rowheader',{name:'Fixture Maker',exact:true}).waitFor();
-      page.once('dialog',dialog=>dialog.accept());
       const download=page.waitForEvent('download');
       await page.getByRole('button',{name:'Export all to Excel',exact:true}).click();
+      await page.getByRole('dialog',{name:'Export the full report?'}).getByRole('button',{name:'Export to Excel',exact:true}).click();
       assert.match((await download).suggestedFilename(),/\.xlsx$/);
       assert.equal(exports.length,1,'Members can export reports');
       await page.getByRole('button',{name:'Account',exact:true}).click();

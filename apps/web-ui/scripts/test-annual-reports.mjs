@@ -109,16 +109,28 @@ try {
   assert.equal(await page.locator('.annual-table tbody tr').first().locator('td').nth(4).innerText(),'0');
   assert.equal(await page.locator('.annual-table tbody tr').first().locator('td').last().innerText(),'—');
   assert.ok(reportSocket,'authenticated fixture socket connected');
+  // The data-status line carries the latest update time (seconds included); the save confirmation block is gone.
+  const dataStatus=page.locator('.annual-data-status');
+  const statusLabel=async()=>(await dataStatus.getAttribute('aria-label'))??'';
+  const waitForUpdatedSecond=async second=>{
+    await page.waitForFunction(value=>new RegExp(`^Data is up to date · Last updated .*:${value}$`)
+      .test(document.querySelector('.annual-data-status')?.getAttribute('aria-label')??''),second,{timeout:2_000});
+  };
+  assert.equal(await dataStatus.getAttribute('data-status'),'current');
+  assert.match(await statusLabel(),/^Data is up to date · Last updated .*:13$/,'before any update the status shows the summary time 09:12:13');
+  assert.equal(await page.locator('.annual-save-confirmation').count(),0,'the save confirmation block no longer exists');
   rows[0].months[10]=7;
   lastSaved={status:'added',states:['ASSAM'],rtos:['UDALGURI - AS27'],savedAt:'2026-10-02T09:12:14Z',
     manufacturerRows:1,newRows:0,newMonthValues:1,alreadySavedMonthValues:10,conflicts:0};
   reportSocket.send('42/ui,'+JSON.stringify(['reports:updated',lastSaved]));
   await page.waitForFunction(()=>document.querySelector('.annual-table tbody tr')?.querySelectorAll('td')[14]?.textContent==='7',{},{timeout:2_000});
-  await page.getByRole('status').filter({hasText:'Report saved'}).waitFor();
-  assert.match(await page.locator('.annual-save-confirmation').innerText(),/1 new month values/);
+  await waitForUpdatedSecond('14');
+  assert.equal(await dataStatus.getAttribute('data-status'),'current');
+  assert.equal(await page.getByText('Report saved',{exact:false}).count(),0,'no "Report saved" message is shown');
   lastSaved={...lastSaved,status:'unchanged',newMonthValues:0,alreadySavedMonthValues:11,savedAt:'2026-10-02T09:12:15Z'};
   reportSocket.send('42/ui,'+JSON.stringify(['reports:updated',lastSaved]));
-  await page.getByRole('status').filter({hasText:'Report already saved'}).waitFor({timeout:2_000});
+  await waitForUpdatedSecond('15');
+  assert.equal(await page.getByText('already saved',{exact:false}).count(),0,'no "Report already saved" message is shown');
   assert.equal(await page.locator('.annual-table tbody tr').count(),100,'repeat filter does not duplicate rows');
   // A slow table read must finish even while ten workers keep committing data.
   // The next read must then include changes received during that slow read.
