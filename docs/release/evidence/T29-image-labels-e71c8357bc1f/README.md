@@ -40,3 +40,11 @@ Image `vahan-security-test/{api,runner,web}:round4` do lệnh 5 tạo vẫn còn
 - Nhãn không phải provenance: không chứng minh image build từ đúng SHA. Image ID đổi theo SHA kể cả commit chỉ sửa `docs/**` (nhãn nằm trong config image) — chỉ build một lần ở candidate F.
 - Image D3 đã chạy (`fa04898`) không có nhãn; D3 phải chạy lại trên candidate F.
 - Lệnh 5 chạy với working tree có thay đổi chưa commit của T29 nhưng nhãn là `HEAD`; bằng chứng cuối cùng phải lấy từ CI trên commit đã push.
+
+## Cập nhật sau CI run #23 trên `f43ede1` (2026-10-15)
+
+- **Đỏ:** 3 job `Source and browser tests` (ubuntu, windows, macos), cùng một lỗi ở step "Install and test API": `scripts/test_config_template.py::test_template_and_reference_cover_all_compose_variables` — `VAHAN_VCS_REF` (biến mới trong `compose.yaml`) thiếu ở `docs/release/config/config-template.env` (T26). Nguyên nhân do T29; lỗi sót của tác giả: bộ test này không nằm trong danh sách đã chạy local trước khi push.
+- **Xanh trên cùng SHA:** `PostgreSQL verification (Ubuntu)`, `Test registration (Ubuntu)`, **`Linux container packaging (Ubuntu)`** — job sau chạy `test_container_security.py` với `VAHAN_VCS_REF: ${{ github.sha }}`, tức assert nhãn revision/version của 3 image đã **xanh ở E-CI** trên `f43ede1`.
+- **Sửa:** khai báo `VAHAN_VCS_REF` trong `config-template.env` (dòng comment) và `config-reference.md`.
+- **Kiểm local sau sửa** (đúng các lệnh của job `native-tests`): `test_config_template` 2 OK; toàn bộ danh sách `unittest` trong step "Install and test API", `test_ui_diagnostics.py`, `test-user-state-codec.py`, ruff (lệnh của workflow), `npm run check` + 11 script test của runner, `npm run check`/`build` của dashboard — đều pass. `npm run test:platform` đã pass trước đó (web-ui không đổi).
+- E-CI cho commit sửa: Not verified (chờ push).
