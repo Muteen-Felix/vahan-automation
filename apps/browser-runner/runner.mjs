@@ -40,7 +40,7 @@ let contextEpoch = 0;
 let tainted = false;
 const socket = io(`${API}/runner`, {autoConnect: false, transports: ['websocket'], auth: {
   runnerId: ID, runnerName: process.env.VAHAN_RUNNER_NAME || 'Chromium Playwright', token: TOKEN,
-  source: 'new', engine: 'playwright', version: '0.2.0',
+  source: 'new', engine: 'playwright', version: '1.0.0',
 }});
 const headers = {'X-VAHAN-RUNNER-TOKEN': TOKEN, 'X-VAHAN-RUNNER-ID': ID};
 let queueConsumerPromise = null;

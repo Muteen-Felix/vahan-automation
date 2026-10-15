@@ -1,6 +1,6 @@
 [project]
 name = "vahan-rpa-api"
-version = "0.1.0"
+version = "1.0.0"
 description = "PostgreSQL control plane for the VAHAN Playwright worker and dashboard"
 requires-python = ">=3.11"
 dependencies = [
