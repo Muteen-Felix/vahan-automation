@@ -32,6 +32,16 @@ py -3 scripts/release-smoke.py --base-url http://127.0.0.1:5173 --admin-user adm
 8. API kết nối bằng role DML-only (không superuser/createdb/createrole/CREATE schema) (cần `--compose-project`).
 
 Smoke **không** chứng minh VAHAN, CAPTCHA hay tải báo cáo hoạt động; dùng `qa/e2e-checklist.md`.
+
+## Kiểm runtime image đã cài (sau khi cài từ gói)
+
+Chạy trên stack vừa cài, không build lại; ghi image ID để đối chiếu `manifest.imageIds`.
+
+```powershell
+docker inspect --format "{{.Name}} {{.Image}}" (docker compose --env-file .docker.env ps -q api web runner)   # ID = manifest.imageIds
+docker compose --env-file .docker.env exec -T runner node test-container-runtime.mjs                          # Chromium sandbox + Tesseract thật, exit 0
+(Invoke-WebRequest http://127.0.0.1:5173/ -UseBasicParsing).Headers['Server']                                  # đúng `nginx`, không kèm số phiên bản
+```
 Mật khẩu chỉ đọc từ biến môi trường và không được in ra.
 
 ## Kiểm gói tự động (T32) và preflight VAHAN (D3) là hai kết quả riêng

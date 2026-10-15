@@ -40,14 +40,15 @@ Kiểm: đăng nhập, bảng năm, Run History, lịch Once/Monthly còn. Xác 
 ## 4. Rollback
 
 Rollback = dừng stack hiện tại + restore backup vào volume mới + dùng image của bản trước. **Không** hạ binary qua migration không tương thích.
-Migration `0015` xóa lịch Daily và không có downgrade dữ liệu; khôi phục chỉ bằng backup. Revision `0014a_daily_schedule_guard`
+Migration `0015` xóa lịch Daily và không có downgrade dữ liệu; khôi phục chỉ bằng backup. Revision cuối `0016_state_revision_gate_gen` chỉ thêm
+cột/sequence; bản cũ bỏ qua chúng nên không cần hạ migration khi quay lại image trước. Revision `0014a_daily_schedule_guard`
 chạy trước và dừng nâng cấp (không xóa, không ghi gì) nếu lịch Daily còn session — xử lý trên bản cũ theo INSTALL.md §7.
 
 ## 5. Sự cố thường gặp
 
 | Triệu chứng | Thao tác |
 | --- | --- |
-| `/api/ready` 503 | Kiểm PostgreSQL healthy, `migrate` đã thoát 0, revision DB = head; không cấp superuser cho API |
+| `/api/ready` 503 | Kiểm PostgreSQL healthy, `migrate` đã thoát 0, revision DB = `0016_state_revision_gate_gen` (`select version_num from alembic_version`); không cấp superuser cho API |
 | Runner mất kết nối | Chờ grace/lease; case `PROCESSING` được retry theo checkpoint; đối chiếu caseId trước khi thao tác lại |
 | UI Health BLOCKED | Giữ diagnostics, kiểm TLS/selector VAHAN; **không** tắt gate |
 | Login 429 | Giới hạn nginx; chờ, không retry liên tục |

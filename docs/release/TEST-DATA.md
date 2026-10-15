@@ -7,7 +7,7 @@ Gói **không kèm dump**; dữ liệu bắt đầu từ DB trống và một fi
 1. Cài và đăng nhập (`INSTALL.md`, `TEST-ACCOUNTS.md`).
 2. Trong màn hình bộ lọc: chọn **một** năm, **một** State, **một–hai** RTO (vài case, chạy xong trong vài phút) và **Save filters**.
    Dùng **Preview** để xem số case dự kiến.
-3. **Settings → Show form**: chọn *Saved filters*, *Start date*/*Start time* vài phút sau, *Repeat* = **Once**, rồi **Add schedule**.
+3. **Settings → Create schedule**: chọn *Saved filters*, *Start date*/*Start time* vài phút sau, *Repeat* = **Once**, rồi **Add schedule**.
    Ứng dụng không có nút "chạy ngay"; mọi lượt chạy đi qua lịch.
 4. Xem kết quả ở bảng báo cáo năm, danh sách báo cáo đã xuất và **Run History** (chỉ admin).
 

@@ -164,7 +164,7 @@ To edit filters, select their name under **Saved filters**, make your changes, a
 ### Create a schedule
 
 1. Open **Settings**.
-2. Under **Automatic report schedule**, click **Show form**.
+2. Under **Automatic report schedule**, click **Create schedule**.
 3. Choose your filters in **Saved filters**.
 4. Set **Start date** and **Start time**. For your first schedule, choose a time in the near future so you can review it before it starts.
 5. Check the time zone shown at the bottom of the form.

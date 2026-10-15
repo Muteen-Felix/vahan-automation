@@ -8,8 +8,8 @@ Nhãn: *Verified* (đã chạy), *Likely* (đọc source), *Not verified*.
 | S1 — không log OCR thô; không quota OCR | Likely | `runner.mjs` không còn `OCR raw output` / `Auto-OCR result`; không limiter (D-18). Test: `tests/test_ocr_unlimited.py` (chưa chạy ở HEAD) |
 | S3 — chống brute-force login | Likely | `limit_req` nginx cho `/api/auth/login` (`docker/nginx.conf`); bộ đếm DB Deferred (KI-22) |
 | S5 — CORS Socket.IO | Likely | production từ chối `*` (`config.py`); `verification/test_production_config.py` |
-| S6 — header bảo mật | Likely | `docker/security-headers.conf`; `scripts/test_container_security.py` kiểm CSP/nosniff/DENY trên stack thật |
-| S7 — `/docs`, `/openapi.json` | Likely | tắt khi `VAHAN_ENVIRONMENT=production` (`main.py`); test trên stack thật |
+| S6 — header bảo mật | Likely | `docker/security-headers.conf`; `server_tokens off` (`docker/nginx.conf`); `scripts/test_container_security.py` kiểm CSP/nosniff/DENY và header `Server` không lộ phiên bản trên stack thật |
+| S7 — `/docs`, `/openapi.json` | Likely | tắt khi `VAHAN_ENVIRONMENT=production` (`main.py`). Chấp nhận (Felix 15/10): `/api/docs`, `/api/openapi.json`, `/api/redoc` → 404 token admin; gốc web `/docs`, `/openapi.json`, `/redoc` trả SPA 200, không phải Swagger. Kết quả D3 ghi ở ledger |
 | S8 — runner token riêng | **Deferred** | KI-14 |
 | S9 — supply chain | Một phần | lock có hash (`requirements.lock`), base image pin digest; PostgreSQL = image chính thức pin digest (D-33, `pins.md`). Scan image chính thức: 25 finding HIGH/CRITICAL có bản vá, đều ở `gosu` (Go stdlib 1.24.6) — `evidence/T21a-postgres-official-scan/`. **Felix chấp nhận ngoại lệ hẹp (D-36, 13/10/2026; KI-25)**: gắn đúng digest, file, package; phần còn lại của policy giữ nguyên |
 | S10 — hardening container | **Deferred** | KI-21 |

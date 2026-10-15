@@ -1,7 +1,8 @@
 # Cài đặt VAHAN RPA từ gói (INSTALL)
 
 Tài liệu cho người cài **từ gói image đã đóng sẵn** (`docker load`), không build lại trên máy đích.
-Giá trị `<VERSION>`, `<SHA12>`, `<N>` được điền theo manifest của gói (T52b).
+Giá trị `<VERSION>` (= `version` trong manifest, ví dụ `1.0.0`), `<SHA12>` (12 ký tự đầu của `sourceCommit`, chỉ nằm trong tên file) và `<N>`
+được điền theo manifest của gói (T52b). **Image tag và nhãn OCI `version` là `<VERSION>`; nhãn OCI `revision` là full SHA của commit.**
 
 ## 1. Điều kiện
 
@@ -16,28 +17,34 @@ Giá trị `<VERSION>`, `<SHA12>`, `<N>` được điền theo manifest của g�
 
 ## 2. Kiểm gói và nạp image
 
-Gói gồm `vahan-<SHA12>-source.zip`, `vahan-<SHA12>-images.tar`, `vahan-<SHA12>-manifest.json` (và `SHA256SUMS` nếu có).
+Gói gồm `vahan-<SHA12>-source.zip`, `vahan-<SHA12>-images.tar`, `vahan-<SHA12>-manifest.json` và `SHA256SUMS`.
 
 ```powershell
-Get-FileHash .\vahan-<SHA12>-source.zip -Algorithm SHA256    # so với manifest.files
+Get-Content .\SHA256SUMS                                      # mỗi dòng: <sha256>  <tên file>
+Get-FileHash .\vahan-<SHA12>-source.zip -Algorithm SHA256    # so với SHA256SUMS và manifest.files
 Get-FileHash .\vahan-<SHA12>-images.tar -Algorithm SHA256
+Get-FileHash .\vahan-<SHA12>-manifest.json -Algorithm SHA256 # so với SHA256SUMS (manifest không tự chứa digest của nó)
+Get-Content .\vahan-<SHA12>-manifest.json | ConvertFrom-Json | Select-Object version, sourceCommit, imageTag
 docker image load -i .\vahan-<SHA12>-images.tar
 docker image ls                                              # phải có đủ 4 image (mục 3)
 ```
 
-**Dừng nếu** SHA-256 không khớp manifest hoặc thiếu image.
+Linux/macOS: `sha256sum -c SHA256SUMS`.
+
+**Dừng nếu** SHA-256 không khớp `SHA256SUMS` hoặc `manifest.files`, `manifest.version` khác `<VERSION>` bạn định cài, hoặc thiếu image.
 
 ## 3. Bốn image phải có sau `docker load`
 
 | Image | Nguồn | Kiểm |
 | --- | --- | --- |
-| `vahan-review/api:<SHA12>` | tự build | ID khớp `manifest.imageIds` |
-| `vahan-review/runner:<SHA12>` | tự build | ID khớp |
-| `vahan-review/web:<SHA12>` | tự build | ID khớp |
+| `vahan-review/api:<VERSION>` | tự build | ID khớp `manifest.imageIds`; nhãn `version` = `<VERSION>`, `revision` = `manifest.sourceCommit` |
+| `vahan-review/runner:<VERSION>` | tự build | ID và nhãn khớp |
+| `vahan-review/web:<VERSION>` | tự build | ID và nhãn khớp |
 | `docker.io/library/postgres:17.11-bookworm@sha256:3645570c…3826` | **image chính thức, pin digest** (không tự build) | ID/digest khớp `manifest.images`, platform `linux/amd64` |
 
 ```powershell
-docker image inspect --format "{{.Id}}  {{index .RepoTags 0}}" vahan-review/api:<SHA12> vahan-review/runner:<SHA12> vahan-review/web:<SHA12>
+docker image inspect --format "{{.Id}}  {{index .RepoTags 0}}" vahan-review/api:<VERSION> vahan-review/runner:<VERSION> vahan-review/web:<VERSION>
+docker image inspect --format "{{index .RepoTags 0}}  {{json .Config.Labels}}" vahan-review/api:<VERSION> vahan-review/runner:<VERSION> vahan-review/web:<VERSION>   # nhãn org.opencontainers.image.version / .revision
 docker image inspect --format "{{.Id}}  {{.Os}}/{{.Architecture}}" docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
 ```
 
@@ -50,7 +57,7 @@ py -3 scripts/setup-docker.py          # tạo .docker.env với secret ngẫu n
 ```
 
 1. Mở `.docker.env` (file được bảo vệ quyền, **không gửi cùng log**). Đặt `VAHAN_IMAGE_NAMESPACE=vahan-review` và
-   `VAHAN_IMAGE_TAG=<SHA12>` đúng manifest. Biến khác: `docs/release/config/config-reference.md`.
+   `VAHAN_IMAGE_TAG=<VERSION>` (đúng `imageTag` trong manifest). Biến khác: `docs/release/config/config-reference.md`.
 2. Dùng project riêng nếu máy đã có stack khác: `$env:COMPOSE_PROJECT_NAME='vahan-trial'` (Linux: `export …`) cho **mọi** lệnh sau.
 3. Khởi động bằng image đã nạp, **không build**:
 
@@ -70,7 +77,7 @@ py -3 scripts/release-smoke.py --base-url http://127.0.0.1:5173 --admin-user adm
     --compose-project <tên project> --require-compose-checks --output smoke.json
 ```
 
-Mong đợi: exit 0, `failed: 0`, `skipped: 0`. Chi tiết: `docs/release/SMOKE.md`. Sau đó đăng nhập tại `http://127.0.0.1:5173`
+Mong đợi: exit 0, `failed: 0`, `skipped: 0`. Chi tiết: `docs/release/SMOKE.md`. Revision DB phải là `0016_state_revision_gate_gen` (lệnh ở mục 7, bước 5); kiểm image đã cài (ID, Chromium/Tesseract, header `Server`): `SMOKE.md`. Sau đó đăng nhập tại `http://127.0.0.1:5173`
 (`TEST-ACCOUNTS.md`).
 
 ## 6. Dừng, khởi động lại, gỡ cài đặt
@@ -103,6 +110,8 @@ Reset dữ liệu test: `TEST-DATA.md`.
 4. `docker load` gói mới (mục 2–3), đặt `VAHAN_IMAGE_TAG` mới, chạy `py -3 scripts/setup-docker.py` (bổ sung `DB_APP_USERNAME`/
    `DB_APP_PASSWORD` nếu `.docker.env` cũ chưa có; **không đổi khóa cũ**; `DB_APP_PASSWORD` ≥ 24 ký tự).
 5. `py -3 scripts/run-docker.py --no-build --workers <N>`; kiểm `migrate` exit 0 (migration tự chạy khi nâng cấp), API healthy, đăng nhập lại.
+   Revision cuối phải là `0016_state_revision_gate_gen` (chỉ thêm cột/sequence, không xóa dữ liệu):
+   `docker compose --env-file .docker.env exec -T postgres psql -U vahan -d vahan -tAc "select version_num from alembic_version"`.
 6. Từ bản có migration `0015`: **lịch Daily đã lưu bị xóa** (chỉ Once/Monthly còn lại). Trước đó revision
    `0014a_daily_schedule_guard` **dừng cả lần nâng cấp, không xóa và không ghi gì** nếu còn lịch Daily có `sessionId` (bất kể
    status): `migrate` thoát ≠ 0, API không lên, log `migrate` liệt kê ID/owner/tên/status của lịch bị chặn — gỡ trên bản cũ

@@ -19,7 +19,7 @@ Dùng **một profile nhỏ** (1 năm, 1 State, 1–2 RTO) theo `TEST-DATA.md`.
 | 12 | Member: đăng nhập, thử API admin | thấy báo cáo; 403 ở users/audit/lịch/Run History |
 | 13 | Lịch Monthly (ngày 31, tháng ngắn) | `nextRunAt` là ngày cuối tháng |
 | 14 | Xóa lịch đã chạy | báo cáo đã thu còn; Run History giữ tên bộ lọc |
-| 15 | Entry point đã gỡ | `/api/maker-updates` → 404; `POST /api/jobs` có `updateKind` → 422; `/api/ui-health/schedule`, `/run-now` → 404; `/docs`, `/openapi.json` → 404 |
+| 15 | Entry point đã gỡ | `/api/maker-updates` → 404; `POST /api/jobs` có `updateKind` → 422; `/api/ui-health/schedule`, `/run-now` → 404; `/api/docs`, `/api/openapi.json`, `/api/redoc` → 401 không token, 404 với token admin; ở gốc web `/docs`, `/openapi.json`, `/redoc` trả shell SPA `index.html` 200 (`text/html`, không phải Swagger) — đã chấp nhận (D3 S7, 15/10), **không** kỳ vọng 404 |
 | 16 | `docker compose stop` rồi khởi động lại | dữ liệu và đăng nhập còn |
 
 Điều kiện đạt: mọi bước đạt, 0 lỗi Blocker/Critical mới. Lỗi tài liệu → ghi defect, sửa INSTALL và chạy lại từ bước lỗi.

@@ -164,7 +164,7 @@ Trong các mục có **Collect reports using**:
 ### Tạo lịch
 
 1. Vào **Settings**.
-2. Trong **Automatic report schedule**, bấm **Show form**.
+2. Trong **Automatic report schedule**, bấm **Create schedule**.
 3. Chọn bộ lọc ở **Saved filters**.
 4. Chọn ngày ở **Start date** và giờ ở **Start time**. Lần đầu, chọn một thời điểm sắp tới để có thời gian kiểm tra.
 5. Kiểm tra múi giờ hiển thị ở cuối biểu mẫu.
