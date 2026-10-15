@@ -270,6 +270,7 @@ asyncio.run(main())
             -Environment @{ $suite.Variable = $suite.Database }
     }
     Invoke-PythonStep -Name 'API coverage threshold (90.1%)' -Arguments @('-m', 'coverage', 'report', '--fail-under=90.1', '--include=app/api/*')
+    Invoke-PythonStep -Name 'jobs.py coverage threshold (90.1%)' -Arguments @('-m', 'coverage', 'report', '--fail-under=90.1', '--include=app/api/jobs.py')
 
     Invoke-PythonStep -Name 'Shared batch queue integration' `
         -Arguments @('verification/test_shared_batch_queue.py') `

@@ -277,6 +277,174 @@ async def test_job_create_completes_preflight_assignment_and_notification(monkey
     emit.assert_awaited_once()
 
 
+async def test_job_report_result_maps_other_storage_errors_to_conflicts(monkeypatch):
+    command = ReportResultRequest(result='NO_RECORD', message='No record found',
+        observedAt='2026-10-01T00:00:00Z', pageUrl='https://fixture.test/report')
+    monkeypatch.setattr(jobs, 'commit_report_result', AsyncMock(side_effect=ValueError('stale report')))
+
+    with pytest.raises(HTTPException) as conflict:
+        await jobs.save_report_result(uuid4(), command, request(runner=True), 'runner')
+
+    assert conflict.value.status_code == 409
+    assert conflict.value.detail == 'stale report'
+
+
+async def test_job_create_rejects_legacy_sources_and_unsupported_runner_states(monkeypatch):
+    monkeypatch.setattr('app.network_guard.require_connection', AsyncMock())
+    command = jobs.CreateJobRequest(runnerId='runner', filters={})
+
+    with pytest.raises(HTTPException) as retired_source:
+        await jobs.create_job(command.model_copy(update={'source': ReportSource.OLD}), request())
+    assert retired_source.value.status_code == 410
+
+    unsupported = live_runner('runner')
+    unsupported.source = ReportSource.OLD
+    reconnecting = live_runner('runner')
+    reconnecting.status = RunnerStatus.RECONNECTING
+    busy = live_runner('runner')
+    busy.current_job_id = str(uuid4())
+
+    for runner, expected_status in ((unsupported, 409), (reconnecting, 409), (busy, 409)):
+        monkeypatch.setattr(jobs.services.runners, 'get', AsyncMock(return_value=runner))
+        with pytest.raises(HTTPException) as rejected:
+            await jobs.create_job(command, request())
+        assert rejected.value.status_code == expected_status
+
+
+@pytest.mark.parametrize(('update_kind', 'update_run_id', 'update_task_id'), [
+    ('GLOBAL', None, None),
+    ('NORMAL', uuid4(), None),
+    ('NORMAL', None, 'retired-task'),
+])
+async def test_job_retry_rejects_missing_owner_and_retired_update_jobs(
+    monkeypatch, update_kind, update_run_id, update_task_id,
+):
+    monkeypatch.setattr('app.network_guard.require_connection', AsyncMock())
+    monkeypatch.setattr(jobs.services.runners, 'get', AsyncMock(return_value=live_runner('runner')))
+    retry_id = uuid4()
+    command = jobs.CreateJobRequest(runnerId='runner', retryOfJobId=retry_id, filters={})
+    get_job = AsyncMock(return_value=None)
+    monkeypatch.setattr(jobs.services.jobs, 'get', get_job)
+
+    with pytest.raises(HTTPException) as missing:
+        await jobs.create_job(command, request())
+    assert missing.value.status_code == 404
+
+    retry = SimpleNamespace(
+        id=retry_id,
+        case_id=None,
+        owner_username='test-admin',
+        session_id=uuid4(),
+        status=JobStatus.FAILED,
+        filters=command.filters,
+        source=ReportSource.NEW,
+        update_kind=update_kind,
+        update_run_id=update_run_id,
+        update_task_id=update_task_id,
+    )
+    get_job.return_value = retry
+    with pytest.raises(HTTPException) as wrong_owner:
+        await jobs.create_job(command, request(user='other-admin', role='admin'))
+    assert wrong_owner.value.status_code == 409
+
+    retry.owner_username = 'other-admin'
+    with pytest.raises(HTTPException) as retired_update:
+        await jobs.create_job(command, request(user='other-admin', role='admin'))
+    assert retired_update.value.status_code == 409
+    assert retired_update.value.detail == 'Maker Update has been removed.'
+
+
+async def test_job_create_maps_gate_and_assignment_races(monkeypatch):
+    from contextlib import asynccontextmanager
+
+    runner_id = 'runner-race'
+    session_id = uuid4()
+    existing_job_id = str(uuid4())
+    command = jobs.CreateJobRequest(runnerId=runner_id, sessionId=session_id, filters={})
+    monkeypatch.setattr('app.network_guard.require_connection', AsyncMock())
+    monkeypatch.setattr(jobs.services.runners, 'get', AsyncMock(return_value=live_runner(runner_id)))
+
+    class Connection:
+        async def scalar(self, _query):
+            return existing_job_id
+
+    @asynccontextmanager
+    async def connect():
+        yield Connection()
+
+    monkeypatch.setattr(jobs, 'engine', SimpleNamespace(connect=connect))
+    require_gate = AsyncMock(side_effect=ValueError('gate is blocked'))
+    monkeypatch.setattr('app.repositories.ui_contract.require_gate', require_gate)
+
+    with pytest.raises(HTTPException) as gate_error:
+        await jobs.create_job(command, request())
+    assert gate_error.value.status_code == 409
+
+    require_gate.side_effect = None
+    require_gate.return_value = 'gate'
+    assign = AsyncMock(side_effect=ValueError('runner assignment changed'))
+    monkeypatch.setattr(jobs.services.jobs, 'assign', assign)
+    with pytest.raises(HTTPException) as assignment_error:
+        await jobs.create_job(command, request())
+    assert assignment_error.value.status_code == 409
+
+    assign.side_effect = None
+    assign.return_value = None
+    with pytest.raises(HTTPException) as assignment_race:
+        await jobs.create_job(command, request())
+    assert assignment_race.value.status_code == 409
+
+    job = Job(runnerId=runner_id, ownerUsername='test-admin', sessionId=session_id,
+        filters={}, status=JobStatus.ASSIGNED)
+    assign.return_value = job
+    monkeypatch.setattr('app.repositories.ui_contract.bind_gate', AsyncMock())
+    monkeypatch.setattr(jobs.sio, 'emit', AsyncMock())
+    assert await jobs.create_job(command, request()) == job
+    assert require_gate.await_args.kwargs['fresh'] is False
+
+
+async def test_job_lookup_cancel_and_list_routes_cover_error_paths(monkeypatch):
+    job_id = uuid4()
+    get_job = AsyncMock(return_value=None)
+    monkeypatch.setattr(jobs.services.jobs, 'get', get_job)
+
+    with pytest.raises(HTTPException) as missing_get:
+        await jobs.get_job(job_id, request())
+    assert missing_get.value.status_code == 404
+
+    job = Job(id=job_id, runnerId='runner', ownerUsername='member', filters={})
+    get_job.return_value = job
+    with pytest.raises(HTTPException) as denied_get:
+        await jobs.get_job(job_id, request(user='another-member', role='member'))
+    assert denied_get.value.status_code == 404
+    assert await jobs.get_job(job_id, request(user='member', role='member')) == job
+
+    get_job.return_value = None
+    with pytest.raises(HTTPException) as missing_cancel:
+        await jobs.cancel_job(job_id, request())
+    assert missing_cancel.value.status_code == 404
+
+    terminal = job.model_copy(update={'status': JobStatus.COMPLETED})
+    get_job.return_value = terminal
+    with pytest.raises(HTTPException) as terminal_cancel:
+        await jobs.cancel_job(job_id, request(user='member', role='member'))
+    assert terminal_cancel.value.status_code == 409
+
+    get_job.return_value = job
+    transition = AsyncMock(return_value=None)
+    monkeypatch.setattr(jobs.services.jobs, 'transition_status', transition)
+    with pytest.raises(HTTPException) as transition_race:
+        await jobs.cancel_job(job_id, request(user='member', role='member'))
+    assert transition_race.value.status_code == 409
+
+    listed = [job]
+    list_all = AsyncMock(return_value=listed)
+    monkeypatch.setattr(jobs.services.jobs, 'list_all', list_all)
+    monkeypatch.setattr(jobs, 'owner_filter', lambda _request: 'member')
+    assert await jobs.list_jobs(request(user='member', role='member'), offset=4, limit=7) == listed
+    list_all.assert_awaited_once_with('member', offset=4, limit=7)
+
+
 async def test_data_handlers_cover_runner_logs_user_state_and_file_upload(monkeypatch):
     with pytest.raises(HTTPException) as unauthenticated:
         await data.runner_log(data.RunnerLog(message='fixture'), request(), 'runner-data')
