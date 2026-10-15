@@ -60,7 +60,7 @@ export function UiHealthContract({refreshToken=0,scrollIntoView=false}:{refreshT
             <td role="cell" data-label="Report browsers">{alert.workers.length ? alert.workers.join(', ') : '—'}</td>
             <td role="cell" data-label="Website issue"><strong>{websiteTargetLabel(alert.target)}</strong><p>{websiteIssueMessage(alert.code,alert.title)}</p></td>
             <td role="cell" data-label="Result"><span className="website-alert-blocked">Cannot start yet</span></td>
-            <td role="cell" data-label="Share with support"><button type="button" className="secondary-button" onClick={()=>void copy(alert.id,websiteCheckReport(status,[alert]))}>{copied===alert.id?'Copied':'Copy for support'}</button></td>
+            <td role="cell" data-label="Share with support"><button type="button" className="secondary-button" onClick={()=>void copy(alert.id,websiteCheckReport(status,[alert]))}>{copied===alert.id?'Copied':'Copy for support'}</button><details><summary>Details for support</summary><pre>{websiteCheckReport(status,[alert])}</pre></details></td>
           </tr>)}</tbody>
         </table>
       </div>
