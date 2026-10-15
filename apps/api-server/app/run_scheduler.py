@@ -11,7 +11,7 @@ from app.models.job import Job, JobStatus
 from app.repositories.postgres import TERMINAL
 from app.models.runner import RunnerStatus
 from app.repositories.batch_queue import BatchQueueRepository, MAX_FAILURES
-from app.repositories.run_schedules import RunScheduleRepository, now, active_elapsed_ms
+from app.repositories.run_schedules import PREFIX as SCHEDULE_PREFIX, RunScheduleRepository, now, active_elapsed_ms
 from app.realtime.server import sio
 from app.services import services
 from app.worker_pool import apply_pool, active_workers, live_worker, PoolError
@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 repository = RunScheduleRepository()
 queue = BatchQueueRepository()
 LEADER_LOCK = 846_217_035
+ACTIVE_SCHEDULE_STATUSES = {'PREPARING', 'RUNNING', 'PAUSING', 'RESUMING'}
+RELEASED_SCHEDULE_STATUSES = {'PAUSED', 'STOPPED', 'ERROR', 'COMPLETED', 'COMPLETED_WITH_ERRORS'}
 
 
 def preflight_waiting(error):
@@ -45,6 +47,18 @@ async def execution_busy(session_id):
         return bool(busy or planning or running_queue)
 
 
+async def another_scheduled_run_active(session_id):
+    """Keep a resumed schedule queued until the other scheduled run releases its slot."""
+    async with engine.connect() as connection:
+        other_session = db.app_settings.c.value['sessionId'].as_string()
+        other_status = db.app_settings.c.value['status'].as_string()
+        active = await connection.scalar(select(db.app_settings.c.key).where(
+            db.app_settings.c.key.like(SCHEDULE_PREFIX + '%'),
+            other_session.is_not(None), other_session != session_id,
+            other_status.in_(tuple(ACTIVE_SCHEDULE_STATUSES))).limit(1))
+        return bool(active)
+
+
 async def automatic_preflight(value, runner_ids):
     """Run the shared UI health gate under the schedule owner's identity."""
     from starlette.requests import Request
@@ -63,10 +77,12 @@ async def stop_scheduled_run(value, message='Scheduled run stopped.'):
         'status': 'STOPPED', 'networkPaused': False, 'tasks': None, 'message': message, 'lastFinishedAt': now().isoformat(),
         'activeElapsedMs': active_elapsed_ms(value), 'activeSegmentStartedAt': None}, value['owner'])
     if not session_id:
+        wake_scheduler()
         return
     try:
         await queue.set_status(UUID(session_id), value['owner'], 'PAUSED')
     except LookupError:
+        wake_scheduler()
         return  # Stop during planning, before the queue was created.
     async with engine.connect() as connection:
         payloads = list(await connection.scalars(select(db.jobs.c.payload).where(
@@ -80,11 +96,15 @@ async def stop_scheduled_run(value, message='Scheduled run stopped.'):
         await sio.emit('job:cancelled', {'jobId': str(job.id)}, room=f'runner:{job.runner_id}', namespace='/runner')
         await sio.emit('job:status', updated.model_dump(mode='json', by_alias=True),
             room=f'job:{job.id}', namespace='/ui')
+    wake_scheduler()
 
 
 async def checkpoint(value, changes):
-    return await repository.patch(value['id'], changes, session_id=value['sessionId'],
+    updated = await repository.patch(value['id'], changes, session_id=value['sessionId'],
         execution_epoch=value.get('executionEpoch', 0))
+    if updated is not None and changes.get('status') in RELEASED_SCHEDULE_STATUSES:
+        wake_scheduler()
+    return updated
 
 
 def queue_counts(tasks):
@@ -127,7 +147,8 @@ async def complete_run(value, counts, retry=None):
     await queue.set_status(UUID(value['sessionId']), value['owner'], 'PAUSED')
     if retry:
         counts = {**counts, 'retryProgress': {**retry, 'phase': 'DONE', 'complete': True}}
-    await repository.complete(value, counts)
+    if await repository.complete(value, counts) is not None:
+        wake_scheduler()
 
 
 async def connected_workers():
@@ -164,8 +185,9 @@ async def prepare_run(value):
                 return
         if not await still_current(value):
             return
-        if await execution_busy(session_id):
-            await checkpoint(value, {'stage': 'Waiting for other work', 'message': 'Waiting for the current run or filter preview to finish.'})
+        if await another_scheduled_run_active(session_id) or await execution_busy(session_id):
+            await checkpoint(value, {'stage': 'Waiting for other work',
+                'message': 'Waiting for the current run, another scheduled report, or filter preview to finish.'})
             return
         workers = await connected_workers()
         ready = [runner for runner in workers if runner.status == RunnerStatus.ONLINE and not runner.current_job_id]
@@ -315,7 +337,8 @@ async def scheduler_tick():
     if not connected:
         await suspend_runs()
     records = await repository.list()
-    active = [value for value in records if value.get('sessionId')]
+    active = [value for value in records if value.get('sessionId')
+        and value.get('status') in ACTIVE_SCHEDULE_STATUSES]
     for value in active:
         if not await owner_active(value['owner']):
             await stop_scheduled_run(value, 'The schedule owner account is inactive.')
