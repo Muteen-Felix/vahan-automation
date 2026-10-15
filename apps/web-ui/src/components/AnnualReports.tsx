@@ -182,8 +182,8 @@ function MonthlyData({refreshTrigger, coveragePlan}: {refreshTrigger?: number; c
           <div className="annual-month-coverage">{MONTHS.map((month, i) => <span key={month} className={shownData?.coverage.includes(i + 1) ? 'available' : ''}>{month}</span>)}</div>
           <p className="annual-summary-label">Last updated · {runTimeZoneLabel(timeZone)}</p><time>{dateTime(shownData?.summary.updatedAt ?? null)}</time>
         </section>
-        {coveragePlan && <ReportCoverage context={{year, dataset: shownData?.datasetId || dataset, state: search.state, rto: search.rto}}
-          plan={coveragePlan} refreshTrigger={(refreshTrigger ?? 0) + refresh} />}
+        <ReportCoverage context={{year, dataset: shownData?.datasetId || dataset, state: search.state, rto: search.rto}}
+          plan={coveragePlan ?? null} refreshTrigger={(refreshTrigger ?? 0) + refresh} />
       </aside>
     </div>
     <dialog ref={exportDialog} className="annual-export-dialog" aria-labelledby="annual-export-title"
