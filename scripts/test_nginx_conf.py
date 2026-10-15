@@ -37,5 +37,17 @@ class NginxLoginRateLimitTests(unittest.TestCase):
         self.assertNotIn('limit_req', generic.group('body'))
 
 
+class NginxServerTokensTests(unittest.TestCase):
+    """S6/DEF-22: responses must not disclose the nginx version."""
+
+    def test_server_block_turns_server_tokens_off_exactly_once(self):
+        settings = re.findall(r'^\s*server_tokens\s+(\w+)\s*;', CONFIG, re.MULTILINE)
+        self.assertEqual(settings, ['off'], settings)
+
+    def test_server_tokens_is_set_at_server_level_not_inside_a_location(self):
+        server_level = re.sub(r'location[^{]*\{[^{}]*\}', '', CONFIG)
+        self.assertRegex(server_level, r'(?m)^\s*server_tokens\s+off\s*;', 'server_tokens off must apply to every location')
+
+
 if __name__ == '__main__':
     unittest.main()

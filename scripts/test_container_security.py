@@ -149,10 +149,14 @@ def main() -> None:
                     ("Content-Security-Policy", EXPECTED_CSP)):
                 require(header_value(headers, header) == value,
                     f"Dashboard security header {header} is missing or changed.")
+            require(header_value(headers, "Server") == "nginx",
+                f"Dashboard Server header must be exactly 'nginx' (server_tokens off), got {header_value(headers, 'Server')!r}.")
             status, headers, _ = request(f"{web}/api/ready")
             require(header_value(headers, "X-Content-Type-Options") == "nosniff"
                 and header_value(headers, "Content-Security-Policy") == EXPECTED_CSP,
                 "Nginx security headers were not applied to proxied API responses.")
+            require(header_value(headers, "Server") == "nginx",
+                f"Proxied API Server header must be exactly 'nginx', got {header_value(headers, 'Server')!r}.")
 
             for origin, is_allowed in ((allowed_origin, True), ("https://evil.example", False)):
                 request_headers = {"Origin": origin, "Access-Control-Request-Method": "GET"}
