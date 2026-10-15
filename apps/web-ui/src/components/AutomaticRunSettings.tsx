@@ -102,7 +102,7 @@ export function AutomaticRunSettings({profiles, selectedProfileId, year, schedul
         <h2 id="automatic-run-heading">Automatic report schedule</h2>
         <p>Schedule and follow report collection.</p>
       </div><button type="button" className="secondary-button schedule-form-toggle" aria-haspopup="dialog" aria-expanded={formOpen} aria-controls="new-schedule-form"
-        onClick={() => {setError('');setNotice('');setFormOpen(true);}}>Show form</button></div>
+        onClick={() => {setError('');setNotice('');setFormOpen(true);}}>Create schedule</button></div>
       <dialog ref={formDialog} id="new-schedule-form" className="schedule-form-dialog" aria-labelledby="new-schedule-title"
         onCancel={event => {if (saving) event.preventDefault(); else setFormOpen(false);}}
         onClose={() => setFormOpen(false)}

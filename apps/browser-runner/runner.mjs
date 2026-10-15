@@ -33,6 +33,7 @@ if (!LOCAL_FIXTURE && (target.origin !== 'https://analytics.parivahan.gov.in' ||
 let browser, browserPromise, context, page, active, optionsBusy = false, authRequired = false, stopping = false;
 let optionsCancellation = null;
 let pageNeedsReset = false;
+let lastQueuePageAssignment = null;
 // Bumped on every (re)creation of the live browser context so a health check can tell that the
 // context it started with is gone; `tainted` quarantines a context whose cookies cannot be trusted.
 let contextEpoch = 0;
@@ -79,7 +80,13 @@ async function consumeQueue() {
         if (result.type === 'assigned' && result.job) {
           const jobId = result.job.jobId || result.job.id || result.jobId;
           if (!jobId) throw new Error('Queue claim returned an assigned job without an ID.');
-          const job = {...result.job, jobId: String(jobId)};
+          const sessionId = String(result.job.sessionId || result.job.session_id || '');
+          const revision = result.sessionRevision;
+          const refreshReportPage = !!lastQueuePageAssignment && (
+            lastQueuePageAssignment.sessionId !== sessionId || lastQueuePageAssignment.revision !== revision
+          );
+          if (sessionId && revision) lastQueuePageAssignment = {sessionId, revision};
+          const job = {...result.job, jobId: String(jobId), refreshReportPage};
           await execute(job);
           while (!stopping && active && active.jobId === jobId) await sleep(500);
         } else {
@@ -230,10 +237,10 @@ async function newPage() {
     if (page === monitored && response.status() === 401 && response.request().isNavigationRequest() && response.request().frame() === monitored.mainFrame()) authRequired = true;
   });
 }
-async function ensurePage(isCancelled = () => false) {
+async function ensurePage(isCancelled = () => false, forceFresh = false) {
   await launch();
   if (isCancelled()) throw new Error('VAHAN_OPTIONS_TIMEOUT: options loading was cancelled.');
-  if (page.isClosed() || pageNeedsReset) {
+  if (forceFresh || page.isClosed() || pageNeedsReset) {
     await retireReportPage(page);
     await newPage();
     pageNeedsReset = false;
@@ -354,7 +361,7 @@ async function execute(job) {
   const work = active = {...job, retries: 0, cancelled: false};
   try {
     await status('OPENING_VAHAN', undefined, work);
-    await ensurePage();
+    await ensurePage(() => false, work.refreshReportPage);
     await status('FILLING_FILTERS', undefined, work);
     const execution = await page.evaluate(config => globalThis.vahanDriver.fill(config), normalizeJobFilters(job.filters));
     assertCurrent(work);

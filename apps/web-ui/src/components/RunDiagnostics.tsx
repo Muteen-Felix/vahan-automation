@@ -61,7 +61,6 @@ export function RunDiagnostics({schedule}: {schedule: RunSchedule}) {
               <td>{elapsed(worker.jobAgeSeconds ?? worker.heartbeatAgeSeconds)}</td>
               <td>{worker.reachable === false ? 'Could not check connection' : !worker.connected ? 'Not connected' : worker.browserReady === false ? 'Browser not ready' : 'Connected'}</td></tr>)}</tbody></table></div>
         </details>}
-        <details><summary>Details for support</summary><pre>{JSON.stringify({status:schedule.status,message:schedule.message,operation:schedule.operation,diagnostics},null,2)}</pre></details>
       </div>
     </dialog>
   </section>;

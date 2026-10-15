@@ -48,12 +48,13 @@ async def attach_diagnostics(records):
         operation = value.get('operation') or {}
         heartbeat_age = age(operation.get('heartbeatAt') or value.get('updatedAt'))
         stage_age = age(operation.get('startedAt') or value.get('updatedAt'))
+        waiting_for_other_work = operation.get('stage') == 'Waiting for other work'
         stalled_workers = [worker['id'] for worker in workers if worker['jobId']
             and worker.get('jobAgeSeconds') is not None and worker['jobAgeSeconds'] >= 300]
         warning = None
         if heartbeat_age is not None and heartbeat_age >= 360:
             warning = 'The scheduler has not reported for over 6 minutes. Check the API / scheduler.'
-        elif value['status'] in {'PREPARING', 'RESUMING'} and stage_age is not None and stage_age >= 300:
+        elif value['status'] in {'PREPARING', 'RESUMING'} and not waiting_for_other_work and stage_age is not None and stage_age >= 300:
             warning = 'Preparation has remained at this step for over 5 minutes. Check the error and worker states below.'
         elif stalled_workers:
             warning = 'No new job status for over 5 minutes: ' + ', '.join(stalled_workers) + '. This is a possible delay, not a confirmed hang.'

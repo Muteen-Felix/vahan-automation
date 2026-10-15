@@ -3,12 +3,10 @@ import { updateMatrixYear } from './matrix-plan';
 import { request } from './services/api-client';
 
 export type CoverageContext = {year: number; dataset: string; state: string; rto: string};
-type CoverageOffice = {index: number; state: string; rto: string; name: string};
 export type ReportCoverageData = {
-  year: number; datasetId: string; total: number; covered: number; missing: number;
-  withData: number; noData: number; coveredThrough: number; missingIndices: number[];
-  firstMissing: CoverageOffice | null; lastSaved: (CoverageOffice & {savedAt: string}) | null;
-  canContinue: boolean; blockedReason: string; matrixLoaded: boolean;
+  year: number; datasetId: string; hasRun: boolean; matrixLoaded: boolean;
+  total: number; processed: number; withData: number; noData: number; failed: number;
+  pending: number; running: number; status: string; startedAt: string | null; lastActivityAt: string | null;
 };
 export function loadReportCoverage(context: CoverageContext, plan: MatrixPlan | null, signal?: AbortSignal) {
   return request<ReportCoverageData>('/api/annual-reports/coverage', {method: 'POST', signal,

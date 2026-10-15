@@ -25,12 +25,16 @@ def checkpoint_size(session):
 
 
 def task_document(row, policy=None):
+    recovery_pending = bool(policy and row['failures'] > 0 and (
+        row['status'] in {'PENDING', 'PROCESSING'}
+        or (row['status'] == 'FAILED' and not policy['finalPassStarted'])
+    ))
     return {
         'position': row['position'], 'name': row['scenario_name'],
         'status': row['status'], 'attempts': row['attempts'],
         'failures': row['failures'], 'runnerId': row['runner_id'],
         'jobId': row['job_id'], 'error': row['error'],
-        'recoveryPending': bool(policy and not policy['finalPassStarted'] and row['status'] == 'FAILED'),
+        'recoveryPending': recovery_pending,
     }
 
 
@@ -386,7 +390,7 @@ class BatchQueueRepository:
                     db.batch_queue_tasks.c.status == 'PROCESSING'))).mappings().first()
                 if existing:
                     return {'type': 'assigned', 'task': task_document(existing), 'jobId': runner.current_job_id,
-                            'recovered': True}
+                            'recovered': True, 'sessionRevision': session['updated_at'].isoformat()}
                 return {'type': 'runner_unavailable'}
             if runner.status == RunnerStatus.RECONNECTING or runner.source != 'new':
                 return {'type': 'runner_unavailable'}
@@ -467,4 +471,5 @@ class BatchQueueRepository:
                 db.batch_queue_tasks.c.session_id == str(session_id),
                 db.batch_queue_tasks.c.position == row['position']).values(**values))
         return {'type': 'assigned', 'task': task_document({**row, **values}, policy), 'jobId': str(job.id),
-                'recovered': False, 'job': job, 'retry': progress}
+                'recovered': False, 'job': job, 'retry': progress,
+                'sessionRevision': session['updated_at'].isoformat()}
