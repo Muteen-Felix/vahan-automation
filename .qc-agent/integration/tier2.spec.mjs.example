@@ -1,0 +1,17 @@
+// qc-agent:todo VERIFY: khung trung tính: viết kiểm tra thật, đổi tên todo_replace_me, thay b_host/HAR bằng giá trị thật rồi xoá dòng này
+// Khung Tầng 2 (đuôi .example = chưa hoạt động): trình duyệt của chính test mở UI của SUT; hệ thống ngoài (b_host) phát lại từ HAR.
+// Hạn chế: HAR chỉ áp lên browser context của test này. Nếu việc gọi hệ thống ngoài do một process khác thực hiện
+// (không đi qua trình duyệt của test) thì HAR không thấy traffic đó: chọn thiết kế khác cho tầng này.
+// Dùng khung: bỏ đuôi .example ở cả 5 file integration, viết luồng thật, đổi tên test (tên test = tên check trong oracle.required).
+import { test, expect } from './support.mjs';
+
+function requiredEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`thiếu biến môi trường ${name}`);
+  return value;
+}
+
+test('todo_replace_me', async ({ page }) => {
+  await page.goto(requiredEnv('APP_UI_URL'));
+  throw new Error('Khung chưa viết: thay bằng luồng thật qua UI (và đổi tên test này)');
+});

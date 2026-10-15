@@ -1,0 +1,11 @@
+# qc-agent:generated — flow khám phá UI (Midscene). URL do qc-agent thay bằng target.base_url + entry_path lúc chạy.
+# qc-agent:todo thay bằng các bước người dùng thật làm trên UI (aiTap / aiAssert...) rồi xoá dòng này
+web:
+  url: http://placeholder.invalid/  # bị adapter thay bằng target.base_url + entry_path
+  chromeArgs:
+    - --no-sandbox
+    - --disable-gpu
+tasks:
+  - name: kham-pha
+    flow:
+      - aiWaitFor: trang đã tải xong và hiển thị nội dung chính

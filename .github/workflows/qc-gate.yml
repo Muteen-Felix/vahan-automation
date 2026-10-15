@@ -1,0 +1,56 @@
+# qc-agent:generated — gate tự động của repo này. Ghim @<commit SHA> (không @main) và image theo digest.
+# Xem docs/usage-ci.md trong repo qc-agent. Bật chặn merge: branch protection yêu cầu job `qc-agent / vahan-automation` xanh.
+name: qc-gate
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      workers:
+        description: "vd semgrep,schemathesis — để trống = toàn bộ theo policy"
+        type: string
+        default: ""
+
+jobs:
+  qc:
+    permissions:               # quyền TỐI THIỂU; workflow tái sử dụng không xin thêm
+      contents: read
+      checks: write            # Check Run "qc-agent / vahan-automation"
+      pull-requests: write     # comment dính trên PR
+      packages: read           # kéo image từ GHCR
+    uses: Muteen-Felix/QC-Agent/.github/workflows/qc-gate.reusable.yml@d2cef36593a6eae891aacbf1e2ab2a61c174569b
+    with:
+      project: vahan-automation
+      image: "ghcr.io/minhduc-it/qc-agent@sha256:8d87867a641fd38f6e2ea274599d9e5d512a56d4c39a5bccc2c9f30d8aa65c5c"
+      workers: ${{ inputs.workers }}   # chạy tay: danh sách worker (rỗng = theo policy); PR: luôn rỗng
+      ghcr_username: "MinhDuc-IT"
+      sut_dockerfile: "Dockerfile"  # qc-agent:todo VERIFY: chọn Dockerfile trong [Dockerfile, apps/api-server/Dockerfile, apps/browser-runner/Dockerfile, apps/web-ui/Dockerfile] vì gợi ý xếp hạng, chưa xác nhận: ứng viên có dấu hiệu web xếp sau; rồi vị trí gốc > nông hơn > docker/ > sâu 2 cấp; rồi tên có api|server|backend; rồi thứ tự chữ. Dấu hiệu web: apps/web-ui/Dockerfile (tên 'ui' trong đường dẫn, tên 'web' trong đường dẫn, FROM nginx)
+      sut_health_path: "/health"  # qc-agent:todo VERIFY: chọn /health trong [/health (apps/api-server/app/api/health.py), /ready (apps/api-server/app/api/health.py)] vì gợi ý xếp hạng, chưa xác nhận: ưu tiên /api/health > /health > /healthz > còn lại theo thứ tự chữ
+      sut_ui_dockerfile: ".qc-agent/Dockerfile.ui"
+      sut_ui_context: "apps/web-ui"
+      sut_ui_port: "8080"
+      sut_env: |  # qc-agent:todo VERIFY: chọn VAHAN_API_CORS_ORIGINS trong [VAHAN_API_CORS_ORIGINS, VAHAN_API_SOCKETIO_CORS_ORIGINS] vì tên không chứa SOCKETIO/WS trước, rồi tên ngắn hơn
+        VAHAN_API_CORS_ORIGINS=http://ui:8080
+      sut_ui_build_args: |
+        VITE_API_URL=http://sut:8000
+      # SUT cần database (tuỳ chọn, mặc định KHÔNG bật): bỏ comment và điền khi SUT không khởi động được chỉ bằng sut_env. Xem docs/usage-ci.md, mục "SUT cần database".
+      # sut_db_image: <image DB>@sha256:<DIGEST>                   # ghim digest; loại DB do SUT chọn
+      # sut_db_env: |                                              # KHÔNG đặt bí mật ở đây
+      #   POSTGRES_DB=app
+      # sut_db_ready_cmd: pg_isready -h 127.0.0.1 -U app           # exit 0 = DB sẵn sàng (hoặc dùng sut_db_port: "5432")
+      # Bí mật đặt ở secret của repo SUT (nhiều dòng KEY=VALUE): SUT_SECRET_ENV cho SUT (DATABASE_URL=...@db:5432/app), SUT_DB_SECRET_ENV chỉ cho container db.
+      # SUT đã chạy sẵn ở nơi khác thì khai sut_base_url thay cho cả build/chạy SUT lẫn DB.
+    secrets:
+      GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+      SUT_SECRET_ENV: ${{ secrets.SUT_SECRET_ENV }}
+      SUT_DB_SECRET_ENV: ${{ secrets.SUT_DB_SECRET_ENV }}
+      QC_TEST_USERNAME: ${{ secrets.QC_TEST_USERNAME }}
+      QC_TEST_PASSWORD: ${{ secrets.QC_TEST_PASSWORD }}
+      qc_read_token: ${{ secrets.QC_READ_TOKEN }}
+      QC_API_TOKEN: ${{ secrets.QC_API_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
