@@ -1,4 +1,4 @@
-# qc-agent:generated gt — test case Ground-Truth. prd.sha256=6f42aedbe530479ff341b9afbc3eb448972b4bf9ac5bc124edbd1842efcfc8d8 prompt=gt-generate/1 model=claude-sonnet-5
+# qc-agent:generated gt — test case Ground-Truth. prd.sha256=3a4218c5cc0c7c7f6e114c4c4b88d011f7b0107fc8394746f91a2be77c879cd7 prompt=gt-generate/1 model=claude-sonnet-5
 # Đây là thứ QA duyệt. Trạng thái từng test case (status):
 #   draft     LLM đề xuất, CHƯA chạy trong gate.
 #   approved  đã duyệt: gate chạy và chặn merge nếu fail.
@@ -10,12 +10,12 @@
 version: 1
 prd:
   id: vahan
-  sha256: 6f42aedbe530479ff341b9afbc3eb448972b4bf9ac5bc124edbd1842efcfc8d8
+  sha256: 3a4218c5cc0c7c7f6e114c4c4b88d011f7b0107fc8394746f91a2be77c879cd7
   source: docs/prd/vahan-gt.md
 generated_by:
   model: claude-sonnet-5
   prompt_version: gt-generate/1
-status: approved
+status: draft
 stories:
 - story_id: US-1
   title: Tài khoản và phiên đăng nhập
@@ -254,8 +254,7 @@ stories:
       ứng; thông báo phải giúp người vận hành chọn bước xử lý. (FR-OBS-06)
   - ac_id: AC-7.7
     text: API audit phục vụ admin truy vết thao tác theo actor/time/event trong phạm
-      vi được ghi; không tuyên bố ghi đầy đủ mọi read request hay chống sửa tuyệt
-      đối. (FR-OBS-07)
+      vi được ghi; không tuyên bố ghi đầy đủ mọi read request hay chống sửa. (FR-OBS-07)
 - story_id: US-8
   title: Công cụ vận hành sản phẩm
   acs:
@@ -273,8 +272,8 @@ stories:
     text: Restore vào project tách biệt, giữ encryption key, đối chiếu dữ liệu và
       quyền runtime trước chuyển traffic. (FR-OPS-04)
   - ac_id: AC-8.5
-    text: Gói bàn giao nhận diện image/revision, cấu hình và bằng chứng; build thành
-      công không được ghi thành deployed/runtime pass. (FR-OPS-05)
+    text: Gói bàn giao nhận diện image/revision, bằng chứng; build thành công không
+      được ghi thành deployed/runtime pass. (FR-OPS-05)
 test_cases:
 - tc_id: TC-AC-1.1-5f862f
   title: Đăng nhập với username/password sai bị từ chối
@@ -298,6 +297,68 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-1.1-c63e59
+  title: Đăng nhập sai thông tin không trả về phiên hợp lệ
+  ac_refs:
+  - AC-1.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/auth/login
+      json:
+        password: wrongpass123
+        username: nonexistent_user_zzz
+    expect:
+      status:
+      - 401
+      - 422
+      json:
+      - path: $.ok
+        op: eq
+        value: false
+      - path: $.status
+        op: ne
+        value: 200
+- tc_id: TC-AC-1.1-ff58e7
+  title: Endpoint đăng nhập tồn tại và phản hồi đúng hợp đồng trạng thái
+  ac_refs:
+  - AC-1.1
+  kind: api_contract
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/auth/login
+    expect:
+      status:
+      - 200
+      - 422
+- tc_id: TC-AC-1.2-2922e3
+  title: Gọi API tạo lịch không có phiên đăng nhập bị từ chối
+  ac_refs:
+  - AC-1.2
+  - AC-1.9
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/run-schedules
+      json:
+        name: schedule-x
+        profileId: nonexistent-profile
+        repeat: once
+        startAt: '2099-01-01T00:00:00+07:00'
+        timezone: Asia/Ho_Chi_Minh
+    expect:
+      status:
+      - 401
+      - 403
 - tc_id: TC-AC-1.2-451131
   title: Gọi API tạo lịch mà không có phiên hợp lệ nhận từ chối
   ac_refs:
@@ -346,6 +407,26 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-1.2-de66c4
+  title: Gọi API quản trị không có phiên đăng nhập bị từ chối
+  ac_refs:
+  - AC-1.2
+  - AC-1.9
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: GET
+      path: /api/users
+    expect:
+      status:
+      - 401
+      - 403
+      json:
+      - path: $.status
+        op: ne
+        value: 200
 - tc_id: TC-AC-1.3-fe4ac4
   title: Gọi API activity polling không gây lỗi nhưng không coi là hoạt động người
     dùng theo PRD
@@ -365,6 +446,31 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-1.4-6643f0
+  title: Sau đăng xuất, gọi lại API được bảo vệ bị từ chối
+  ac_refs:
+  - AC-1.4
+  kind: flow
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/auth/logout
+    expect:
+      status:
+      - 200
+  - request:
+      method: GET
+      path: /api/users
+    expect:
+      status:
+      - 401
+      - 403
+      json:
+      - path: $.status
+        op: ne
+        value: 200
 - tc_id: TC-AC-1.4-708e15
   title: Sau khi đăng xuất, token phiên bị thu hồi không thể gọi API được bảo vệ
   ac_refs:
@@ -394,6 +500,28 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-1.5-311fcd
+  title: Đổi mật khẩu mới ngắn hơn 12 ký tự bị từ chối
+  ac_refs:
+  - AC-1.5
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/auth/password
+      json:
+        currentPassword: oldpass123456
+        newPassword: short
+    expect:
+      status:
+      - 401
+      - 422
+      json:
+      - path: $.status
+        op: ne
+        value: 200
 - tc_id: TC-AC-1.5-53d829
   title: Đổi mật khẩu mới ngắn hơn 12 ký tự bị từ chối
   ac_refs:
@@ -438,6 +566,26 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-1.6-2cc1ca
+  title: Reset mật khẩu quá ngắn bị từ chối theo giới hạn đầu vào
+  ac_refs:
+  - AC-1.6
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/users/{username}/password
+      path_params:
+        username: nonexistent_user
+      json:
+        newPassword: short
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-1.6-73aa8f
   title: Tạo tài khoản với username rỗng bị từ chối
   ac_refs:
@@ -462,6 +610,68 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-1.6-c46f21
+  title: Tạo tài khoản với username rỗng bị từ chối
+  ac_refs:
+  - AC-1.6
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/users
+      json:
+        password: somepassword1234
+        role: member
+        username: ''
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
+      json:
+      - path: $.status
+        op: ne
+        value: 201
+- tc_id: TC-AC-1.7-852808
+  title: Hạ role admin cuối cùng đang hoạt động bị từ chối
+  ac_refs:
+  - AC-1.7
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: PATCH
+      path: /api/users/{username}
+      path_params:
+        username: last_admin_example
+      json:
+        role: member
+    expect:
+      status:
+      - 401
+      - 403
+      - 404
+      - 422
+- tc_id: TC-AC-1.8-05da25
+  title: Đổi múi giờ hiển thị sang giá trị không hợp lệ bị từ chối
+  ac_refs:
+  - AC-1.8
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/run-schedules/time-zone
+      json:
+        timezone: Invalid/Zone
+    expect:
+      status:
+      - 401
+      - 422
 - tc_id: TC-AC-1.8-4b4505
   title: Gọi API đổi timezone lịch khi không có phiên hợp lệ bị từ chối
   ac_refs:
@@ -503,6 +713,58 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-2.1-62b68a
+  title: Tạo profile với tên trắng bị từ chối
+  ac_refs:
+  - AC-2.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/filter-profiles
+      json:
+        definition:
+          xAxis: MonthWise
+          yAxis: Maker
+          year: 2024
+        name: ''
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
+      json:
+      - path: $.status
+        op: ne
+        value: 200
+- tc_id: TC-AC-2.1-ab4267
+  title: Update profile với revision sai bị từ chối
+  ac_refs:
+  - AC-2.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: PUT
+      path: /api/filter-profiles/{profile_id}
+      path_params:
+        profile_id: nonexistent-profile-id
+      json:
+        definition:
+          xAxis: MonthWise
+          yAxis: Maker
+          year: 2024
+        name: updated-name
+        revision: 999999
+    expect:
+      status:
+      - 401
+      - 403
+      - 404
+      - 422
 - tc_id: TC-AC-2.1-b65009
   title: Update filter profile với revision sai bị từ chối
   ac_refs:
@@ -577,6 +839,51 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-2.1-eba453
+  title: Tạo profile với tên vượt quá 120 ký tự bị từ chối
+  ac_refs:
+  - AC-2.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/filter-profiles
+      json:
+        definition:
+          xAxis: MonthWise
+          yAxis: Maker
+          year: 2024
+        name: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
+- tc_id: TC-AC-2.2-005fab
+  title: Tạo profile với định nghĩa ngoài schema bị từ chối
+  ac_refs:
+  - AC-2.2
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/filter-profiles
+      json:
+        definition:
+          unsupportedField: true
+          xAxis: MonthWise
+          yAxis: Maker
+          year: 2024
+        name: bad-schema-profile
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-2.2-12f73a
   title: Tạo filter profile với values vượt quá giới hạn 100 bị từ chối
   ac_refs:
@@ -709,6 +1016,28 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-2.2-364638
+  title: Tạo profile với năm sai kiểu dữ liệu bị từ chối
+  ac_refs:
+  - AC-2.2
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/filter-profiles
+      json:
+        definition:
+          xAxis: MonthWise
+          yAxis: Maker
+          year: not-a-number
+        name: bad-year-profile
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-2.2-65e68a
   title: Tạo filter profile với năm sai kiểu dữ liệu bị từ chối
   ac_refs:
@@ -761,6 +1090,23 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-2.4-7edcfd
+  title: Lấy filter options thiếu tham số bắt buộc bị từ chối
+  ac_refs:
+  - AC-2.4
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/filter-profiles/options
+      json: {}
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-2.4-fee573
   title: Lấy option filter khi thiếu field hoặc tham số bắt buộc bị từ chối
   ac_refs:
@@ -784,6 +1130,32 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-2.7-10ee24
+  title: Combination rule tự tham chiếu bị từ chối
+  ac_refs:
+  - AC-2.7
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/filter-profiles
+      json:
+        definition:
+          combinationRules:
+          - field: State
+            ref: State
+            type: require
+          xAxis: MonthWise
+          yAxis: Maker
+          year: 2024
+        name: self-ref-rule
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-2.7-336c2f
   title: Tạo filter profile với field không hỗ trợ bị từ chối
   ac_refs:
@@ -847,6 +1219,70 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-2.7-c6ce4e
+  title: Trường không hỗ trợ trong include/exclude bị từ chối
+  ac_refs:
+  - AC-2.7
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/filter-profiles
+      json:
+        definition:
+          include:
+            UnsupportedField:
+            - x
+          xAxis: MonthWise
+          yAxis: Maker
+          year: 2024
+        name: unsupported-field-rule
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
+- tc_id: TC-AC-2.10-539375
+  title: Xóa profile với revision sai bị từ chối
+  ac_refs:
+  - AC-2.10
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: DELETE
+      path: /api/filter-profiles/{profile_id}
+      path_params:
+        profile_id: nonexistent-profile-id
+      query:
+        revision: 999999
+    expect:
+      status:
+      - 401
+      - 403
+      - 404
+      - 422
+- tc_id: TC-AC-2.10-d60cfe
+  title: Xóa profile thiếu tham số revision xác nhận bị từ chối
+  ac_refs:
+  - AC-2.10
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: DELETE
+      path: /api/filter-profiles/{profile_id}
+      path_params:
+        profile_id: nonexistent-profile-id
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-2.10-e03603
   title: Xóa filter profile với revision sai bị từ chối
   ac_refs:
@@ -871,6 +1307,23 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-3.1-728a58
+  title: Endpoint tạo lịch tồn tại và phản hồi đúng hợp đồng trạng thái
+  ac_refs:
+  - AC-3.1
+  kind: api_contract
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/run-schedules
+    expect:
+      status:
+      - 201
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-3.1-80daec
   title: Tạo lịch với thời gian quá khứ bị từ chối
   ac_refs:
@@ -920,6 +1373,47 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-3.1-93f265
+  title: Tạo lịch thiếu timezone bị từ chối
+  ac_refs:
+  - AC-3.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/run-schedules
+      json:
+        profileId: nonexistent-profile
+        repeat: once
+        startAt: '2099-01-01T00:00:00'
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
+- tc_id: TC-AC-3.1-c355da
+  title: Tạo lịch với thời gian quá khứ bị từ chối
+  ac_refs:
+  - AC-3.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/run-schedules
+      json:
+        profileId: nonexistent-profile
+        repeat: once
+        startAt: '2000-01-01T00:00:00+07:00'
+        timezone: Asia/Ho_Chi_Minh
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-3.2-513705
   title: Tạo lịch với timezone không hỗ trợ bị từ chối
   ac_refs:
@@ -945,6 +1439,49 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-3.2-59bf6e
+  title: Tạo lịch với múi giờ không được hỗ trợ bị từ chối
+  ac_refs:
+  - AC-3.2
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/run-schedules
+      json:
+        profileId: nonexistent-profile
+        repeat: once
+        startAt: '2099-01-01T00:00:00+00:00'
+        timezone: UTC
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
+- tc_id: TC-AC-3.2-660311
+  title: Tạo lịch once với timezone Asia/Kolkata hợp lệ được chấp nhận hoặc từ chối
+    do profile không tồn tại
+  ac_refs:
+  - AC-3.2
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/run-schedules
+      json:
+        profileId: nonexistent-profile
+        repeat: once
+        startAt: '2099-01-01T00:00:00+05:30'
+        timezone: Asia/Kolkata
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-3.2-82804f
   title: Tạo lịch với repeat kiểu daily bị từ chối
   ac_refs:
@@ -970,6 +1507,27 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-3.2-8b1191
+  title: Tạo lịch với repeat=daily bị từ chối
+  ac_refs:
+  - AC-3.2
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/run-schedules
+      json:
+        profileId: nonexistent-profile
+        repeat: daily
+        startAt: '2099-01-01T00:00:00+07:00'
+        timezone: Asia/Ho_Chi_Minh
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-3.9-460ea9
   title: Xóa lịch không tồn tại hoặc không đủ điều kiện bị từ chối
   ac_refs:
@@ -994,6 +1552,25 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-3.9-596f7b
+  title: Xóa lịch không tồn tại bị từ chối phù hợp
+  ac_refs:
+  - AC-3.9
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: DELETE
+      path: /api/run-schedules/{schedule_id}
+      path_params:
+        schedule_id: nonexistent-schedule-id
+    expect:
+      status:
+      - 401
+      - 403
+      - 404
+      - 422
 - tc_id: TC-AC-4.1-21fefc
   title: Claim case khi không có phiên runner hợp lệ bị từ chối
   ac_refs:
@@ -1014,6 +1591,40 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-4.1-c222b9
+  title: Claim case khi không có case khả dụng trả về trạng thái hợp lệ
+  ac_refs:
+  - AC-4.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/runner/queue/claim
+    expect:
+      status:
+      - 401
+      - 403
+      - 200
+      - 422
+- tc_id: TC-AC-4.3-39d7a8
+  title: Preflight thiếu dữ liệu đầu vào bị từ chối
+  ac_refs:
+  - AC-4.3
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/ui-health/preflight
+      json: {}
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-4.3-887e73
   title: Preflight với job không tồn tại bị từ chối
   ac_refs:
@@ -1037,6 +1648,25 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-4.5-1b4163
+  title: Bắt đầu OCR với job/captchaId không hợp lệ bị từ chối
+  ac_refs:
+  - AC-4.5
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/runner/ocr/start
+      json:
+        captchaId: nonexistent-captcha
+        jobId: nonexistent-job
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-4.5-d2a564
   title: Bắt đầu OCR với captchaId/challenge cũ hoặc job không tồn tại bị từ chối
   ac_refs:
@@ -1082,6 +1712,25 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-5.1-fc0d6d
+  title: Pause session không tồn tại trả về lỗi phù hợp
+  ac_refs:
+  - AC-5.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/batch-queue/sessions/{session_id}/pause
+      path_params:
+        session_id: nonexistent-session-id
+    expect:
+      status:
+      - 401
+      - 403
+      - 404
+      - 422
 - tc_id: TC-AC-5.2-26b392
   title: Resume session không tồn tại bị từ chối
   ac_refs:
@@ -1104,6 +1753,25 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-5.2-d46430
+  title: Resume session không tồn tại trả về lỗi phù hợp
+  ac_refs:
+  - AC-5.2
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /api/batch-queue/sessions/{session_id}/resume
+      path_params:
+        session_id: nonexistent-session-id
+    expect:
+      status:
+      - 401
+      - 403
+      - 404
+      - 422
 - tc_id: TC-AC-6.1-9bb102
   title: Xem báo cáo khi chưa có phiên hợp lệ bị từ chối
   ac_refs:
@@ -1127,6 +1795,24 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-6.1-a417d1
+  title: Xem báo cáo với tham số year sai kiểu bị từ chối
+  ac_refs:
+  - AC-6.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: GET
+      path: /api/annual-reports
+      query:
+        year: invalid-year
+    expect:
+      status:
+      - 401
+      - 403
+      - 422
 - tc_id: TC-AC-6.4-09c6a0
   title: Yêu cầu phân trang vượt quá 100 dòng/trang bị từ chối hoặc giới hạn
   ac_refs:
@@ -1152,6 +1838,21 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-6.6-7141b5
+  title: Endpoint export báo cáo tồn tại và phản hồi đúng hợp đồng trạng thái
+  ac_refs:
+  - AC-6.6
+  kind: api_contract
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: GET
+      path: /api/annual-reports/export
+    expect:
+      status:
+      - 200
+      - 422
 - tc_id: TC-AC-6.6-9162d1
   title: Export filtered theo state cụ thể trả về dữ liệu khớp điều kiện
   ac_refs:
@@ -1177,6 +1878,27 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-6.7-30fff6
+  title: Export all thiếu confirmAll=true nhận 409
+  ac_refs:
+  - AC-6.7
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: GET
+      path: /api/annual-reports/export
+      query:
+        dataset: default
+        year: 2024
+    expect:
+      status:
+      - 409
+      json:
+      - path: $.status
+        op: eq
+        value: 409
 - tc_id: TC-AC-6.7-310826
   title: Export all thiếu confirmAll=true khi không có State/RTO search trả về lỗi
     xác nhận
@@ -1228,6 +1950,44 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-6.9-fa7e6d
+  title: Export filtered không có dòng khớp trả về 404
+  ac_refs:
+  - AC-6.9
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: GET
+      path: /api/annual-reports/export
+      query:
+        confirmAll: false
+        dataset: default
+        state: NonExistentStateZZZ
+        year: 2024
+    expect:
+      status:
+      - 404
+      json:
+      - path: $.status
+        op: eq
+        value: 404
+- tc_id: TC-AC-7.1-1847df
+  title: Run History không có phiên admin bị từ chối
+  ac_refs:
+  - AC-7.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: GET
+      path: /api/annual-reports/run-history
+    expect:
+      status:
+      - 401
+      - 403
 - tc_id: TC-AC-7.1-7283a5
   title: Run History chỉ admin xem, member hoặc chưa đăng nhập bị từ chối
   ac_refs:
@@ -1284,6 +2044,21 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-7.7-348571
+  title: API audit không có phiên admin bị từ chối
+  ac_refs:
+  - AC-7.7
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: GET
+      path: /api/audit
+    expect:
+      status:
+      - 401
+      - 403
 - tc_id: TC-AC-8.2-c375a7
   title: Endpoint readiness trả về trạng thái sẵn sàng
   ac_refs:
@@ -1302,6 +2077,21 @@ test_cases:
       - path: $
         op: ne
         value: null
+- tc_id: TC-AC-8.3-d7ea61
+  title: Danh sách backup files yêu cầu quyền truy cập phù hợp
+  ac_refs:
+  - AC-8.3
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: GET
+      path: /api/files
+    expect:
+      status:
+      - 401
+      - 403
 uncovered_acs:
 - ac_id: AC-2.3
   reason: Việc hỗ trợ đầy đủ các loại field cụ thể cần kiểm tra qua catalog nội bộ
