@@ -114,7 +114,7 @@ API export hiện chấp nhận tối đa 1.048.573 dòng dữ liệu do workboo
 - AC-7.4: ETA dựa trên throughput/active elapsed của lượt; thiếu mẫu, pause hoặc stall phải thể hiện chờ/không xác định phù hợp. Sai số cần được đo, không cam kết giờ hoàn thành tuyệt đối. (FR-OBS-04)
 - AC-7.5: UI Health cung cấp diagnostics có thể copy/download, liên hệ với runner/check; trạng thái mất kết nối không được tự coi là đã sửa DOM. (FR-OBS-05)
 - AC-7.6: Phân biệt chờ runner/bận planning với lỗi website khi có bằng chứng tương ứng; thông báo phải giúp người vận hành chọn bước xử lý. (FR-OBS-06)
-- AC-7.7: API audit phục vụ admin truy vết thao tác theo actor/time/event trong phạm vi được ghi; không tuyên bố ghi đầy đủ mọi read request hay chống sửa tuyệt đối. (FR-OBS-07)
+- AC-7.7: API audit phục vụ admin truy vết thao tác theo actor/time/event trong phạm vi được ghi; không tuyên bố ghi đầy đủ mọi read request hay chống sửa. (FR-OBS-07)
 
 ## US-8: Công cụ vận hành sản phẩm
 
