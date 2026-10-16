@@ -22,6 +22,12 @@
    "command": "cd apps/api-server && python -m pytest tests"
   },
   {
+   "path": "apps/api-server/tests/test_api_handlers.py",
+   "status": "ci",
+   "via": "workflow-run",
+   "command": "cd apps/api-server && python -m pytest tests"
+  },
+  {
    "path": "apps/api-server/tests/test_assignment_diagnostics.py",
    "status": "ci",
    "via": "workflow-run",

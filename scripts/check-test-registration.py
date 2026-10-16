@@ -259,6 +259,11 @@ class Resolver:
                                 self.add(found, via, label)
                         elif (self.root / target).is_file():
                             self.add(target, via, label)
+                elif module == "coverage" and rest[:1] == ["run"]:
+                    nested_module = next((position for position, token in enumerate(rest) if token == "-m"), None)
+                    if nested_module is not None and nested_module + 1 < len(rest):
+                        self.interpret(["python", "-m", *rest[nested_module + 1:]],
+                                       workdir, via, label, depth + 1)
                 elif module == "unittest" and rest[:1] == ["discover"]:
                     directory, pattern = ".", "test*.py"
                     for position, token in enumerate(rest):

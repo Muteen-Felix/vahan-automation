@@ -132,7 +132,11 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(snapshot['tasks'][1]['failures'],0)
         self.assertIn((await queue.claim(UUID(saved['sessionId']),saved['owner'],'playwright-2'))['type'],{'paused','network_paused'})
         await record(True)
-        await scheduler_tick();await scheduler_tick();await scheduler_tick()
+        await scheduler_tick()
+        resuming=await self.repo.get(saved['id'])
+        self.assertEqual(resuming['status'],'RESUMING')
+        self.assertFalse(resuming['networkPaused'])
+        await scheduler_tick();await scheduler_tick()
         current=await self.repo.get(saved['id']);self.assertEqual(current['status'],'RUNNING')
         self.assertEqual(current['sessionId'],saved['sessionId'])
         retry=[job for job in await self.jobs() if job.retry_of_job_id==jobs[1].id][0]

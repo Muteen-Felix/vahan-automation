@@ -16,7 +16,7 @@ function statusLabel(data: ReportCoverageData | null | undefined) {
 }
 
 export function ReportCoverage({context, plan, refreshTrigger}: {
-  context: CoverageContext; plan: MatrixPlan; refreshTrigger?: number;
+  context: CoverageContext; plan: MatrixPlan | null; refreshTrigger?: number;
 }) {
   const viewKey = JSON.stringify(context);
   const queryKey = useMemo(() => [viewKey, plan], [viewKey, plan]);
@@ -53,11 +53,11 @@ export function ReportCoverage({context, plan, refreshTrigger}: {
       aria-valuetext={hasRun ? `${processed} of ${shown!.total} update cases processed (${percent.toFixed(1)}%)`
         : 'No update has run for this report year'}>
       <span style={{width: `${percent}%`}} /></div>
-    {shown?.matrixLoaded && <div className="report-coverage-details">
+    {shown && <div className="report-coverage-details">
       {hasRun ? <>
         <p><span>Results</span><strong>{shown.withData.toLocaleString('en-GB')} with data · {shown.noData.toLocaleString('en-GB')} no data
           {shown.failed > 0 && ` · ${shown.failed.toLocaleString('en-GB')} failed`}</strong></p>
-      </> : <p><span>Latest update</span><strong>No matching update run has started.</strong></p>}
+      </> : <p><span>Latest update</span><strong>No update run is available for this report yet.</strong></p>}
     </div>}
     {error && <p className="annual-error" role="alert">{operatorMessage(error)}</p>}
   </section>;
