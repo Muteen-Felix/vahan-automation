@@ -25,12 +25,21 @@ log trong gói bàn giao, không nằm ở đây. Rủi ro còn lại: `docs/rel
 
 - `POST /api/annual-reports/coverage` trả **tiến độ của lần chạy gần nhất** (tổng, đã xử lý, có dữ liệu, không dữ liệu, lỗi,
   đang chờ, đang chạy, trạng thái) theo năm và bộ lọc; dữ liệu tháng đã lưu không được tính là tiến độ.
+- Khối tiến độ cập nhật báo cáo hiển thị cho **mọi người dùng** (kể cả member) và luôn hiện; chưa có lần chạy thì báo
+  "No update run is available for this report yet.".
 - Thông báo "Report saved" thay bằng trạng thái dữ liệu; nút tạo lịch đổi nhãn thành "Create schedule"; export có hộp xác nhận
   trong ứng dụng thay cho hộp thoại trình duyệt.
 - PostgreSQL dùng **image chính thức pin theo digest**; image tự build bị bỏ.
 - Python cài từ `requirements.lock` có hash; base image pin digest.
 - Phiên bản đồng bộ `1.0.0`: `apps/api-server/pyproject.toml`, `apps/web-ui/package.json`, `apps/browser-runner/package.json`
   và hai `package-lock.json`.
+
+### Phát triển và kiểm thử
+
+- Bộ unit test handler API (`apps/api-server/tests/test_api_handlers.py`) và hai script chạy nhanh trên Windows
+  (`apps/api-server/scripts/test-quick.ps1`, `test-api-all.ps1`).
+- Công cụ `coverage` (chỉ môi trường phát triển/CI, thêm vào `requirements-dev.lock`; không nằm trong image): CI yêu cầu độ phủ
+  `app/api` tối thiểu 90,1%.
 
 ### Gỡ bỏ
 
