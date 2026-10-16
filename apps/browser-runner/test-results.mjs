@@ -74,19 +74,34 @@ try {
     assert.equal((await pending).type, 'DATA_READY');
   });
   await check('result reader starts during navigation before body exists', async () => {
-    const server = createServer((_request, response) => {
+    let streamingResponse;
+    const server = createServer((request, response) => {
+      if (request.url === '/release-body') {
+        streamingResponse.end('</head><body><section class="report-main-column"><h2>RTO (PUNE-MH12)</h2>' + table() + '</section></body></html>');
+        response.writeHead(204); response.end();
+        return;
+      }
+      if (request.url !== '/') { response.writeHead(404); response.end(); return; }
       response.writeHead(200, {'Content-Type': 'text/html'});
       response.write('<!doctype html><html><head><title>Loading report</title>');
-      setTimeout(() => response.end('</head><body><section class="report-main-column"><h2>RTO (PUNE-MH12)</h2>' + table() + '</section></body></html>'), 300);
+      streamingResponse = response;
     });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     try {
       await page.goto(`http://127.0.0.1:${server.address().port}/`, {waitUntil: 'commit'});
       assert.equal(await page.evaluate(() => document.body), null);
-      const result = await page.evaluate(() => vahanDriver.result(1500, 'PUNE-MH12'));
+      const result = await page.evaluate(async () => {
+        const pending = vahanDriver.result(5000, 'PUNE-MH12');
+        // The server sends the body only after the reader has started.
+        await fetch('/release-body');
+        return pending;
+      });
       assert.equal(result.type, 'DATA_READY');
       assert.deepEqual(result.report.tables[0].rows[1].cells, ['Example', '123']);
-    } finally { await new Promise(resolve => server.close(resolve)); }
+    } finally {
+      if (streamingResponse && !streamingResponse.writableEnded) streamingResponse.end();
+      await new Promise(resolve => server.close(resolve));
+    }
   });
   for (const dynamic of [false, true]) {
     await check(`category group with ${dynamic ? 'delayed' : 'unchanged'} subcategory options`, async () => {
