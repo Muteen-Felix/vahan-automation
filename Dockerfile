@@ -9,7 +9,9 @@ RUN apt-get update && apt-get upgrade -y \
         libgssapi-krb5-2 libpam0g libsystemd0 libzstd1 liblz4-1 libselinux1 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=postgres /usr/lib/postgresql/17 /usr/lib/postgresql/17
-COPY --from=postgres /usr/share/postgresql/17 /usr/share/postgresql/17
+# The official image moves postgresql.conf.sample to /usr/share/postgresql/ and leaves a relative symlink in 17/,
+# so the whole directory is copied (copying only 17/ leaves the symlink dangling and initdb fails).
+COPY --from=postgres /usr/share/postgresql /usr/share/postgresql
 COPY --from=postgres /usr/lib/x86_64-linux-gnu/libpq.so.5* /usr/lib/x86_64-linux-gnu/
 # Fail the build, not the run, if the copied PostgreSQL misses a shared library.
 RUN ! { ldd /usr/lib/postgresql/17/bin/postgres /usr/lib/postgresql/17/bin/pg_ctl /usr/lib/postgresql/17/bin/initdb /usr/lib/postgresql/17/bin/createdb | grep 'not found'; }
