@@ -20,12 +20,29 @@ QUERY = f"""SELECT json_build_object(
    AND {DAILY_BLOCKING_SQL}));"""
 
 
-def capture(arguments):
+def capture(arguments, *, timeout=30):
     try:
         return subprocess.run([*COMPOSE, *arguments], cwd=ROOT, check=True,
-            capture_output=True, text=True, timeout=30).stdout.strip()
+            capture_output=True, text=True, timeout=timeout).stdout.strip()
     except (subprocess.SubprocessError, OSError) as error:
         raise RuntimeError('Cannot verify deployment safety. Check Docker and PostgreSQL before retrying.') from error
+
+
+def start_stopped_database():
+    """Restore access to an existing stopped database before the launcher checks saved work.
+
+    ``start`` uses the existing container and volume; it never creates a database or switches its image.
+    The read-only ``--check-release`` path must not call this function.
+    """
+    if capture(['ps', '--status', 'running', '-q', 'postgres']):
+        return
+    postgres = capture(['ps', '-a', '-q', 'postgres'])
+    if not postgres:
+        return  # Fresh installs and missing databases are classified by check_release().
+    stopped = capture(['ps', '-a', '--status', 'exited', '-q', 'postgres'])
+    if stopped != postgres:
+        raise RuntimeError('Existing PostgreSQL is not stopped normally. Restore database access before deploying.')
+    capture(['start', '--wait', '--wait-timeout', '180', 'postgres'], timeout=190)
 
 
 def check_release():

@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from worker_capacity import assess_worker_capacity, print_assessment
-from deployment_guard import check_release
+from deployment_guard import check_release, start_stopped_database
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,6 +86,8 @@ def main() -> int:
         print("Docker Compose configuration is valid.")
         return 0
 
+    if not args.check_release:
+        start_stopped_database()
     evidence = check_release()
     if args.check_release:
         print(f"Deployment safety check passed: {evidence}")

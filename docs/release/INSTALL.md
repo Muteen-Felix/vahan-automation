@@ -91,6 +91,11 @@ docker compose --env-file .docker.env down                 # gỡ container, GI�
 **Không** dùng `down -v` nếu cần giữ dữ liệu. Gỡ hẳn (mất dữ liệu): `down -v` rồi xóa thư mục cài đặt và image `vahan-review/*`.
 Reset dữ liệu test: `TEST-DATA.md`.
 
+Launcher tự khởi động lại container PostgreSQL đã dừng và chờ sẵn sàng trước khi kiểm tra an toàn; không cần chạy
+`start postgres` riêng. Container và volume PostgreSQL hiện có được giữ nguyên. Nếu dữ liệu còn job/queue/lịch hoạt động,
+launcher vẫn từ chối cập nhật. `--check-release` chỉ đọc, không khởi động service; khi PostgreSQL đang dừng, kiểm tra này
+vẫn báo chưa thể xác minh an toàn.
+
 ## 7. Nâng cấp tại chỗ (có dữ liệu)
 
 Áp dụng khi máy đã chạy một bản cũ. **Không** `down -v`; **không** dùng `docker compose up` với tag cũ.
