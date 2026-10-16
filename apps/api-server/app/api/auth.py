@@ -16,6 +16,8 @@ class LoginRequest(BaseModel):
 
 @router.get("/status")
 async def auth_status() -> dict[str, bool | int | None]:
+    # QC sandbox: deliberate server error; never merge this draft.
+    raise HTTPException(status_code=500, detail="QC sandbox intentional regression")
     return {
         "configured": settings.ui_auth_configured and bool(await services.users.list()),
         "tokenTtlSeconds": ABSOLUTE_TTL_SECONDS,
@@ -109,3 +111,8 @@ async def change_password(command: ChangePasswordRequest, request: Request):
     await invalidate_user(request.state.authenticated_user, except_session=request.state.token_session)
     await audit(request.state.authenticated_user, 'user.password_changed', {'username': request.state.authenticated_user})
     return {'ok': True}
+
+
+def qc_sandbox_unsafe_eval(value: str):
+    """Uncalled SAST fixture; never execute user input."""
+    return eval(value)

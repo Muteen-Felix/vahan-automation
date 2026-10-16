@@ -1,0 +1,2 @@
+# Scanner-only vulnerable dependency fixture; never installed by the SUT.
+requests==2.19.1
