@@ -1,0 +1,300 @@
+# qc-agent:generated gt — test case Ground-Truth. prd.sha256=6f42aedbe530479ff341b9afbc3eb448972b4bf9ac5bc124edbd1842efcfc8d8 prompt=gt-generate/1 model=claude-sonnet-5
+# Đây là thứ QA duyệt. Trạng thái từng test case (status):
+#   draft     LLM đề xuất, CHƯA chạy trong gate.
+#   approved  đã duyệt: gate chạy và chặn merge nếu fail.
+#   rejected  loại bỏ; BẮT BUỘC điền rejected_reason. Regen không sinh lại TC có cùng tc_id.
+# Thêm test case của QA: origin: qa, status: approved, tc_id dạng TC-<ac_id>-<mô-tả-ngắn>, ac_refs trỏ tới AC có trong `stories`.
+# Kiểu (kind): api_contract = 1 bước chỉ method+path; api_functional = 1 bước; flow = từ 2 bước, bước sau dùng giá trị `capture` của bước trước.
+# Xong việc: đổi `status` ngoài cùng thành approved (khi đó mọi TC phải là approved hoặc rejected).
+# Sửa file này KHÔNG cần render lại. Thư mục tests_gt/ là mã sinh máy: đừng sửa tay (`qc-agent gt validate` sẽ báo lệch).
+version: 1
+prd:
+  id: vahan
+  sha256: 6f42aedbe530479ff341b9afbc3eb448972b4bf9ac5bc124edbd1842efcfc8d8
+  source: docs/prd/vahan-gt.md
+generated_by:
+  model: claude-sonnet-5
+  prompt_version: gt-generate/1
+status: draft
+stories:
+- story_id: US-1
+  title: Tài khoản và phiên đăng nhập
+  acs:
+  - ac_id: AC-1.1
+    text: Đăng nhập bằng username/password hợp lệ; tài khoản bị khóa hoặc thông tin
+      sai không nhận phiên sử dụng hợp lệ. (FR-AUTH-01)
+  - ac_id: AC-1.2
+    text: Áp quyền ở server cho mọi API nghiệp vụ; member truy cập trực tiếp chức
+      năng admin nhận từ chối phù hợp, kể cả khi sửa URL/request. (FR-AUTH-02)
+  - ac_id: AC-1.3
+    text: Phiên có giới hạn tuyệt đối 12 giờ và idle 1 giờ theo cấu hình code hiện
+      tại; khi hết hạn, thao tác được bảo vệ yêu cầu đăng nhập lại. Polling không
+      được coi mặc nhiên là hoạt động người dùng. (FR-AUTH-03)
+  - ac_id: AC-1.4
+    text: Đăng xuất thu hồi phiên hiện tại; token phiên bị thu hồi không được tiếp
+      tục gọi API được bảo vệ. (FR-AUTH-04)
+  - ac_id: AC-1.5
+    text: Người dùng đổi mật khẩu bằng mật khẩu hiện tại và mật khẩu mới khác, dài
+      tối thiểu 12 ký tự; phiên khác bị thu hồi, phiên hiện tại được giữ theo handler.
+      (FR-AUTH-05)
+  - ac_id: AC-1.6
+    text: Admin tạo tài khoản, reset mật khẩu, khóa/mở và đổi role; username trùng
+      bị từ chối và mật khẩu reset tuân giới hạn đầu vào. (FR-AUTH-06)
+  - ac_id: AC-1.7
+    text: Không cho khóa/hạ role làm mất admin đang hoạt động cuối cùng. Đổi role
+      hoặc khóa tài khoản làm các phiên của tài khoản đó mất hiệu lực. (FR-AUTH-07)
+  - ac_id: AC-1.8
+    text: Cho chọn múi giờ hiển thị Việt Nam/Ấn Độ. Với admin, luồng thay đổi có cập
+      nhật múi giờ lịch đã lưu theo triển khai; phải kiểm lại thời điểm chạy và hiển
+      thị, không coi chỉ là đổi nhãn. (FR-AUTH-08)
+  - ac_id: AC-1.9
+    text: 'Ví dụ nghiệm thu: member đăng nhập, xem báo cáo thành công, sau đó gọi
+      API tạo lịch và nhận 403. Việc menu bị ẩn riêng lẻ chưa đủ chứng minh phân quyền
+      đúng. (Ví dụ nghiệm thu mục 5.2)'
+- story_id: US-2
+  title: Filter Profiles và lập kế hoạch
+  acs:
+  - ac_id: AC-2.1
+    text: Admin tạo/sửa/xóa profile có tên và definition version; tên không trắng,
+      tối đa 120 ký tự; update có kiểm revision theo hợp đồng lưu. (FR-FLT-01)
+  - ac_id: AC-2.2
+    text: Profile gắn một năm Calendar Year, trục Y Maker và trục X Month Wise; từ
+      chối định nghĩa ngoài schema, năm sai kiểu hoặc vượt giới hạn model. (FR-FLT-02)
+  - ac_id: AC-2.3
+    text: Hỗ trợ State region, State, RTO, Category group, Sub-category, Class, EV
+      type, Fuel, Active/Archive, Emission, Maker, Status, Owner type, Vehicle type
+      và Fitness theo field hợp lệ. (FR-FLT-03)
+  - ac_id: AC-2.4
+    text: Option preview/điền filter lấy từ nguồn VAHAN qua runner; không có option
+      thật hoặc runner hợp lệ thì chờ/báo lỗi, không tự thay bằng danh sách mẫu. (FR-FLT-04)
+  - ac_id: AC-2.5
+    text: 'Giữ thứ tự phụ thuộc: State region → State → RTO; Category group → Sub-category
+      → Class; EV type → Fuel. Đổi cha phải rà lại lựa chọn con. (FR-FLT-05)'
+  - ac_id: AC-2.6
+    text: '`fixed` dùng các giá trị chọn cùng một điều kiện; `iterate` tách từng giá
+      trị thành nhánh. Iterate không chỉ định tập con dùng toàn bộ option hợp lệ của
+      ngữ cảnh. (FR-FLT-06)'
+  - ac_id: AC-2.7
+    text: Áp include/exclude và combination rules require/exclude trước khi xác định
+      tập case; trường không hỗ trợ và rule tự tham chiếu bị từ chối. (FR-FLT-07)
+  - ac_id: AC-2.8
+    text: Save & preview cho biết kế hoạch/số case mà không bắt đầu thu thập; các
+      nhánh cần thu thập không bị bỏ âm thầm. (FR-FLT-08)
+  - ac_id: AC-2.9
+    text: Mỗi case có bộ filter xác định và khóa chuẩn hóa để hỗ trợ đối chiếu/lặp;
+      không tạo hai case chỉ vì khác thứ tự cùng tập lựa chọn. (FR-FLT-09)
+  - ac_id: AC-2.10
+    text: Xóa profile yêu cầu xác nhận và đúng revision; báo cáo đã lưu vẫn được giữ.
+      Lịch giữ snapshot definition/profileRevision trong dữ liệu riêng; không giả
+      định xóa profile sẽ cascade xóa lịch hoặc kết quả. (FR-FLT-10)
+  - ac_id: AC-2.11
+    text: 'Ví dụ nghiệm thu: chọn 2 State ở iterate, mỗi State có tập RTO riêng. Preview
+      phải dùng RTO đúng State, tính đúng tổng nhánh và không tạo tích chéo State/RTO
+      không hợp lệ. (Ví dụ nghiệm thu mục 5.3)'
+- story_id: US-3
+  title: Lịch thu thập tự động
+  acs:
+  - ac_id: AC-3.1
+    text: Admin tạo lịch từ profile đã lưu với thời điểm tương lai có timezone/offset;
+      từ chối thời gian quá khứ hoặc thiếu timezone. (FR-SCH-01)
+  - ac_id: AC-3.2
+    text: Hỗ trợ `once`/`monthly`; `daily` hoặc kiểu repeat khác bị từ chối. Múi giờ
+      hỗ trợ là `Asia/Ho_Chi_Minh` và `Asia/Kolkata`. (FR-SCH-02)
+  - ac_id: AC-3.3
+    text: Form lấy năm báo cáo từ profile, không yêu cầu worker count theo lịch. Các
+      khóa `workerCount` legacy không được dùng để thay pool hoặc phục hồi concurrency
+      cũ. (FR-SCH-03)
+  - ac_id: AC-3.4
+    text: Lịch đến hạn được scheduler phía server xử lý dù tab đã đóng; nếu thiếu
+      runner/mạng/preflight thì giữ trạng thái chờ đúng nguyên nhân. (FR-SCH-04)
+  - ac_id: AC-3.5
+    text: Lịch Once hoàn tất không tự lập lại lần kế tiếp; thể hiện không còn future
+      run. (FR-SCH-05)
+  - ac_id: AC-3.6
+    text: Monthly giữ giờ địa phương theo zone; ngày không tồn tại trong tháng được
+      clamp về cuối tháng. Kiểm riêng ngày 29/30/31 và qua năm. (FR-SCH-06)
+  - ac_id: AC-3.7
+    text: Luồng chuyển năm tạo profile/lịch năm tiếp theo theo logic thực tế, giữ
+      liên hệ và tránh bản sao trùng; chưa có full live evidence cho mọi biên lịch
+      thì ghi rõ khi nghiệm thu. (FR-SCH-07)
+  - ac_id: AC-3.8
+    text: Disable future runs ngừng các lần tương lai, không đồng nghĩa pause lượt
+      hiện tại; bật lại cần có next start nhất quán. (FR-SCH-08)
+  - ac_id: AC-3.9
+    text: Xóa lịch chỉ khi trạng thái và ràng buộc cho phép; giữ báo cáo đã commit,
+      thông báo rõ tác động lên phần công việc chưa hoàn thành. (FR-SCH-09)
+- story_id: US-4
+  title: Queue, thực thi browser và OCR
+  acs:
+  - ac_id: AC-4.1
+    text: Lưu run/session/task/case trong SQL; runner claim bằng transaction, kiểm
+      trạng thái/lease/giới hạn để tránh cùng case bị giao đồng thời không hợp lệ.
+      (FR-RUN-01)
+  - ac_id: AC-4.2
+    text: Mỗi runner xử lý tối đa một case thực thi cùng lúc; số đang chạy không vượt
+      runner đủ điều kiện và giới hạn logic có hiệu lực. (FR-RUN-02)
+  - ac_id: AC-4.3
+    text: Preflight kiểm control/DOM theo UI contract trước thao tác cần gate; không
+      Apply để vượt khi gate chưa đạt. Lưu bằng chứng và version contract. (FR-RUN-03)
+  - ac_id: AC-4.4
+    text: Điền filter theo phụ thuộc, đọc lại DOM để xác minh lựa chọn; sai hoặc thiếu
+      điều kiện phải báo lỗi, không ghi kết quả như đúng phạm vi. (FR-RUN-04)
+  - ac_id: AC-4.5
+    text: OCR dùng Tesseract trong runner với challenge hiện tại. API bắt đầu OCR
+      kiểm credential runner, job đang thuộc runner, trạng thái và captchaId; challenge
+      cũ bị từ chối. (FR-RUN-05)
+  - ac_id: AC-4.6
+    text: Ứng dụng không áp quota số lần bắt đầu OCR; điều này không loại bỏ validation,
+      timeout, retry policy hay giới hạn của VAHAN. Không log chuỗi OCR thô. (FR-RUN-06)
+  - ac_id: AC-4.7
+    text: DATA yêu cầu workbook export đầy đủ từ nguồn, upload vào main-report và
+      chờ API xác nhận lưu trước khi nhận case kế tiếp; export thiếu/commit lỗi không
+      được báo thành công. (FR-RUN-07)
+  - ac_id: AC-4.8
+    text: NO_DATA chỉ được ghi khi có bằng chứng nguồn hợp lệ; timeout, TLS, 404 hoặc
+      lỗi download không được chuyển thành NO_DATA. (FR-RUN-08)
+  - ac_id: AC-4.9
+    text: Kết quả gửi lại hoặc đến muộn phải qua kiểm identity/trạng thái phù hợp;
+      không ghi đè attempt mới hoặc đếm hoàn tất hai lần. (FR-RUN-09)
+  - ac_id: AC-4.10
+    text: Ghi nhận lỗi có stage/code/detail phù hợp để phân biệt mở trang, network,
+      DOM, OCR, Apply, download và lưu báo cáo. (FR-RUN-10)
+- story_id: US-5
+  title: Pause, resume, retry và phục hồi
+  acs:
+  - ac_id: AC-5.1
+    text: Pause ngừng giao mới và drain attempt đang xử lý; giao diện phân biệt Pausing/Paused.
+      (FR-REC-01)
+  - ac_id: AC-5.2
+    text: Resume cùng queue/session, kiểm gate theo yêu cầu; không tạo một lượt mới
+      để che trạng thái lượt cũ. (FR-REC-02)
+  - ac_id: AC-5.3
+    text: Retry giữ case identity, bộ filter và session gốc; job retry liên kết attempt
+      trước, không tăng tổng case nghiệp vụ. (FR-REC-03)
+  - ac_id: AC-5.4
+    text: NO_DATA hợp lệ không bị đưa vào vòng retry lỗi. Case thất bại cuối giữ nguyên
+      nguyên nhân và số lần thử. (FR-REC-04)
+  - ac_id: AC-5.5
+    text: Runner disconnect được xử lý theo grace/lease; chỉ giao lại sau khi kiểm
+      quyền sở hữu và tình trạng attempt, không coi mất socket là thành công. (FR-REC-05)
+  - ac_id: AC-5.6
+    text: Restart API khôi phục từ SQL và không ghi đè dữ liệu đã lưu bằng state phía
+      UI; kiểm cả trường hợp đang có attempt chưa ổn định. (FR-REC-06)
+  - ac_id: AC-5.7
+    text: Mất mạng VAHAN có thể dẫn đến chờ/tạm ngừng cấp việc theo policy; mạng trở
+      lại thì tiếp tục khi điều kiện hợp lệ, không thay đổi phạm vi run. (FR-REC-07)
+  - ac_id: AC-5.8
+    text: Thay runner ID giữa lượt phải được kiểm lại binding/preflight. Đề xuất tự
+      đưa runner thay thế đủ điều kiện vào lượt mà không cần pause/resume thủ công,
+      sau khi xử lý gate an toàn. (FR-REC-08; ĐX — chưa triển khai)
+- story_id: US-6
+  title: Báo cáo dùng chung, tìm kiếm và xuất Excel
+  acs:
+  - ac_id: AC-6.1
+    text: Admin/member xem cùng kho báo cáo được cấp quyền, chọn năm và dataset; nếu
+      chưa có dữ liệu hiển thị empty state thật. (FR-RPT-01)
+  - ac_id: AC-6.2
+    text: Hiển thị State, RTO, RTOCode, Maker và 12 tháng; không biến tháng NULL thành
+      0. `—` biểu diễn thiếu dữ liệu trên UI. (FR-RPT-02)
+  - ac_id: AC-6.3
+    text: Search State và Search RTO/code lọc theo phạm vi đã chọn; Clear xóa điều
+      kiện tìm kiếm, không chuyển âm thầm sang dataset khác. (FR-RPT-03)
+  - ac_id: AC-6.4
+    text: Bảng phân trang tối đa 100 dòng/trang theo UI hiện tại; thay điều kiện không
+      giữ offset khiến người dùng tưởng mất dữ liệu. (FR-RPT-04)
+  - ac_id: AC-6.5
+    text: Hiển thị số dòng, thống kê và Last updated/Months with data theo dữ liệu
+      phản hồi; tháng có dữ liệu ở một dòng không chứng minh mọi RTO đã đủ. (FR-RPT-05)
+  - ac_id: AC-6.6
+    text: Export filtered lấy toàn bộ dòng khớp dataset/year/State/RTO, kể cả vượt
+      100 dòng; thứ tự và số liệu khớp điều kiện bảng. (FR-RPT-06)
+  - ac_id: AC-6.7
+    text: Export all yêu cầu xác nhận trên UI và `confirmAll=true` ở API khi không
+      có State/RTO search; thiếu xác nhận nhận 409. (FR-RPT-07)
+  - ac_id: AC-6.8
+    text: Cả export filtered/all có hộp xác nhận trong trang nêu phạm vi, năm và số
+      dòng; có hủy, Escape, focus phù hợp và trạng thái đang tải. (FR-RPT-08)
+  - ac_id: AC-6.9
+    text: Không có dòng khớp thì không xuất file gây hiểu nhầm; API trả 404 phù hợp.
+      Vượt ngưỡng worksheet thì trả 413 và hướng dẫn thu hẹp tìm kiếm. (FR-RPT-09)
+  - ac_id: AC-6.10
+    text: Excel có tiêu đề, thông tin phạm vi/summary, header và dữ liệu; giữ đủ 12
+      tháng và ý nghĩa 0/thiếu, bảo toàn số lớn theo khả năng định dạng. (FR-RPT-10)
+  - ac_id: AC-6.11
+    text: Lưu lịch sử cập nhật và nguồn/checksum phù hợp để kiểm ingest lặp và đối
+      chiếu dữ liệu thay đổi; không coi Last updated là thời điểm nguồn hoàn thiện
+      mọi tháng. (FR-RPT-11)
+  - ac_id: AC-6.12
+    text: 'Ví dụ nghiệm thu: có 250 dòng khớp tìm kiếm, UI hiển thị 100 dòng trang
+      đầu. Export filtered phải có đủ 250 dòng dữ liệu, không tính ba dòng đầu của
+      workbook. Nếu dữ liệu đang cập nhật, kiểm trên snapshot/môi trường kiểm soát
+      thay vì coi sai khác giữa hai thời điểm là lỗi cắt trang. (Ví dụ nghiệm thu
+      mục 5.7)'
+- story_id: US-7
+  title: Run History, tiến độ và diagnostics
+  acs:
+  - ac_id: AC-7.1
+    text: Run History chỉ admin xem; một lượt/session có một dòng tổng hợp, retry
+      không sinh thêm dòng như lượt độc lập. (FR-OBS-01)
+  - ac_id: AC-7.2
+    text: Hiển thị tổng case, processed, with data, no data, failed và trạng thái
+      cuối đúng định nghĩa; processed không được hiểu là tất cả thành công. (FR-OBS-02)
+  - ac_id: AC-7.3
+    text: Có refresh và thời điểm trạng thái liên quan; nguồn dữ liệu từ API/DB, không
+      có chế độ mẫu trong Run History sản phẩm. (FR-OBS-03)
+  - ac_id: AC-7.4
+    text: ETA dựa trên throughput/active elapsed của lượt; thiếu mẫu, pause hoặc stall
+      phải thể hiện chờ/không xác định phù hợp. Sai số cần được đo, không cam kết
+      giờ hoàn thành tuyệt đối. (FR-OBS-04)
+  - ac_id: AC-7.5
+    text: UI Health cung cấp diagnostics có thể copy/download, liên hệ với runner/check;
+      trạng thái mất kết nối không được tự coi là đã sửa DOM. (FR-OBS-05)
+  - ac_id: AC-7.6
+    text: Phân biệt chờ runner/bận planning với lỗi website khi có bằng chứng tương
+      ứng; thông báo phải giúp người vận hành chọn bước xử lý. (FR-OBS-06)
+  - ac_id: AC-7.7
+    text: API audit phục vụ admin truy vết thao tác theo actor/time/event trong phạm
+      vi được ghi; không tuyên bố ghi đầy đủ mọi read request hay chống sửa tuyệt
+      đối. (FR-OBS-07)
+- story_id: US-8
+  title: Công cụ vận hành sản phẩm
+  acs:
+  - ac_id: AC-8.1
+    text: Cung cấp hướng dẫn cài mới với secrets riêng, migration và thứ tự khởi động
+      có kiểm readiness. (FR-OPS-01)
+  - ac_id: AC-8.2
+    text: Guard trước thay dịch vụ phát hiện active job, planning lease, queue/lịch
+      hoạt động và từ chối khi không an toàn; không dùng force restart thay điều khiển
+      nghiệp vụ. (FR-OPS-02)
+  - ac_id: AC-8.3
+    text: Backup có dump/config cần thiết và manifest/hash; lưu có kiểm soát quyền
+      vì có thể chứa secrets. (FR-OPS-03)
+  - ac_id: AC-8.4
+    text: Restore vào project tách biệt, giữ encryption key, đối chiếu dữ liệu và
+      quyền runtime trước chuyển traffic. (FR-OPS-04)
+  - ac_id: AC-8.5
+    text: Gói bàn giao nhận diện image/revision, cấu hình và bằng chứng; build thành
+      công không được ghi thành deployed/runtime pass. (FR-OPS-05)
+test_cases:
+- tc_id: TC-AC-1.1-1d9183
+  title: Đăng nhập sai username/password trả 401 và không có token
+  ac_refs:
+  - AC-1.1
+  kind: api_functional
+  status: draft
+  origin: llm
+  steps:
+  - request:
+      method: POST
+      path: /auth/login
+      json:
+        password: wrongpass123
+        username: nouser_vahan_qa
+    expect:
+      status:
+      - 401
+      json:
+      - path: $.token
+        op: eq
+        value: null
+uncovered_acs: []
