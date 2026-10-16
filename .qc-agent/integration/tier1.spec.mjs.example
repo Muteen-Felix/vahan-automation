@@ -1,0 +1,15 @@
+// qc-agent:todo VERIFY: khung trung tính: viết kiểm tra thật, đổi tên todo_replace_me, thay b_host/HAR bằng giá trị thật rồi xoá dòng này
+// Khung Tầng 1 (đuôi .example = chưa hoạt động): kiểm hợp đồng giữa SUT và một thành phần nội bộ được giả lập trong test.
+// Dùng khung: bỏ đuôi .example ở cả 5 file integration, viết kiểm tra thật, đổi tên test (tên test = tên check trong oracle.required).
+import { test, expect } from './support.mjs';
+
+function requiredEnv(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`thiếu biến môi trường ${name}`);
+  return value;
+}
+
+test('todo_replace_me', async ({ request }) => {
+  const api = requiredEnv('APP_BASE_URL');
+  throw new Error('Khung chưa viết: thay bằng kiểm tra tích hợp thật (và đổi tên test này)');
+});
