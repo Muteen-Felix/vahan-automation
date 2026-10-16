@@ -31,6 +31,8 @@ jobs:
       ghcr_username: "MinhDuc-IT"
       image: "ghcr.io/minhduc-it/qc-agent@sha256:8d87867a641fd38f6e2ea274599d9e5d512a56d4c39a5bccc2c9f30d8aa65c5c"
       prd_path: ${{ inputs.prd_path || 'docs/prd/**' }}
+      # OpenAPI của SUT để agent biết đúng endpoint. File tĩnh trong repo (job này không dựng SUT); xuất lại khi API đổi.
+      openapi: "docs/openapi.json"
       # Dùng Gemini thay Claude: bỏ comment các dòng dưới và đặt secret GEMINI_API_KEY. Chỉ khoá của nhà cung cấp được chọn đi vào container.
       # model: gemini-3.6-flash
       # llm_min_interval_s: "12"                              # giãn cách giữa hai request (≈ 5 RPM, free tier)
