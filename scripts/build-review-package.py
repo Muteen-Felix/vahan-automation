@@ -52,6 +52,23 @@ def digest(path: Path) -> str:
         return hashlib.file_digest(source, 'sha256').hexdigest()
 
 
+def save_offline_images(destination: Path, refs: list[str], pinned: str) -> None:
+    """Export PostgreSQL by tag so loading restores its repository identity.
+
+    Saving a digest reference exports unnamed content with the containerd image
+    store. Keep the digest-pinned runtime/manifest reference, but save a tag that
+    points to the already verified upstream image.
+    """
+    require(pinned in refs and DIGEST_REF.fullmatch(pinned) is not None,
+            'Offline export requires the verified PostgreSQL digest reference.')
+    archive_ref = pinned.split('@', 1)[0]
+    require(':' in archive_ref.rsplit('/', 1)[-1],
+            'The PostgreSQL reference must include a version tag before its digest.')
+    subprocess.run(['docker', 'image', 'tag', pinned, archive_ref], check=True)
+    save_refs = [archive_ref if ref == pinned else ref for ref in refs]
+    subprocess.run(['docker', 'image', 'save', '-o', str(destination), *save_refs], check=True)
+
+
 def committed_text(sha: str, path: str) -> str:
     return subprocess.check_output(['git', 'show', f'{sha}:{path}'], cwd=ROOT, text=True, encoding='utf-8')
 
@@ -226,7 +243,7 @@ def main() -> None:
                     require(ref.rsplit(':', 1)[-1] == version, f'{ref} is not tagged with the release version {version}.')
             require(manifest['images'][pinned]['platform'] == application_platform,
                     'PostgreSQL platform differs from the application images.')
-            subprocess.run(['docker', 'image', 'save', '-o', str(images), *refs], check=True)
+            save_offline_images(images, refs, pinned)
             manifest['files'][images.name] = digest(images)
     manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     # The manifest cannot list its own digest, so SHA256SUMS is the independent record of it (RG3).

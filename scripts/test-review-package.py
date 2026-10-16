@@ -45,6 +45,26 @@ def classify_outcome(checks: list[dict], error: str | None, d3: dict) -> tuple[s
     return 'PACKAGE_PASS_D3_FAIL', 2
 
 
+def require_clean_docker_engine() -> dict:
+    """Refuse an existing image store; cached references can hide broken archives.
+
+    The caller selects a disposable daemon with DOCKER_HOST/DOCKER_CONTEXT.
+    This check never removes images, containers or volumes.
+    """
+    counts = {}
+    for key, arguments in (
+            ('images', ['image', 'ls', '-aq']),
+            ('containers', ['ps', '-aq']),
+            ('volumes', ['volume', 'ls', '-q'])):
+        result = subprocess.run(['docker', *arguments], check=True, capture_output=True,
+                                text=True, timeout=30)
+        counts[key] = len(set(result.stdout.split()))
+    require(not any(counts.values()),
+            f'Offline package verification requires an empty disposable Docker engine; found {counts}. '
+            'Select a separate clean engine with DOCKER_HOST/DOCKER_CONTEXT. Nothing was removed.')
+    return counts
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--package-dir', required=True)
@@ -65,10 +85,12 @@ def main() -> None:
         require(Path(name).name == name, 'Invalid manifest filename.')
         with (package / name).open('rb') as source:
             require(hashlib.file_digest(source, 'sha256').hexdigest() == expected, f'Checksum mismatch: {name}')
+    clean_engine = require_clean_docker_engine()
     project = f'vahan-review-{secrets.token_hex(6)}'
     evidence = {'sourceCommit':manifest['sourceCommit'], 'packageSha256':manifest['files'],
                 'project':project, 'startedAt':datetime.now(timezone.utc).isoformat(), 'checks':[],
                 'driverScriptSha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                'dockerStoreBeforeLoad':clean_engine,
                 'd3':{'requested':args.vahan_preflight,'liveCaseRequested':args.live_case,
                       'livePreflight':{'status':'NOT_RUN','reason':'Not requested; D3 is a separate check (--vahan-preflight).'},
                       'liveSingleCase':{'status':'NOT_RUN','reason':'Not requested (--live-case).'}},

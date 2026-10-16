@@ -68,10 +68,62 @@ class CommandLineTest(unittest.TestCase):
         self.assertLess(source.index("if args.vahan_preflight:"), source.index("/api/ui-health/preflight"))
 
 
+class CleanDockerEngineTest(unittest.TestCase):
+    def test_empty_engine_is_accepted_without_removing_anything(self):
+        with mock.patch.object(review.subprocess, 'run') as run:
+            run.return_value.stdout = ''
+            self.assertEqual(review.require_clean_docker_engine(), {'images': 0, 'containers': 0, 'volumes': 0})
+        self.assertEqual([c.args[0] for c in run.call_args_list], [
+            ['docker', 'image', 'ls', '-aq'], ['docker', 'ps', '-aq'], ['docker', 'volume', 'ls', '-q']])
+
+    def test_any_existing_image_container_or_volume_blocks(self):
+        for index in range(3):
+            results = [mock.Mock(stdout='') for _ in range(3)]
+            results[index].stdout = 'existing-resource\n'
+            with self.subTest(resource=index), mock.patch.object(review.subprocess, 'run', side_effect=results):
+                with self.assertRaises(AssertionError) as stopped:
+                    review.require_clean_docker_engine()
+                self.assertIn('empty disposable Docker engine', str(stopped.exception))
+
+    def test_clean_check_precedes_archive_load(self):
+        source = (SCRIPTS / 'test-review-package.py').read_text(encoding='utf-8')
+        self.assertLess(source.index('clean_engine = require_clean_docker_engine()'),
+                        source.index("run(['docker','image','load'"))
+
+
 BUILDER_SPEC = importlib.util.spec_from_file_location("build_package", SCRIPTS / "build-review-package.py")
 builder = importlib.util.module_from_spec(BUILDER_SPEC)
 BUILDER_SPEC.loader.exec_module(builder)
 REPOSITORY = SCRIPTS.parent
+
+
+class OfflineImageSaveTest(unittest.TestCase):
+    PINNED = 'docker.io/library/postgres:17.11-bookworm@sha256:' + 'a' * 64
+
+    def test_postgres_is_tagged_from_verified_digest_and_exported_by_tag(self):
+        refs = ['vahan-review/api:1.0.0', self.PINNED, 'vahan-review/runner:1.0.0', 'vahan-review/web:1.0.0']
+        original = list(refs)
+        tag = self.PINNED.split('@', 1)[0]
+        with mock.patch.object(builder.subprocess, 'run') as run:
+            builder.save_offline_images(Path('images.tar'), refs, self.PINNED)
+        self.assertEqual(run.call_args_list, [
+            mock.call(['docker', 'image', 'tag', self.PINNED, tag], check=True),
+            mock.call(['docker', 'image', 'save', '-o', 'images.tar', refs[0], tag, refs[2], refs[3]], check=True)])
+        self.assertEqual(refs, original, 'Runtime/manifest digest references must stay unchanged')
+
+    def test_invalid_or_unlisted_digest_is_refused_before_mutation(self):
+        for refs, pinned in (([], self.PINNED), (['postgres:latest'], 'postgres:latest'),
+                             (['postgres@sha256:' + 'a' * 64], 'postgres@sha256:' + 'a' * 64)):
+            with self.subTest(pinned=pinned), mock.patch.object(builder.subprocess, 'run') as run:
+                with self.assertRaises(SystemExit):
+                    builder.save_offline_images(Path('images.tar'), refs, pinned)
+                run.assert_not_called()
+
+    def test_tag_failure_prevents_saving_archive(self):
+        with mock.patch.object(builder.subprocess, 'run', side_effect=OSError('tag failed')) as run:
+            with self.assertRaises(OSError):
+                builder.save_offline_images(Path('images.tar'), [self.PINNED], self.PINNED)
+        self.assertEqual(run.call_count, 1)
 
 
 def version_files(**overrides):

@@ -50,6 +50,11 @@ Mật khẩu chỉ đọc từ biến môi trường và không được in ra.
 preflight D3 được ghi `NOT_RUN` trong `results.json` (`d3.livePreflight.status`) và **không** được tính là Pass.
 Chỉ khi chạy với `--vahan-preflight` thì preflight mới chạy; kết quả nằm ở `d3-live-preflight.json` và mục `d3`, tách khỏi `checks`.
 
+Chạy script này trên **Docker daemon riêng, ban đầu không có image, container hoặc volume**; chọn daemon bằng
+`DOCKER_HOST` hoặc `DOCKER_CONTEXT` trước khi chạy. Script từ chối daemon đã có dữ liệu và không tự xóa tài nguyên.
+Chỉ tạo thư mục/project Compose mới trên daemon đang dùng chưa chứng minh được cài offline: image có sẵn có thể che lỗi
+reference bị mất khi `docker save`/`docker load`. Sau load, mọi reference trong manifest (kể cả PostgreSQL pin digest) phải inspect được.
+
 | Exit status | Ý nghĩa |
 | --- | --- |
 | `0` | Kiểm gói đạt; D3 `NOT_RUN` hoặc `PASS` (xem `d3Status`, không suy ra D3 đạt từ exit 0) |
