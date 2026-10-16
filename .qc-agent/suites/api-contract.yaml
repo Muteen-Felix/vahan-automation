@@ -11,7 +11,6 @@ tasks:
     kind: http_service
     base_url: ${env.APP_BASE_URL}
     spec_ref: ${env.APP_BASE_URL}/openapi.json
-    # qc-agent:todo VERIFY: VERIFY: unresolved openapi_url; set --openapi-path
   inputs:
     schema_url: ${env.APP_BASE_URL}/openapi.json
     checks:
@@ -20,7 +19,6 @@ tasks:
     max_examples: 25
     seed: 1337
     # qc-agent:begin refine exclude_path
-    # qc-agent:todo REFINE: chưa biết endpoint nào không nên fuzz (upload, xoá dữ liệu thật): CI đề xuất từ OpenAPI sống, hoặc chạy lại init --openapi
     # qc-agent:end
   oracle:
     kind: checks
