@@ -18,7 +18,7 @@ const requested = {
 const delayed = {states: ['Test State'], rtos: ['Test RTO'], subCategories: ['TWO WHEELER(NT)'], classes: ['MOTOR CYCLE'],
   fuels: ['ELECTRIC(BOV)'], xAxis: ['Month Wise']};
 const esc = value => String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
-async function fixture({path = driver, lateReset = false, xhr = false, xAxisDelays = [], rtoResponses = []} = {}) {
+async function fixture({path = driver, lateReset = false, xhr = false, xAxisDelays = [], rtoResponses = [], makerDelays = {}} = {}) {
   const page = await browser.newPage();
   await page.addInitScript({path});
   let xAxisRequests = 0;
@@ -26,7 +26,8 @@ async function fixture({path = driver, lateReset = false, xhr = false, xAxisDela
   await page.route('http://fill.test/**', async route => {
     const url = new URL(route.request().url());
     if (url.pathname !== '/') {
-      const delayMs = url.pathname === '/xAxis' ? (xAxisDelays[xAxisRequests++] ?? 140)
+      const delayMs = url.pathname.includes('vehicle-makers') ? (makerDelays[url.searchParams.get('search')] ?? 140)
+        : url.pathname === '/xAxis' ? (xAxisDelays[xAxisRequests++] ?? 140)
         : url.pathname === '/period' && lateReset ? 300 : 140;
       await new Promise(resolve => setTimeout(resolve, delayMs));
       return route.fulfill({contentType: 'application/json', body: JSON.stringify(
@@ -115,13 +116,22 @@ try {
     } finally { await page.close(); }
   });
   await check('maker names containing commas remain one label and searches overlap', async () => {
-    const page = await fixture();
-    try {
-      const config = normalizeJobFilters({...requested, makers: ['Maker, Incorporated', 'Maker Beta']});
-      assert.deepEqual(config.makers, ['Maker, Incorporated', 'Maker Beta']);
-      const proof = await page.evaluate(config => vahanDriver.fill(config), config);
-      assert.deepEqual(proof.checks.find(check => check.field === 'makers').actual, config.makers);
-    } finally { await page.close(); }
+    for (const makerDelays of [
+      {'Maker, Incorporated': 30, 'Maker Beta': 180},
+      {'Maker, Incorporated': 180, 'Maker Beta': 30},
+    ]) {
+      const page = await fixture({makerDelays});
+      try {
+        const config = normalizeJobFilters({...requested, makers: ['Maker, Incorporated', 'Maker Beta']});
+        assert.deepEqual(config.makers, ['Maker, Incorporated', 'Maker Beta']);
+        const proof = await page.evaluate(config => vahanDriver.fill(config), config);
+        const makers = proof.checks.find(check => check.field === 'makers');
+        assert.equal(makers.match, true);
+        // Options arrive in parallel; selected labels have no ordering contract.
+        // Sorted arrays retain exact membership/count checks, including duplicates.
+        assert.deepEqual([...makers.actual].sort(), [...config.makers].sort());
+      } finally { await page.close(); }
+    }
   });
   await check('omitted optional filters and old date ranges are cleared on reuse', async () => {
     const page = await fixture();
