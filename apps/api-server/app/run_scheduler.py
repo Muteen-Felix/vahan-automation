@@ -337,8 +337,9 @@ async def scheduler_tick():
     if not connected:
         await suspend_runs()
     records = await repository.list()
-    active = [value for value in records if value.get('sessionId')
-        and value.get('status') in ACTIVE_SCHEDULE_STATUSES]
+    active = [value for value in records if value.get('sessionId') and (
+        value.get('status') in ACTIVE_SCHEDULE_STATUSES or
+        (value.get('status') == 'PAUSED' and value.get('networkPaused')))]
     for value in active:
         if not await owner_active(value['owner']):
             await stop_scheduled_run(value, 'The schedule owner account is inactive.')
