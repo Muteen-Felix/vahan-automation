@@ -124,4 +124,4 @@ API export hiện chấp nhận tối đa 1.048.573 dòng dữ liệu do workboo
 - AC-8.2: Guard trước thay dịch vụ phát hiện active job, planning lease, queue/lịch hoạt động và từ chối khi không an toàn; không dùng force restart thay điều khiển nghiệp vụ. (FR-OPS-02)
 - AC-8.3: Backup có dump/config cần thiết và manifest/hash; lưu có kiểm soát quyền vì có thể chứa secrets. (FR-OPS-03)
 - AC-8.4: Restore vào project tách biệt, giữ encryption key, đối chiếu dữ liệu và quyền runtime trước chuyển traffic. (FR-OPS-04)
-- AC-8.5: Gói bàn giao nhận diện image/revision, cấu hình và bằng chứng; build thành công không được ghi thành deployed/runtime pass. (FR-OPS-05)
+- AC-8.5: Gói bàn giao nhận diện image/revision, bằng chứng; build thành công không được ghi thành deployed/runtime pass. (FR-OPS-05)
