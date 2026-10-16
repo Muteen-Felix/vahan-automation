@@ -1,0 +1,459 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "recordedAt": "2026-10-16T09:37:12.845449+00:00",
+  "D3Started": true,
+  "items": [
+    {
+      "item": "R1",
+      "description": "Health, restart API và giữ dữ liệu",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:51:42.544302+00:00",
+      "startedAt": "2026-10-16T13:51:40.519641+00:00",
+      "finishedAt": "2026-10-16T13:51:42.544302+00:00",
+      "evidence": [
+        "baseline-api.json",
+        "api-restart.json",
+        "resilience-api-restart.json",
+        "resilience-api-recovered.json",
+        "resilience-integrity.json"
+      ],
+      "reason": "Host health/ready probes200. Packaged API restarted first with durable user state and sessions, then again during real VAHAN workload; same durable queue resumed and terminal integrity confirms no missing/duplicate cases."
+    },
+    {
+      "item": "R2",
+      "description": "Login/logout, phân quyền và hết hạn phiên",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:46:04.058482+00:00",
+      "startedAt": "2026-10-16T12:33:49.602495+00:00",
+      "finishedAt": "2026-10-16T13:46:04.058482+00:00",
+      "evidence": [
+        "baseline-api.json",
+        "auth-final.json",
+        "browser-ui-pass.json",
+        "ui-logout.png"
+      ],
+      "reason": "Admin/member login/logout and RBAC verified; untouched disposable member token expired naturally after60min idle. Correctly signed already-expired12h-bound token rejected401 with server clock untouched. Disabling member revokes live token and rejects fresh login. Browser login/logout PASS, UI socket connected on exact staging Origin."
+    },
+    {
+      "item": "R3",
+      "description": "VAHAN options, filter và preview",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:35:27.607605+00:00",
+      "startedAt": "2026-10-16T12:35:06.531105+00:00",
+      "finishedAt": "2026-10-16T12:35:27.607605+00:00",
+      "evidence": [
+        "native-options.json",
+        "andaman-native-options.json",
+        "small-profile.json",
+        "small-preview.json"
+      ],
+      "reason": "Loaded native VAHAN dependent State/RTO options, saved profile and streamed preview: exactly two native cases with unique scenario filters."
+    },
+    {
+      "item": "R4",
+      "description": "Lịch sử, xóa và khôi phục",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:39:49.952512+00:00",
+      "startedAt": "2026-10-16T12:39:49.412852+00:00",
+      "finishedAt": "2026-10-16T12:39:49.952512+00:00",
+      "evidence": [
+        "small-history-delete-restore.json"
+      ],
+      "reason": "Two real VAHAN NO_DATA outcomes retained; soft-delete hides session, trash shows it, restore preserves identical session/jobs and exactly one Run History row. Current report-table design does not require legacy per-job text files."
+    },
+    {
+      "item": "R5",
+      "description": "Export all và export có lọc",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:51:42.548563+00:00",
+      "startedAt": "2026-10-16T13:30:10.520860+00:00",
+      "finishedAt": "2026-10-16T13:51:42.548563+00:00",
+      "evidence": [
+        "export-verification.json",
+        "export-all.xlsx",
+        "export-filtered.xlsx",
+        "actual-annual-history.json",
+        "browser-final-ui.json",
+        "browser-export-verification.json",
+        "ui-final-export-all-confirm.png",
+        "ui-final-export-filtered-confirm.png",
+        "ui-export-all.xlsx",
+        "ui-export-filtered.xlsx"
+      ],
+      "reason": "Export all 398 actual manufacturer rows; State/RTO filtered export; XLSX ZIP/XML valid, every cell and row count matches all API pages and X-Report-Row-Count. Unconfirmed Export all rejected409. Actual browser confirmed both export dialogs and downloaded both XLSX files."
+    },
+    {
+      "item": "R6",
+      "description": "UI Health trên VAHAN thật",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:34:14.131809+00:00",
+      "startedAt": "2026-10-16T12:34:09.112657+00:00",
+      "finishedAt": "2026-10-16T12:34:14.131809+00:00",
+      "evidence": [
+        "real-vahan-preflight.json",
+        "post-restart-preflight.json"
+      ],
+      "reason": "Three real packaged runners pass SQL-backed VAHAN DOM preflight, before and after API restart. Test harness waited for reconnect; no gate bypass."
+    },
+    {
+      "item": "R7",
+      "description": "Once/Monthly, từ chối Daily",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:40:38.781045+00:00",
+      "startedAt": "2026-10-16T12:40:36.802752+00:00",
+      "finishedAt": "2026-10-16T12:40:38.781045+00:00",
+      "evidence": [
+        "small-schedule-create.json",
+        "small-run-current.json",
+        "schedule-contract.json",
+        "packaged-monthly-calendar.json"
+      ],
+      "reason": "Once actually triggered and completed two real cases. Monthly future schedule accepted, UTC offset correct; packaged runtime clamps Jan31 to Feb28; Daily rejected422. Future test schedules disabled; no extra workload during R8."
+    },
+    {
+      "item": "R7b",
+      "description": "Múi giờ Việt Nam/Ấn Độ",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:45:24.504088+00:00",
+      "startedAt": "2026-10-16T13:45:24.504088+00:00",
+      "finishedAt": "2026-10-16T13:45:24.504088+00:00",
+      "evidence": [
+        "schedule-contract.json",
+        "browser-final-ui.json",
+        "ui-final-history-india.png",
+        "ui-final-history-vietnam.png"
+      ],
+      "reason": "Actual browser account setting switches Vietnam/India; Run History displays both correct zone labels and corresponding timestamps. API Once/Monthly offset conversions verified. Restored Vietnam zone after test."
+    },
+    {
+      "item": "R8",
+      "description": "VAHAN ≥100 case, ≥30 phút, ETA mỗi 60 giây",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:51:42.550456+00:00",
+      "startedAt": "2026-10-16T12:37:52.930483+00:00",
+      "finishedAt": "2026-10-16T13:51:42.550456+00:00",
+      "evidence": [
+        "r8-analysis.json",
+        "r8-eta-60s.jsonl",
+        "r8-observations.jsonl",
+        "r8-state-events.jsonl",
+        "eta-engine-provenance.json",
+        "r8-integrity.json",
+        "R8-ETA.md"
+      ],
+      "reason": "1228/1228 real cases, 51.44 minutes; 50-75 median=0.06051643217934963, 75-100 median=0.07034143429037495; operator interventions0; genuine outages included."
+    },
+    {
+      "item": "R9",
+      "description": "Pause/resume, không mất hoặc chạy trùng case",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:44:48.340947+00:00",
+      "startedAt": "2026-10-16T13:29:50.799593+00:00",
+      "finishedAt": "2026-10-16T13:44:48.340947+00:00",
+      "evidence": [
+        "resilience-progress.jsonl",
+        "resilience-integrity.json",
+        "resilience-terminal.json",
+        "resilience-after-delete.json",
+        "resilience-offline-no-claims.json",
+        "resilience-network-auto-resumed.json",
+        "resilience-capacity-two.json",
+        "resilience-capacity-three.json"
+      ],
+      "reason": "Pause drained active cases; queue fixed for20s; resume and later stop/resume retained same session; all real cases terminal, no missing or duplicate successful cases."
+    },
+    {
+      "item": "R9b",
+      "description": "Worker động và giới hạn theo runner thực tế",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:44:48.343243+00:00",
+      "startedAt": "2026-10-16T13:29:50.799593+00:00",
+      "finishedAt": "2026-10-16T13:44:48.343243+00:00",
+      "evidence": [
+        "resilience-progress.jsonl",
+        "resilience-integrity.json",
+        "resilience-terminal.json",
+        "resilience-after-delete.json",
+        "resilience-offline-no-claims.json",
+        "resilience-network-auto-resumed.json",
+        "resilience-capacity-two.json",
+        "resilience-capacity-three.json"
+      ],
+      "reason": "Killed actual busy runner: logical capacity3→2; same packaged container restarted with new runner ID and capacity2→3. Terminal case integrity checked."
+    },
+    {
+      "item": "R10",
+      "description": "Tắt lịch, dừng và xóa",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:44:48.345519+00:00",
+      "startedAt": "2026-10-16T13:29:50.799593+00:00",
+      "finishedAt": "2026-10-16T13:44:48.345519+00:00",
+      "evidence": [
+        "resilience-progress.jsonl",
+        "resilience-integrity.json",
+        "resilience-terminal.json",
+        "resilience-after-delete.json",
+        "resilience-offline-no-claims.json",
+        "resilience-network-auto-resumed.json",
+        "resilience-capacity-two.json",
+        "resilience-capacity-three.json"
+      ],
+      "reason": "Disabled Monthly future starts while active collection continued; explicit stop/resume retained same queue; deleting completed schedule preserved all rows and named one-row Run History."
+    },
+    {
+      "item": "R11",
+      "description": "Retry, NO_DATA và dừng runner",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:50:26.373258+00:00",
+      "startedAt": "2026-10-16T13:48:34.232197+00:00",
+      "finishedAt": "2026-10-16T13:50:26.373258+00:00",
+      "evidence": [
+        "isolated-clean-PASS.json",
+        "isolated-clean-progress.jsonl",
+        "isolated-runner-integrity.json",
+        "isolated-runner-BLOCKER.json",
+        "resilience-integrity.json"
+      ],
+      "reason": "Separate observed window with network continuously online and no API restart: killed busy worker, original job FAILED / Runner disconnected after grace, remaining real workers recovered and completed all14 native cases. Killed container stayed stopped until completion; no missing/duplicate case. Earlier overlapping natural outage is preserved as an invalid isolated window, not used as PASS."
+    },
+    {
+      "item": "R12",
+      "description": "Mất/phục hồi mạng, kiểm mất/trùng case",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:44:48.348497+00:00",
+      "startedAt": "2026-10-16T13:29:50.799593+00:00",
+      "finishedAt": "2026-10-16T13:44:48.348497+00:00",
+      "evidence": [
+        "resilience-progress.jsonl",
+        "resilience-integrity.json",
+        "resilience-terminal.json",
+        "resilience-after-delete.json",
+        "resilience-offline-no-claims.json",
+        "resilience-network-auto-resumed.json",
+        "resilience-capacity-two.json",
+        "resilience-capacity-three.json"
+      ],
+      "reason": "Actual VAHAN DNS blocked in staging API/runners; network guard paused automatically, no claims25s; DNS restored and same queue resumed automatically; all cases reconciled."
+    },
+    {
+      "item": "R13",
+      "description": "Maker Update bị từ chối",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:35:40.379540+00:00",
+      "startedAt": "2026-10-16T12:35:40.083061+00:00",
+      "finishedAt": "2026-10-16T12:35:40.379540+00:00",
+      "evidence": [
+        "security-api.json"
+      ],
+      "reason": "All six retired Maker Update fields/variants rejected with 422; no sentinel job dispatched."
+    },
+    {
+      "item": "R14",
+      "description": "CAPTCHA/OCR không lộ dữ liệu nhạy cảm trong log",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:51:43.039541+00:00",
+      "startedAt": "2026-10-16T13:51:40.519641+00:00",
+      "finishedAt": "2026-10-16T13:51:43.039541+00:00",
+      "evidence": [
+        "log-audit-final.json",
+        "log-audit-during-r8.json"
+      ],
+      "reason": "Scanned 25575 API/runner log lines from this D3; OCR start HTTP200 count 2020; known-secret, raw OCR/CAPTCHA, inline-image, bearer/credential-URI matches0. Raw logs were not written to evidence."
+    },
+    {
+      "item": "R15",
+      "description": "API đã gỡ bị từ chối",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:35:40.381540+00:00",
+      "startedAt": "2026-10-16T12:35:40.083061+00:00",
+      "finishedAt": "2026-10-16T12:35:40.381540+00:00",
+      "evidence": [
+        "security-api.json"
+      ],
+      "reason": "Removed Maker Update and UI Health schedule/run-now routes return 404."
+    },
+    {
+      "item": "R17",
+      "description": "Run History đúng quyền và kết quả",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T13:51:42.546112+00:00",
+      "startedAt": "2026-10-16T13:51:40.519641+00:00",
+      "finishedAt": "2026-10-16T13:51:42.546112+00:00",
+      "evidence": [
+        "run-history-final.json",
+        "small-integrity.json",
+        "r8-integrity.json",
+        "resilience-integrity.json",
+        "isolated-runner-integrity.json",
+        "browser-history-final.json",
+        "ui-history-final.png",
+        "auth-final.json"
+      ],
+      "reason": "Exactly four new real sessions and four named Run History rows; terminal counts agree with PostgreSQL case integrity. Retries did not add rows; deleting resilience schedule preserved filter name/results. Actual final browser UI row count matches API; member request forbidden403."
+    },
+    {
+      "item": "S3",
+      "description": "Giới hạn đăng nhập",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:35:42.373331+00:00",
+      "startedAt": "2026-10-16T12:35:40.083061+00:00",
+      "finishedAt": "2026-10-16T12:35:42.373331+00:00",
+      "evidence": [
+        "login-rate-limit.json"
+      ],
+      "reason": "Burst of 24 invalid logins to nonexistent account through nginx produced 401 and 429; no admin credential lockout."
+    },
+    {
+      "item": "S5",
+      "description": "Socket.IO origin",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:35:40.659599+00:00",
+      "startedAt": "2026-10-16T12:35:40.083061+00:00",
+      "finishedAt": "2026-10-16T12:35:40.659599+00:00",
+      "evidence": [
+        "socket-origin.json"
+      ],
+      "reason": "Engine.IO handshake rejects untrusted Origin with 400; exact staging Origin accepted with 200."
+    },
+    {
+      "item": "S6",
+      "description": "Security headers",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:35:40.626203+00:00",
+      "startedAt": "2026-10-16T12:35:40.083061+00:00",
+      "finishedAt": "2026-10-16T12:35:40.626203+00:00",
+      "evidence": [
+        "security-api.json"
+      ],
+      "reason": "Web and API responses include expected security headers, DENY and nosniff."
+    },
+    {
+      "item": "S7",
+      "description": "API docs và SPA shell",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:35:40.562098+00:00",
+      "startedAt": "2026-10-16T12:35:40.083061+00:00",
+      "finishedAt": "2026-10-16T12:35:40.562098+00:00",
+      "evidence": [
+        "security-api.json"
+      ],
+      "reason": "API docs disabled: unauthenticated 401, admin 404; root paths return accepted SPA HTML shell only."
+    },
+    {
+      "item": "S8",
+      "description": "Runner identity theo scope đã duyệt",
+      "status": "NOT_RUN",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T09:37:12.845449+00:00",
+      "startedAt": null,
+      "finishedAt": null,
+      "evidence": [],
+      "reason": "Deferred under approved D-02 scope"
+    },
+    {
+      "item": "S10",
+      "description": "Container hardening theo scope đã duyệt",
+      "status": "NOT_RUN",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T09:37:12.845449+00:00",
+      "startedAt": null,
+      "finishedAt": null,
+      "evidence": [],
+      "reason": "Deferred under approved D-02 scope"
+    },
+    {
+      "item": "O1",
+      "description": "Health probe ngoài stack",
+      "status": "PASS",
+      "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+      "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+      "recordedAt": "2026-10-16T12:33:53.868095+00:00",
+      "startedAt": "2026-10-16T12:33:48.989981+00:00",
+      "finishedAt": "2026-10-16T12:33:53.868095+00:00",
+      "evidence": [
+        "baseline-api.json",
+        "api-restart.json"
+      ],
+      "reason": "Health and readiness probed from host outside Docker stack before and after restart."
+    }
+  ],
+  "etaCriteria": {
+    "minimumCases": 100,
+    "minimumMinutes": 30,
+    "sampleIntervalSeconds": 60,
+    "medianAbsoluteRelativeError50to75PercentMax": 0.25,
+    "medianAbsoluteRelativeError75to100PercentMax": 0.15,
+    "networkOutages": "Ghi nhận mất mạng VAHAN và tính vào sai số theo quyết định trong ledger đã commit. Không pause/đổi worker/restart do người vận hành trong R8."
+  }
+}
