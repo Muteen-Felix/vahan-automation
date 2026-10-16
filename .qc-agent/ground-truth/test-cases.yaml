@@ -15,7 +15,7 @@ prd:
 generated_by:
   model: claude-sonnet-5
   prompt_version: gt-generate/1
-status: draft
+status: approved
 stories:
 - story_id: US-1
   title: Tài khoản và phiên đăng nhập
@@ -281,7 +281,7 @@ test_cases:
   ac_refs:
   - AC-1.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -304,7 +304,7 @@ test_cases:
   - AC-1.2
   - AC-1.9
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -329,7 +329,7 @@ test_cases:
   - AC-1.2
   - AC-1.9
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -352,7 +352,7 @@ test_cases:
   ac_refs:
   - AC-1.3
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -370,7 +370,7 @@ test_cases:
   ac_refs:
   - AC-1.4
   kind: flow
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -399,7 +399,7 @@ test_cases:
   ac_refs:
   - AC-1.5
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -421,7 +421,7 @@ test_cases:
   ac_refs:
   - AC-1.5
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -443,7 +443,7 @@ test_cases:
   ac_refs:
   - AC-1.6
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -467,7 +467,7 @@ test_cases:
   ac_refs:
   - AC-1.8
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -489,7 +489,7 @@ test_cases:
   ac_refs:
   - AC-2.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -508,7 +508,7 @@ test_cases:
   ac_refs:
   - AC-2.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -534,7 +534,7 @@ test_cases:
   ac_refs:
   - AC-2.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -558,7 +558,7 @@ test_cases:
   ac_refs:
   - AC-2.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -582,7 +582,7 @@ test_cases:
   ac_refs:
   - AC-2.2
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -714,7 +714,7 @@ test_cases:
   ac_refs:
   - AC-2.2
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -741,7 +741,7 @@ test_cases:
   ac_refs:
   - AC-2.2
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -766,7 +766,7 @@ test_cases:
   ac_refs:
   - AC-2.4
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -789,7 +789,7 @@ test_cases:
   ac_refs:
   - AC-2.7
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -821,7 +821,7 @@ test_cases:
   ac_refs:
   - AC-2.7
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -852,7 +852,7 @@ test_cases:
   ac_refs:
   - AC-2.10
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -876,7 +876,7 @@ test_cases:
   ac_refs:
   - AC-3.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -901,7 +901,7 @@ test_cases:
   ac_refs:
   - AC-3.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -925,7 +925,7 @@ test_cases:
   ac_refs:
   - AC-3.2
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -950,7 +950,7 @@ test_cases:
   ac_refs:
   - AC-3.2
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -975,7 +975,7 @@ test_cases:
   ac_refs:
   - AC-3.9
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -999,7 +999,7 @@ test_cases:
   ac_refs:
   - AC-4.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1019,7 +1019,7 @@ test_cases:
   ac_refs:
   - AC-4.3
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1042,7 +1042,7 @@ test_cases:
   ac_refs:
   - AC-4.5
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1065,7 +1065,7 @@ test_cases:
   ac_refs:
   - AC-5.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1087,7 +1087,7 @@ test_cases:
   ac_refs:
   - AC-5.2
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1109,7 +1109,7 @@ test_cases:
   ac_refs:
   - AC-6.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1132,7 +1132,7 @@ test_cases:
   ac_refs:
   - AC-6.4
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1157,7 +1157,7 @@ test_cases:
   ac_refs:
   - AC-6.6
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1183,7 +1183,7 @@ test_cases:
   ac_refs:
   - AC-6.7
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1207,7 +1207,7 @@ test_cases:
   ac_refs:
   - AC-6.9
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1233,7 +1233,7 @@ test_cases:
   ac_refs:
   - AC-7.1
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1252,7 +1252,7 @@ test_cases:
   ac_refs:
   - AC-7.5
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1270,7 +1270,7 @@ test_cases:
   ac_refs:
   - AC-7.7
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
@@ -1289,7 +1289,7 @@ test_cases:
   ac_refs:
   - AC-8.2
   kind: api_functional
-  status: draft
+  status: approved
   origin: llm
   steps:
   - request:
