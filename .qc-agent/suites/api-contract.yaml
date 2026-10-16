@@ -18,8 +18,10 @@ tasks:
     - response_schema_conformance
     max_examples: 25
     seed: 1337
-    # qc-agent:begin refine exclude_path
-    # qc-agent:end
+    exclude_path:
+    - "/api/files"  # POST nhận multipart/form-data: fuzz tệp không có nghĩa và tốn thời gian
+    - "/api/jobs/{job_id}/artifacts"  # POST nhận multipart/form-data: fuzz tệp không có nghĩa và tốn thời gian
+    - "/api/jobs/{job_id}/main-report"  # POST nhận multipart/form-data: fuzz tệp không có nghĩa và tốn thời gian
   oracle:
     kind: checks
     required:

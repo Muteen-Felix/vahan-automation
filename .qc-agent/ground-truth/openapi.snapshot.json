@@ -1,0 +1,1954 @@
+{
+  "operations": [
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "name": "dataset",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maximum": 500,
+          "minimum": 1,
+          "name": "limit",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "minimum": 0,
+          "name": "offset",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "maxLength": 200,
+          "name": "rto",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maxLength": 200,
+          "name": "state",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maximum": 9999,
+          "minimum": 1900,
+          "name": "year",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/annual-reports",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "maxLength": 64,
+            "name": "dataset",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "maxLength": 200,
+            "name": "rto",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "scenarios",
+            "required": true,
+            "type": "array"
+          },
+          {
+            "maxLength": 200,
+            "name": "state",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "maximum": 9999.0,
+            "minimum": 1900.0,
+            "name": "year",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/annual-reports/coverage",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "name": "confirmAll",
+          "required": false,
+          "type": "boolean"
+        },
+        {
+          "in": "query",
+          "name": "dataset",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maxLength": 200,
+          "name": "rto",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maxLength": 200,
+          "name": "state",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maximum": 9999,
+          "minimum": 1900,
+          "name": "year",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/annual-reports/export",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "name": "dataset",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maximum": 100,
+          "minimum": 1,
+          "name": "limit",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "minimum": 0,
+          "name": "offset",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "maxLength": 200,
+          "name": "rto",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maxLength": 200,
+          "name": "state",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maximum": 9999,
+          "minimum": 1900,
+          "name": "year",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/annual-reports/history",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "maximum": 100,
+          "minimum": 1,
+          "name": "limit",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "minimum": 0,
+          "name": "offset",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/annual-reports/run-history",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "maxLength": 64,
+          "name": "dataset",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maximum": 9999,
+          "minimum": 1900,
+          "name": "fromYear",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "maximum": 9999,
+          "minimum": 1900,
+          "name": "toYear",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/annual-reports/update-status",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "maximum": 1000,
+          "minimum": 1,
+          "name": "limit",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "minimum": 0,
+          "name": "offset",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/audit",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "POST",
+      "params": [],
+      "path": "/api/auth/activity",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "maxLength": 1024,
+            "minLength": 1,
+            "name": "password",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "maxLength": 128,
+            "minLength": 1,
+            "name": "username",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/auth/login",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "POST",
+      "params": [],
+      "path": "/api/auth/logout",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/auth/me",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "maxLength": 1024,
+            "minLength": 1,
+            "name": "currentPassword",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "maxLength": 1024,
+            "minLength": 12,
+            "name": "newPassword",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/auth/password",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/auth/status",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "minimum": 1.0,
+            "name": "maxWorkers",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "preflightId",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "sessionId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tasks",
+            "required": true,
+            "type": "array"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/batch-queue/sessions",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "session_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/batch-queue/sessions/{session_id}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "session_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/batch-queue/sessions/{session_id}/pause",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "minimum": 1.0,
+            "name": "maxWorkers",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "preflightId",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "required": false
+      },
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "session_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/batch-queue/sessions/{session_id}/resume",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "position",
+          "required": true,
+          "type": "integer"
+        },
+        {
+          "in": "path",
+          "name": "session_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/batch-queue/sessions/{session_id}/tasks/{position}/settle",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/files",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/files",
+      "responses": [
+        "201",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "file_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/files/{file_id}/download",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "file_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maximum": 1000,
+          "minimum": 1,
+          "name": "limit",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "minimum": 0,
+          "name": "offset",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/files/{file_id}/rows",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/filter-profiles",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "definition",
+            "required": true,
+            "type": "object"
+          },
+          {
+            "maxLength": 120,
+            "minLength": 1,
+            "name": "name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "minimum": 1.0,
+            "name": "revision",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/filter-profiles",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "context",
+            "required": false,
+            "type": "object"
+          },
+          {
+            "maxLength": 128,
+            "minLength": 1,
+            "name": "runnerId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "maxLength": 500,
+            "minLength": 1,
+            "name": "search",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "minimum": 1900.0,
+            "name": "year",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/filter-profiles/makers",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "context",
+            "required": false,
+            "type": "object"
+          },
+          {
+            "maxLength": 128,
+            "minLength": 1,
+            "name": "runnerId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "minimum": 1900.0,
+            "name": "year",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/filter-profiles/options",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "definition",
+            "required": true,
+            "type": "object"
+          },
+          {
+            "maxLength": 120,
+            "minLength": 1,
+            "name": "name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "minimum": 1.0,
+            "name": "revision",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "required": true
+      },
+      "method": "PUT",
+      "params": [
+        {
+          "in": "path",
+          "name": "profile_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/filter-profiles/{profile_id}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "DELETE",
+      "params": [
+        {
+          "in": "path",
+          "name": "profile_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "name": "revision",
+          "required": true,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/filter-profiles/{profile_id}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "context",
+            "required": false,
+            "type": "object"
+          },
+          {
+            "maxLength": 128,
+            "minLength": 1,
+            "name": "runnerId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "minimum": 1900.0,
+            "name": "year",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "profile_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/filter-profiles/{profile_id}/preview",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/health",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "maximum": 1000,
+          "minimum": 1,
+          "name": "limit",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "minimum": 0,
+          "name": "offset",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/jobs",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "filters",
+            "required": true,
+            "type": "object"
+          },
+          {
+            "name": "retryOfJobId",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "maxLength": 128,
+            "minLength": 1,
+            "name": "runnerId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "scenarioName",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "sessionId",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "enum": [
+              "new",
+              "old"
+            ],
+            "name": "source",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/jobs",
+      "responses": [
+        "201",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "maximum": 1000,
+          "minimum": 1,
+          "name": "limit",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "minimum": 0,
+          "name": "offset",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/jobs/reports",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "file_name",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/reports/file/{file_name}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "name": "deleted",
+          "required": false,
+          "type": "boolean"
+        },
+        {
+          "in": "query",
+          "maximum": 20,
+          "minimum": 1,
+          "name": "limit",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "minimum": 0,
+          "name": "offset",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/jobs/reports/sessions",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "DELETE",
+      "params": [
+        {
+          "in": "path",
+          "name": "session_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/reports/sessions/{session_id}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "session_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/reports/sessions/{session_id}/restore",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "fileNames",
+            "required": true,
+            "type": "array"
+          },
+          {
+            "name": "sessionIds",
+            "required": false,
+            "type": "object"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/jobs/reports/verify",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "job_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/{job_id}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [],
+        "required": true
+      },
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "job_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/{job_id}/artifacts",
+      "responses": [
+        "201",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "job_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/{job_id}/cancel",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "job_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/{job_id}/excel",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [],
+        "required": true
+      },
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "job_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/{job_id}/main-report",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "job_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/{job_id}/no-data",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "job_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "in": "query",
+          "maximum": 1000,
+          "minimum": 1,
+          "name": "limit",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "in": "query",
+          "minimum": 0,
+          "name": "offset",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "path": "/api/jobs/{job_id}/report-result",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "maxLength": 240,
+            "name": "message",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "observedAt",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "maxLength": 2048,
+            "name": "pageUrl",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "enum": [
+              "DATA",
+              "NO_RECORD"
+            ],
+            "name": "result",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tables",
+            "required": false,
+            "type": "array"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "job_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/jobs/{job_id}/report-result",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/network/status",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/ready",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/run-schedules",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "profileId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "enum": [
+              "once",
+              "monthly"
+            ],
+            "name": "repeat",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "startsAt",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "enum": [
+              "Asia/Ho_Chi_Minh",
+              "Asia/Kolkata"
+            ],
+            "name": "timeZone",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "minimum": 1900.0,
+            "name": "year",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/run-schedules",
+      "responses": [
+        "201",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/run-schedules/captchas",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "enum": [
+              "Asia/Ho_Chi_Minh",
+              "Asia/Kolkata"
+            ],
+            "name": "timeZone",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/run-schedules/time-zone",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "enabled",
+            "required": true,
+            "type": "boolean"
+          }
+        ],
+        "required": true
+      },
+      "method": "PATCH",
+      "params": [
+        {
+          "in": "path",
+          "name": "schedule_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/run-schedules/{schedule_id}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "DELETE",
+      "params": [
+        {
+          "in": "path",
+          "name": "schedule_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/run-schedules/{schedule_id}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "schedule_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/run-schedules/{schedule_id}/pause",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [],
+        "required": false
+      },
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "schedule_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/run-schedules/{schedule_id}/resume",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "schedule_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/run-schedules/{schedule_id}/stop",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "jobId",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "level",
+            "pattern": "^(info|warning|error)$",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "maxLength": 8000,
+            "minLength": 1,
+            "name": "message",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/runner-logs",
+      "responses": [
+        "201",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "runner_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/runner-state/{runner_id}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "minimum": 0.0,
+            "name": "expectedRevision",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "name": "value",
+            "required": true
+          }
+        ],
+        "required": true
+      },
+      "method": "PUT",
+      "params": [
+        {
+          "in": "path",
+          "name": "runner_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/runner-state/{runner_id}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "maxLength": 128,
+            "minLength": 1,
+            "name": "captchaId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "jobId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/runner/ocr/start",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "sessionId",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "required": false
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/runner/queue/claim",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/runners",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "maxLength": 500,
+            "minLength": 1,
+            "name": "reason",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/ui-health/admin/gates/invalidate",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "maxLength": 500,
+            "minLength": 1,
+            "name": "reason",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "runner_id",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/ui-health/admin/runner-errors/{runner_id}/retire",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/ui-health/contract",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "healthCheck",
+            "required": true,
+            "type": "object"
+          },
+          {
+            "maxLength": 2000,
+            "name": "pageUrl",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "maxLength": 128,
+            "name": "runnerId",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/ui-health/logs",
+      "responses": [
+        "201",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "runnerIds",
+            "required": true,
+            "type": "array"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/ui-health/preflight",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "query",
+          "name": "date",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "path": "/api/ui-health/reports",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [
+        {
+          "in": "path",
+          "name": "file_name",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/ui-health/reports/{file_name}/download",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/ui-health/status",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/user-state",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "value",
+            "required": true
+          }
+        ],
+        "required": true
+      },
+      "method": "PUT",
+      "params": [
+        {
+          "in": "path",
+          "name": "key",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/user-state/{key}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/users",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "maxLength": 1024,
+            "minLength": 12,
+            "name": "password",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "profile",
+            "required": false,
+            "type": "object"
+          },
+          {
+            "name": "role",
+            "pattern": "^(admin|user)$",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "maxLength": 128,
+            "minLength": 1,
+            "name": "username",
+            "pattern": "^[a-zA-Z0-9_.@-]+$",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [],
+      "path": "/api/users",
+      "responses": [
+        "201",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "name": "active",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "profile",
+            "required": false,
+            "type": "object"
+          },
+          {
+            "name": "role",
+            "pattern": "^(admin|user)$",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "PATCH",
+      "params": [
+        {
+          "in": "path",
+          "name": "username",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/users/{username}",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "maxLength": 1024,
+            "minLength": 12,
+            "name": "password",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "required": true
+      },
+      "method": "POST",
+      "params": [
+        {
+          "in": "path",
+          "name": "username",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "path": "/api/users/{username}/password",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    },
+    {
+      "body": null,
+      "method": "GET",
+      "params": [],
+      "path": "/api/worker-pool",
+      "responses": [
+        "200"
+      ],
+      "secured": false
+    },
+    {
+      "body": {
+        "fields": [
+          {
+            "minimum": 1.0,
+            "name": "count",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "required": true
+      },
+      "method": "PUT",
+      "params": [],
+      "path": "/api/worker-pool",
+      "responses": [
+        "200",
+        "422"
+      ],
+      "secured": false
+    }
+  ],
+  "version": 1
+}

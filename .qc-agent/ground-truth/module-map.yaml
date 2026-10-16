@@ -3,9 +3,16 @@
 version: 1
 status: draft
 modules:
-- name: "auth"
+- name: "api"
   paths:
-  - "TODO-route-files-of-auth"
+  - "TODO-route-files-of-api"
+  suites:
+  - api-contract
+  - gt-functional
+  source: openapi
+- name: "root"
+  paths:
+  - "TODO-route-files-of-root"
   suites:
   - api-contract
   - gt-functional
