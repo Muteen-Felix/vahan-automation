@@ -1,0 +1,31 @@
+{
+  "at": "2026-10-16T13:42:00.063552+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "sourceOrImagesChanged": false,
+  "changes": [
+    {
+      "area": "Restart preflight",
+      "reason": "Wait for three actual runners to reconnect before sending nonempty runnerIds; initial empty body correctly returned422."
+    },
+    {
+      "area": "Browser selectors",
+      "reason": "Actual UI logout is Account > Log out; corrected harness selectors."
+    },
+    {
+      "area": "Browser origin",
+      "reason": "Use transparent TCP forwarding from container loopback to the actual staging port so browser Origin stays exactly http://127.0.0.1:15187; no HTTP responses or socket messages mocked."
+    },
+    {
+      "area": "Session history",
+      "reason": "Current report-table contract does not create legacy per-job NO_DATA text copies; assert real stored terminal results and delete/restore behavior."
+    },
+    {
+      "area": "HTTP export header",
+      "reason": "Treat header names case-insensitively; packaged nginx sends x-report-row-count."
+    },
+    {
+      "area": "R8 automatic network recovery",
+      "reason": "RESUMING clears networkPaused in the real server; classify recovery following observed network loss as automatic, not operator pause. Genuine downtime remains included in all ETA errors; thresholds and estimator unchanged."
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+Created C:\Users\huyvv12\AppData\Local\Temp\vahan-f0a67-fresh-new-krbc2lii\.docker.env; credentials remain in this ignored file.
+Added a separate database runtime credential; existing keys were preserved.
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+

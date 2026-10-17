@@ -1,0 +1,17 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-f0a67-fresh-20261016t090229",
+    "stop"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii",
+  "startedAt": "2026-10-16T09:11:24.903525+00:00",
+  "finishedAt": "2026-10-16T09:11:26.194362+00:00",
+  "exitCode": 0,
+  "log": "fresh-retain-stopped-stack.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

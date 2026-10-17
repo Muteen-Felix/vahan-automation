@@ -1,0 +1,2 @@
+{"at": "2026-10-16T09:13:30+00:00", "count": 1, "removed": [{"id": "4e025d2f-2820-43f9-8b4c-5ca5a477fc46", "owner": "admin", "status": "WAITING", "profileName": "T45B SYNTHETIC UPGRADE PROFILE", "hadActiveSession": false}], "decision": "D-35", "migration": "0015_remove_daily_schedules", "keptNonDailySchedules": 2}
+

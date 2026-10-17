@@ -1,0 +1,26 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-d3-0a67-20261016t090229",
+    "exec",
+    "-T",
+    "postgres",
+    "psql",
+    "-U",
+    "vahan",
+    "-d",
+    "vahan",
+    "-XAtc",
+    "SELECT json_build_object('businessReports',(SELECT count(*) FROM main_reports),'jobs',(SELECT count(*) FROM jobs),'reportSessions',(SELECT count(*) FROM report_sessions),'queueSessions',(SELECT count(*) FROM batch_queue_sessions),'schedules',(SELECT count(*) FROM app_settings WHERE key LIKE 'automatic-report-schedule:%'),'schema',(SELECT version_num FROM alembic_version));"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-d3-0a67-staging-p0kyko6t",
+  "startedAt": "2026-10-16T09:18:57.378917+00:00",
+  "finishedAt": "2026-10-16T09:18:57.611167+00:00",
+  "exitCode": 0,
+  "log": "staging-clean-data.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

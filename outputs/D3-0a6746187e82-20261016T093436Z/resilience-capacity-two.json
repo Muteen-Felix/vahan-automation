@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-16T13:31:50.164396+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "enabled": true,
+    "mode": "logical",
+    "phase": "ready",
+    "desiredCount": 2,
+    "runningCount": 2,
+    "activeCount": 1,
+    "workers": [
+      {
+        "number": 1,
+        "runnerId": "worker-0fc9567e-cc93-4917-8fff-0026bb2a083e",
+        "running": false,
+        "enabled": true,
+        "busy": true
+      },
+      {
+        "number": 2,
+        "runnerId": "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+        "running": true,
+        "enabled": true,
+        "busy": false
+      },
+      {
+        "number": 3,
+        "runnerId": "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a",
+        "running": true,
+        "enabled": true,
+        "busy": false
+      }
+    ]
+  }
+}

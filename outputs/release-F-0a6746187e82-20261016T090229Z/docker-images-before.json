@@ -1,0 +1,15 @@
+{
+  "command": [
+    "docker",
+    "image",
+    "ls",
+    "--format",
+    "{{json .}}"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-release-F-clean-20261016T090229Z",
+  "startedAt": "2026-10-16T09:09:05.486697+00:00",
+  "finishedAt": "2026-10-16T09:09:05.698607+00:00",
+  "exitCode": 0,
+  "log": "docker-images-before.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

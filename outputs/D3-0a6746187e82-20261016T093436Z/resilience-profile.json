@@ -1,0 +1,120 @@
+{
+  "at": "2026-10-16T13:29:56.372854+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "id": "0da4a538-2e1d-4b11-bd63-3a1ff3b2d440",
+    "name": "D3 resilience real VAHAN Kerala 2019",
+    "revision": 1,
+    "definition": {
+      "rules": [],
+      "fields": {
+        "rtos": {
+          "mode": "iterate",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "fuels": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "makers": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "states": {
+          "mode": "fixed",
+          "values": [
+            "Kerala"
+          ],
+          "exclude": [],
+          "include": []
+        },
+        "classes": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "evTypes": {
+          "mode": "fixed",
+          "values": [
+            "ELECTRIC(BOV)"
+          ],
+          "exclude": [],
+          "include": []
+        },
+        "fitness": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "delhiNcr": {
+          "mode": "fixed",
+          "values": [
+            "ALL STATES"
+          ],
+          "exclude": [],
+          "include": []
+        },
+        "statuses": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "emissions": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "ownerTypes": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "vehicleType": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "archivedFlags": {
+          "mode": "iterate",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "subCategories": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "categoryGroups": {
+          "mode": "fixed",
+          "values": [
+            "Two Wheeler"
+          ],
+          "exclude": [],
+          "include": []
+        }
+      },
+      "report": {
+        "year": 2019,
+        "xAxis": "Month Wise",
+        "yAxis": "Maker",
+        "period": "CALENDAR YEAR"
+      },
+      "version": 1
+    },
+    "updatedAt": "2026-10-16T13:29:56.365303+00:00"
+  }
+}

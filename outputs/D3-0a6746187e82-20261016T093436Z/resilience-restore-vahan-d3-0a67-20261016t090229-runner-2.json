@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-16T13:32:43.864519+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "command": [
+      "docker",
+      "exec",
+      "--user",
+      "0",
+      "vahan-d3-0a67-20261016t090229-runner-2",
+      "node",
+      "-e",
+      "const fs=require('fs'),p='/etc/hosts',b='/tmp/d3-hosts-before';if(!fs.existsSync(b))throw Error('backup missing');fs.writeFileSync(p,fs.readFileSync(b));fs.unlinkSync(b);console.log('VAHAN DNS restored')"
+    ],
+    "at": "2026-10-16T13:32:43.864519+00:00",
+    "returncode": 0,
+    "stdout": "VAHAN DNS restored\n",
+    "stderr": ""
+  }
+}

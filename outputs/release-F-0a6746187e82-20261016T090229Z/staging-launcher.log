@@ -1,0 +1,71 @@
+Using existing C:\Users\huyvv12\AppData\Local\Temp\vahan-d3-0a67-staging-p0kyko6t\.docker.env
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+NAME                                       IMAGE                                                                                                               COMMAND                  SERVICE    CREATED          STATUS                    PORTS
+vahan-d3-0a67-20261016t090229-api-1        vahan-review/api:1.0.0                                                                                              "uvicorn app.main:ap…"   api        26 seconds ago   Up 17 seconds (healthy)   127.0.0.1:18087->8000/tcp
+vahan-d3-0a67-20261016t090229-postgres-1   docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826   "docker-entrypoint.s…"   postgres   26 seconds ago   Up 25 seconds (healthy)   5432/tcp
+vahan-d3-0a67-20261016t090229-runner-1     vahan-review/runner:1.0.0                                                                                           "docker-entrypoint.s…"   runner     26 seconds ago   Up 11 seconds (healthy)   3001/tcp
+vahan-d3-0a67-20261016t090229-runner-2     vahan-review/runner:1.0.0                                                                                           "docker-entrypoint.s…"   runner     26 seconds ago   Up 11 seconds (healthy)   3001/tcp
+vahan-d3-0a67-20261016t090229-runner-3     vahan-review/runner:1.0.0                                                                                           "docker-entrypoint.s…"   runner     26 seconds ago   Up 10 seconds (healthy)   3001/tcp
+vahan-d3-0a67-20261016t090229-web-1        vahan-review/web:1.0.0                                                                                              "/docker-entrypoint.…"   web        26 seconds ago   Up 11 seconds (healthy)   127.0.0.1:15187->80/tcp
+Using the manually configured worker count: 3.
+
+ Volume vahan-d3-0a67-20261016t090229_postgres_data Creating 
+ Network vahan-d3-0a67-20261016t090229_default Creating 
+ Volume vahan-d3-0a67-20261016t090229_postgres_data Creating 
+ Network vahan-d3-0a67-20261016t090229_default Creating 
+ Volume vahan-d3-0a67-20261016t090229_postgres_data Created 
+ Volume vahan-d3-0a67-20261016t090229_postgres_data Created 
+ Network vahan-d3-0a67-20261016t090229_default Created 
+ Network vahan-d3-0a67-20261016t090229_default Created 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Creating 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Created 
+ Container vahan-d3-0a67-20261016t090229-migrate-1 Creating 
+ Container vahan-d3-0a67-20261016t090229-migrate-1 Created 
+ Container vahan-d3-0a67-20261016t090229-api-1 Creating 
+ Container vahan-d3-0a67-20261016t090229-api-1 Created 
+ Container vahan-d3-0a67-20261016t090229-web-1 Creating 
+ Container vahan-d3-0a67-20261016t090229-runner-2 Creating 
+ Container vahan-d3-0a67-20261016t090229-runner-1 Creating 
+ Container vahan-d3-0a67-20261016t090229-runner-3 Creating 
+ Container vahan-d3-0a67-20261016t090229-web-1 Created 
+ Container vahan-d3-0a67-20261016t090229-runner-2 Created 
+ Container vahan-d3-0a67-20261016t090229-runner-3 Created 
+ Container vahan-d3-0a67-20261016t090229-runner-1 Created 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Starting 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Started 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Healthy 
+ Container vahan-d3-0a67-20261016t090229-migrate-1 Starting 
+ Container vahan-d3-0a67-20261016t090229-migrate-1 Started 
+ Container vahan-d3-0a67-20261016t090229-migrate-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Healthy 
+ Container vahan-d3-0a67-20261016t090229-migrate-1 Exited 
+ Container vahan-d3-0a67-20261016t090229-api-1 Starting 
+ Container vahan-d3-0a67-20261016t090229-api-1 Started 
+ Container vahan-d3-0a67-20261016t090229-api-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-api-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-api-1 Healthy 
+ Container vahan-d3-0a67-20261016t090229-web-1 Starting 
+ Container vahan-d3-0a67-20261016t090229-api-1 Healthy 
+ Container vahan-d3-0a67-20261016t090229-runner-1 Starting 
+ Container vahan-d3-0a67-20261016t090229-web-1 Started 
+ Container vahan-d3-0a67-20261016t090229-runner-1 Started 
+ Container vahan-d3-0a67-20261016t090229-runner-2 Starting 
+ Container vahan-d3-0a67-20261016t090229-runner-2 Started 
+ Container vahan-d3-0a67-20261016t090229-runner-3 Starting 
+ Container vahan-d3-0a67-20261016t090229-runner-3 Started 
+ Container vahan-d3-0a67-20261016t090229-web-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-migrate-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-api-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-runner-1 Waiting 
+ Container vahan-d3-0a67-20261016t090229-runner-2 Waiting 
+ Container vahan-d3-0a67-20261016t090229-runner-3 Waiting 
+ Container vahan-d3-0a67-20261016t090229-migrate-1 Exited 
+ Container vahan-d3-0a67-20261016t090229-api-1 Healthy 
+ Container vahan-d3-0a67-20261016t090229-postgres-1 Healthy 
+ Container vahan-d3-0a67-20261016t090229-web-1 Healthy 
+ Container vahan-d3-0a67-20261016t090229-runner-1 Healthy 
+ Container vahan-d3-0a67-20261016t090229-runner-2 Healthy 
+ Container vahan-d3-0a67-20261016t090229-runner-3 Healthy 

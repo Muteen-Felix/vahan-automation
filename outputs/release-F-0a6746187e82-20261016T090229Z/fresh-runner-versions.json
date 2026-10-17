@@ -1,0 +1,22 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-f0a67-fresh-20261016t090229",
+    "exec",
+    "-T",
+    "runner",
+    "sh",
+    "-c",
+    "tesseract --version; node -e \"const {chromium}=require('playwright'); console.log(chromium.executablePath())\""
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii",
+  "startedAt": "2026-10-16T09:11:24.393454+00:00",
+  "finishedAt": "2026-10-16T09:11:24.871542+00:00",
+  "exitCode": 0,
+  "log": "fresh-runner-versions.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

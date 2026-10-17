@@ -1,0 +1,22 @@
+{
+  "recordedAt": "2026-10-17T11:43:27.387573+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "context": "Post-D3 rendering of retained staging configuration; no original staging containers remain",
+  "historicalSnapshot": "outputs\\release-F-0a6746187e82-20261016T090229Z\\staging-config-snapshot.json",
+  "historicalSnapshotSha256": "4a618d01ce1790c511d14d0f219c262d2fa85786debb43054529ccd796b73f4d",
+  "historicalGeneratedAt": "2026-10-16T09:27:42+00:00",
+  "configurationDifferences": {},
+  "historicalImageIds": {
+    "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+    "vahan-review/api:1.0.0": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc",
+    "vahan-review/runner:1.0.0": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+    "vahan-review/web:1.0.0": "sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2"
+  },
+  "currentImageIds": {
+    "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+    "vahan-review/api:1.0.0": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc",
+    "vahan-review/runner:1.0.0": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+    "vahan-review/web:1.0.0": "sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2"
+  },
+  "stdout": "wrote C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\followup-0a67461-20261017\\config-snapshot.json: 54 keys, 15 plain, 0 review error(s)"
+}

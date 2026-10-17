@@ -1,0 +1,74 @@
+{
+  "startedAt": "2026-10-16T12:37:06.958880+00:00",
+  "finishedAt": "2026-10-16T12:37:13.128539+00:00",
+  "method": "POST",
+  "path": "/api/ui-health/preflight",
+  "status": 200,
+  "headers": {
+    "Server": "nginx",
+    "Date": "Fri, 16 Oct 2026 12:37:13 GMT",
+    "Content-Type": "application/json",
+    "Content-Length": "1132",
+    "Connection": "close",
+    "vary": "Origin",
+    "cache-control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+  },
+  "body": {
+    "allowed": true,
+    "preflightId": "05dc616c-bf9d-421e-89af-0f4e674b376f",
+    "revision": 1,
+    "versionId": "f10ff4e4-ba93-4d0b-bdd1-9eb941a642b6",
+    "reports": [
+      {
+        "status": "PASS",
+        "allowed": true,
+        "blocked": false,
+        "checkId": "d7230637-4c2f-472c-8eac-4daa15d4833b",
+        "repairs": [],
+        "reports": [],
+        "revision": 1,
+        "runnerId": "worker-0fc9567e-cc93-4917-8fff-0026bb2a083e",
+        "checkedAt": "2026-10-16T12:37:09.355Z",
+        "versionId": "f10ff4e4-ba93-4d0b-bdd1-9eb941a642b6",
+        "errorCount": 0,
+        "dataChanges": [],
+        "attempts": 1
+      },
+      {
+        "status": "PASS",
+        "allowed": true,
+        "blocked": false,
+        "checkId": "fc2f9adb-b18e-47c3-95fc-98a6fe7183a3",
+        "repairs": [],
+        "reports": [],
+        "revision": 1,
+        "runnerId": "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a",
+        "checkedAt": "2026-10-16T12:37:09.239Z",
+        "versionId": "f10ff4e4-ba93-4d0b-bdd1-9eb941a642b6",
+        "errorCount": 0,
+        "dataChanges": [],
+        "attempts": 1
+      },
+      {
+        "status": "PASS",
+        "allowed": true,
+        "blocked": false,
+        "checkId": "b9114739-40f4-4b2a-be19-358ff71f294e",
+        "repairs": [],
+        "reports": [],
+        "revision": 1,
+        "runnerId": "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+        "checkedAt": "2026-10-16T12:37:13.091Z",
+        "versionId": "f10ff4e4-ba93-4d0b-bdd1-9eb941a642b6",
+        "errorCount": 0,
+        "dataChanges": [],
+        "attempts": 1
+      }
+    ]
+  }
+}

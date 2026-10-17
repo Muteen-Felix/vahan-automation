@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-16T13:20:11.344318+00:00",
+  "jobs": [
+    {
+      "id": "f8512111-d211-49de-9e8d-dcb8193cfc22",
+      "status": "FAILED",
+      "error": "CAPTCHA was rejected three times.",
+      "scenarioName": "Maker Month Wise Data of RTO CHENNAI (NORTH WEST) - TN2, Tamil Nadu (2018) · Active / Archive: ACTIVE_NON_COMPLIANT",
+      "caseId": "f8512111-d211-49de-9e8d-dcb8193cfc22",
+      "retryOfJobId": null,
+      "createdAt": "2026-10-16T13:19:27.664197Z",
+      "updatedAt": "2026-10-16T13:19:40.593337Z"
+    },
+    {
+      "id": "243bd21f-a16a-485d-9762-f749d66312b8",
+      "status": "FAILED",
+      "error": "CAPTCHA was rejected three times.",
+      "scenarioName": "Maker Month Wise Data of RAJAPALAYAM UO - TN643, Tamil Nadu (2018) · Active / Archive: TEMPORARY_ARCHIVE",
+      "caseId": "243bd21f-a16a-485d-9762-f749d66312b8",
+      "retryOfJobId": null,
+      "createdAt": "2026-10-16T13:18:15.625505Z",
+      "updatedAt": "2026-10-16T13:18:25.262387Z"
+    }
+  ]
+}

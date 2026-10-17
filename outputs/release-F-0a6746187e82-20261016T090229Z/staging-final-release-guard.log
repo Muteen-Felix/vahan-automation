@@ -1,0 +1,4 @@
+Using existing C:\Users\huyvv12\AppData\Local\Temp\vahan-d3-0a67-staging-p0kyko6t\.docker.env
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+Deployment safety check passed: {'activeJobs': 0, 'planningLeases': 0, 'runningQueues': 0, 'activeSchedules': 0, 'blockingDailySchedules': 0}
+

@@ -1,0 +1,8 @@
+test_one_worker_ignores_legacy_large_count_and_runs_one_case (test_run_schedules.RunScheduleTest.test_one_worker_ignores_legacy_large_count_and_runs_one_case) ... ok
+test_resume_ignores_persisted_large_worker_count (test_run_schedules.RunScheduleTest.test_resume_ignores_persisted_large_worker_count) ... ok
+test_three_workers_ignores_legacy_large_count_and_runs_three_cases (test_run_schedules.RunScheduleTest.test_three_workers_ignores_legacy_large_count_and_runs_three_cases) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 29.062s
+
+OK

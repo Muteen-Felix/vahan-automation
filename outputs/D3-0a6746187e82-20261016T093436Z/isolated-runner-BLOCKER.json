@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-16T13:47:31.212058+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "error": "Unexpected real VAHAN outage overlaps isolated kill; do not claim isolation",
+    "sourceOrArtifactChanged": false
+  }
+}

@@ -1,0 +1,16 @@
+[PASS   ] GET /api/health returns 200 ok - status=200
+[PASS   ] GET /api/ready returns 200 with PostgreSQL storage - status=200 body={'status': 'ok', 'storage': 'postgresql', 'queue': 'postgresql'}
+[PASS   ] web / returns 200 - status=200
+[PASS   ] admin login returns an access token - status=200
+[PASS   ] at least 1 runner(s) ONLINE - online=1
+[PASS   ] throw-away member created - status=201
+[PASS   ] member can sign in - status=200
+[PASS   ] member gets 403 on /api/annual-reports/run-history - status=403
+[PASS   ] member gets 403 on /api/users - status=403
+[PASS   ] member gets 403 on /api/audit - status=403
+[PASS   ] admin can read run-history - status=200
+[PASS   ] throw-away member deactivated - status=200
+[PASS   ] service migrate exited 0 - docker compose ps -a migrate
+[PASS   ] API connects as a DML-only database role (S12) - {'u': 'vahan_app', 'rolsuper': False, 'rolcreatedb': False, 'rolcreaterole': False, 'schema_create': False}
+{"baseUrl": "http://127.0.0.1:60352", "finishedAt": "2026-10-16T09:13:52Z", "passed": 14, "failed": 0, "skipped": 0}
+

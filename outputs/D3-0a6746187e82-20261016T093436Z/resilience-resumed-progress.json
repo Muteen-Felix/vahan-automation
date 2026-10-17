@@ -1,0 +1,100 @@
+{
+  "at": "2026-10-16T13:31:43.204337+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "id": "2cad58b2-3fcf-4307-bee2-0444ba0cc042",
+    "done": 12,
+    "year": 2019,
+    "total": 348,
+    "failed": 0,
+    "noData": 7,
+    "repeat": "monthly",
+    "status": "RUNNING",
+    "enabled": false,
+    "message": "Collected 12/348 cases.",
+    "version": 1,
+    "pausedAt": null,
+    "startsAt": "2026-10-16T13:30:12.972604+00:00",
+    "timeZone": "Asia/Ho_Chi_Minh",
+    "withData": 5,
+    "createdAt": "2026-10-16T13:29:57.984549+00:00",
+    "lastRunAt": "2026-10-16T13:30:19.550367+00:00",
+    "nextRunAt": "2026-10-16T13:30:12.972604+00:00",
+    "operation": {
+      "error": null,
+      "stage": "Collecting reports",
+      "detail": "Collected 12/348 cases.",
+      "startedAt": "2026-10-16T13:31:21.306298+00:00",
+      "progressAt": "2026-10-16T13:31:42.820645+00:00",
+      "heartbeatAt": "2026-10-16T13:31:42.820645+00:00"
+    },
+    "profileId": "0da4a538-2e1d-4b11-bd63-3a1ff3b2d440",
+    "sessionId": "98617ac5-5f4d-4135-a43f-a593902a2dc5",
+    "updatedAt": "2026-10-16T13:31:42.820645+00:00",
+    "retryAfter": null,
+    "preflightAt": "2026-10-16T13:31:21.293415+00:00",
+    "preflightId": "48c08459-e6f0-4258-b0c6-b20739059376",
+    "profileName": "D3 resilience real VAHAN Kerala 2019",
+    "lastSessionId": "98617ac5-5f4d-4135-a43f-a593902a2dc5",
+    "networkPaused": false,
+    "retryProgress": {
+      "phase": "PRIMARY",
+      "complete": false,
+      "checkpointEnd": 20,
+      "lastCheckpoint": 10,
+      "pendingRetries": 0,
+      "checkpointStart": 10,
+      "failedRemaining": 0,
+      "finalPassStarted": false
+    },
+    "annualSeriesId": "2cad58b2-3fcf-4307-bee2-0444ba0cc042",
+    "executionEpoch": 3,
+    "lastFinishedAt": null,
+    "activeElapsedMs": 35903.356,
+    "profileRevision": 1,
+    "preparationAttempts": 0,
+    "activeSegmentStartedAt": "2026-10-16T13:31:21.305096+00:00",
+    "canResume": false,
+    "diagnostics": {
+      "checkedAt": "2026-10-16T13:31:43.201326+00:00",
+      "heartbeatAgeSeconds": 0,
+      "stageAgeSeconds": 21,
+      "warning": null,
+      "workers": [
+        {
+          "id": "worker-0fc9567e-cc93-4917-8fff-0026bb2a083e",
+          "selected": true,
+          "connected": true,
+          "heartbeatAgeSeconds": 2,
+          "jobId": "313eeeef-766e-412b-8f5b-5e26d94c60e3",
+          "status": "WAITING_RESULT",
+          "case": "Maker Month Wise Data of ALATHUR SRTO - KL49, Kerala (2019) · Active / Archive: TEMPORARY_ARCHIVE",
+          "error": null,
+          "jobAgeSeconds": 2
+        },
+        {
+          "id": "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+          "selected": true,
+          "connected": true,
+          "heartbeatAgeSeconds": 2,
+          "jobId": "2e6d6671-d2fd-44e3-89e3-045f3d9e7b16",
+          "status": "FILLING_FILTERS",
+          "case": "Maker Month Wise Data of ALUVA SRTO - KL41, Kerala (2019) · Active / Archive: ACTIVE_NON_COMPLIANT",
+          "error": null,
+          "jobAgeSeconds": 0
+        },
+        {
+          "id": "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a",
+          "selected": true,
+          "connected": true,
+          "heartbeatAgeSeconds": 2,
+          "jobId": "4e6c6ac4-18bc-4938-8100-853eb5db2256",
+          "status": "FILLING_FILTERS",
+          "case": "Maker Month Wise Data of ALUVA SRTO - KL41, Kerala (2019) · Active / Archive: PERMANENT_ARCHIVE",
+          "error": null,
+          "jobAgeSeconds": 0
+        }
+      ]
+    }
+  }
+}

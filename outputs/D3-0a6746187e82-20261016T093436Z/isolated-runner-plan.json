@@ -1,0 +1,534 @@
+{
+  "at": "2026-10-16T13:46:48.099582+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "year": 2020,
+    "states": [
+      "Andaman & Nicobar Island"
+    ],
+    "scenarios": [
+      {
+        "name": "Maker Month Wise Data of Baratang - AN201, Andaman & Nicobar Island (2020)",
+        "caseKey": "841d2b137558132f06024e27090bb0c94e1f99ffb6438bc66cf964607e16c704",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Baratang - AN201"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Campbell Bay - AN212, Andaman & Nicobar Island (2020)",
+        "caseKey": "cfff8b3cdf68903a8a40ad5a8744c954e3d47ee673d325d671c7083a994413b0",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Campbell Bay - AN212"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Car Nicobar - AN211, Andaman & Nicobar Island (2020)",
+        "caseKey": "5c530c551b9cacd8fbf4ecea9df9d4fe3b332c104599f40f0d488db92ce2c68f",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Car Nicobar - AN211"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Diglipur - AN204, Andaman & Nicobar Island (2020)",
+        "caseKey": "9fd681cbc2321d63858fc435c5af49a0fd8d228ef3b8a73ac69b292acd5588df",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Diglipur - AN204"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Ferrargunj - AN200, Andaman & Nicobar Island (2020)",
+        "caseKey": "b0e744bb8bf3158002f76e7663154649db15fba806ba63b5d8474f0ace111fb9",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Ferrargunj - AN200"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Kamorta - AN208, Andaman & Nicobar Island (2020)",
+        "caseKey": "2f9ff64d414c21fc1f11df9e63eb6ffb913638560ca65db6e3834169dc6a5ef0",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Kamorta - AN208"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Katchal - AN209, Andaman & Nicobar Island (2020)",
+        "caseKey": "31d47d6fe8af029f2b133a8eca2b361e724668f25191d22fdc86ac0e3398ff18",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Katchal - AN209"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Little Andaman - AN207, Andaman & Nicobar Island (2020)",
+        "caseKey": "a2ea27b2fb5acd3a256b8997b9370b9e96a1ad08b48985e86e58f4cd3d687d13",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Little Andaman - AN207"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Mayabunder - AN203, Andaman & Nicobar Island (2020)",
+        "caseKey": "8fddb9d3c06da026d29931e9da06dd4c75b9afbdd51ae9619237ec1c3c2bf894",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Mayabunder - AN203"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Port Blair DTO - AN1, Andaman & Nicobar Island (2020)",
+        "caseKey": "4fd9c012a3b5313ced44bd4683c3b04584db38b956ee2bd3382b458c96838224",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Port Blair DTO - AN1"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Rangat - AN202, Andaman & Nicobar Island (2020)",
+        "caseKey": "65362fe0925994bcd378a9d7eef76a8d6505f3aa7c9510c076035b69fe216851",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Rangat - AN202"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Shaheed Dweep - AN205, Andaman & Nicobar Island (2020)",
+        "caseKey": "f88410701f6f72dda042af6a7c4d03a589fb8dc47e8ba71db8771fde816cf42f",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Shaheed Dweep - AN205"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Swaraj Dweep - AN206, Andaman & Nicobar Island (2020)",
+        "caseKey": "9b59a6ab4949fa9545c2accfd5df4e47d1ad8af7850f908caf927fb156d709f7",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Swaraj Dweep - AN206"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      },
+      {
+        "name": "Maker Month Wise Data of Teressa - AN210, Andaman & Nicobar Island (2020)",
+        "caseKey": "0bb64c78501aa0e660a117fc90a3f78b69672da2dbc6a70bfab95b1296338884",
+        "filters": {
+          "delhiNcr": "ALL STATES",
+          "states": [
+            "Andaman & Nicobar Island"
+          ],
+          "rtos": [
+            "Teressa - AN210"
+          ],
+          "categoryGroups": [],
+          "subCategories": [],
+          "classes": [],
+          "evTypes": [],
+          "fuels": [],
+          "archivedFlags": [
+            "ACTIVE_COMPLIANT"
+          ],
+          "emissions": [],
+          "makers": [],
+          "statuses": [],
+          "ownerTypes": [],
+          "vehicleType": "",
+          "fitness": "",
+          "period": "CALENDAR YEAR",
+          "fromYear": "2020",
+          "toYear": "2020",
+          "financialYears": [],
+          "fromDate": "",
+          "toDate": "",
+          "yAxis": "Maker",
+          "xAxis": "Month Wise",
+          "autoApply": true,
+          "autoExport": true
+        }
+      }
+    ],
+    "skippedBranches": 0,
+    "profileId": "17141cfa-5069-4348-8ec3-baa153d8cfd1",
+    "profileRevision": 1,
+    "profileName": "D3 isolated runner recovery 2020"
+  }
+}

@@ -1,0 +1,11 @@
+staging-setup PASS
+staging-load-final-package PASS
+staging-fresh-release-guard PASS
+staging-resource-assessment PASS
+staging-launcher PASS
+staging-smoke-command PASS
+staging-config-snapshot-command PASS
+staging-clean-data PASS
+staging-final-release-guard PASS
+Separate staging prepared from final package; D3 NOT_RUN
+

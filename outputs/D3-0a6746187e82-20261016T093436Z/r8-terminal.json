@@ -1,0 +1,72 @@
+{
+  "at": "2026-10-16T13:29:21.261771+00:00",
+  "unixMs": 1792157361280.4053,
+  "schedule": {
+    "id": "eef143ac-8bb3-492d-a6ad-0cb3a89c006a",
+    "done": 1228,
+    "year": 2018,
+    "total": 1228,
+    "failed": 0,
+    "noData": 913,
+    "repeat": "once",
+    "status": "COMPLETED",
+    "enabled": false,
+    "message": "Finished 1228/1228 cases. 0 failed.",
+    "version": 1,
+    "pausedAt": null,
+    "startsAt": "2026-10-16T12:37:45.755293+00:00",
+    "timeZone": "Asia/Ho_Chi_Minh",
+    "withData": 315,
+    "createdAt": "2026-10-16T12:37:15.784411+00:00",
+    "lastRunAt": "2026-10-16T12:37:52.930483+00:00",
+    "nextRunAt": null,
+    "operation": {
+      "error": null,
+      "stage": "Collecting reports",
+      "detail": "Collected 1227/1228 cases.",
+      "startedAt": "2026-10-16T13:25:06.936318+00:00",
+      "progressAt": "2026-10-16T13:29:17.984344+00:00",
+      "heartbeatAt": "2026-10-16T13:29:17.984344+00:00"
+    },
+    "profileId": "3358c093-0330-4490-93b9-7f3767119d72",
+    "sessionId": null,
+    "updatedAt": "2026-10-16T13:29:19.069171+00:00",
+    "retryAfter": null,
+    "preflightAt": "2026-10-16T13:25:06.924325+00:00",
+    "preflightId": "1214a882-36b8-4a02-84d8-73304aae484f",
+    "profileName": "D3 R8 real VAHAN 2018 three states",
+    "lastSessionId": "042204b6-406e-4a77-82a0-4d2d06403e1f",
+    "networkPaused": false,
+    "retryProgress": {
+      "phase": "DONE",
+      "complete": true,
+      "checkpointEnd": 1228,
+      "lastCheckpoint": 1228,
+      "pendingRetries": 0,
+      "checkpointStart": 1220,
+      "failedRemaining": 0,
+      "finalPassStarted": true
+    },
+    "executionEpoch": 3,
+    "lastFinishedAt": "2026-10-16T13:29:19.069171+00:00",
+    "activeElapsedMs": 3045694.8779999996,
+    "profileRevision": 1,
+    "preparationAttempts": 0,
+    "activeSegmentStartedAt": null,
+    "canResume": false
+  },
+  "eta": {
+    "remainingMs": null,
+    "finishesAt": null,
+    "casesPerMinute": null,
+    "stale": false,
+    "stalled": false
+  },
+  "network": {
+    "online": true,
+    "message": "Connection restored. Resuming automatically paused work.",
+    "changedAt": "2026-10-16T13:24:56.955148+00:00",
+    "checkedAt": "2026-10-16T13:29:19.075836+00:00"
+  },
+  "wallElapsedSeconds": 3090.5
+}

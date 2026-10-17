@@ -1,0 +1,4 @@
+migrate-1  | Shared report migration: {"afterRows": 0, "beforeRows": 0, "conflictingMonths": 0, "overlappingMonths": 0}
+migrate-1  | 0015_remove_daily_schedules: deleted 0 Daily schedule(s); kept 0 Once/Monthly schedule(s); ids=[]
+migrate-1  | Schema migrated and runtime role granted DML access.
+

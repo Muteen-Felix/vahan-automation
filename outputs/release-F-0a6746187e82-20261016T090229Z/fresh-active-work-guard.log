@@ -1,0 +1,4 @@
+Using existing C:\Users\huyvv12\AppData\Local\Temp\vahan-f0a67-fresh-new-krbc2lii\.docker.env
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+
+Deployment blocked: activeJobs=0, planningLeases=0, runningQueues=0, activeSchedules=1, blockingDailySchedules=0. Let active jobs finish and pause running queues/schedules before deploying. Saved data is preserved.

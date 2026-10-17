@@ -1,0 +1,5 @@
+import ts from "file:///C:/Users/huyvv12/Desktop/vahan-automation/apps/web-ui/node_modules/typescript/lib/typescript.js";
+import {readFileSync} from 'node:fs';import {createInterface} from 'node:readline';
+function mod(file,dep={}){let s=readFileSync(file,'utf8');for(const [n,u] of Object.entries(dep))s=s.replace(`'${n}'`,`'${u}'`);return 'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(s,{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText).toString('base64')}
+const {observeScheduleTiming,estimateScheduleTiming}=await import(mod("C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-release-F-clean-20261016T090229Z\\apps\\web-ui\\src\\schedule-timing.ts",{'./batch-timing':mod("C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-release-F-clean-20261016T090229Z\\apps\\web-ui\\src\\batch-timing.ts")}));let obs=null;
+for await(const line of createInterface({input:process.stdin})){const {schedule,now}=JSON.parse(line);obs=observeScheduleTiming(obs,schedule,now);console.log(JSON.stringify(estimateScheduleTiming(schedule,obs,now)))}

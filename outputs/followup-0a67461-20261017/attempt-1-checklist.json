@@ -1,0 +1,79 @@
+[
+  {
+    "item": "identity/DEF-27/DEF-26",
+    "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "startedAt": "2026-10-17T11:43:21.164494+00:00",
+    "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "result": [
+      "identity.json"
+    ],
+    "status": "PASS",
+    "finishedAt": "2026-10-17T11:43:24.342783+00:00"
+  },
+  {
+    "item": "snapshot",
+    "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "startedAt": "2026-10-17T11:43:24.344900+00:00",
+    "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "result": [
+      "config-snapshot.json",
+      "snapshot-provenance.json"
+    ],
+    "status": "PASS",
+    "finishedAt": "2026-10-17T11:43:27.391478+00:00"
+  },
+  {
+    "item": "DEF-32 packaged Chromium sandbox and real OCR",
+    "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "startedAt": "2026-10-17T11:43:27.391478+00:00",
+    "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "result": [
+      "container-runtime.json"
+    ],
+    "status": "PASS",
+    "finishedAt": "2026-10-17T11:43:32.318982+00:00"
+  },
+  {
+    "item": "isolated fixtures",
+    "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "startedAt": "2026-10-17T11:43:32.323186+00:00",
+    "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "result": [
+      "Disposable isolated PostgreSQL and web only; no real VAHAN jobs or original volumes"
+    ],
+    "status": "PASS",
+    "finishedAt": "2026-10-17T11:43:39.093890+00:00"
+  },
+  {
+    "item": "DEF-15 persisted large limit, start and resume",
+    "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "startedAt": "2026-10-17T11:43:39.097180+00:00",
+    "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "result": [
+      "def15.json"
+    ],
+    "status": "PASS",
+    "finishedAt": "2026-10-17T11:44:16.673373+00:00"
+  },
+  {
+    "item": "DEF-22 nginx server tokens and login CSP",
+    "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "startedAt": "2026-10-17T11:44:16.684923+00:00",
+    "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "status": "FAIL",
+    "blocker": "Command failed: docker run --rm --pull=never\nlocator.waitFor: Timeout 20000ms exceeded.\nCall log:\n  - waiting for locator('input[type=password]') to be visible\n\n    at [eval]:7:51 {\n  log: [ \"  - waiting for locator('input[type=password]') to be visible\" ],\n  name: 'TimeoutError'\n}\n",
+    "finishedAt": "2026-10-17T11:44:46.050646+00:00"
+  },
+  {
+    "item": "fingerprint/DEF-25",
+    "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "startedAt": "2026-10-17T11:44:46.050646+00:00",
+    "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "result": [
+      "build-fingerprint.json",
+      "lock-image.json"
+    ],
+    "status": "PASS",
+    "finishedAt": "2026-10-17T11:44:47.396224+00:00"
+  }
+]

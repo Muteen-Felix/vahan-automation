@@ -1,0 +1,23 @@
+{
+  "command": [
+    "C:\\Users\\huyvv12\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "scripts/release-smoke.py",
+    "--base-url",
+    "http://127.0.0.1:60352",
+    "--admin-user",
+    "admin",
+    "--min-runners",
+    "1",
+    "--compose-project",
+    "vahan-t45b-965a-20261016t085232",
+    "--require-compose-checks",
+    "--output",
+    "C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\release-F-0a6746187e82-20261016T090229Z\\t45b-smoke.json"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-t45b-0a67-candidate-jmy6oolt",
+  "startedAt": "2026-10-16T09:13:50.464288+00:00",
+  "finishedAt": "2026-10-16T09:13:52.284656+00:00",
+  "exitCode": 0,
+  "log": "t45b-smoke-command.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

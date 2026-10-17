@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "kind": "Reviewed summary of local post-D3 evidence; raw files not published",
+  "kind": "Reviewed summary of post-D3 evidence",
   "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
   "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
   "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
@@ -141,5 +141,6 @@
     "Configuration capture is post-D3, not a historical runtime observation",
     "Original release artifact unchanged; font fix is not packaged or deployed"
   ],
-  "rawEvidenceLocalDirectory": "outputs/followup-0a67461-20261017"
+  "rawEvidenceLocalDirectory": "outputs/followup-0a67461-20261017",
+  "publicationNote": "User subsequently authorized publishing current raw evidence and deleting old output directories on 2026-10-17; see outputs/followup-0a67461-20261017/PUBLICATION.md"
 }

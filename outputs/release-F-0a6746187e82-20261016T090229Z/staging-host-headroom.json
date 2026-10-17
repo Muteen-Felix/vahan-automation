@@ -1,0 +1,14 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "checkedAt": "2026-10-16T09:15:38.841305+00:00",
+  "before": {
+    "totalBytes": 16727166976,
+    "availableBytes": 757354496
+  },
+  "after": {
+    "totalBytes": 16727166976,
+    "availableBytes": 3367919616
+  },
+  "dockerDesktopRestartedWithZeroRunningContainers": true,
+  "plannedWorkers": 3
+}

@@ -1,0 +1,109 @@
+{
+  "at": "2026-10-16T13:33:05.480834+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "restoredAt": "2026-10-16T13:32:44.238728+00:00",
+    "schedule": {
+      "id": "2cad58b2-3fcf-4307-bee2-0444ba0cc042",
+      "done": 19,
+      "year": 2019,
+      "total": 348,
+      "failed": 0,
+      "noData": 11,
+      "repeat": "monthly",
+      "status": "RUNNING",
+      "enabled": false,
+      "message": "Collected 19/348 cases.",
+      "version": 1,
+      "pausedAt": null,
+      "startsAt": "2026-10-16T13:30:12.972604+00:00",
+      "timeZone": "Asia/Ho_Chi_Minh",
+      "withData": 8,
+      "createdAt": "2026-10-16T13:29:57.984549+00:00",
+      "lastRunAt": "2026-10-16T13:30:19.550367+00:00",
+      "nextRunAt": "2026-10-16T13:30:12.972604+00:00",
+      "operation": {
+        "error": null,
+        "stage": "Collecting reports",
+        "detail": "Collected 19/348 cases.",
+        "startedAt": "2026-10-16T13:33:02.645181+00:00",
+        "progressAt": "2026-10-16T13:33:02.715126+00:00",
+        "heartbeatAt": "2026-10-16T13:33:02.715126+00:00"
+      },
+      "profileId": "0da4a538-2e1d-4b11-bd63-3a1ff3b2d440",
+      "sessionId": "98617ac5-5f4d-4135-a43f-a593902a2dc5",
+      "updatedAt": "2026-10-16T13:33:02.715126+00:00",
+      "retryAfter": null,
+      "preflightAt": "2026-10-16T13:33:02.631844+00:00",
+      "preflightId": "30deb753-efb8-4504-bbbe-b139a1729c23",
+      "profileName": "D3 resilience real VAHAN Kerala 2019",
+      "lastSessionId": "98617ac5-5f4d-4135-a43f-a593902a2dc5",
+      "networkPaused": false,
+      "retryProgress": {
+        "phase": "PRIMARY",
+        "complete": false,
+        "checkpointEnd": 20,
+        "lastCheckpoint": 10,
+        "pendingRetries": 0,
+        "checkpointStart": 10,
+        "failedRemaining": 0,
+        "finalPassStarted": false
+      },
+      "annualSeriesId": "2cad58b2-3fcf-4307-bee2-0444ba0cc042",
+      "executionEpoch": 5,
+      "lastFinishedAt": null,
+      "activeElapsedMs": 90425.785,
+      "profileRevision": 1,
+      "preparationAttempts": 0,
+      "activeSegmentStartedAt": "2026-10-16T13:33:02.643536+00:00",
+      "canResume": false,
+      "diagnostics": {
+        "checkedAt": "2026-10-16T13:33:05.465175+00:00",
+        "heartbeatAgeSeconds": 2,
+        "stageAgeSeconds": 2,
+        "warning": null,
+        "workers": [
+          {
+            "id": "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+            "selected": true,
+            "connected": true,
+            "heartbeatAgeSeconds": 9,
+            "jobId": null,
+            "status": "IDLE",
+            "case": null,
+            "error": null,
+            "jobAgeSeconds": null
+          },
+          {
+            "id": "worker-c4a49ba5-de1b-4615-894a-f4ec95a7a349",
+            "selected": true,
+            "connected": true,
+            "heartbeatAgeSeconds": 14,
+            "jobId": null,
+            "status": "IDLE",
+            "case": null,
+            "error": null,
+            "jobAgeSeconds": null
+          },
+          {
+            "id": "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a",
+            "selected": true,
+            "connected": true,
+            "heartbeatAgeSeconds": 9,
+            "jobId": "96dc662f-2695-4112-881e-238b68b2396f",
+            "status": "FILLING_FILTERS",
+            "case": "Maker Month Wise Data of ALATHUR SRTO - KL49, Kerala (2019) · Active / Archive: TEMPORARY_ARCHIVE",
+            "error": null,
+            "jobAgeSeconds": 0
+          }
+        ]
+      }
+    },
+    "network": {
+      "online": true,
+      "message": "Connection restored. Resuming automatically paused work.",
+      "changedAt": "2026-10-16T13:32:54.900499+00:00",
+      "checkedAt": "2026-10-16T13:33:00.470977+00:00"
+    }
+  }
+}

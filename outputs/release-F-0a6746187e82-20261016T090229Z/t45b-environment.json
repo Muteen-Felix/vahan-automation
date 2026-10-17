@@ -1,0 +1,16 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "baselineSha": "2bc878eed2640c3f6560657afee49aef5b956cf5",
+  "project": "vahan-t45b-965a-20261016t085232",
+  "baselineRoot": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-t45b-965a-baseline-o786mjjo",
+  "baseUrl": "http://127.0.0.1:60352",
+  "webPort": 60352,
+  "apiPort": 60353,
+  "createdAt": "2026-10-16T08:53:25.711213+00:00",
+  "dataScope": "Explicitly labelled persistent upgrade test data on a newly built old version. No production dump, no real-VAHAN result claim.",
+  "reverifiedForCandidateAt": "2026-10-16T09:12:34.907355+00:00",
+  "preparationOrigin": "C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\release-F-965a9eca42ef-20261016T085232Z",
+  "scope": "Reuse of the actual running-old-version dataset, not its old candidate verification results",
+  "upgradedRoot": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-t45b-0a67-candidate-jmy6oolt",
+  "privateBackupDirectory": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-t45b-965a-baseline-o786mjjo\\backups\\20261016T091300320092Z"
+}

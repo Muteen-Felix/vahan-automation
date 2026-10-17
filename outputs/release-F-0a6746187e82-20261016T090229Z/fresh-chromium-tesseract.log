@@ -1,0 +1,12 @@
+{
+  "uid": 1000,
+  "chromium": "153.0.8010.12",
+  "sandbox": true,
+  "ocr": {
+    "passed": true,
+    "input": "synthetic six-character text",
+    "transport": "stdin",
+    "rawOutputLogged": false
+  }
+}
+

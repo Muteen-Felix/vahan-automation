@@ -1,0 +1,11 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "checkedAt": "2026-10-16T09:11:41.260573+00:00",
+  "status": "PASS",
+  "readOnlyCheckDoesNotStartServices": true,
+  "stoppedDatabaseRecoveredBeforeGuard": true,
+  "activeScheduleBlocksApplicationReplacement": true,
+  "applicationContainersUnchanged": true,
+  "source": "Unmodified host scripts extracted from the exact final package",
+  "scope": "Labelled temporary release safety probe; not D3 VAHAN evidence"
+}

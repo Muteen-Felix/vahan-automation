@@ -1,0 +1,20 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-d3-0a67-20261016t090229",
+    "exec",
+    "-T",
+    "api",
+    "python",
+    "-c",
+    "from datetime import datetime;import json;from app.repositories.run_schedules import next_monthly_run;print(json.dumps({z:next_monthly_run('2027-01-31T03:30:00+00:00',datetime.fromisoformat('2027-02-01T00:00:00+00:00'),z) for z in ['Asia/Kolkata','Asia/Ho_Chi_Minh']}))"
+  ],
+  "at": "2026-10-16T12:40:38.776604+00:00",
+  "returncode": 0,
+  "stdout": "{\"Asia/Kolkata\": \"2027-02-28T03:30:00+00:00\", \"Asia/Ho_Chi_Minh\": \"2027-02-28T03:30:00+00:00\"}\n",
+  "stderr": ""
+}

@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-16T12:43:15.732810+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "since": "2026-10-16T09:37:12.845449+00:00",
+  "rawLogsSaved": false,
+  "serviceLinesScanned": 9860,
+  "ocrStartHttpCodes": {
+    "200": 227
+  },
+  "genericSuccessfulCaptchaMessages": 201,
+  "genericRefreshMessages": 26,
+  "sensitiveMatchCounts": {
+    "knownSecrets": "[REDACTED]",
+    "rawOCRorCaptchaValue": 0,
+    "inlineImageData": 0,
+    "authorizationOrCredentialURI": "[REDACTED]"
+  },
+  "sensitiveMatchesHashedOnly": {
+    "knownSecrets": "[REDACTED]",
+    "rawOCRorCaptchaValue": [],
+    "inlineImageData": [],
+    "authorizationOrCredentialURI": "[REDACTED]"
+  },
+  "scope": "All API and runner Docker logs for this D3; exact known secrets and raw OCR/captcha/image/bearer/credential patterns. No claim about logs outside this stack or time window."
+}

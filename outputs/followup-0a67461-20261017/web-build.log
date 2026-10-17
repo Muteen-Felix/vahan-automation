@@ -1,0 +1,13 @@
+
+> vahan-rpa-web-ui@0.1.0 build
+> tsc -b && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+âœ“ 93 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.47 kB â”‚ gzip:   0.30 kB
+dist/assets/index-Dp9h9XC4.css  124.49 kB â”‚ gzip:  22.02 kB
+dist/assets/index-B7UYZooW.js   375.16 kB â”‚ gzip: 116.02 kB
+âœ“ built in 2.91s

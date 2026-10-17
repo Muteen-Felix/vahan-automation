@@ -1,0 +1,24 @@
+{
+  "scope": "SYNTHETIC PERSISTENT UPGRADE DATA, NOT REAL VAHAN, NOT D3",
+  "profileId": "cd8ba5f7-06cb-46dd-a399-208d63332a66",
+  "jobId": "5573601a-f06f-4a2f-9e79-3d19441e216b",
+  "sessionId": "84c2269f-1133-433b-88d2-e34ee7449abc",
+  "reportRows": 3,
+  "schedules": [
+    {
+      "id": "a1e98f9f-8605-416e-8561-d0cc972d1ca7",
+      "repeat": "once"
+    },
+    {
+      "id": "bd04c2c2-c99a-4207-9c7f-b8ad76d59da9",
+      "repeat": "monthly"
+    },
+    {
+      "id": "4e025d2f-2820-43f9-8b4c-5ca5a477fc46",
+      "repeat": "daily"
+    }
+  ],
+  "savedLegacyWorkerCount": 9999,
+  "createdAt": "2026-10-16T08:55:25.536089+00:00",
+  "baselineSha": "2bc878eed2640c3f6560657afee49aef5b956cf5"
+}

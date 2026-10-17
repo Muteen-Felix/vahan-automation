@@ -1,0 +1,49 @@
+Using existing C:\Users\huyvv12\AppData\Local\Temp\vahan-t45b-0a67-candidate-jmy6oolt\.docker.env
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+NAME                                         IMAGE                                                                                                               COMMAND                  SERVICE    CREATED          STATUS                    PORTS
+vahan-t45b-965a-20261016t085232-api-1        vahan-review/api:1.0.0                                                                                              "uvicorn app.main:ap…"   api        24 seconds ago   Up 16 seconds (healthy)   0.0.0.0:60353->8000/tcp
+vahan-t45b-965a-20261016t085232-postgres-1   docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826   "docker-entrypoint.s…"   postgres   24 seconds ago   Up 23 seconds (healthy)   5432/tcp
+vahan-t45b-965a-20261016t085232-runner-1     vahan-review/runner:1.0.0                                                                                           "docker-entrypoint.s…"   runner     24 seconds ago   Up 10 seconds (healthy)   3001/tcp
+vahan-t45b-965a-20261016t085232-web-1        vahan-review/web:1.0.0                                                                                              "/docker-entrypoint.…"   web        24 seconds ago   Up 10 seconds (healthy)   0.0.0.0:60352->80/tcp
+Using the manually configured worker count: 1.
+
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Recreate 
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Recreated 
+ Container vahan-t45b-965a-20261016t085232-migrate-1 Creating 
+ Container vahan-t45b-965a-20261016t085232-migrate-1 Created 
+ Container vahan-t45b-965a-20261016t085232-api-1 Recreate 
+ Container vahan-t45b-965a-20261016t085232-api-1 Recreated 
+ Container vahan-t45b-965a-20261016t085232-runner-1 Recreate 
+ Container vahan-t45b-965a-20261016t085232-web-1 Recreate 
+ Container vahan-t45b-965a-20261016t085232-web-1 Recreated 
+ Container vahan-t45b-965a-20261016t085232-runner-1 Recreated 
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Starting 
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Started 
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Healthy 
+ Container vahan-t45b-965a-20261016t085232-migrate-1 Starting 
+ Container vahan-t45b-965a-20261016t085232-migrate-1 Started 
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-migrate-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Healthy 
+ Container vahan-t45b-965a-20261016t085232-migrate-1 Exited 
+ Container vahan-t45b-965a-20261016t085232-api-1 Starting 
+ Container vahan-t45b-965a-20261016t085232-api-1 Started 
+ Container vahan-t45b-965a-20261016t085232-api-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-api-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-api-1 Healthy 
+ Container vahan-t45b-965a-20261016t085232-runner-1 Starting 
+ Container vahan-t45b-965a-20261016t085232-api-1 Healthy 
+ Container vahan-t45b-965a-20261016t085232-web-1 Starting 
+ Container vahan-t45b-965a-20261016t085232-runner-1 Started 
+ Container vahan-t45b-965a-20261016t085232-web-1 Started 
+ Container vahan-t45b-965a-20261016t085232-web-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-migrate-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-api-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-runner-1 Waiting 
+ Container vahan-t45b-965a-20261016t085232-api-1 Healthy 
+ Container vahan-t45b-965a-20261016t085232-migrate-1 Exited 
+ Container vahan-t45b-965a-20261016t085232-postgres-1 Healthy 
+ Container vahan-t45b-965a-20261016t085232-runner-1 Healthy 
+ Container vahan-t45b-965a-20261016t085232-web-1 Healthy 

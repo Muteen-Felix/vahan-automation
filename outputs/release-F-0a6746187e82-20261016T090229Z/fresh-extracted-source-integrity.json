@@ -1,0 +1,11 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "status": "PASS",
+  "files": {
+    "scripts/run-docker.py": "fc4d7263daef8b9f4761d0a2f5ba42a48d35db7f821c8ce291394ed3f4a826c0",
+    "scripts/deployment_guard.py": "dba6ba73cd27b8d2caff49cb9c6bef26f817713fbcf40f2c7038a482637525f9",
+    "compose.yaml": "4defa4c78fc157467352f3b087671fb73b562d57912f3c0a98b92f301539bf30",
+    "docs/release/INSTALL.md": "268e54e5babbc393eed68824fbd24d69e9199a7910617178efe835ff4f150106"
+  },
+  "operatorPatchedScripts": false
+}

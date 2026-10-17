@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-17T11:48:57.052612+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "status": "PASS",
+  "selectedTests": [
+    "test_one_worker_ignores_legacy_large_count_and_runs_one_case",
+    "test_three_workers_ignores_legacy_large_count_and_runs_three_cases",
+    "test_resume_ignores_persisted_large_worker_count"
+  ],
+  "stdout": "",
+  "database": "disposable vahan_schedule_followup_test",
+  "harnessSha256": "09b19680e82ad52aa913d689c7d9c243179337ec483632958d693e94ce806a02"
+}

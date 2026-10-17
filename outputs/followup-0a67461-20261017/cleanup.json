@@ -1,0 +1,30 @@
+{
+  "recordedAt": "2026-10-17T11:51:36.985186+00:00",
+  "resources": [
+    {
+      "kind": "container",
+      "name": "vahan-followup-20261017t115109z-web-patched",
+      "exitCode": 0
+    },
+    {
+      "kind": "container",
+      "name": "vahan-followup-20261017t115109z-web",
+      "exitCode": 0
+    },
+    {
+      "kind": "container",
+      "name": "vahan-followup-20261017t115109z-api",
+      "exitCode": 0
+    },
+    {
+      "kind": "container",
+      "name": "vahan-followup-20261017t115109z-db",
+      "exitCode": 0
+    },
+    {
+      "kind": "network",
+      "name": "vahan-followup-20261017t115109z",
+      "exitCode": 0
+    }
+  ]
+}

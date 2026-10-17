@@ -1,0 +1,13 @@
+{
+  "profileId": "3358c093-0330-4490-93b9-7f3767119d72",
+  "scheduleId": "eef143ac-8bb3-492d-a6ad-0cb3a89c006a",
+  "cases": 1228,
+  "preparedAt": "2026-10-16T12:37:06.931827+00:00",
+  "monitorIntervalSeconds": 60,
+  "operatorInterventionsAllowed": false,
+  "thresholds": {
+    "50-75medianAbsRelativeError": 0.25,
+    "75-100medianAbsRelativeError": 0.15
+  },
+  "outages": "Include genuine VAHAN outages in ETA error; record durations"
+}

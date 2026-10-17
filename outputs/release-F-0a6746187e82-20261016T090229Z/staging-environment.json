@@ -1,0 +1,14 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "createdAt": "2026-10-16T09:17:57.718452+00:00",
+  "project": "vahan-d3-0a67-20261016t090229",
+  "root": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-d3-0a67-staging-p0kyko6t",
+  "baseUrl": "http://127.0.0.1:15187",
+  "apiUrl": "http://127.0.0.1:18087",
+  "workers": 3,
+  "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+  "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+  "userSelected": "Separate clean staging from the new package on this machine",
+  "D3": "NOT_RUN",
+  "credentialsLocation": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-d3-0a67-staging-p0kyko6t\\.docker.env"
+}

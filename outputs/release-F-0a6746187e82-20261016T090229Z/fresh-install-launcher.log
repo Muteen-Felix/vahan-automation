@@ -1,0 +1,57 @@
+Using existing C:\Users\huyvv12\AppData\Local\Temp\vahan-f0a67-fresh-new-krbc2lii\.docker.env
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+NAME                                           IMAGE                                                                                                               COMMAND                  SERVICE    CREATED          STATUS                    PORTS
+vahan-f0a67-fresh-20261016t090229-api-1        vahan-review/api:1.0.0                                                                                              "uvicorn app.main:ap…"   api        24 seconds ago   Up 16 seconds (healthy)   0.0.0.0:60338->8000/tcp
+vahan-f0a67-fresh-20261016t090229-postgres-1   docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826   "docker-entrypoint.s…"   postgres   25 seconds ago   Up 23 seconds (healthy)   5432/tcp
+vahan-f0a67-fresh-20261016t090229-runner-1     vahan-review/runner:1.0.0                                                                                           "docker-entrypoint.s…"   runner     24 seconds ago   Up 10 seconds (healthy)   3001/tcp
+vahan-f0a67-fresh-20261016t090229-web-1        vahan-review/web:1.0.0                                                                                              "/docker-entrypoint.…"   web        24 seconds ago   Up 10 seconds (healthy)   0.0.0.0:60337->80/tcp
+Using the manually configured worker count: 1.
+
+ Network vahan-f0a67-fresh-20261016t090229_default Creating 
+ Volume vahan-f0a67-fresh-20261016t090229_postgres_data Creating 
+ Network vahan-f0a67-fresh-20261016t090229_default Creating 
+ Volume vahan-f0a67-fresh-20261016t090229_postgres_data Creating 
+ Volume vahan-f0a67-fresh-20261016t090229_postgres_data Created 
+ Volume vahan-f0a67-fresh-20261016t090229_postgres_data Created 
+ Network vahan-f0a67-fresh-20261016t090229_default Created 
+ Network vahan-f0a67-fresh-20261016t090229_default Created 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Creating 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Created 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-1 Creating 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-1 Created 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Creating 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Created 
+ Container vahan-f0a67-fresh-20261016t090229-web-1 Creating 
+ Container vahan-f0a67-fresh-20261016t090229-runner-1 Creating 
+ Container vahan-f0a67-fresh-20261016t090229-web-1 Created 
+ Container vahan-f0a67-fresh-20261016t090229-runner-1 Created 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Starting 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Started 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Healthy 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-1 Starting 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-1 Started 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Healthy 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-1 Exited 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Starting 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Started 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Healthy 
+ Container vahan-f0a67-fresh-20261016t090229-web-1 Starting 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Healthy 
+ Container vahan-f0a67-fresh-20261016t090229-runner-1 Starting 
+ Container vahan-f0a67-fresh-20261016t090229-web-1 Started 
+ Container vahan-f0a67-fresh-20261016t090229-runner-1 Started 
+ Container vahan-f0a67-fresh-20261016t090229-web-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-runner-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-1 Exited 
+ Container vahan-f0a67-fresh-20261016t090229-api-1 Healthy 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Healthy 
+ Container vahan-f0a67-fresh-20261016t090229-web-1 Healthy 
+ Container vahan-f0a67-fresh-20261016t090229-runner-1 Healthy 

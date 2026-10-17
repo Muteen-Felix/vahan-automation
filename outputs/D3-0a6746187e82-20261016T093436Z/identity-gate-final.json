@@ -1,0 +1,17 @@
+{
+  "command": [
+    "py",
+    "-3",
+    "C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\release-F-0a6746187e82-20261016T090229Z\\d3-package-gate.py",
+    "--expected-sha",
+    "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "--expected-manifest-digest",
+    "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "--expected-images-digest",
+    "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4"
+  ],
+  "at": "2026-10-16T13:51:42.429866+00:00",
+  "returncode": 0,
+  "stdout": "{\n  \"identityGate\": \"PASS\",\n  \"sha\": \"0a6746187e820efd23e2e8e96f37eb3aa1efcba6\",\n  \"manifestDigest\": \"53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4\",\n  \"imageArchiveDigest\": \"9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4\",\n  \"project\": \"vahan-d3-0a67-20261016t090229\",\n  \"baseUrl\": \"http://127.0.0.1:15187\",\n  \"containers\": [\n    {\n      \"service\": \"runner\",\n      \"container\": \"/vahan-d3-0a67-20261016t090229-runner-1\",\n      \"imageId\": \"sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef\"\n    },\n    {\n      \"service\": \"runner\",\n      \"container\": \"/vahan-d3-0a67-20261016t090229-runner-2\",\n      \"imageId\": \"sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef\"\n    },\n    {\n      \"service\": \"runner\",\n      \"container\": \"/vahan-d3-0a67-20261016t090229-runner-3\",\n      \"imageId\": \"sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef\"\n    },\n    {\n      \"service\": \"web\",\n      \"container\": \"/vahan-d3-0a67-20261016t090229-web-1\",\n      \"imageId\": \"sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2\"\n    },\n    {\n      \"service\": \"api\",\n      \"container\": \"/vahan-d3-0a67-20261016t090229-api-1\",\n      \"imageId\": \"sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc\"\n    },\n    {\n      \"service\": \"migrate\",\n      \"container\": \"/vahan-d3-0a67-20261016t090229-migrate-1\",\n      \"imageId\": \"sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc\"\n    },\n    {\n      \"service\": \"postgres\",\n      \"container\": \"/vahan-d3-0a67-20261016t090229-postgres-1\",\n      \"imageId\": \"sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826\"\n    }\n  ],\n  \"D3\": \"NOT_STARTED: identity check only\"\n}\n",
+  "stderr": ""
+}

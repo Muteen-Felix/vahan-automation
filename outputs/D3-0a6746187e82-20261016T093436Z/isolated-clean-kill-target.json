@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-16T13:49:11.011313+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "container": "vahan-d3-0a67-20261016t090229-runner-1",
+    "jobId": "e1be2d8c-8a86-4622-9f46-9cad9309f1ee",
+    "runnerId": "worker-d1f118ca-6b18-4e09-a421-ad0af82d13df",
+    "status": "OPENING_VAHAN",
+    "sessionId": "cfbc4bb8-fd9d-43d5-a060-7974d0fe7337",
+    "network": {
+      "online": true,
+      "message": "Connection restored. Resuming automatically paused work.",
+      "changedAt": "2026-10-16T13:47:40.713010+00:00",
+      "checkedAt": "2026-10-16T13:49:05.967387+00:00"
+    }
+  }
+}

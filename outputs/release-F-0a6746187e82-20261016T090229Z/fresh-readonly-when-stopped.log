@@ -1,0 +1,4 @@
+Using existing C:\Users\huyvv12\AppData\Local\Temp\vahan-f0a67-fresh-new-krbc2lii\.docker.env
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+
+Existing stack has no running PostgreSQL. Restore database access before deploying.

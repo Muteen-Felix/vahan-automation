@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-10-17T14:40:04.997054+00:00",
+  "authorization": "User requested deleting old outputs and committing/pushing current outputs",
+  "candidateFiles": 448,
+  "readableEntriesScanned": 901,
+  "credentialSourcesAvailable": 4,
+  "findings": [],
+  "integrity": [
+    {
+      "directory": "D3-0a6746187e82-20261016T093436Z",
+      "mismatches": []
+    },
+    {
+      "directory": "release-F-0a6746187e82-20261016T090229Z",
+      "mismatches": []
+    },
+    {
+      "directory": "followup-0a67461-20261017",
+      "mismatches": []
+    }
+  ],
+  "binaryScope": "Source ZIP and XLSX members scanned; PNG/image TAR covered by prior review and immutable package checksums, not text scanning",
+  "skippedCacheFiles": 14
+}

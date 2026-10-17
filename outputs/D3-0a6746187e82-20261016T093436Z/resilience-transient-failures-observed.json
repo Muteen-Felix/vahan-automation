@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-16T13:37:13.778404+00:00",
+  "jobs": [
+    {
+      "id": "1694a68f-1236-4ab3-b138-ef2e7cffc3f8",
+      "status": "FAILED",
+      "error": "CAPTCHA was rejected three times.",
+      "scenarioName": "Maker Month Wise Data of KONDOTTY SRTO - KL84, Kerala (2019) · Active / Archive: PERMANENT_ARCHIVE",
+      "caseId": "1694a68f-1236-4ab3-b138-ef2e7cffc3f8",
+      "retryOfJobId": null,
+      "createdAt": "2026-10-16T13:36:36.994412Z",
+      "updatedAt": "2026-10-16T13:36:45.715178Z"
+    }
+  ]
+}

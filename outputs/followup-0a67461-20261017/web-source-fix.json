@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-17T11:51:33.452667+00:00",
+  "status": "PASS",
+  "releaseArtifactModified": false,
+  "scope": "Working-tree Vite build mounted over immutable nginx image; this is not the original release web payload",
+  "stylesheetSha256": "bc440c2af102b4753d6230e50cbd3554dd2cd792247cb7b69109e55766a976ff",
+  "browser": {
+    "passwordInputs": 1,
+    "cspViolations": []
+  }
+}

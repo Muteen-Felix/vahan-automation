@@ -1,0 +1,22 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-f0a67-fresh-20261016t090229",
+    "exec",
+    "-T",
+    "api",
+    "python",
+    "-c",
+    "import importlib.metadata,json; print(json.dumps(sorted([(d.metadata[\"Name\"],d.version) for d in importlib.metadata.distributions()])))"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii",
+  "startedAt": "2026-10-16T09:11:23.925775+00:00",
+  "finishedAt": "2026-10-16T09:11:24.357469+00:00",
+  "exitCode": 0,
+  "log": "fresh-api-packages.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

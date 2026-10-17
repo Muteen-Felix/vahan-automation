@@ -1,0 +1,8 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "files": {
+    "apps\\web-ui\\src\\schedule-timing.ts": "27d4ddcc5b428c57625a70c7ac3b0ab912a93a90131aaa6cbfc402a3655ff3fb",
+    "apps\\web-ui\\src\\batch-timing.ts": "8572026b34ce738f66b50d0a884b71ae51172ad674bad8068eb11f4885bd398d"
+  },
+  "method": "Exact final source UI estimator; checkpoint every 5s, sample every 60s. No synthetic runner or report."
+}

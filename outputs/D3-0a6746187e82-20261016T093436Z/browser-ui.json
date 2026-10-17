@@ -1,0 +1,6 @@
+{
+  "at": "2026-10-16T12:38:53.407939+00:00",
+  "returncode": 1,
+  "stdout": "",
+  "stderr": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: /sign out/i })\n\n"
+}

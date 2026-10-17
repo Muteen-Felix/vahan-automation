@@ -1,0 +1,13 @@
+{
+  "command": [
+    "docker",
+    "stop",
+    "vahan-f0a67-upgrade-engine-20261016t090229"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-release-F-clean-20261016T090229Z",
+  "startedAt": "2026-10-16T09:15:12.539258+00:00",
+  "finishedAt": "2026-10-16T09:15:13.070881+00:00",
+  "exitCode": 0,
+  "log": "upgrade-test-daemon-stop.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

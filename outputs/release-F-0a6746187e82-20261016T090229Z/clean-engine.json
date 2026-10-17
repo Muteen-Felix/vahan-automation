@@ -1,0 +1,22 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "createdAt": "2026-10-16T08:53:21.276375+00:00",
+  "containerName": "vahan-f0a67-fresh-engine-20261016t090229",
+  "dockerHost": "tcp://127.0.0.1:60336",
+  "webPort": 60337,
+  "apiPort": 60338,
+  "toolImage": "docker.io/library/docker:29-dind@sha256:0b6d18a4a222e71c88be6034926b4f6cde2fc33c2218643d03ccfddc65995470",
+  "serverVersion": "29.9.0",
+  "storageDriver": "overlayfs",
+  "initialContainers": 0,
+  "initialImages": 0,
+  "initialVolumes": [],
+  "scope": "Clean isolated Docker daemon and image/volume store on this Windows host; loopback-only host ports. Not a separate VM.",
+  "verifiedAt": "2026-10-16T09:09:56.745092+00:00",
+  "preparationResourceOrigin": "C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\release-F-965a9eca42ef-20261016T085232Z\\clean-engine.json",
+  "currentStoreCounts": {
+    "images": 0,
+    "containers": 0,
+    "volumes": 0
+  }
+}

@@ -11,17 +11,17 @@ Các phép thử mới dùng image ID bất biến của gói trong môi trườ
 không chạy workload VAHAN thật hoặc dùng volume dữ liệu cũ.
 
 Bản tóm tắt đã rà soát được đưa lên Git: [D3-followup-0a67461-summary.json](D3-followup-0a67461-summary.json).
-Các tên file ghi “local” bên dưới nằm trong `outputs/followup-0a67461-20261017/` trên máy kiểm thử;
-chúng không được xuất bản cùng tài liệu này.
+Theo yêu cầu tiếp theo ngày 17/10/2026, evidence mới được đưa lên Git cùng gói release qua Git LFS.
+Chi tiết phạm vi công bố và các thư mục cũ đã xóa: [PUBLICATION.md](../../../outputs/followup-0a67461-20261017/PUBLICATION.md).
 
 ## Checklist trong ảnh
 
 | Mục | Kết quả và giới hạn | Bằng chứng |
 | --- | --- | --- |
-| 3 — Snapshot/fingerprint | Snapshot mới từ cấu hình staging lưu lại khớp cấu hình snapshot 16/10; 3 runner. Fingerprint mới đo trực tiếp đúng image gói. Không coi đây là snapshot runtime lịch sử khi container D3 còn chạy. | `snapshot-provenance.json` (local), `build-fingerprint.json` (local) |
-| 4 — DEF-22/27/32 | Nhãn revision/version và platform của 3 image app khớp gói. Chromium chạy sandbox bằng non-root với seccomp gói; Tesseract nhận đúng ảnh chữ synthetic. nginx thực tế trả `Server: nginx`, có `server_tokens off` và CSP. Có phát hiện font từ xa bị CSP chặn trong gói gốc; xem bên dưới. | `identity.json` (local), `container-runtime.json` (local), `nginx-runtime.json` (local) |
-| 5 — DEF-15 | Ba test DB PASS: lịch lưu `9999` chỉ dùng 1/3 worker thực; test bổ sung pause, lưu `2³¹−1`, resume vẫn dùng 2 runner, cùng session, hoàn tất 3 case không trùng/mất. Test mới mount ngoài image; code API vẫn là image gốc. | `def15-unittest.log` (local), `def15.json` (local) |
-| 6 — DEF-24/25/26 | Bổ sung quy trình cảnh báo, xác nhận lỗi, escalation và đóng sự cố. So lock/image kiểm hash lock nhúng, marker nền tảng Python và toàn bộ package production Python/npm API/runner; không lệch. Pin PostgreSQL khớp Compose, manifest, image ID và linux/amd64. | [Runbook](../ops/runbook.md), [công cụ](../../../scripts/compare-lock-image.py), `lock-image.json` (local), `identity.json` (local) |
+| 3 — Snapshot/fingerprint | Snapshot mới từ cấu hình staging lưu lại khớp cấu hình snapshot 16/10; 3 runner. Fingerprint mới đo trực tiếp đúng image gói. Không coi đây là snapshot runtime lịch sử khi container D3 còn chạy. | [snapshot-provenance.json](../../../outputs/followup-0a67461-20261017/snapshot-provenance.json), [build-fingerprint.json](../../../outputs/followup-0a67461-20261017/build-fingerprint.json) |
+| 4 — DEF-22/27/32 | Nhãn revision/version và platform của 3 image app khớp gói. Chromium chạy sandbox bằng non-root với seccomp gói; Tesseract nhận đúng ảnh chữ synthetic. nginx thực tế trả `Server: nginx`, có `server_tokens off` và CSP. Có phát hiện font từ xa bị CSP chặn trong gói gốc; xem bên dưới. | [identity.json](../../../outputs/followup-0a67461-20261017/identity.json), [container-runtime.json](../../../outputs/followup-0a67461-20261017/container-runtime.json), [nginx-runtime.json](../../../outputs/followup-0a67461-20261017/nginx-runtime.json) |
+| 5 — DEF-15 | Ba test DB PASS: lịch lưu `9999` chỉ dùng 1/3 worker thực; test bổ sung pause, lưu `2³¹−1`, resume vẫn dùng 2 runner, cùng session, hoàn tất 3 case không trùng/mất. Test mới mount ngoài image; code API vẫn là image gốc. | [def15-unittest.log](../../../outputs/followup-0a67461-20261017/def15-unittest.log), [def15.json](../../../outputs/followup-0a67461-20261017/def15.json) |
+| 6 — DEF-24/25/26 | Bổ sung quy trình cảnh báo, xác nhận lỗi, escalation và đóng sự cố. So lock/image kiểm hash lock nhúng, marker nền tảng Python và toàn bộ package production Python/npm API/runner; không lệch. Pin PostgreSQL khớp Compose, manifest, image ID và linux/amd64. | [Runbook](../ops/runbook.md), [công cụ](../../../scripts/compare-lock-image.py), [lock-image.json](../../../outputs/followup-0a67461-20261017/lock-image.json), [identity.json](../../../outputs/followup-0a67461-20261017/identity.json) |
 | 7 — DEF-17 | Release đã có commit `cf21031`. Bổ sung `.secrets/` và commit riêng `7d488b5` trên `fix/system`; `git check-ignore .secrets/probe` khớp. | [.gitignore](../../../.gitignore) |
 | 8 — R8 cũ | Đánh dấu SUPERSEDED cho release F, dẫn sang báo cáo VAHAN thật. Giữ nguyên số liệu synthetic để tra cứu lịch sử. | [R8-eta.md](R8-eta.md), [D3 R8 mới](../../../outputs/D3-0a6746187e82-20261016T093436Z/R8-ETA.md) |
 
@@ -34,7 +34,7 @@ Build mới được mount read-only qua đúng image nginx để kiểm độc 
 Đây là **bản sửa trong source/build hiện tại, chưa đóng gói hoặc triển khai**; artifact `0a67461` vẫn giữ phát hiện font cũ.
 Không tuyên bố gói cũ đã được sửa hoặc mọi CSP violation của nó đã biến mất.
 
-Bằng chứng source mới: `web-source-fix.json` (local).
+Bằng chứng source mới: [web-source-fix.json](../../../outputs/followup-0a67461-20261017/web-source-fix.json).
 API fixture dùng role DB hạn chế và tài khoản thử, môi trường test; luồng đăng nhập trên production staging
 vẫn tham chiếu [D3 gốc](../../../outputs/D3-0a6746187e82-20261016T093436Z/REPORT.md).
 
@@ -49,9 +49,10 @@ vẫn tham chiếu [D3 gốc](../../../outputs/D3-0a6746187e82-20261016T093436Z/
 - Giữ các lần harness lỗi trong ledger: thiếu backend, một lần không ghi log unittest;
   lần kiểm zero-CSP trên gói gốc phát hiện font bị chặn. Không dùng các lần này làm PASS.
   Kiểm chức năng nginx sau đó chỉ cho phép đúng observation font đã nêu; source mới được kiểm riêng với zero-CSP.
-- Môi trường tạm được dọn sau mỗi lượt: `cleanup.json` (local).
+- Môi trường tạm được dọn sau mỗi lượt: [cleanup.json](../../../outputs/followup-0a67461-20261017/cleanup.json).
 
-`checklist.json` (local),
-`source-validation.json` (local).
-Evidence thô và harness bổ sung giữ local; không đưa payload/screenshot VAHAN cũ vào commit.
+[checklist.json](../../../outputs/followup-0a67461-20261017/checklist.json),
+[source-validation.json](../../../outputs/followup-0a67461-20261017/source-validation.json).
+Evidence thô, export, screenshot và harness của lượt mới được công bố theo yêu cầu người dùng;
+các candidate cũ đã xóa, không đưa lên Git. Gói release và evidence niêm phong giữ nguyên checksum.
 Không thay severity hoặc tự đóng các dòng triage lịch sử chỉ dựa vào sửa tài liệu.

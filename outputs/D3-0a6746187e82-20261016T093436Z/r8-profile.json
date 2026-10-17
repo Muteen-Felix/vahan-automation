@@ -1,0 +1,139 @@
+{
+  "startedAt": "2026-10-16T12:37:13.129694+00:00",
+  "finishedAt": "2026-10-16T12:37:13.170128+00:00",
+  "method": "POST",
+  "path": "/api/filter-profiles",
+  "status": 200,
+  "headers": {
+    "Server": "nginx",
+    "Date": "Fri, 16 Oct 2026 12:37:13 GMT",
+    "Content-Type": "application/json",
+    "Content-Length": "1358",
+    "Connection": "close",
+    "vary": "Origin",
+    "cache-control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+  },
+  "body": {
+    "id": "3358c093-0330-4490-93b9-7f3767119d72",
+    "name": "D3 R8 real VAHAN 2018 three states",
+    "revision": 1,
+    "definition": {
+      "rules": [],
+      "fields": {
+        "rtos": {
+          "mode": "iterate",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "fuels": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "makers": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "states": {
+          "mode": "fixed",
+          "values": [
+            "Karnataka",
+            "Kerala",
+            "Tamil Nadu"
+          ],
+          "exclude": [],
+          "include": []
+        },
+        "classes": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "evTypes": {
+          "mode": "fixed",
+          "values": [
+            "ELECTRIC(BOV)"
+          ],
+          "exclude": [],
+          "include": []
+        },
+        "fitness": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "delhiNcr": {
+          "mode": "fixed",
+          "values": [
+            "ALL STATES"
+          ],
+          "exclude": [],
+          "include": []
+        },
+        "statuses": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "emissions": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "ownerTypes": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "vehicleType": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "archivedFlags": {
+          "mode": "iterate",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "subCategories": {
+          "mode": "fixed",
+          "values": [],
+          "exclude": [],
+          "include": []
+        },
+        "categoryGroups": {
+          "mode": "fixed",
+          "values": [
+            "Two Wheeler"
+          ],
+          "exclude": [],
+          "include": []
+        }
+      },
+      "report": {
+        "year": 2018,
+        "xAxis": "Month Wise",
+        "yAxis": "Maker",
+        "period": "CALENDAR YEAR"
+      },
+      "version": 1
+    },
+    "updatedAt": "2026-10-16T12:37:13.162995+00:00"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "sessionId": "9a9a16e0-ec1c-4e4b-8ff7-36b1d527aee9",
+  "taskCount": 2,
+  "positions": [
+    0,
+    1
+  ],
+  "uniqueFilters": 2,
+  "filterKeys": [
+    "baa260e2a442485f740f8010284117677f83a09209b6546e1e0c60fc6d6eb3c8",
+    "0938072ba4ccc960bf563c342d22b96e11599a581295011573f31f9d1d6be34b"
+  ],
+  "taskStatusCounts": {
+    "NO_DATA": 2
+  },
+  "jobStatusCounts": {
+    "NO_DATA": 2
+  },
+  "sumAttempts": 2,
+  "jobCount": 2,
+  "retriedTasks": [],
+  "duplicateSuccessfulLogicalCases": {},
+  "duplicateMainRows": [],
+  "tasks": [
+    {
+      "position": 0,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "d91b4e31-c133-4f61-91d1-acff53f246ac",
+      "caseKey": "baa260e2a442485f740f8010284117677f83a09209b6546e1e0c60fc6d6eb3c8"
+    },
+    {
+      "position": 1,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "93851acb-8cb5-49cf-a625-dbb50b899ad7",
+      "caseKey": "0938072ba4ccc960bf563c342d22b96e11599a581295011573f31f9d1d6be34b"
+    }
+  ],
+  "at": "2026-10-16T13:13:30.513420+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "exactNativePreviewCasesMatch": true,
+  "expectedNativePreviewCases": 2
+}

@@ -1,0 +1,18 @@
+{
+  "recordedAt": "2026-10-17T11:52:17.677398+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "latestChecks": {
+    "identity/DEF-27/DEF-26": "PASS",
+    "snapshot": "PASS",
+    "DEF-32 packaged Chromium sandbox and real OCR": "PASS",
+    "isolated fixtures": "PASS",
+    "DEF-15 persisted large limit, start and resume": "PASS",
+    "DEF-22 nginx server tokens and login CSP": "PASS",
+    "fingerprint/DEF-25": "PASS",
+    "isolated API fixture": "PASS"
+  },
+  "originalArtifactFontCspFinding": "OPEN: immutable artifact unchanged; fallback font used",
+  "workingTreeFontFix": "PASS",
+  "gitignoreCommit": "7d488b5a8d9de2d1a9c04b5ea63382d5538a1805",
+  "pushed": false
+}

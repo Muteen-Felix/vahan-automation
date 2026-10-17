@@ -1,0 +1,3 @@
+migrate-1  | 0015_remove_daily_schedules: deleted 1 Daily schedule(s); kept 2 Once/Monthly schedule(s); ids=['4e025d2f-2820-43f9-8b4c-5ca5a477fc46']
+migrate-1  | Schema migrated and runtime role granted DML access.
+

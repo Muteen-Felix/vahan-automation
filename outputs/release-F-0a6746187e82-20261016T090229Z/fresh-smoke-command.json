@@ -1,0 +1,23 @@
+{
+  "command": [
+    "C:\\Users\\huyvv12\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "scripts/release-smoke.py",
+    "--base-url",
+    "http://127.0.0.1:60337",
+    "--admin-user",
+    "admin",
+    "--min-runners",
+    "1",
+    "--compose-project",
+    "vahan-f0a67-fresh-20261016t090229",
+    "--require-compose-checks",
+    "--output",
+    "C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\release-F-0a6746187e82-20261016T090229Z\\fresh-smoke.json"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii",
+  "startedAt": "2026-10-16T09:10:50.744251+00:00",
+  "finishedAt": "2026-10-16T09:10:52.644116+00:00",
+  "exitCode": 0,
+  "log": "fresh-smoke-command.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

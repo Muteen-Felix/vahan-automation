@@ -1,0 +1,16 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-d3-0a67-20261016t090229",
+    "restart",
+    "api"
+  ],
+  "at": "2026-10-16T12:33:51.643244+00:00",
+  "returncode": 0,
+  "stdout": "",
+  "stderr": " Container vahan-d3-0a67-20261016t090229-api-1 Restarting \n Container vahan-d3-0a67-20261016t090229-api-1 Started \n"
+}

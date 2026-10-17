@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-16T13:32:08.915686+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "command": [
+      "docker",
+      "exec",
+      "--user",
+      "0",
+      "vahan-d3-0a67-20261016t090229-runner-1",
+      "node",
+      "-e",
+      "const fs=require('fs'),p='/etc/hosts',b='/tmp/d3-hosts-before';if(fs.existsSync(b))throw Error('backup exists');fs.copyFileSync(p,b);fs.appendFileSync(p,'\\n127.0.0.1 analytics.parivahan.gov.in # D3 external network injection\\n::1 analytics.parivahan.gov.in # D3 external network injection\\n');console.log('VAHAN DNS blocked')"
+    ],
+    "at": "2026-10-16T13:32:08.915686+00:00",
+    "returncode": 0,
+    "stdout": "VAHAN DNS blocked\n",
+    "stderr": ""
+  }
+}

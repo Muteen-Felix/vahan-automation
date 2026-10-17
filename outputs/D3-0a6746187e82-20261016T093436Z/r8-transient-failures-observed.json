@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-16T12:49:58.925535+00:00",
+  "jobs": [
+    {
+      "id": "3a5d8299-241f-46ae-a667-8ba46cb44bf9",
+      "status": "FAILED",
+      "error": "CAPTCHA was rejected three times.",
+      "scenarioName": "Maker Month Wise Data of ERNAKULAM RTO - KL7, Kerala (2018) · Active / Archive: ACTIVE_NON_COMPLIANT",
+      "caseId": "3a5d8299-241f-46ae-a667-8ba46cb44bf9",
+      "retryOfJobId": null,
+      "createdAt": "2026-10-16T12:49:15.989952Z",
+      "updatedAt": "2026-10-16T12:49:36.718729Z"
+    }
+  ]
+}

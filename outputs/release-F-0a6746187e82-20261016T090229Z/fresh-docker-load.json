@@ -1,0 +1,15 @@
+{
+  "command": [
+    "docker",
+    "image",
+    "load",
+    "-i",
+    "C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\release-F-0a6746187e82-20261016T090229Z\\package\\vahan-0a6746187e82-images.tar"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii",
+  "startedAt": "2026-10-16T09:10:04.347946+00:00",
+  "finishedAt": "2026-10-16T09:10:22.573053+00:00",
+  "exitCode": 0,
+  "log": "fresh-docker-load.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

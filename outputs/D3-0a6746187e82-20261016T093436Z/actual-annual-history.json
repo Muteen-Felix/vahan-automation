@@ -1,0 +1,967 @@
+{
+  "total": 307,
+  "offset": 0,
+  "limit": 20,
+  "rows": [
+    {
+      "source_key": "job:d6385a84-bb1b-4e01-8860-e9d44cec8cae",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "d6385a84-bb1b-4e01-8860-e9d44cec8cae",
+      "name": "Maker Month Wise Data of VIRUDHUNAGAR RTO - TN67, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_d6385a84.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VIRUDHUNAGAR RTO - TN67"
+      ],
+      "details": {
+        "newRows": 4,
+        "checksum": "796467804dffd0b40aec68839e8d26f816be1df016c9389bf06fa225eaa71c38",
+        "newCells": 48,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 4,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:29:14.075000+00:00",
+      "imported_at": "2026-10-16T13:29:14.415408+00:00"
+    },
+    {
+      "source_key": "job:c48106d2-8859-4ba3-b33f-3217232e20c9",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "c48106d2-8859-4ba3-b33f-3217232e20c9",
+      "name": "Maker Month Wise Data of VIRUDHACHALAM UO - TN553, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_c48106d2.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VIRUDHACHALAM UO - TN553"
+      ],
+      "details": {
+        "newRows": 1,
+        "checksum": "9dd211e052c79b6e9bfdc10e42d9e713d3f0491a1be21bfbb9665523f4d5afab",
+        "newCells": 12,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 1,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:29:08.974000+00:00",
+      "imported_at": "2026-10-16T13:29:09.275226+00:00"
+    },
+    {
+      "source_key": "job:3430a1b3-f206-498b-9949-23fd1141ae71",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "3430a1b3-f206-498b-9949-23fd1141ae71",
+      "name": "Maker Month Wise Data of VILUPPURAM RTO - TN32, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_3430a1b3.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VILUPPURAM RTO - TN32"
+      ],
+      "details": {
+        "newRows": 1,
+        "checksum": "23ed37bde1436d939708f875a000cf26bb81804b0370935e4e144bb94585e3aa",
+        "newCells": 12,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 1,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:28:57.032000+00:00",
+      "imported_at": "2026-10-16T13:28:57.365903+00:00"
+    },
+    {
+      "source_key": "job:52555376-9782-4c10-8098-ef450bbd37ba",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "52555376-9782-4c10-8098-ef450bbd37ba",
+      "name": "Maker Month Wise Data of VELLORE RTO - TN23, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_52555376.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VELLORE RTO - TN23"
+      ],
+      "details": {
+        "newRows": 2,
+        "checksum": "e59566a5fbffe79b37c49ce83ca69cad842cb62bf477b176f1d5d79964abdd4c",
+        "newCells": 24,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 2,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:28:51.959000+00:00",
+      "imported_at": "2026-10-16T13:28:52.268468+00:00"
+    },
+    {
+      "source_key": "job:f241c8df-c31a-4990-93b0-7cb9daf00f19",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "f241c8df-c31a-4990-93b0-7cb9daf00f19",
+      "name": "Maker Month Wise Data of VEDACHANDUR UO - TN617, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_f241c8df.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VEDACHANDUR UO - TN617"
+      ],
+      "details": {
+        "newRows": 1,
+        "checksum": "1d5ee420b8141a55d51ae9e8286fb67111dce1e619ac9e384207bd77be4c5b76",
+        "newCells": 12,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 1,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:28:42.244000+00:00",
+      "imported_at": "2026-10-16T13:28:42.567381+00:00"
+    },
+    {
+      "source_key": "job:f499f74d-f532-4a85-a1d2-bf77dacbf69e",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "f499f74d-f532-4a85-a1d2-bf77dacbf69e",
+      "name": "Maker Month Wise Data of VANIYAMBADI RTO - TN515, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_f499f74d.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VANIYAMBADI RTO - TN515"
+      ],
+      "details": {
+        "newRows": 1,
+        "checksum": "bd9b450417be39ffc643a715b5d00c5a15987b45cdfdeed311dc5260031e9477",
+        "newCells": 12,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 1,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:28:33.804000+00:00",
+      "imported_at": "2026-10-16T13:28:34.109028+00:00"
+    },
+    {
+      "source_key": "job:a62c5e29-55b4-4e9e-b085-111ae3f1dc4f",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "a62c5e29-55b4-4e9e-b085-111ae3f1dc4f",
+      "name": "Maker Month Wise Data of VALPARAI UO - TN633, Tamil Nadu (2018) · Active / Archive: ACTIVE_NON_COMPLIANT",
+      "status": "no-data",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VALPARAI UO - TN633"
+      ],
+      "details": {
+        "newRows": 0,
+        "checksum": "7fe6f3f6a2fdb5d03a1a67b3ab1c020b241700bf70cdfe3f2f91c2e1e792300d",
+        "newCells": 0,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 0,
+        "replacedCells": 0,
+        "conflictExamples": []
+      },
+      "observed_at": "2026-10-16T13:28:29.497000+00:00",
+      "imported_at": "2026-10-16T13:28:29.505916+00:00"
+    },
+    {
+      "source_key": "job:9586ee80-a541-44a2-8d7b-33a4d7a89341",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "9586ee80-a541-44a2-8d7b-33a4d7a89341",
+      "name": "Maker Month Wise Data of VALLIYUR UO - TN608, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_9586ee80.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VALLIYUR UO - TN608"
+      ],
+      "details": {
+        "newRows": 2,
+        "checksum": "08a755ec058773af9766aa46b3550003ec89b4b09486b5494eea8f126c334f86",
+        "newCells": 24,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 2,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:28:19.153000+00:00",
+      "imported_at": "2026-10-16T13:28:19.468071+00:00"
+    },
+    {
+      "source_key": "job:b42881fd-9123-4e71-a9ad-b0b3a2f1dc80",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "b42881fd-9123-4e71-a9ad-b0b3a2f1dc80",
+      "name": "Maker Month Wise Data of VALAPPADI UO - TN613, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_b42881fd.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VALAPPADI UO - TN613"
+      ],
+      "details": {
+        "newRows": 2,
+        "checksum": "61a759ba815f6d4ff9b5e828976362952d187602b41d3648ffd48ff2067c1fe9",
+        "newCells": 24,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 2,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:28:13.055000+00:00",
+      "imported_at": "2026-10-16T13:28:13.362536+00:00"
+    },
+    {
+      "source_key": "job:fe4dbef1-4b9e-4163-ad5a-32cba5a243b5",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "fe4dbef1-4b9e-4163-ad5a-32cba5a243b5",
+      "name": "Maker Month Wise Data of VADIPATTI UO - TN599, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_fe4dbef1.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "VADIPATTI UO - TN599"
+      ],
+      "details": {
+        "newRows": 1,
+        "checksum": "30d02bd04536f2adc8bee18fdf7b39fb9080d5c28687f169ee1a831fc6810bc6",
+        "newCells": 12,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 1,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:28:02.621000+00:00",
+      "imported_at": "2026-10-16T13:28:02.963814+00:00"
+    },
+    {
+      "source_key": "job:7f197de3-fb09-4156-8666-1146546411fc",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "7f197de3-fb09-4156-8666-1146546411fc",
+      "name": "Maker Month Wise Data of UTHAMAPALAYAM UO - TN601, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_7f197de3.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "UTHAMAPALAYAM UO - TN601"
+      ],
+      "details": {
+        "newRows": 1,
+        "checksum": "07b0e8a07ab388ae4a131c64b98188a7b79105d1dc008d8ac6ec2787c88ce238",
+        "newCells": 12,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 1,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:27:52.610000+00:00",
+      "imported_at": "2026-10-16T13:27:52.932155+00:00"
+    },
+    {
+      "source_key": "job:03166fed-288c-4cca-990e-87e2432e1fec",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "03166fed-288c-4cca-990e-87e2432e1fec",
+      "name": "Maker Month Wise Data of USILAMPATTI UO - TN636, Tamil Nadu (2018) · Active / Archive: ACTIVE_NON_COMPLIANT",
+      "status": "no-data",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "USILAMPATTI UO - TN636"
+      ],
+      "details": {
+        "newRows": 0,
+        "checksum": "b96a18715b14d3f43ef7626e70a40194d55dfe63fedced7d098bffce92af07cc",
+        "newCells": 0,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 0,
+        "replacedCells": 0,
+        "conflictExamples": []
+      },
+      "observed_at": "2026-10-16T13:27:42.938000+00:00",
+      "imported_at": "2026-10-16T13:27:42.947250+00:00"
+    },
+    {
+      "source_key": "job:ff06d857-e7a8-40f7-a276-6000354a11cb",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "ff06d857-e7a8-40f7-a276-6000354a11cb",
+      "name": "Maker Month Wise Data of ULUNDURPET RTO - TN577, Tamil Nadu (2018) · Active / Archive: ACTIVE_NON_COMPLIANT",
+      "status": "no-data",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "ULUNDURPET RTO - TN577"
+      ],
+      "details": {
+        "newRows": 0,
+        "checksum": "e164e2d5441306bf4c98da6369058436528a20f0b1e574c260da93665fffb428",
+        "newCells": 0,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 0,
+        "replacedCells": 0,
+        "conflictExamples": []
+      },
+      "observed_at": "2026-10-16T13:27:14.466000+00:00",
+      "imported_at": "2026-10-16T13:27:14.475850+00:00"
+    },
+    {
+      "source_key": "job:1c9b4c74-aa87-485d-a287-c609aa04ae76",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "1c9b4c74-aa87-485d-a287-c609aa04ae76",
+      "name": "Maker Month Wise Data of UDUMALPET RTO - TN581, Tamil Nadu (2018) · Active / Archive: ACTIVE_NON_COMPLIANT",
+      "status": "no-data",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "UDUMALPET RTO - TN581"
+      ],
+      "details": {
+        "newRows": 0,
+        "checksum": "cdd624df580a426cbb54a5806a42e1eb98719bf4b328db93beef52d58163351f",
+        "newCells": 0,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 0,
+        "replacedCells": 0,
+        "conflictExamples": []
+      },
+      "observed_at": "2026-10-16T13:26:55.145000+00:00",
+      "imported_at": "2026-10-16T13:26:55.153125+00:00"
+    },
+    {
+      "source_key": "job:f6b64f6d-d666-424d-9f4f-c53779b6a747",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "f6b64f6d-d666-424d-9f4f-c53779b6a747",
+      "name": "Maker Month Wise Data of TIRUVERANBUR UO - TN583, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_f6b64f6d.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "TIRUVERANBUR UO - TN583"
+      ],
+      "details": {
+        "newRows": 1,
+        "checksum": "ab6f8bc2cf19bbf56eb0bf128f9cc2403517325e920c6f2e70f58e460bf714d5",
+        "newCells": 12,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 1,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:26:46.191000+00:00",
+      "imported_at": "2026-10-16T13:26:46.499616+00:00"
+    },
+    {
+      "source_key": "job:d9ef0bef-bcc2-4441-bdfd-b06d69d215f3",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "d9ef0bef-bcc2-4441-bdfd-b06d69d215f3",
+      "name": "Maker Month Wise Data of TIRUVARUR RTO - TN50, Tamil Nadu (2018) · Active / Archive: ACTIVE_NON_COMPLIANT",
+      "status": "no-data",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "TIRUVARUR RTO - TN50"
+      ],
+      "details": {
+        "newRows": 0,
+        "checksum": "532fc18e0ccc57b8273c0cd87d55a5ff5e034d73ef700e3d4d770bafe89f4edc",
+        "newCells": 0,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 0,
+        "replacedCells": 0,
+        "conflictExamples": []
+      },
+      "observed_at": "2026-10-16T13:26:39.167000+00:00",
+      "imported_at": "2026-10-16T13:26:39.178230+00:00"
+    },
+    {
+      "source_key": "job:881b0493-a5e8-4f05-b7d0-c50e6a010eb7",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "881b0493-a5e8-4f05-b7d0-c50e6a010eb7",
+      "name": "Maker Month Wise Data of TIRUVANNAMALAI RTO - TN25, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_881b0493.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "TIRUVANNAMALAI RTO - TN25"
+      ],
+      "details": {
+        "newRows": 2,
+        "checksum": "2b4b95d8c5eff4213b14b5118751ec1af930cbe1f0688709a958e8aa3a5bc301",
+        "newCells": 24,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 2,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:26:34.367000+00:00",
+      "imported_at": "2026-10-16T13:26:34.696414+00:00"
+    },
+    {
+      "source_key": "job:1c6dae9c-37b3-46fd-924a-ad2070eb6083",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "1c6dae9c-37b3-46fd-924a-ad2070eb6083",
+      "name": "Maker Month Wise Data of TIRUVALLUR RTO - TN20, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_1c6dae9c.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "TIRUVALLUR RTO - TN20"
+      ],
+      "details": {
+        "newRows": 2,
+        "checksum": "0bb6d45e77536a9153e322ad67fff009091378098c9170bba648e0f5f473767c",
+        "newCells": 24,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 2,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:26:27.620000+00:00",
+      "imported_at": "2026-10-16T13:26:27.976996+00:00"
+    },
+    {
+      "source_key": "job:0af8c15d-0ed7-4acf-b3b1-ae1c66e7dc42",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "0af8c15d-0ed7-4acf-b3b1-ae1c66e7dc42",
+      "name": "Maker Month Wise Data of TIRUPPUR (SOUTH) RTO - TN42, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_0af8c15d.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "TIRUPPUR (SOUTH) RTO - TN42"
+      ],
+      "details": {
+        "newRows": 2,
+        "checksum": "39f98e71018cc355b5604535fd67fec78ba245cce88392de0220641b3a5d3de1",
+        "newCells": 24,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 2,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:26:19.895000+00:00",
+      "imported_at": "2026-10-16T13:26:20.230699+00:00"
+    },
+    {
+      "source_key": "job:45238fd4-3793-4b32-becc-0b07bf685759",
+      "owner_key": "admin",
+      "scope_key": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "scope_label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)",
+      "filters": {
+        "period": "CALENDAR YEAR",
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "delhiNcr": "ALL STATES",
+        "archivedFlags": [
+          "ACTIVE_NON_COMPLIANT"
+        ],
+        "categoryGroups": [
+          "TWO WHEELER"
+        ]
+      },
+      "job_id": "45238fd4-3793-4b32-becc-0b07bf685759",
+      "name": "Maker Month Wise Data of TIRUPPUR (NORTH) RTO - TN39, Tamil Nadu (2018) · Active _ Archive_ ACTIVE_NON_COMPLIANT_45238fd4.xlsx",
+      "status": "added",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Tamil Nadu"
+      ],
+      "rtos": [
+        "TIRUPPUR (NORTH) RTO - TN39"
+      ],
+      "details": {
+        "newRows": 3,
+        "checksum": "b886dbdbf3ac21d6a730d557d68153780acd7c0c1f1a8989b80eed5a2d2ccf19",
+        "newCells": 36,
+        "warnings": [],
+        "conflicts": 0,
+        "duplicates": 0,
+        "issueCount": 0,
+        "parsedRows": 3,
+        "invalidCells": 0,
+        "replacedCells": 0,
+        "missingContext": 0,
+        "sourceConflicts": 0,
+        "conflictExamples": [],
+        "unresolvedMakers": 0
+      },
+      "observed_at": "2026-10-16T13:26:12.608000+00:00",
+      "imported_at": "2026-10-16T13:26:12.925963+00:00"
+    }
+  ]
+}

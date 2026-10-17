@@ -1,0 +1,7 @@
+Schema migrated and runtime role granted DML access.
+
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Running 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Waiting 
+ Container vahan-f0a67-fresh-20261016t090229-postgres-1 Healthy 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-run-1cdc4c07da1e Creating 
+ Container vahan-f0a67-fresh-20261016t090229-migrate-run-1cdc4c07da1e Created 

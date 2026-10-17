@@ -1,0 +1,22 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-t45b-965a-20261016t085232",
+    "start",
+    "--wait",
+    "--wait-timeout",
+    "180",
+    "api",
+    "web"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-t45b-965a-baseline-o786mjjo",
+  "startedAt": "2026-10-16T09:12:40.898381+00:00",
+  "finishedAt": "2026-10-16T09:12:57.864368+00:00",
+  "exitCode": 0,
+  "log": "t45b-resume-old-applications.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

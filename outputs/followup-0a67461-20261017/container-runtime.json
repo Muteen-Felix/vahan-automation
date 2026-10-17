@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-17T11:43:32.314432+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "imageId": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+  "seccompSha256": "a682f3d87ae7114b755a3e10222763ecf229bcb522a2c4c5be841ef8db59010e",
+  "result": {
+    "uid": 1000,
+    "chromium": "153.0.8010.12",
+    "sandbox": true,
+    "ocr": {
+      "passed": true,
+      "input": "synthetic six-character text",
+      "transport": "stdin",
+      "rawOutputLogged": false
+    }
+  }
+}

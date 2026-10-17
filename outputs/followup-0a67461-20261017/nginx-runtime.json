@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-10-17T11:51:28.984647+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "webImageId": "sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2",
+  "httpStatus": 200,
+  "headers": {
+    "Server": "nginx",
+    "Date": "Sat, 17 Oct 2026 11:51:24 GMT",
+    "Content-Type": "text/html",
+    "Content-Length": "471",
+    "Last-Modified": "Fri, 16 Oct 2026 04:12:03 GMT",
+    "Connection": "close",
+    "ETag": "\"6ad1a413-1d7\"",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+    "Cache-Control": "no-cache",
+    "Accept-Ranges": "bytes"
+  },
+  "serverTokensOff": true,
+  "browser": {
+    "passwordInputs": 1,
+    "cspViolations": [
+      {
+        "directive": "style-src-elem",
+        "blocked": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap"
+      }
+    ]
+  },
+  "scope": "Real login page through packaged nginx; original D3 covers authenticated workflows",
+  "fontCspFinding": "Original artifact blocks remote Google Fonts; login renders using fallback fonts. Fix verified separately on working-tree web assets."
+}

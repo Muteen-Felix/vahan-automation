@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-16T13:15:25.701844+00:00",
+  "jobs": [
+    {
+      "id": "8f682573-fffe-4650-bba1-359973fd2b24",
+      "status": "FAILED",
+      "error": "CAPTCHA was rejected three times.",
+      "scenarioName": "Maker Month Wise Data of NAGERCOIL RTO - TN74, Tamil Nadu (2018) · Active / Archive: PERMANENT_ARCHIVE",
+      "caseId": "8f682573-fffe-4650-bba1-359973fd2b24",
+      "retryOfJobId": null,
+      "createdAt": "2026-10-16T13:14:38.100793Z",
+      "updatedAt": "2026-10-16T13:14:51.926625Z"
+    }
+  ]
+}

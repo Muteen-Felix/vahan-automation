@@ -1,0 +1,69 @@
+{
+  "at": "2026-10-16T13:50:26.355849+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "schedule": {
+      "id": "c8793f81-1801-403b-bea7-359f66f0f3e7",
+      "done": 14,
+      "year": 2020,
+      "total": 14,
+      "failed": 0,
+      "noData": 13,
+      "repeat": "once",
+      "status": "COMPLETED",
+      "enabled": false,
+      "message": "Finished 14/14 cases. 0 failed.",
+      "version": 1,
+      "pausedAt": null,
+      "startsAt": "2026-10-16T13:47:03.102977+00:00",
+      "timeZone": "Asia/Ho_Chi_Minh",
+      "withData": 1,
+      "createdAt": "2026-10-16T13:46:48.137320+00:00",
+      "lastRunAt": "2026-10-16T13:47:16.330909+00:00",
+      "nextRunAt": null,
+      "operation": {
+        "error": null,
+        "stage": "Collecting reports",
+        "detail": "Collected 13/14 cases.",
+        "startedAt": "2026-10-16T13:50:07.060100+00:00",
+        "progressAt": "2026-10-16T13:50:20.224315+00:00",
+        "heartbeatAt": "2026-10-16T13:50:20.224315+00:00"
+      },
+      "profileId": "17141cfa-5069-4348-8ec3-baa153d8cfd1",
+      "sessionId": null,
+      "updatedAt": "2026-10-16T13:50:22.834409+00:00",
+      "retryAfter": null,
+      "preflightAt": "2026-10-16T13:49:10.362789+00:00",
+      "preflightId": "7b331226-fe01-4475-b62c-6ae384c2e767",
+      "profileName": "D3 isolated runner recovery 2020",
+      "lastSessionId": "cfbc4bb8-fd9d-43d5-a060-7974d0fe7337",
+      "networkPaused": false,
+      "retryProgress": {
+        "phase": "DONE",
+        "complete": true,
+        "checkpointEnd": 14,
+        "lastCheckpoint": 14,
+        "pendingRetries": 0,
+        "checkpointStart": 10,
+        "failedRemaining": 0,
+        "finalPassStarted": true
+      },
+      "executionEpoch": 5,
+      "lastFinishedAt": "2026-10-16T13:50:22.834409+00:00",
+      "activeElapsedMs": 117111.38,
+      "profileRevision": 1,
+      "preparationAttempts": 0,
+      "activeSegmentStartedAt": null,
+      "canResume": false
+    },
+    "killedJob": {
+      "id": "e1be2d8c-8a86-4622-9f46-9cad9309f1ee",
+      "status": "FAILED",
+      "error": "Runner disconnected.",
+      "updatedAt": "2026-10-16T13:49:41.131824Z"
+    },
+    "noNetworkOutageDuringThisKill": true,
+    "noApiRestartDuringThisKill": true,
+    "runnerRemainedStoppedUntilFullQueueRecovered": true
+  }
+}

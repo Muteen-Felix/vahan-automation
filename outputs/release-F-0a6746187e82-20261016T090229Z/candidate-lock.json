@@ -1,0 +1,25 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "version": "1.0.0",
+  "recordedAt": "2026-10-16T09:31:17.747587+00:00",
+  "digests": {
+    "vahan-0a6746187e82-images.tar": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+    "vahan-0a6746187e82-manifest.json": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "vahan-0a6746187e82-source.zip": "df6d8ce613c75be875a737894963cfac3582b17738b5a0ba44f1540ca8fc53ac",
+    "SHA256SUMS": "11a841ee1fd08d50547e589cc733a7713b98725d8b013e190df24fa8f67b33d6"
+  },
+  "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+  "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+  "staging": {
+    "project": "vahan-d3-0a67-20261016t090229",
+    "baseUrl": "http://127.0.0.1:15187",
+    "apiUrl": "http://127.0.0.1:18087",
+    "workers": 3
+  },
+  "preD3Status": "PASS_READY_FOR_USER_DIGEST_REVIEW",
+  "userApproval": {
+    "status": "PENDING",
+    "approvedAt": null
+  },
+  "D3": "NOT_RUN"
+}

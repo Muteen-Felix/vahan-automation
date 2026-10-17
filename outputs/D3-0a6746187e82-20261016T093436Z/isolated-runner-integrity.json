@@ -1,0 +1,199 @@
+{
+  "sessionId": "cfbc4bb8-fd9d-43d5-a060-7974d0fe7337",
+  "taskCount": 14,
+  "positions": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "uniqueFilters": 14,
+  "filterKeys": [
+    "8e797984db6cfaa6a4af33fa96eb231759e822a1ba21d25437152cf3f4ce188c",
+    "c7c42105ec8c5be44121cb85296fd79ebd5281bcb9a38f38024a271a1391baa6",
+    "3574541ef254f6d605b17c28170084c941538d6d2f1b68e90cbecf8b6cc9ae6c",
+    "28960e8d50b0e79e0bc93f01c09a748f7829aafc383cebefd0ef6a9e43a9c83c",
+    "a088caa07655dc2092cc15bc064e3d94a52f13dde5879d63775e485c48c9dab4",
+    "8526635d1d2db5633c98c457299a97303427f04635e5d5434bf0277bdefa8732",
+    "8e2e88760698f4d697bd1bb1bd9f1da181d4c64b1d82776c9140d627a7d63e6a",
+    "e6a2c0a55aa24b37dd6f657daf527a0bb939c5351e65b6a0b8b506467c7062d0",
+    "4e21bdd05ff4cc7f6b44fb0b5b1c15bb0b4fb16bc237decbe185208bfc35970b",
+    "125c300bd7eac29907646a1c9dfc02ade430e4f3655eabdf6e62510e31c355e5",
+    "b5ed96a0fd6d8ccc4bed1ced68c0eb9e081408387fd35b656510d534cdd1cfe1",
+    "080ccaa44c8071ee8ea92fbd0d656cb6a234bfbcccb209d36fe5c0608b62da96",
+    "0988d82b413e97693687c6f361c0d54af6969e25b8ebc13f0744c7c07a8142ef",
+    "4df714286e0c033251a75cd3cf76afdfa5154eda5ecca753675894cb807e4c9b"
+  ],
+  "taskStatusCounts": {
+    "NO_DATA": 13,
+    "COMPLETED": 1
+  },
+  "jobStatusCounts": {
+    "CANCELLED": 3,
+    "NO_DATA": 13,
+    "FAILED": 1,
+    "COMPLETED": 1
+  },
+  "sumAttempts": 18,
+  "jobCount": 18,
+  "retriedTasks": [
+    {
+      "position": 0,
+      "attempts": 2,
+      "failures": 0,
+      "status": "NO_DATA",
+      "error": null
+    },
+    {
+      "position": 1,
+      "attempts": 2,
+      "failures": 0,
+      "status": "NO_DATA",
+      "error": null
+    },
+    {
+      "position": 2,
+      "attempts": 2,
+      "failures": 0,
+      "status": "NO_DATA",
+      "error": null
+    },
+    {
+      "position": 3,
+      "attempts": 2,
+      "failures": 1,
+      "status": "NO_DATA",
+      "error": null
+    }
+  ],
+  "duplicateSuccessfulLogicalCases": {},
+  "duplicateMainRows": [],
+  "tasks": [
+    {
+      "position": 0,
+      "status": "NO_DATA",
+      "attempts": 2,
+      "failures": 0,
+      "jobId": "25032335-f5aa-4295-b870-a0e49bb9ccb7",
+      "caseKey": "8e797984db6cfaa6a4af33fa96eb231759e822a1ba21d25437152cf3f4ce188c"
+    },
+    {
+      "position": 1,
+      "status": "NO_DATA",
+      "attempts": 2,
+      "failures": 0,
+      "jobId": "5c1f29ca-15de-47b5-a90d-780f854ba55d",
+      "caseKey": "c7c42105ec8c5be44121cb85296fd79ebd5281bcb9a38f38024a271a1391baa6"
+    },
+    {
+      "position": 2,
+      "status": "NO_DATA",
+      "attempts": 2,
+      "failures": 0,
+      "jobId": "eda6f458-10df-465c-9d87-569e117db097",
+      "caseKey": "3574541ef254f6d605b17c28170084c941538d6d2f1b68e90cbecf8b6cc9ae6c"
+    },
+    {
+      "position": 3,
+      "status": "NO_DATA",
+      "attempts": 2,
+      "failures": 1,
+      "jobId": "4a8d5675-3225-4cf5-a8da-5e67c4ece16b",
+      "caseKey": "28960e8d50b0e79e0bc93f01c09a748f7829aafc383cebefd0ef6a9e43a9c83c"
+    },
+    {
+      "position": 4,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "4c82917b-fa24-4a6a-851f-4916e11385a9",
+      "caseKey": "a088caa07655dc2092cc15bc064e3d94a52f13dde5879d63775e485c48c9dab4"
+    },
+    {
+      "position": 5,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "032c9f52-8c81-46a0-a0c3-0b294e758bf4",
+      "caseKey": "8526635d1d2db5633c98c457299a97303427f04635e5d5434bf0277bdefa8732"
+    },
+    {
+      "position": 6,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "b3144cbe-06f8-4a5a-bea6-415873a164d4",
+      "caseKey": "8e2e88760698f4d697bd1bb1bd9f1da181d4c64b1d82776c9140d627a7d63e6a"
+    },
+    {
+      "position": 7,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "40b0bd4a-adc1-411c-8de2-9b2f1b3017c5",
+      "caseKey": "e6a2c0a55aa24b37dd6f657daf527a0bb939c5351e65b6a0b8b506467c7062d0"
+    },
+    {
+      "position": 8,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "7303888f-0eb9-4386-8174-79cdf7533002",
+      "caseKey": "4e21bdd05ff4cc7f6b44fb0b5b1c15bb0b4fb16bc237decbe185208bfc35970b"
+    },
+    {
+      "position": 9,
+      "status": "COMPLETED",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "be58f3b9-4bf7-4b87-9acf-e0234583d234",
+      "caseKey": "125c300bd7eac29907646a1c9dfc02ade430e4f3655eabdf6e62510e31c355e5"
+    },
+    {
+      "position": 10,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "4dd0c882-8734-4e20-a5fc-0df8126426e7",
+      "caseKey": "b5ed96a0fd6d8ccc4bed1ced68c0eb9e081408387fd35b656510d534cdd1cfe1"
+    },
+    {
+      "position": 11,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "325f9a30-955a-47d8-95f9-9fd193050665",
+      "caseKey": "080ccaa44c8071ee8ea92fbd0d656cb6a234bfbcccb209d36fe5c0608b62da96"
+    },
+    {
+      "position": 12,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "7b39403b-953c-4766-93b7-81f93a226413",
+      "caseKey": "0988d82b413e97693687c6f361c0d54af6969e25b8ebc13f0744c7c07a8142ef"
+    },
+    {
+      "position": 13,
+      "status": "NO_DATA",
+      "attempts": 1,
+      "failures": 0,
+      "jobId": "247c65c1-2a15-483b-a5c6-227d88a33a9f",
+      "caseKey": "4df714286e0c033251a75cd3cf76afdfa5154eda5ecca753675894cb807e4c9b"
+    }
+  ],
+  "at": "2026-10-16T13:50:26.355849+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "exactNativePreviewCasesMatch": true,
+  "expectedNativePreviewCases": 14
+}

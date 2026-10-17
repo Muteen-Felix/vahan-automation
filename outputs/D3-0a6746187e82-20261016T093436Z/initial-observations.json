@@ -1,0 +1,439 @@
+{
+  "/api/health": {
+    "startedAt": "2026-10-16T09:37:14.864157+00:00",
+    "finishedAt": "2026-10-16T09:37:14.884739+00:00",
+    "method": "GET",
+    "path": "/api/health",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 09:37:14 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "15",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "status": "ok"
+    }
+  },
+  "/api/ready": {
+    "startedAt": "2026-10-16T09:37:14.884739+00:00",
+    "finishedAt": "2026-10-16T09:37:14.891571+00:00",
+    "method": "GET",
+    "path": "/api/ready",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 09:37:14 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "59",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "status": "ok",
+      "storage": "postgresql",
+      "queue": "postgresql"
+    }
+  },
+  "/api/auth/me": {
+    "startedAt": "2026-10-16T09:37:14.891571+00:00",
+    "finishedAt": "2026-10-16T09:37:14.899213+00:00",
+    "method": "GET",
+    "path": "/api/auth/me",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 09:37:14 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "85",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "username": "admin",
+      "role": "admin",
+      "expiresAt": 1792186634,
+      "idleExpiresAt": 1792147034
+    }
+  },
+  "/api/runners": {
+    "startedAt": "2026-10-16T09:37:14.899213+00:00",
+    "finishedAt": "2026-10-16T09:37:14.907889+00:00",
+    "method": "GET",
+    "path": "/api/runners",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 09:37:14 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "589",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": [
+      {
+        "id": "worker-0fc9567e-cc93-4917-8fff-0026bb2a083e",
+        "name": "Chromium Playwright",
+        "version": "1.0.0",
+        "source": "new",
+        "status": "ONLINE",
+        "currentJobId": null,
+        "lastSeenAt": "2026-10-16T09:37:02.303540Z"
+      },
+      {
+        "id": "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a",
+        "name": "Chromium Playwright",
+        "version": "1.0.0",
+        "source": "new",
+        "status": "ONLINE",
+        "currentJobId": null,
+        "lastSeenAt": "2026-10-16T09:37:02.304130Z"
+      },
+      {
+        "id": "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+        "name": "Chromium Playwright",
+        "version": "1.0.0",
+        "source": "new",
+        "status": "ONLINE",
+        "currentJobId": null,
+        "lastSeenAt": "2026-10-16T09:37:02.467389Z"
+      }
+    ]
+  },
+  "/api/worker-pool": {
+    "startedAt": "2026-10-16T09:37:14.907889+00:00",
+    "finishedAt": "2026-10-16T09:37:14.918781+00:00",
+    "method": "GET",
+    "path": "/api/worker-pool",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 09:37:14 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "451",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "enabled": true,
+      "mode": "logical",
+      "phase": "ready",
+      "desiredCount": 20,
+      "runningCount": 3,
+      "activeCount": 0,
+      "workers": [
+        {
+          "number": 1,
+          "runnerId": "worker-0fc9567e-cc93-4917-8fff-0026bb2a083e",
+          "running": true,
+          "enabled": true,
+          "busy": false
+        },
+        {
+          "number": 2,
+          "runnerId": "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+          "running": true,
+          "enabled": true,
+          "busy": false
+        },
+        {
+          "number": 3,
+          "runnerId": "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a",
+          "running": true,
+          "enabled": true,
+          "busy": false
+        }
+      ]
+    }
+  },
+  "/api/ui-health/status": {
+    "startedAt": "2026-10-16T09:37:14.918781+00:00",
+    "finishedAt": "2026-10-16T09:37:14.931759+00:00",
+    "method": "GET",
+    "path": "/api/ui-health/status",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 09:37:14 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "2588",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "versionId": null,
+      "revision": 0,
+      "blocked": false,
+      "blockedRunnerIds": [],
+      "controls": [
+        {
+          "field": "archivedFlags",
+          "selector": "#archivedFlags",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "period",
+          "selector": "#reportType",
+          "tag": "select",
+          "multiple": false,
+          "optionsHash": null
+        },
+        {
+          "field": "financialYears",
+          "selector": "#financialYearSelect",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "reportYear",
+          "selector": "#reportYear",
+          "tag": "select",
+          "multiple": false,
+          "optionsHash": null
+        },
+        {
+          "field": "reportMonth",
+          "selector": "#reportMonth",
+          "tag": "select",
+          "multiple": false,
+          "optionsHash": null
+        },
+        {
+          "field": "states",
+          "selector": "#stateName",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "rtos",
+          "selector": "#rtoCode",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "emissions",
+          "selector": "#vehicleEmission",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "categoryGroups",
+          "selector": "#vehicleCategoryGroup",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "subCategories",
+          "selector": "#vehicleSubCategory",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "classes",
+          "selector": "#vehicleClass",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "fuels",
+          "selector": "#vehicleFuel",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "evTypes",
+          "selector": "#evType",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "statuses",
+          "selector": "#vehicleStatus",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "ownerTypes",
+          "selector": "#vehicleOwnerType",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "vehicleType",
+          "selector": "#vehicleType",
+          "tag": "select",
+          "multiple": false,
+          "optionsHash": null
+        },
+        {
+          "field": "fitness",
+          "selector": "#fitnessCheck",
+          "tag": "select",
+          "multiple": false,
+          "optionsHash": null
+        },
+        {
+          "field": "delhiNcr",
+          "selector": "#delhiNcr",
+          "tag": "select",
+          "multiple": false,
+          "optionsHash": null
+        },
+        {
+          "field": "yAxis",
+          "selector": "#yAxis",
+          "tag": "select",
+          "multiple": false,
+          "optionsHash": null
+        },
+        {
+          "field": "xAxis",
+          "selector": "#xAxis",
+          "tag": "select",
+          "multiple": false,
+          "optionsHash": null
+        },
+        {
+          "field": "makers",
+          "selector": "#vehicleMaker",
+          "tag": "select",
+          "multiple": true,
+          "optionsHash": null
+        },
+        {
+          "field": "fromYear",
+          "selector": "#fromYear",
+          "tag": "input",
+          "optionsHash": null
+        },
+        {
+          "field": "toYear",
+          "selector": "#toYear",
+          "tag": "input",
+          "optionsHash": null
+        },
+        {
+          "field": "fromDate",
+          "selector": "#fromDate",
+          "tag": "input",
+          "optionsHash": null
+        },
+        {
+          "field": "toDate",
+          "selector": "#toDate",
+          "tag": "input",
+          "optionsHash": null
+        },
+        {
+          "field": "apply",
+          "selector": "#applyTrigger",
+          "tag": "button",
+          "optionsHash": null
+        }
+      ],
+      "lastError": null,
+      "latestPreflight": null,
+      "gateGeneration": 0
+    }
+  },
+  "/api/run-schedules": {
+    "startedAt": "2026-10-16T09:37:14.931759+00:00",
+    "finishedAt": "2026-10-16T09:37:14.947918+00:00",
+    "method": "GET",
+    "path": "/api/run-schedules",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 09:37:14 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "2",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": []
+  },
+  "/api/annual-reports/run-history": {
+    "startedAt": "2026-10-16T09:37:14.947918+00:00",
+    "finishedAt": "2026-10-16T09:37:14.988017+00:00",
+    "method": "GET",
+    "path": "/api/annual-reports/run-history",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 09:37:14 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "43",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "total": 0,
+      "offset": 0,
+      "limit": 50,
+      "runs": []
+    }
+  }
+}

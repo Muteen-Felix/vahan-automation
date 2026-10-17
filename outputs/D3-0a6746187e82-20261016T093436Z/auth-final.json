@@ -1,0 +1,261 @@
+{
+  "naturalIdleExpiry": {
+    "loginAt": "2026-10-16T12:33:49.602495+00:00",
+    "idleExpiresAt": 1792157629,
+    "checkedAt": "2026-10-16T13:46:03.660534+00:00",
+    "response": {
+      "startedAt": "2026-10-16T13:46:03.652698+00:00",
+      "finishedAt": "2026-10-16T13:46:03.660534+00:00",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401,
+      "headers": {
+        "Server": "nginx",
+        "Date": "Fri, 16 Oct 2026 13:46:03 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "64",
+        "Connection": "close",
+        "www-authenticate": "Bearer",
+        "cache-control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "same-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+      },
+      "body": {
+        "detail": "Authentication required or access token is invalid."
+      }
+    },
+    "elapsedSeconds": 4334.6605343818665
+  },
+  "freshLoginAfterExpiry": {
+    "startedAt": "2026-10-16T13:46:03.661706+00:00",
+    "finishedAt": "2026-10-16T13:46:03.828079+00:00",
+    "method": "POST",
+    "path": "/api/auth/login",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:46:03 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "409",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "pragma": "no-cache",
+      "vary": "Origin",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "accessToken": "[REDACTED]",
+      "tokenType": "Bearer",
+      "expiresIn": 43200,
+      "idleTimeoutSeconds": 3600,
+      "expiresAt": 1792201563,
+      "idleExpiresAt": 1792161963,
+      "username": "d3-member-20261016"
+    }
+  },
+  "absoluteExpiredSignedToken": {
+    "method": "Signed negative-test token for the same live disposable member session; exp already past, iat exactly12h earlier; application/server clock untouched",
+    "claims": {
+      "iat": 1792115162,
+      "exp": 1792158362,
+      "aud": "vahan-rpa-ui",
+      "typ": "access"
+    },
+    "response": {
+      "startedAt": "2026-10-16T13:46:03.828079+00:00",
+      "finishedAt": "2026-10-16T13:46:03.845279+00:00",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401,
+      "headers": {
+        "Server": "nginx",
+        "Date": "Fri, 16 Oct 2026 13:46:03 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "64",
+        "Connection": "close",
+        "www-authenticate": "Bearer",
+        "cache-control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "same-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+      },
+      "body": {
+        "detail": "Authentication required or access token is invalid."
+      }
+    }
+  },
+  "member/api/docs": {
+    "startedAt": "2026-10-16T13:46:03.845279+00:00",
+    "finishedAt": "2026-10-16T13:46:03.851453+00:00",
+    "method": "GET",
+    "path": "/api/docs",
+    "status": 403,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:46:03 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "67",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Bạn không có quyền truy cập chức năng này."
+    }
+  },
+  "member/api/openapi.json": {
+    "startedAt": "2026-10-16T13:46:03.851453+00:00",
+    "finishedAt": "2026-10-16T13:46:03.857051+00:00",
+    "method": "GET",
+    "path": "/api/openapi.json",
+    "status": 403,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:46:03 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "67",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Bạn không có quyền truy cập chức năng này."
+    }
+  },
+  "member/api/redoc": {
+    "startedAt": "2026-10-16T13:46:03.857051+00:00",
+    "finishedAt": "2026-10-16T13:46:03.864055+00:00",
+    "method": "GET",
+    "path": "/api/redoc",
+    "status": 403,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:46:03 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "67",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Bạn không có quyền truy cập chức năng này."
+    }
+  },
+  "member/api/annual-reports/run-history": {
+    "startedAt": "2026-10-16T13:46:03.864055+00:00",
+    "finishedAt": "2026-10-16T13:46:03.869830+00:00",
+    "method": "GET",
+    "path": "/api/annual-reports/run-history",
+    "status": 403,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:46:03 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "67",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Bạn không có quyền truy cập chức năng này."
+    }
+  },
+  "disableMember": {
+    "startedAt": "2026-10-16T13:46:03.869830+00:00",
+    "finishedAt": "2026-10-16T13:46:03.882509+00:00",
+    "method": "PATCH",
+    "path": "/api/users/d3-member-20261016",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:46:03 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "11",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "ok": true
+    }
+  },
+  "disabledToken": {
+    "startedAt": "2026-10-16T13:46:03.882509+00:00",
+    "finishedAt": "2026-10-16T13:46:03.893105+00:00",
+    "method": "GET",
+    "path": "/api/auth/me",
+    "status": 401,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:46:03 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "64",
+      "Connection": "close",
+      "www-authenticate": "Bearer",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Authentication required or access token is invalid."
+    }
+  },
+  "disabledLogin": {
+    "startedAt": "2026-10-16T13:46:03.893105+00:00",
+    "finishedAt": "2026-10-16T13:46:04.055538+00:00",
+    "method": "POST",
+    "path": "/api/auth/login",
+    "status": 401,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:46:04 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "51",
+      "Connection": "close",
+      "www-authenticate": "Bearer",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "The username or password is incorrect."
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-10-17T14:39:40.097238+00:00",
+  "authorizedAction": "User requested deletion of old outputs; only verified untracked directories were removed",
+  "removed": [
+    {
+      "directory": "release-F-4639c2bfd756-20261016T080358Z",
+      "filesIncludingIgnored": 178,
+      "MiB": 731.1
+    },
+    {
+      "directory": "release-F-5680ab506697-20261016T084505Z",
+      "filesIncludingIgnored": 22,
+      "MiB": 0.16
+    },
+    {
+      "directory": "release-F-6a0d1975d6e9-20261016T083407Z",
+      "filesIncludingIgnored": 50,
+      "MiB": 730.91
+    },
+    {
+      "directory": "release-F-965a9eca42ef-20261016T085232Z",
+      "filesIncludingIgnored": 52,
+      "MiB": 0.21
+    },
+    {
+      "directory": "release-restart-fix-20261016T082635Z",
+      "filesIncludingIgnored": 46,
+      "MiB": 0.06
+    }
+  ],
+  "verifiedInside": "outputs/",
+  "trackedFilesRemoved": 0,
+  "reparsePoints": 0
+}

@@ -1,0 +1,19 @@
+{
+  "command": [
+    "C:\\Users\\huyvv12\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "scripts/config-snapshot.py",
+    "--env-file",
+    "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii\\.docker.env",
+    "--project-dir",
+    "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii",
+    "--image-ids",
+    "--out",
+    "C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\release-F-0a6746187e82-20261016T090229Z\\fresh-config-snapshot.json"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii",
+  "startedAt": "2026-10-16T09:10:55.381500+00:00",
+  "finishedAt": "2026-10-16T09:10:55.954693+00:00",
+  "exitCode": 0,
+  "log": "fresh-config-snapshot-command.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

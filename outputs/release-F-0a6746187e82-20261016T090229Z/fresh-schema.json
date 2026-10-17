@@ -1,0 +1,26 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-f0a67-fresh-20261016t090229",
+    "exec",
+    "-T",
+    "postgres",
+    "psql",
+    "-U",
+    "vahan",
+    "-d",
+    "vahan",
+    "-XAtc",
+    "select version_num from alembic_version"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii",
+  "startedAt": "2026-10-16T09:10:50.526614+00:00",
+  "finishedAt": "2026-10-16T09:10:50.742581+00:00",
+  "exitCode": 0,
+  "log": "fresh-schema.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

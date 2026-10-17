@@ -1,0 +1,72 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "checkedAt": "2026-10-16T09:10:03.414153+00:00",
+  "checksums": {
+    "vahan-0a6746187e82-images.tar": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+    "vahan-0a6746187e82-manifest.json": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "vahan-0a6746187e82-source.zip": "df6d8ce613c75be875a737894963cfac3582b17738b5a0ba44f1540ca8fc53ac"
+  },
+  "sha256sumsDigest": "11a841ee1fd08d50547e589cc733a7713b98725d8b013e190df24fa8f67b33d6",
+  "manifest": {
+    "format": 1,
+    "version": "1.0.0",
+    "sourceCommit": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "imageNamespace": "vahan-review",
+    "imageTag": "1.0.0",
+    "imageRevision": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "files": {
+      "vahan-0a6746187e82-source.zip": "df6d8ce613c75be875a737894963cfac3582b17738b5a0ba44f1540ca8fc53ac",
+      "vahan-0a6746187e82-images.tar": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4"
+    },
+    "imageIds": {
+      "vahan-review/runner:1.0.0": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+      "vahan-review/web:1.0.0": "sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2",
+      "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+      "vahan-review/api:1.0.0": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc"
+    },
+    "images": {
+      "vahan-review/runner:1.0.0": {
+        "id": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+        "repoDigests": [
+          "vahan-review/runner@sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef"
+        ],
+        "platform": "linux/amd64",
+        "upstream": false,
+        "revisionLabel": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+        "versionLabel": "1.0.0"
+      },
+      "vahan-review/web:1.0.0": {
+        "id": "sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2",
+        "repoDigests": [
+          "vahan-review/web@sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2"
+        ],
+        "platform": "linux/amd64",
+        "upstream": false,
+        "revisionLabel": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+        "versionLabel": "1.0.0"
+      },
+      "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826": {
+        "id": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+        "repoDigests": [
+          "postgres@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826"
+        ],
+        "platform": "linux/amd64",
+        "upstream": true,
+        "revisionLabel": null,
+        "versionLabel": null
+      },
+      "vahan-review/api:1.0.0": {
+        "id": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc",
+        "repoDigests": [
+          "vahan-review/api@sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc"
+        ],
+        "platform": "linux/amd64",
+        "upstream": false,
+        "revisionLabel": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+        "versionLabel": "1.0.0"
+      }
+    },
+    "scope": "Committed source only; outputs, secrets, local CA, backups and Git metadata are excluded."
+  },
+  "status": "PASS"
+}

@@ -1,0 +1,136 @@
+{
+  "startedAt": "2026-10-16T12:44:10.712503+00:00",
+  "finishedAt": "2026-10-16T12:44:10.766574+00:00",
+  "method": "GET",
+  "path": "/api/annual-reports?year=2018",
+  "status": 200,
+  "headers": {
+    "Server": "nginx",
+    "Date": "Fri, 16 Oct 2026 12:44:10 GMT",
+    "Content-Type": "application/json",
+    "Content-Length": "27209",
+    "Connection": "close",
+    "vary": "Origin",
+    "cache-control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+  },
+  "body": {
+    "year": 2018,
+    "datasetId": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+    "datasets": [
+      {
+        "id": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+        "label": "TWO WHEELER · ACTIVE_NON_COMPLIANT · EV type: ELECTRIC(BOV)"
+      },
+      {
+        "id": "a7a0230fee5e94cb2eb72e836b8f577f45e52a259d02c7e14b93bd0582c5daab",
+        "label": "TWO WHEELER · ACTIVE_COMPLIANT · EV type: ELECTRIC(BOV)"
+      },
+      {
+        "id": "de5bbc3575dbcd248f45a704905f3aabeee9cc1c651edda15f38c24bcfc9ee52",
+        "label": "TWO WHEELER · PERMANENT_ARCHIVE · EV type: ELECTRIC(BOV)"
+      },
+      {
+        "id": "3764a29c4e12267d91859b34157e3e72391bb9bcfcc8bd1ba82e47e37eb102eb",
+        "label": "ACTIVE_COMPLIANT"
+      },
+      {
+        "id": "1eeca252aac9189b9fc503a4d5913a250910c71391b2ead3ffce9ab6c0088f77",
+        "label": "TWO WHEELER · TEMPORARY_ARCHIVE · EV type: ELECTRIC(BOV)"
+      }
+    ],
+    "years": [
+      2018
+    ],
+    "states": [
+      "Karnataka"
+    ],
+    "rtos": [
+      "BAGALKOT RTO KA29",
+      "BASAVAKALYAN ARTO KA56",
+      "BELLARY RTO KA34",
+      "BENGALURU CENTRAL RTO KA1",
+      "BENGALURU EAST RTO KA3",
+      "BENGALURU NORTH RTO KA4",
+      "BENGALURU SOUTH RTO KA5",
+      "BENGALURU WEST RTO KA2",
+      "BIJAPUR RTO KA28",
+      "CHAMARAJANAGAR RTO KA10",
+      "CHANDAPURA, BENGALURU RTO KA59",
+      "CHICKABALLAPUR RTO KA40",
+      "CHIKKODI RTO KA23",
+      "CHITRADURGA RTO KA16",
+      "DANDELI ARTO KA65",
+      "DAVANAGERE RTO KA17",
+      "DHARWAD EAST RTO KA63",
+      "DHARWAD WEST RTO KA25",
+      "ELECTRONIC CITY RTO KA51",
+      "GADAG RTO KA26",
+      "GOKAK ARTO KA49",
+      "HASSAN RTO KA13",
+      "HAVERI RTO KA27",
+      "HONNAVAR ARTO KA47",
+      "HOSPET RTO KA35",
+      "HUNSUR ARTO KA45",
+      "JNANABHARATHI RTO KA41",
+      "KALABURAGI RTO KA32",
+      "KOLAR RTO KA7",
+      "KOPPAL RTO KA37",
+      "KRISHNARAJAPURAM RTO KA53",
+      "MANDYA RTO KA11",
+      "MANGALORE RTO KA19",
+      "MYSURU EAST RTO KA55",
+      "MYSURU WEST RTO KA9",
+      "NELAMANGALA RTO KA52"
+    ],
+    "summary": {
+      "rows": 80,
+      "makers": 10,
+      "offices": 36,
+      "updatedAt": "2026-10-16T12:44:08.654183+00:00"
+    },
+    "runningJobs": 3,
+    "updatePaused": false,
+    "coverage": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "lastSaved": {
+      "datasetId": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "years": [
+        2018
+      ],
+      "states": [
+        "Karnataka"
+      ],
+      "rtos": [
+        "NELAMANGALA RTO - KA52"
+      ],
+      "status": "added",
+      "savedAt": "2026-10-16T12:44:08.654183+00:00",
+      "observedAt": "2026-10-16T12:44:08.361000+00:00",
+      "manufacturerRows": 2,
+      "newRows": 2,
+      "newMonthValues": 24,
+      "updatedMonthValues": 0,
+      "alreadySavedMonthValues": 0,
+      "conflicts": 0
+    },
+    "offset": 0,
+    "limit": 100
+  }
+}

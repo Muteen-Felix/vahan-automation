@@ -1,0 +1,29 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-t45b-965a-20261016t085232",
+    "exec",
+    "-T",
+    "postgres",
+    "psql",
+    "-U",
+    "vahan",
+    "-d",
+    "vahan",
+    "-XAt",
+    "-v",
+    "ON_ERROR_STOP=1",
+    "-c",
+    "SELECT json_object_agg(key,value) FROM app_settings WHERE key LIKE 'automatic-report-schedule:%'"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-t45b-965a-baseline-o786mjjo",
+  "startedAt": "2026-10-16T09:13:00.034807+00:00",
+  "finishedAt": "2026-10-16T09:13:00.238375+00:00",
+  "exitCode": 0,
+  "log": "t45b-schedules-before.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

@@ -1,0 +1,57 @@
+{
+  "at": "2026-10-16T13:46:44.958330+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "allowed": true,
+    "preflightId": "6d686671-e256-46c4-a4aa-3c06140ffcf8",
+    "revision": 1,
+    "versionId": "f10ff4e4-ba93-4d0b-bdd1-9eb941a642b6",
+    "reports": [
+      {
+        "status": "PASS",
+        "allowed": true,
+        "blocked": false,
+        "checkId": "05081239-a269-47be-976a-d46156e12419",
+        "repairs": [],
+        "reports": [],
+        "revision": 1,
+        "runnerId": "worker-c4a49ba5-de1b-4615-894a-f4ec95a7a349",
+        "checkedAt": "2026-10-16T13:46:38.341Z",
+        "versionId": "f10ff4e4-ba93-4d0b-bdd1-9eb941a642b6",
+        "errorCount": 0,
+        "dataChanges": [],
+        "attempts": 1
+      },
+      {
+        "status": "PASS",
+        "allowed": true,
+        "blocked": false,
+        "checkId": "b690c834-e2c3-4466-9dbd-d39fbe0ce7dc",
+        "repairs": [],
+        "reports": [],
+        "revision": 1,
+        "runnerId": "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a",
+        "checkedAt": "2026-10-16T13:46:39.195Z",
+        "versionId": "f10ff4e4-ba93-4d0b-bdd1-9eb941a642b6",
+        "errorCount": 0,
+        "dataChanges": [],
+        "attempts": 1
+      },
+      {
+        "status": "PASS",
+        "allowed": true,
+        "blocked": false,
+        "checkId": "1473b09f-72ce-495f-8b5e-c0e100b17d45",
+        "repairs": [],
+        "reports": [],
+        "revision": 1,
+        "runnerId": "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+        "checkedAt": "2026-10-16T13:46:44.922Z",
+        "versionId": "f10ff4e4-ba93-4d0b-bdd1-9eb941a642b6",
+        "errorCount": 0,
+        "dataChanges": [],
+        "attempts": 1
+      }
+    ]
+  }
+}

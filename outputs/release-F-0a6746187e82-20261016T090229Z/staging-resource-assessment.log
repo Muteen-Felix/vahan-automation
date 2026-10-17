@@ -1,0 +1,10 @@
+Server worker capacity assessment (automatic target: 20)
+  Server CPU: 12 logical cores
+  Docker Engine: 12 vCPU, 7.55 GiB RAM
+  Host RAM: 15.58 GiB total, 5.55 GiB available
+  Current runners: 0
+  Planning budget per runner: 1.10 GiB RAM, 1.50 CPU
+  Server capacity limits: CPU=6, available RAM=3, automatic target=20
+  Host RAM has headroom for at least one more runner.
+  Recommended: 3 runner(s).
+

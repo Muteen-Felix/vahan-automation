@@ -1,0 +1,149 @@
+;
+; Archive created at 2026-10-16 09:13:00 UTC
+;     dbname: vahan
+;     TOC Entries: 138
+;     Compression: gzip
+;     Dump Version: 1.16-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 17.7 (Debian 17.7-3.pgdg12+1)
+;     Dumped by pg_dump version: 17.7 (Debian 17.7-3.pgdg12+1)
+;
+;
+; Selected TOC Entries:
+;
+217; 1259 16385 TABLE public alembic_version vahan
+219; 1259 16397 TABLE public app_settings vahan
+222; 1259 16419 TABLE public audit_events vahan
+223; 1259 16428 TABLE public auth_sessions vahan
+236; 1259 16718 TABLE public batch_queue_sessions vahan
+237; 1259 16734 TABLE public batch_queue_tasks vahan
+221; 1259 16412 TABLE public browser_states vahan
+238; 1259 16756 TABLE public filter_profiles vahan
+228; 1259 16497 TABLE public job_events vahan
+226; 1259 16461 TABLE public jobs vahan
+230; 1259 16630 TABLE public main_reports vahan
+232; 1259 16655 TABLE public maker_global_reports vahan
+233; 1259 16671 TABLE public maker_office_index vahan
+234; 1259 16686 TABLE public maker_update_runs vahan
+235; 1259 16700 TABLE public maker_update_tasks vahan
+224; 1259 16439 TABLE public report_sessions vahan
+231; 1259 16640 TABLE public report_update_history vahan
+239; 1259 16769 TABLE public runner_planning_leases vahan
+227; 1259 16483 TABLE public runners vahan
+229; 1259 16510 TABLE public stored_files vahan
+240; 1259 16784 TABLE public ui_contract_versions vahan
+220; 1259 16404 TABLE public ui_health_checks vahan
+241; 1259 16795 TABLE public ui_preflight_checks vahan
+225; 1259 16449 TABLE public user_state vahan
+218; 1259 16390 TABLE public users vahan
+3566; 0 16385 TABLE DATA public alembic_version vahan
+3568; 0 16397 TABLE DATA public app_settings vahan
+3571; 0 16419 TABLE DATA public audit_events vahan
+3572; 0 16428 TABLE DATA public auth_sessions vahan
+3585; 0 16718 TABLE DATA public batch_queue_sessions vahan
+3586; 0 16734 TABLE DATA public batch_queue_tasks vahan
+3570; 0 16412 TABLE DATA public browser_states vahan
+3587; 0 16756 TABLE DATA public filter_profiles vahan
+3577; 0 16497 TABLE DATA public job_events vahan
+3575; 0 16461 TABLE DATA public jobs vahan
+3579; 0 16630 TABLE DATA public main_reports vahan
+3581; 0 16655 TABLE DATA public maker_global_reports vahan
+3582; 0 16671 TABLE DATA public maker_office_index vahan
+3583; 0 16686 TABLE DATA public maker_update_runs vahan
+3584; 0 16700 TABLE DATA public maker_update_tasks vahan
+3573; 0 16439 TABLE DATA public report_sessions vahan
+3580; 0 16640 TABLE DATA public report_update_history vahan
+3588; 0 16769 TABLE DATA public runner_planning_leases vahan
+3576; 0 16483 TABLE DATA public runners vahan
+3578; 0 16510 TABLE DATA public stored_files vahan
+3589; 0 16784 TABLE DATA public ui_contract_versions vahan
+3569; 0 16404 TABLE DATA public ui_health_checks vahan
+3590; 0 16795 TABLE DATA public ui_preflight_checks vahan
+3574; 0 16449 TABLE DATA public user_state vahan
+3567; 0 16390 TABLE DATA public users vahan
+3308; 2606 16389 CONSTRAINT public alembic_version alembic_version_pkc vahan
+3312; 2606 16403 CONSTRAINT public app_settings app_settings_pkey vahan
+3319; 2606 16425 CONSTRAINT public audit_events audit_events_pkey vahan
+3323; 2606 16432 CONSTRAINT public auth_sessions auth_sessions_pkey vahan
+3378; 2606 16722 CONSTRAINT public batch_queue_sessions batch_queue_sessions_pkey vahan
+3381; 2606 16740 CONSTRAINT public batch_queue_tasks batch_queue_tasks_pkey vahan
+3317; 2606 16418 CONSTRAINT public browser_states browser_states_pkey vahan
+3386; 2606 16762 CONSTRAINT public filter_profiles filter_profiles_pkey vahan
+3342; 2606 16503 CONSTRAINT public job_events job_events_pkey vahan
+3335; 2606 16467 CONSTRAINT public jobs jobs_pkey vahan
+3353; 2606 16636 CONSTRAINT public main_reports main_reports_pkey vahan
+3362; 2606 16661 CONSTRAINT public maker_global_reports maker_global_reports_pkey vahan
+3369; 2606 16677 CONSTRAINT public maker_office_index maker_office_index_pkey vahan
+3373; 2606 16692 CONSTRAINT public maker_update_runs maker_update_runs_pkey vahan
+3376; 2606 16706 CONSTRAINT public maker_update_tasks maker_update_tasks_pkey vahan
+3326; 2606 16443 CONSTRAINT public report_sessions report_sessions_pkey vahan
+3358; 2606 16646 CONSTRAINT public report_update_history report_update_history_pkey vahan
+3389; 2606 16773 CONSTRAINT public runner_planning_leases runner_planning_leases_pkey vahan
+3337; 2606 16489 CONSTRAINT public runners runners_pkey vahan
+3339; 2606 16491 CONSTRAINT public runners runners_socket_id_key vahan
+3347; 2606 16516 CONSTRAINT public stored_files stored_files_pkey vahan
+3391; 2606 16794 CONSTRAINT public ui_contract_versions ui_contract_versions_fingerprint_key vahan
+3393; 2606 16790 CONSTRAINT public ui_contract_versions ui_contract_versions_pkey vahan
+3395; 2606 16792 CONSTRAINT public ui_contract_versions ui_contract_versions_revision_key vahan
+3315; 2606 16410 CONSTRAINT public ui_health_checks ui_health_checks_pkey vahan
+3397; 2606 16801 CONSTRAINT public ui_preflight_checks ui_preflight_checks_pkey vahan
+3349; 2606 16518 CONSTRAINT public stored_files uq_job_file vahan
+3364; 2606 16663 CONSTRAINT public maker_global_reports uq_maker_global_scope_year_maker vahan
+3328; 2606 16455 CONSTRAINT public user_state user_state_pkey vahan
+3310; 2606 16396 CONSTRAINT public users users_pkey vahan
+3320; 1259 16426 INDEX public ix_audit_events_actor vahan
+3321; 1259 16427 INDEX public ix_audit_events_event vahan
+3324; 1259 16438 INDEX public ix_auth_sessions_username vahan
+3382; 1259 16752 INDEX public ix_batch_queue_claim vahan
+3383; 1259 16753 INDEX public ix_batch_queue_job vahan
+3379; 1259 16733 INDEX public ix_batch_queue_sessions_owner_username vahan
+3384; 1259 16751 INDEX public ix_batch_queue_tasks_status vahan
+3387; 1259 16768 INDEX public ix_filter_profiles_owner_username vahan
+3340; 1259 16509 INDEX public ix_job_events_job_id vahan
+3329; 1259 16478 INDEX public ix_jobs_filters_gin vahan
+3330; 1259 16479 INDEX public ix_jobs_owner_username vahan
+3331; 1259 16482 INDEX public ix_jobs_runner_id vahan
+3332; 1259 16481 INDEX public ix_jobs_session_id vahan
+3333; 1259 16480 INDEX public ix_jobs_status vahan
+3350; 1259 16638 INDEX public ix_main_reports_scope_key vahan
+3351; 1259 16639 INDEX public ix_main_reports_year vahan
+3359; 1259 16669 INDEX public ix_maker_global_reports_scope_key vahan
+3360; 1259 16670 INDEX public ix_maker_global_reports_year vahan
+3365; 1259 16683 INDEX public ix_maker_office_index_scope_key vahan
+3366; 1259 16684 INDEX public ix_maker_office_index_year vahan
+3367; 1259 16685 INDEX public ix_maker_office_lookup vahan
+3370; 1259 16698 INDEX public ix_maker_update_runs_owner_username vahan
+3371; 1259 16699 INDEX public ix_maker_update_runs_scope_key vahan
+3374; 1259 16717 INDEX public ix_maker_update_tasks_run_id vahan
+3354; 1259 16654 INDEX public ix_report_update_history_imported_at vahan
+3355; 1259 16652 INDEX public ix_report_update_history_owner_key vahan
+3356; 1259 16653 INDEX public ix_report_update_history_scope_key vahan
+3343; 1259 16531 INDEX public ix_stored_files_job_id vahan
+3344; 1259 16530 INDEX public ix_stored_files_owner_username vahan
+3345; 1259 16529 INDEX public ix_stored_files_sha256 vahan
+3313; 1259 16411 INDEX public ix_ui_health_checks_check_date vahan
+3398; 2606 16433 FK CONSTRAINT public auth_sessions auth_sessions_username_fkey vahan
+3413; 2606 16728 FK CONSTRAINT public batch_queue_sessions batch_queue_sessions_owner_username_fkey vahan
+3414; 2606 16723 FK CONSTRAINT public batch_queue_sessions batch_queue_sessions_session_id_fkey vahan
+3415; 2606 16746 FK CONSTRAINT public batch_queue_tasks batch_queue_tasks_job_id_fkey vahan
+3416; 2606 16741 FK CONSTRAINT public batch_queue_tasks batch_queue_tasks_session_id_fkey vahan
+3417; 2606 16763 FK CONSTRAINT public filter_profiles filter_profiles_owner_username_fkey vahan
+3404; 2606 16504 FK CONSTRAINT public job_events job_events_job_id_fkey vahan
+3401; 2606 16468 FK CONSTRAINT public jobs jobs_owner_username_fkey vahan
+3402; 2606 16473 FK CONSTRAINT public jobs jobs_session_id_fkey vahan
+3408; 2606 16664 FK CONSTRAINT public maker_global_reports maker_global_reports_source_job_id_fkey vahan
+3409; 2606 16678 FK CONSTRAINT public maker_office_index maker_office_index_source_job_id_fkey vahan
+3410; 2606 16693 FK CONSTRAINT public maker_update_runs maker_update_runs_owner_username_fkey vahan
+3411; 2606 16712 FK CONSTRAINT public maker_update_tasks maker_update_tasks_job_id_fkey vahan
+3412; 2606 16707 FK CONSTRAINT public maker_update_tasks maker_update_tasks_run_id_fkey vahan
+3399; 2606 16444 FK CONSTRAINT public report_sessions report_sessions_owner_username_fkey vahan
+3407; 2606 16647 FK CONSTRAINT public report_update_history report_update_history_job_id_fkey vahan
+3418; 2606 16779 FK CONSTRAINT public runner_planning_leases runner_planning_leases_owner_username_fkey vahan
+3419; 2606 16774 FK CONSTRAINT public runner_planning_leases runner_planning_leases_runner_id_fkey vahan
+3403; 2606 16492 FK CONSTRAINT public runners runners_current_job_id_fkey vahan
+3405; 2606 16524 FK CONSTRAINT public stored_files stored_files_job_id_fkey vahan
+3406; 2606 16519 FK CONSTRAINT public stored_files stored_files_owner_username_fkey vahan
+3420; 2606 16802 FK CONSTRAINT public ui_preflight_checks ui_preflight_checks_owner_username_fkey vahan
+3400; 2606 16456 FK CONSTRAINT public user_state user_state_username_fkey vahan

@@ -1,0 +1,15 @@
+{
+  "command": [
+    "C:\\Users\\huyvv12\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "scripts/run-docker.py",
+    "--no-build",
+    "--workers",
+    "3"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-d3-0a67-staging-p0kyko6t",
+  "startedAt": "2026-10-16T09:18:26.628020+00:00",
+  "finishedAt": "2026-10-16T09:18:54.591147+00:00",
+  "exitCode": 0,
+  "log": "staging-launcher.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

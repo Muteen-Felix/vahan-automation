@@ -1,0 +1,72 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "checkedAt": "2026-10-16T09:19:10.049028+00:00",
+  "status": "PASS",
+  "scope": "Pre-D3 HTTPS navigation only using the real packaged Chromium sandbox. No CAPTCHA submitted, report collected, UI Health preflight invoked or D3 result claimed. TLS verification remains enabled.",
+  "checks": [
+    {
+      "runnerContainer": "ba6e56cf4371",
+      "status": "PASS",
+      "result": {
+        "uid": 1000,
+        "chromium": "153.0.8010.12",
+        "sandbox": true,
+        "ocr": {
+          "passed": true,
+          "input": "synthetic six-character text",
+          "transport": "stdin",
+          "rawOutputLogged": false
+        },
+        "liveVahan": {
+          "status": 200,
+          "title": "Welcome to Data Analytics Portal",
+          "url": "https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en",
+          "note": "Navigation only; this does not prove a valid CAPTCHA submission or report download."
+        }
+      }
+    },
+    {
+      "runnerContainer": "3568d4c7ebe7",
+      "status": "PASS",
+      "result": {
+        "uid": 1000,
+        "chromium": "153.0.8010.12",
+        "sandbox": true,
+        "ocr": {
+          "passed": true,
+          "input": "synthetic six-character text",
+          "transport": "stdin",
+          "rawOutputLogged": false
+        },
+        "liveVahan": {
+          "status": 200,
+          "title": "Welcome to Data Analytics Portal",
+          "url": "https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en",
+          "note": "Navigation only; this does not prove a valid CAPTCHA submission or report download."
+        }
+      }
+    },
+    {
+      "runnerContainer": "8c2a381edf57",
+      "status": "PASS",
+      "result": {
+        "uid": 1000,
+        "chromium": "153.0.8010.12",
+        "sandbox": true,
+        "ocr": {
+          "passed": true,
+          "input": "synthetic six-character text",
+          "transport": "stdin",
+          "rawOutputLogged": false
+        },
+        "liveVahan": {
+          "status": 200,
+          "title": "Welcome to Data Analytics Portal",
+          "url": "https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en",
+          "note": "Navigation only; this does not prove a valid CAPTCHA submission or report download."
+        }
+      }
+    }
+  ],
+  "D3": "NOT_RUN"
+}

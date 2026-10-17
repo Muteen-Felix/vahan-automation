@@ -1,0 +1,13 @@
+{
+  "command": [
+    "git",
+    "rev-parse",
+    "origin/release/pre-go-live"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-release-F-clean-20261016T090229Z",
+  "startedAt": "2026-10-16T09:09:04.322826+00:00",
+  "finishedAt": "2026-10-16T09:09:04.401070+00:00",
+  "exitCode": 0,
+  "log": "remote-head.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

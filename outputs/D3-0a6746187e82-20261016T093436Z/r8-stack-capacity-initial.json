@@ -1,0 +1,52 @@
+{
+  "startedAt": "2026-10-16T12:44:10.690059+00:00",
+  "finishedAt": "2026-10-16T12:44:10.710699+00:00",
+  "method": "GET",
+  "path": "/api/worker-pool",
+  "status": 200,
+  "headers": {
+    "Server": "nginx",
+    "Date": "Fri, 16 Oct 2026 12:44:10 GMT",
+    "Content-Type": "application/json",
+    "Content-Length": "447",
+    "Connection": "close",
+    "vary": "Origin",
+    "cache-control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+  },
+  "body": {
+    "enabled": true,
+    "mode": "logical",
+    "phase": "ready",
+    "desiredCount": 3,
+    "runningCount": 3,
+    "activeCount": 3,
+    "workers": [
+      {
+        "number": 1,
+        "runnerId": "worker-0fc9567e-cc93-4917-8fff-0026bb2a083e",
+        "running": true,
+        "enabled": true,
+        "busy": true
+      },
+      {
+        "number": 2,
+        "runnerId": "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+        "running": true,
+        "enabled": true,
+        "busy": true
+      },
+      {
+        "number": 3,
+        "runnerId": "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a",
+        "running": true,
+        "enabled": true,
+        "busy": true
+      }
+    ]
+  }
+}

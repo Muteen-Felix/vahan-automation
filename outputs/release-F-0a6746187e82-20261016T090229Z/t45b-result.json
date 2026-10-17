@@ -1,0 +1,21 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "baselineSha": "2bc878eed2640c3f6560657afee49aef5b956cf5",
+  "finishedAt": "2026-10-16T09:13:56.958136+00:00",
+  "status": "PASS",
+  "baselineRevision": "0012_auth_session_limits",
+  "finalRevision": "0016_state_revision_gate_gen",
+  "allTenBusinessTableCountsAndContentsPreserved": true,
+  "onceMonthlyUnchanged": true,
+  "dailyRemoved": 1,
+  "dailyRunHistoryPreserved": true,
+  "idempotency": "PASS",
+  "backupRestore": "PASS",
+  "runtimeRole": "PASS",
+  "scope": "Newly built baseline with labelled synthetic persistent upgrade dataset, not historical test results or real VAHAN evidence",
+  "legacyWorkerActivation": "NOT_RUN: no live VAHAN execution before D3",
+  "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+  "credentialFailureSafety": "PASS",
+  "installedImageIdentity": "PASS",
+  "legacyWorkerStartup": "PASS: 9999 saved; one actual runner as selected"
+}

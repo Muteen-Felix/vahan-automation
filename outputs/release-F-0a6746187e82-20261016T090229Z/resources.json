@@ -1,0 +1,13 @@
+{
+  "command": [
+    "C:\\Users\\huyvv12\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "scripts/run-docker.py",
+    "--assess-only"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-release-F-clean-20261016T090229Z",
+  "startedAt": "2026-10-16T09:09:06.278544+00:00",
+  "finishedAt": "2026-10-16T09:09:07.113777+00:00",
+  "exitCode": 0,
+  "log": "resources.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

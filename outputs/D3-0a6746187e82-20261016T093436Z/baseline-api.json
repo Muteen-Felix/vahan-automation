@@ -1,0 +1,691 @@
+{
+  "createMember": {
+    "startedAt": "2026-10-16T12:33:48.989981+00:00",
+    "finishedAt": "2026-10-16T12:33:49.175724+00:00",
+    "method": "POST",
+    "path": "/api/users",
+    "status": 201,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "60",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "username": "d3-member-20261016",
+      "role": "user",
+      "profile": {}
+    }
+  },
+  "memberLogin": {
+    "startedAt": "2026-10-16T12:33:49.177406+00:00",
+    "finishedAt": "2026-10-16T12:33:49.329110+00:00",
+    "method": "POST",
+    "path": "/api/auth/login",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "409",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "pragma": "no-cache",
+      "vary": "Origin",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "accessToken": "[REDACTED]",
+      "tokenType": "Bearer",
+      "expiresIn": 43200,
+      "idleTimeoutSeconds": 3600,
+      "expiresAt": 1792197229,
+      "idleExpiresAt": 1792157629,
+      "username": "d3-member-20261016"
+    }
+  },
+  "memberMe": {
+    "startedAt": "2026-10-16T12:33:49.329761+00:00",
+    "finishedAt": "2026-10-16T12:33:49.360223+00:00",
+    "method": "GET",
+    "path": "/api/auth/me",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "97",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "username": "d3-member-20261016",
+      "role": "user",
+      "expiresAt": 1792197229,
+      "idleExpiresAt": 1792157629
+    }
+  },
+  "memberDenied/api/users": {
+    "startedAt": "2026-10-16T12:33:49.361843+00:00",
+    "finishedAt": "2026-10-16T12:33:49.393484+00:00",
+    "method": "GET",
+    "path": "/api/users",
+    "status": 403,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "67",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Bạn không có quyền truy cập chức năng này."
+    }
+  },
+  "memberDenied/api/audit": {
+    "startedAt": "2026-10-16T12:33:49.397219+00:00",
+    "finishedAt": "2026-10-16T12:33:49.404889+00:00",
+    "method": "GET",
+    "path": "/api/audit",
+    "status": 403,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "67",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Bạn không có quyền truy cập chức năng này."
+    }
+  },
+  "memberDenied/api/run-schedules": {
+    "startedAt": "2026-10-16T12:33:49.405986+00:00",
+    "finishedAt": "2026-10-16T12:33:49.412351+00:00",
+    "method": "GET",
+    "path": "/api/run-schedules",
+    "status": 403,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "67",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Bạn không có quyền truy cập chức năng này."
+    }
+  },
+  "memberDenied/api/worker-pool": {
+    "startedAt": "2026-10-16T12:33:49.415438+00:00",
+    "finishedAt": "2026-10-16T12:33:49.434596+00:00",
+    "method": "GET",
+    "path": "/api/worker-pool",
+    "status": 403,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "67",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Bạn không có quyền truy cập chức năng này."
+    }
+  },
+  "memberDenied/api/annual-reports/run-history": {
+    "startedAt": "2026-10-16T12:33:49.436399+00:00",
+    "finishedAt": "2026-10-16T12:33:49.468553+00:00",
+    "method": "GET",
+    "path": "/api/annual-reports/run-history",
+    "status": 403,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "67",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Bạn không có quyền truy cập chức năng này."
+    }
+  },
+  "memberRead": {
+    "startedAt": "2026-10-16T12:33:49.470685+00:00",
+    "finishedAt": "2026-10-16T12:33:49.527133+00:00",
+    "method": "GET",
+    "path": "/api/annual-reports",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "237",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "year": 2026,
+      "datasetId": "",
+      "datasets": [],
+      "years": [],
+      "states": [],
+      "rtos": [],
+      "summary": {
+        "rows": 0,
+        "makers": 0,
+        "offices": 0,
+        "updatedAt": null
+      },
+      "runningJobs": 0,
+      "updatePaused": false,
+      "coverage": [],
+      "lastSaved": null,
+      "offset": 0,
+      "limit": 100,
+      "rows": []
+    }
+  },
+  "memberLogout": {
+    "startedAt": "2026-10-16T12:33:49.531003+00:00",
+    "finishedAt": "2026-10-16T12:33:49.565753+00:00",
+    "method": "POST",
+    "path": "/api/auth/logout",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "11",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "ok": true
+    }
+  },
+  "memberRevoked": {
+    "startedAt": "2026-10-16T12:33:49.567354+00:00",
+    "finishedAt": "2026-10-16T12:33:49.597136+00:00",
+    "method": "GET",
+    "path": "/api/auth/me",
+    "status": 401,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "64",
+      "Connection": "close",
+      "www-authenticate": "Bearer",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Authentication required or access token is invalid."
+    }
+  },
+  "adminLogout": {
+    "startedAt": "2026-10-16T12:33:49.758030+00:00",
+    "finishedAt": "2026-10-16T12:33:49.782865+00:00",
+    "method": "POST",
+    "path": "/api/auth/logout",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "11",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "ok": true
+    }
+  },
+  "adminRevoked": {
+    "startedAt": "2026-10-16T12:33:49.784633+00:00",
+    "finishedAt": "2026-10-16T12:33:49.805076+00:00",
+    "method": "GET",
+    "path": "/api/auth/me",
+    "status": 401,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:49 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "64",
+      "Connection": "close",
+      "www-authenticate": "Bearer",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Authentication required or access token is invalid."
+    }
+  },
+  "persistenceMarker": {
+    "startedAt": "2026-10-16T12:33:49.968298+00:00",
+    "finishedAt": "2026-10-16T12:33:50.015984+00:00",
+    "method": "PUT",
+    "path": "/api/user-state/d3-persistence",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:50 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "11",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "ok": true
+    }
+  },
+  "before/api/user-state": {
+    "startedAt": "2026-10-16T12:33:50.018345+00:00",
+    "finishedAt": "2026-10-16T12:33:50.057666+00:00",
+    "method": "GET",
+    "path": "/api/user-state",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:50 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "116",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "d3-persistence": {
+        "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+        "createdAt": "2026-10-16T12:33:48.989981+00:00"
+      }
+    }
+  },
+  "before/api/users": {
+    "startedAt": "2026-10-16T12:33:50.059735+00:00",
+    "finishedAt": "2026-10-16T12:33:50.085862+00:00",
+    "method": "GET",
+    "path": "/api/users",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:50 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "362",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": [
+      {
+        "username": "admin",
+        "role": "admin",
+        "active": true,
+        "profile": {},
+        "created_at": "2026-10-16T09:18:39.659802+00:00"
+      },
+      {
+        "username": "smoke-member-4c3a9f4d",
+        "role": "user",
+        "active": false,
+        "profile": {},
+        "created_at": "2026-10-16T09:18:55.156072+00:00"
+      },
+      {
+        "username": "d3-member-20261016",
+        "role": "user",
+        "active": true,
+        "profile": {},
+        "created_at": "2026-10-16T12:33:49.166735+00:00"
+      }
+    ]
+  },
+  "before/api/run-schedules": {
+    "startedAt": "2026-10-16T12:33:50.092011+00:00",
+    "finishedAt": "2026-10-16T12:33:50.128001+00:00",
+    "method": "GET",
+    "path": "/api/run-schedules",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:50 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "2",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": []
+  },
+  "before/api/annual-reports/run-history": {
+    "startedAt": "2026-10-16T12:33:50.129766+00:00",
+    "finishedAt": "2026-10-16T12:33:50.166063+00:00",
+    "method": "GET",
+    "path": "/api/annual-reports/run-history",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:50 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "43",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "total": 0,
+      "offset": 0,
+      "limit": 50,
+      "runs": []
+    }
+  },
+  "after/api/user-state": {
+    "startedAt": "2026-10-16T12:33:53.710144+00:00",
+    "finishedAt": "2026-10-16T12:33:53.765628+00:00",
+    "method": "GET",
+    "path": "/api/user-state",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:53 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "116",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "d3-persistence": {
+        "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+        "createdAt": "2026-10-16T12:33:48.989981+00:00"
+      }
+    }
+  },
+  "after/api/users": {
+    "startedAt": "2026-10-16T12:33:53.768236+00:00",
+    "finishedAt": "2026-10-16T12:33:53.776787+00:00",
+    "method": "GET",
+    "path": "/api/users",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:53 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "362",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": [
+      {
+        "username": "admin",
+        "role": "admin",
+        "active": true,
+        "profile": {},
+        "created_at": "2026-10-16T09:18:39.659802+00:00"
+      },
+      {
+        "username": "smoke-member-4c3a9f4d",
+        "role": "user",
+        "active": false,
+        "profile": {},
+        "created_at": "2026-10-16T09:18:55.156072+00:00"
+      },
+      {
+        "username": "d3-member-20261016",
+        "role": "user",
+        "active": true,
+        "profile": {},
+        "created_at": "2026-10-16T12:33:49.166735+00:00"
+      }
+    ]
+  },
+  "after/api/run-schedules": {
+    "startedAt": "2026-10-16T12:33:53.778969+00:00",
+    "finishedAt": "2026-10-16T12:33:53.802521+00:00",
+    "method": "GET",
+    "path": "/api/run-schedules",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:53 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "2",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": []
+  },
+  "after/api/annual-reports/run-history": {
+    "startedAt": "2026-10-16T12:33:53.804987+00:00",
+    "finishedAt": "2026-10-16T12:33:53.853433+00:00",
+    "method": "GET",
+    "path": "/api/annual-reports/run-history",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:53 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "43",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "total": 0,
+      "offset": 0,
+      "limit": 50,
+      "runs": []
+    }
+  },
+  "sameAdminSessionAfterRestart": {
+    "startedAt": "2026-10-16T12:33:53.855452+00:00",
+    "finishedAt": "2026-10-16T12:33:53.863500+00:00",
+    "method": "GET",
+    "path": "/api/auth/me",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:53 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "85",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "username": "admin",
+      "role": "admin",
+      "expiresAt": 1792197229,
+      "idleExpiresAt": 1792157629
+    }
+  },
+  "runners": {
+    "startedAt": "2026-10-16T12:33:53.868095+00:00",
+    "finishedAt": "2026-10-16T12:33:53.909111+00:00",
+    "method": "GET",
+    "path": "/api/runners",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:53 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "2",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": []
+  },
+  "preflightAfterRestart": {
+    "startedAt": "2026-10-16T12:33:53.911341+00:00",
+    "finishedAt": "2026-10-16T12:33:53.944972+00:00",
+    "method": "POST",
+    "path": "/api/ui-health/preflight",
+    "status": 422,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:33:53 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "197",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": [
+        {
+          "type": "too_short",
+          "loc": [
+            "body",
+            "runnerIds"
+          ],
+          "msg": "List should have at least 1 item after validation, not 0",
+          "input": [],
+          "ctx": {
+            "field_type": "List",
+            "min_length": 1,
+            "actual_length": 0
+          }
+        }
+      ]
+    }
+  }
+}

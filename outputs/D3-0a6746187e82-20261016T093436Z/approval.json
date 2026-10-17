@@ -1,0 +1,13 @@
+{
+  "approvedAtRecorded": "2026-10-16T09:37:12.845449+00:00",
+  "userReply": "Chốt gói và bắt đầu D3",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+  "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+  "staging": "http://127.0.0.1:15187",
+  "constraints": [
+    "Staging and real VAHAN only",
+    "No source changes or artifact rebuild during D3",
+    "Stop and report if source/artifact change is needed"
+  ]
+}

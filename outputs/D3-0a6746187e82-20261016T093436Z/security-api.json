@@ -1,0 +1,619 @@
+{
+  "/api/maker-updates": {
+    "startedAt": "2026-10-16T12:35:40.083061+00:00",
+    "finishedAt": "2026-10-16T12:35:40.103933+00:00",
+    "method": "GET",
+    "path": "/api/maker-updates",
+    "status": 404,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "22",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Not Found"
+    }
+  },
+  "/api/ui-health/schedule": {
+    "startedAt": "2026-10-16T12:35:40.107100+00:00",
+    "finishedAt": "2026-10-16T12:35:40.137376+00:00",
+    "method": "GET",
+    "path": "/api/ui-health/schedule",
+    "status": 404,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "22",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Not Found"
+    }
+  },
+  "/api/ui-health/run-now": {
+    "startedAt": "2026-10-16T12:35:40.140434+00:00",
+    "finishedAt": "2026-10-16T12:35:40.179418+00:00",
+    "method": "POST",
+    "path": "/api/ui-health/run-now",
+    "status": 404,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "22",
+      "Connection": "close",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Not Found"
+    }
+  },
+  "jobsBefore": {
+    "startedAt": "2026-10-16T12:35:40.182686+00:00",
+    "finishedAt": "2026-10-16T12:35:40.196579+00:00",
+    "method": "GET",
+    "path": "/api/jobs",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "2",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": []
+  },
+  "updateKindGLOBAL": {
+    "startedAt": "2026-10-16T12:35:40.196579+00:00",
+    "finishedAt": "2026-10-16T12:35:40.207762+00:00",
+    "method": "POST",
+    "path": "/api/jobs",
+    "status": 422,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "239",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": [
+        {
+          "type": "value_error",
+          "loc": [
+            "body"
+          ],
+          "msg": "Value error, Maker Update has been removed. Create a normal report job instead.",
+          "input": {
+            "runnerId": "d3-rejected-no-dispatch",
+            "filters": {},
+            "updateKind": "GLOBAL"
+          },
+          "ctx": {
+            "error": {}
+          }
+        }
+      ]
+    }
+  },
+  "updateKindDISCOVER": {
+    "startedAt": "2026-10-16T12:35:40.208893+00:00",
+    "finishedAt": "2026-10-16T12:35:40.237162+00:00",
+    "method": "POST",
+    "path": "/api/jobs",
+    "status": 422,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "241",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": [
+        {
+          "type": "value_error",
+          "loc": [
+            "body"
+          ],
+          "msg": "Value error, Maker Update has been removed. Create a normal report job instead.",
+          "input": {
+            "runnerId": "d3-rejected-no-dispatch",
+            "filters": {},
+            "updateKind": "DISCOVER"
+          },
+          "ctx": {
+            "error": {}
+          }
+        }
+      ]
+    }
+  },
+  "updateKindREFRESH": {
+    "startedAt": "2026-10-16T12:35:40.238548+00:00",
+    "finishedAt": "2026-10-16T12:35:40.272855+00:00",
+    "method": "POST",
+    "path": "/api/jobs",
+    "status": 422,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "240",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": [
+        {
+          "type": "value_error",
+          "loc": [
+            "body"
+          ],
+          "msg": "Value error, Maker Update has been removed. Create a normal report job instead.",
+          "input": {
+            "runnerId": "d3-rejected-no-dispatch",
+            "filters": {},
+            "updateKind": "REFRESH"
+          },
+          "ctx": {
+            "error": {}
+          }
+        }
+      ]
+    }
+  },
+  "updateRunIdremoved": {
+    "startedAt": "2026-10-16T12:35:40.274663+00:00",
+    "finishedAt": "2026-10-16T12:35:40.284029+00:00",
+    "method": "POST",
+    "path": "/api/jobs",
+    "status": 422,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "241",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": [
+        {
+          "type": "value_error",
+          "loc": [
+            "body"
+          ],
+          "msg": "Value error, Maker Update has been removed. Create a normal report job instead.",
+          "input": {
+            "runnerId": "d3-rejected-no-dispatch",
+            "filters": {},
+            "updateRunId": "removed"
+          },
+          "ctx": {
+            "error": {}
+          }
+        }
+      ]
+    }
+  },
+  "updateTaskIdremoved": {
+    "startedAt": "2026-10-16T12:35:40.285714+00:00",
+    "finishedAt": "2026-10-16T12:35:40.304688+00:00",
+    "method": "POST",
+    "path": "/api/jobs",
+    "status": 422,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "242",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": [
+        {
+          "type": "value_error",
+          "loc": [
+            "body"
+          ],
+          "msg": "Value error, Maker Update has been removed. Create a normal report job instead.",
+          "input": {
+            "runnerId": "d3-rejected-no-dispatch",
+            "filters": {},
+            "updateTaskId": "removed"
+          },
+          "ctx": {
+            "error": {}
+          }
+        }
+      ]
+    }
+  },
+  "update_kindGLOBAL": {
+    "startedAt": "2026-10-16T12:35:40.316518+00:00",
+    "finishedAt": "2026-10-16T12:35:40.345896+00:00",
+    "method": "POST",
+    "path": "/api/jobs",
+    "status": 422,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "240",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": [
+        {
+          "type": "value_error",
+          "loc": [
+            "body"
+          ],
+          "msg": "Value error, Maker Update has been removed. Create a normal report job instead.",
+          "input": {
+            "runnerId": "d3-rejected-no-dispatch",
+            "filters": {},
+            "update_kind": "GLOBAL"
+          },
+          "ctx": {
+            "error": {}
+          }
+        }
+      ]
+    }
+  },
+  "jobsAfter": {
+    "startedAt": "2026-10-16T12:35:40.348470+00:00",
+    "finishedAt": "2026-10-16T12:35:40.378244+00:00",
+    "method": "GET",
+    "path": "/api/jobs",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "2",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": []
+  },
+  "SPA/docs": {
+    "startedAt": "2026-10-16T12:35:40.383085+00:00",
+    "finishedAt": "2026-10-16T12:35:40.388299+00:00",
+    "method": "GET",
+    "path": "/docs",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "text/html",
+      "Content-Length": "471",
+      "Last-Modified": "Fri, 16 Oct 2026 04:12:03 GMT",
+      "Connection": "close",
+      "ETag": "\"6ad1a413-1d7\"",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+      "Cache-Control": "no-cache",
+      "Accept-Ranges": "bytes"
+    },
+    "body": "<!doctype html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <meta charset=\"UTF-8\" />\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\r\n    <meta name=\"theme-color\" content=\"#061a40\" />\r\n    <title>VAHAN Report Automation</title>\r\n    <script type=\"module\" crossorigin src=\"/assets/index-BNd934vZ.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/assets/index-BPDsYSlu.css\">\n  </head>\r\n  <body>\r\n    <div id=\"root\"></div>\r\r\n  </body>\r\n</html>\r\n"
+  },
+  "admin/docs": {
+    "startedAt": "2026-10-16T12:35:40.390570+00:00",
+    "finishedAt": "2026-10-16T12:35:40.397239+00:00",
+    "method": "GET",
+    "path": "/api/docs",
+    "status": 404,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "22",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Not Found"
+    }
+  },
+  "unauth/docs": {
+    "startedAt": "2026-10-16T12:35:40.398923+00:00",
+    "finishedAt": "2026-10-16T12:35:40.420753+00:00",
+    "method": "GET",
+    "path": "/api/docs",
+    "status": 401,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "64",
+      "Connection": "close",
+      "www-authenticate": "Bearer",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Authentication required or access token is invalid."
+    }
+  },
+  "SPA/openapi.json": {
+    "startedAt": "2026-10-16T12:35:40.423722+00:00",
+    "finishedAt": "2026-10-16T12:35:40.448345+00:00",
+    "method": "GET",
+    "path": "/openapi.json",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "text/html",
+      "Content-Length": "471",
+      "Last-Modified": "Fri, 16 Oct 2026 04:12:03 GMT",
+      "Connection": "close",
+      "ETag": "\"6ad1a413-1d7\"",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+      "Cache-Control": "no-cache",
+      "Accept-Ranges": "bytes"
+    },
+    "body": "<!doctype html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <meta charset=\"UTF-8\" />\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\r\n    <meta name=\"theme-color\" content=\"#061a40\" />\r\n    <title>VAHAN Report Automation</title>\r\n    <script type=\"module\" crossorigin src=\"/assets/index-BNd934vZ.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/assets/index-BPDsYSlu.css\">\n  </head>\r\n  <body>\r\n    <div id=\"root\"></div>\r\r\n  </body>\r\n</html>\r\n"
+  },
+  "admin/openapi.json": {
+    "startedAt": "2026-10-16T12:35:40.453000+00:00",
+    "finishedAt": "2026-10-16T12:35:40.483428+00:00",
+    "method": "GET",
+    "path": "/api/openapi.json",
+    "status": 404,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "22",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Not Found"
+    }
+  },
+  "unauth/openapi.json": {
+    "startedAt": "2026-10-16T12:35:40.486276+00:00",
+    "finishedAt": "2026-10-16T12:35:40.512657+00:00",
+    "method": "GET",
+    "path": "/api/openapi.json",
+    "status": 401,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "64",
+      "Connection": "close",
+      "www-authenticate": "Bearer",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Authentication required or access token is invalid."
+    }
+  },
+  "SPA/redoc": {
+    "startedAt": "2026-10-16T12:35:40.516058+00:00",
+    "finishedAt": "2026-10-16T12:35:40.542144+00:00",
+    "method": "GET",
+    "path": "/redoc",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "text/html",
+      "Content-Length": "471",
+      "Last-Modified": "Fri, 16 Oct 2026 04:12:03 GMT",
+      "Connection": "close",
+      "ETag": "\"6ad1a413-1d7\"",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+      "Cache-Control": "no-cache",
+      "Accept-Ranges": "bytes"
+    },
+    "body": "<!doctype html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <meta charset=\"UTF-8\" />\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\r\n    <meta name=\"theme-color\" content=\"#061a40\" />\r\n    <title>VAHAN Report Automation</title>\r\n    <script type=\"module\" crossorigin src=\"/assets/index-BNd934vZ.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/assets/index-BPDsYSlu.css\">\n  </head>\r\n  <body>\r\n    <div id=\"root\"></div>\r\r\n  </body>\r\n</html>\r\n"
+  },
+  "admin/redoc": {
+    "startedAt": "2026-10-16T12:35:40.547283+00:00",
+    "finishedAt": "2026-10-16T12:35:40.554324+00:00",
+    "method": "GET",
+    "path": "/api/redoc",
+    "status": 404,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "22",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Not Found"
+    }
+  },
+  "unauth/redoc": {
+    "startedAt": "2026-10-16T12:35:40.556355+00:00",
+    "finishedAt": "2026-10-16T12:35:40.559736+00:00",
+    "method": "GET",
+    "path": "/api/redoc",
+    "status": 401,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "64",
+      "Connection": "close",
+      "www-authenticate": "Bearer",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Authentication required or access token is invalid."
+    }
+  },
+  "headers/": {
+    "startedAt": "2026-10-16T12:35:40.563926+00:00",
+    "finishedAt": "2026-10-16T12:35:40.589654+00:00",
+    "method": "GET",
+    "path": "/",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "text/html",
+      "Content-Length": "471",
+      "Last-Modified": "Fri, 16 Oct 2026 04:12:03 GMT",
+      "Connection": "close",
+      "ETag": "\"6ad1a413-1d7\"",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+      "Cache-Control": "no-cache",
+      "Accept-Ranges": "bytes"
+    },
+    "body": "<!doctype html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <meta charset=\"UTF-8\" />\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\r\n    <meta name=\"theme-color\" content=\"#061a40\" />\r\n    <title>VAHAN Report Automation</title>\r\n    <script type=\"module\" crossorigin src=\"/assets/index-BNd934vZ.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/assets/index-BPDsYSlu.css\">\n  </head>\r\n  <body>\r\n    <div id=\"root\"></div>\r\r\n  </body>\r\n</html>\r\n"
+  },
+  "headers/api/health": {
+    "startedAt": "2026-10-16T12:35:40.594112+00:00",
+    "finishedAt": "2026-10-16T12:35:40.622542+00:00",
+    "method": "GET",
+    "path": "/api/health",
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 12:35:40 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "15",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "status": "ok"
+    }
+  }
+}

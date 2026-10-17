@@ -1,0 +1,17 @@
+{
+  "command": [
+    "docker",
+    "exec",
+    "--env",
+    "VAHAN_RUNTIME_LIVE_PROBE=1",
+    "8c2a381edf57",
+    "node",
+    "test-container-runtime.mjs"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-d3-0a67-staging-p0kyko6t",
+  "startedAt": "2026-10-16T09:19:06.453307+00:00",
+  "finishedAt": "2026-10-16T09:19:10.047968+00:00",
+  "exitCode": 0,
+  "log": "staging-runner-3-navigation-only.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

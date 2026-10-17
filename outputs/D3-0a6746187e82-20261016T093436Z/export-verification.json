@@ -1,0 +1,96 @@
+{
+  "allNeedsConfirmation": {
+    "startedAt": "2026-10-16T13:30:10.563680+00:00",
+    "finishedAt": "2026-10-16T13:30:10.585619+00:00",
+    "method": "GET",
+    "path": "/api/annual-reports/export?year=2018&dataset=6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+    "status": 409,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:30:10 GMT",
+      "Content-Type": "application/json",
+      "Content-Length": "73",
+      "Connection": "close",
+      "vary": "Origin",
+      "cache-control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "body": {
+      "detail": "Confirm exporting the entire table before downloading Excel."
+    }
+  },
+  "export-all": {
+    "at": "2026-10-16T13:30:11.179786+00:00",
+    "query": {
+      "year": 2018,
+      "dataset": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc"
+    },
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:30:11 GMT",
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Length": "31149",
+      "Connection": "close",
+      "content-disposition": "attachment; filename*=UTF-8''Maker%20Month%20Wise%20Data%20of%20All%20RTOs%2C%20All%20States%20%282018%29.xlsx",
+      "x-report-row-count": "398",
+      "cache-control": "private, no-store",
+      "vary": "Origin",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "apiSummary": {
+      "rows": 398,
+      "makers": 14,
+      "offices": 213,
+      "updatedAt": "2026-10-16T13:29:14.415408+00:00"
+    },
+    "apiRows": 398,
+    "workbookRows": 398,
+    "sha256": "fe0342b1beb4dccb4617b2989372d853765b61766605a62d23e48ba69d5010bc",
+    "allCellsMatchAPI": true
+  },
+  "export-filtered": {
+    "at": "2026-10-16T13:30:11.268318+00:00",
+    "query": {
+      "year": 2018,
+      "dataset": "6e2445eaee7abd81c2a313952869145b85f08d28ddec97cf0a844c2147b3e8dc",
+      "state": "Karnataka",
+      "rto": "BAGALKOT RTO KA29"
+    },
+    "status": 200,
+    "headers": {
+      "Server": "nginx",
+      "Date": "Fri, 16 Oct 2026 13:30:11 GMT",
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Length": "5996",
+      "Connection": "close",
+      "content-disposition": "attachment; filename*=UTF-8''Maker%20Month%20Wise%20Data%20of%20BAGALKOT%20RTO%20-%20KA29%2C%20Karnataka%20%282018%29.xlsx",
+      "x-report-row-count": "2",
+      "cache-control": "private, no-store",
+      "vary": "Origin",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    },
+    "apiSummary": {
+      "rows": 2,
+      "makers": 2,
+      "offices": 1,
+      "updatedAt": "2026-10-16T12:38:10.748745+00:00"
+    },
+    "apiRows": 2,
+    "workbookRows": 2,
+    "sha256": "b43a60e942416bb00e6d7126323f82ae36242202f73e06b0e8bbfdc641cbd339",
+    "allCellsMatchAPI": true
+  }
+}

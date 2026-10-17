@@ -1,0 +1,183 @@
+{
+  "candidateSha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "baselineSha": "2bc878eed2640c3f6560657afee49aef5b956cf5",
+  "checkedAt": "2026-10-16T09:12:58.343304+00:00",
+  "status": "PASS",
+  "report": {
+    "year": 2025,
+    "datasetId": "69b4c3f610f4fe8fc144cceb30f0e47f6d663901794b7388cf1a58e253b2942c",
+    "datasets": [
+      {
+        "id": "69b4c3f610f4fe8fc144cceb30f0e47f6d663901794b7388cf1a58e253b2942c",
+        "label": "TWO WHEELER · ELECTRIC(BOV)"
+      }
+    ],
+    "years": [
+      2025
+    ],
+    "states": [
+      "T45B SYNTHETIC STATE"
+    ],
+    "rtos": [
+      "T45B SYNTHETIC RTO ZZ01"
+    ],
+    "summary": {
+      "rows": 3,
+      "makers": 3,
+      "offices": 1,
+      "updatedAt": "2026-10-16T08:55:25.413920+00:00"
+    },
+    "coverage": [
+      1,
+      2
+    ],
+    "lastSaved": {
+      "datasetId": "69b4c3f610f4fe8fc144cceb30f0e47f6d663901794b7388cf1a58e253b2942c",
+      "years": [
+        2025
+      ],
+      "states": [
+        "T45B SYNTHETIC STATE"
+      ],
+      "rtos": [
+        "T45B SYNTHETIC RTO - ZZ01"
+      ],
+      "status": "added",
+      "savedAt": "2026-10-16T08:55:25.413920+00:00",
+      "observedAt": "2026-10-16T08:55:25.379253+00:00",
+      "manufacturerRows": 3,
+      "newRows": 3,
+      "newMonthValues": 6,
+      "updatedMonthValues": 0,
+      "alreadySavedMonthValues": 0,
+      "conflicts": 0
+    },
+    "offset": 0,
+    "limit": 100,
+    "rows": [
+      {
+        "id": "575772968956cfa84705c504b2c006c928acea53efca9d534d10ebcddb0eaf4e",
+        "state": "T45B SYNTHETIC STATE",
+        "rto": "T45B SYNTHETIC RTO",
+        "rto_code": "ZZ01",
+        "maker": "T45B SYNTHETIC MAKER 1",
+        "year": 2025,
+        "created_at": "2026-10-16T08:55:25.413920+00:00",
+        "updated_at": "2026-10-16T08:55:25.413920+00:00",
+        "months": [
+          10,
+          20,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "id": "0e74f571c3fcc0042071aad35fc7d0e010f9c9bcb99d557e057b3cefbd9370e7",
+        "state": "T45B SYNTHETIC STATE",
+        "rto": "T45B SYNTHETIC RTO",
+        "rto_code": "ZZ01",
+        "maker": "T45B SYNTHETIC MAKER 2",
+        "year": 2025,
+        "created_at": "2026-10-16T08:55:25.413920+00:00",
+        "updated_at": "2026-10-16T08:55:25.413920+00:00",
+        "months": [
+          20,
+          40,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "id": "90308c5b9825cd4065c5b7e8408e8fcd8c2f722f61371ef382025fa0539c5b36",
+        "state": "T45B SYNTHETIC STATE",
+        "rto": "T45B SYNTHETIC RTO",
+        "rto_code": "ZZ01",
+        "maker": "T45B SYNTHETIC MAKER 3",
+        "year": 2025,
+        "created_at": "2026-10-16T08:55:25.413920+00:00",
+        "updated_at": "2026-10-16T08:55:25.413920+00:00",
+        "months": [
+          30,
+          60,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    ]
+  },
+  "history": {
+    "total": 1,
+    "offset": 0,
+    "limit": 20,
+    "rows": [
+      {
+        "source_key": "T45B-SYNTHETIC-WORKBOOK",
+        "owner_key": "admin",
+        "scope_key": "69b4c3f610f4fe8fc144cceb30f0e47f6d663901794b7388cf1a58e253b2942c",
+        "scope_label": "TWO WHEELER · ELECTRIC(BOV)",
+        "filters": {
+          "fuels": [
+            "ELECTRIC(BOV)"
+          ],
+          "categoryGroups": [
+            "TWO WHEELER"
+          ]
+        },
+        "job_id": "5573601a-f06f-4a2f-9e79-3d19441e216b",
+        "name": "T45B SYNTHETIC WORKBOOK - NOT VAHAN",
+        "status": "added",
+        "years": [
+          2025
+        ],
+        "states": [
+          "T45B SYNTHETIC STATE"
+        ],
+        "rtos": [
+          "T45B SYNTHETIC RTO - ZZ01"
+        ],
+        "details": {
+          "newRows": 3,
+          "newCells": 6,
+          "warnings": [],
+          "conflicts": 0,
+          "duplicates": 0,
+          "issueCount": 0,
+          "parsedRows": 3,
+          "invalidCells": 0,
+          "replacedCells": 0,
+          "missingContext": 0,
+          "sourceConflicts": 0,
+          "conflictExamples": [],
+          "unresolvedMakers": 0
+        },
+        "observed_at": "2026-10-16T08:55:25.379253+00:00",
+        "imported_at": "2026-10-16T08:55:25.413920+00:00"
+      }
+    ]
+  },
+  "scope": "Current HTTP verification of the prepared persistent old-version dataset. Content is explicitly synthetic; no prior candidate test outcome or real VAHAN result is reused."
+}

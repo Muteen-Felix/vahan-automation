@@ -1,0 +1,15 @@
+{
+  "command": [
+    "docker",
+    "image",
+    "load",
+    "-i",
+    "C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\release-F-0a6746187e82-20261016T090229Z\\package\\vahan-0a6746187e82-images.tar"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-t45b-0a67-candidate-jmy6oolt",
+  "startedAt": "2026-10-16T09:13:04.134414+00:00",
+  "finishedAt": "2026-10-16T09:13:20.940372+00:00",
+  "exitCode": 0,
+  "log": "t45b-load-final-package.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

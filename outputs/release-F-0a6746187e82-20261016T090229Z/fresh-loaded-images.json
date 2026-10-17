@@ -1,0 +1,31 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "checkedAt": "2026-10-16T09:10:22.924465+00:00",
+  "status": "PASS",
+  "images": [
+    {
+      "ref": "vahan-review/runner:1.0.0",
+      "id": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+      "revision": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "version": "1.0.0"
+    },
+    {
+      "ref": "vahan-review/web:1.0.0",
+      "id": "sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2",
+      "revision": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "version": "1.0.0"
+    },
+    {
+      "ref": "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+      "id": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+      "revision": null,
+      "version": null
+    },
+    {
+      "ref": "vahan-review/api:1.0.0",
+      "id": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc",
+      "revision": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+      "version": "1.0.0"
+    }
+  ]
+}

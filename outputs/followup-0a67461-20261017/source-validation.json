@@ -1,0 +1,74 @@
+[
+  {
+    "command": [
+      "py",
+      "-3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "scripts",
+      "-p",
+      "test_compare_lock_image.py"
+    ],
+    "recordedAt": "2026-10-17T11:48:48.321879+00:00",
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.566s\n\nOK\n"
+  },
+  {
+    "command": [
+      "py",
+      "-3",
+      "scripts/check-test-registration.py"
+    ],
+    "recordedAt": "2026-10-17T11:48:49.538172+00:00",
+    "exitCode": 0,
+    "stdout": "96 test files, 96 manifest entries (ci=92, manual=3, not-applicable=1); 0 problem(s)\nOK: every test file is registered and every `ci` entry is referenced by the workflow (referenced, not proven to have run).\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "py",
+      "-3",
+      "scripts/check-doc-links.py"
+    ],
+    "recordedAt": "2026-10-17T11:48:51.444153+00:00",
+    "exitCode": 0,
+    "stdout": "83 local document links checked; 0 missing targets.\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "recordedAt": "2026-10-17T11:48:52.572113+00:00",
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "py",
+      "-3",
+      "scripts/check-doc-links.py"
+    ],
+    "recordedAt": "2026-10-17T11:52:17.896144+00:00",
+    "exitCode": 0,
+    "stdout": "103 local document links checked; 0 missing targets.\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "recordedAt": "2026-10-17T11:52:18.897820+00:00",
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]

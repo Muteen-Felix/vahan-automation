@@ -1,0 +1,47 @@
+{
+  "identityGate": "PASS",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+  "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+  "project": "vahan-d3-0a67-20261016t090229",
+  "baseUrl": "http://127.0.0.1:15187",
+  "containers": [
+    {
+      "service": "runner",
+      "container": "/vahan-d3-0a67-20261016t090229-runner-1",
+      "imageId": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef"
+    },
+    {
+      "service": "runner",
+      "container": "/vahan-d3-0a67-20261016t090229-runner-2",
+      "imageId": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef"
+    },
+    {
+      "service": "runner",
+      "container": "/vahan-d3-0a67-20261016t090229-runner-3",
+      "imageId": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef"
+    },
+    {
+      "service": "web",
+      "container": "/vahan-d3-0a67-20261016t090229-web-1",
+      "imageId": "sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2"
+    },
+    {
+      "service": "api",
+      "container": "/vahan-d3-0a67-20261016t090229-api-1",
+      "imageId": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc"
+    },
+    {
+      "service": "migrate",
+      "container": "/vahan-d3-0a67-20261016t090229-migrate-1",
+      "imageId": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc"
+    },
+    {
+      "service": "postgres",
+      "container": "/vahan-d3-0a67-20261016t090229-postgres-1",
+      "imageId": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826"
+    }
+  ],
+  "D3": "NOT_STARTED: identity check only"
+}
+

@@ -1,0 +1,61 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "status": "PASS",
+  "containers": [
+    {
+      "name": "/vahan-f0a67-fresh-20261016t090229-runner-1",
+      "id": "f0e0ca1392484edc34edbf80f93f060b57bf427994248ed1ee11de462ffb099a",
+      "service": "runner",
+      "imageRef": "vahan-review/runner:1.0.0",
+      "imageId": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+      "state": "exited",
+      "exitCode": 0,
+      "mounts": []
+    },
+    {
+      "name": "/vahan-f0a67-fresh-20261016t090229-web-1",
+      "id": "6f67a9e1471896ff471c9631fb1f0de1edc6aad5d6d441e803504ea26eb79aad",
+      "service": "web",
+      "imageRef": "vahan-review/web:1.0.0",
+      "imageId": "sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2",
+      "state": "exited",
+      "exitCode": 0,
+      "mounts": []
+    },
+    {
+      "name": "/vahan-f0a67-fresh-20261016t090229-api-1",
+      "id": "846c5f3c8b94e93fba18e54289d13bb5b248e4f7da7c888ba5766b305f8babfb",
+      "service": "api",
+      "imageRef": "vahan-review/api:1.0.0",
+      "imageId": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc",
+      "state": "exited",
+      "exitCode": 0,
+      "mounts": []
+    },
+    {
+      "name": "/vahan-f0a67-fresh-20261016t090229-migrate-1",
+      "id": "9319e84cdc81e51198d620194ced8daeacc48ffebdfc1994a3b6da9b51773b23",
+      "service": "migrate",
+      "imageRef": "vahan-review/api:1.0.0",
+      "imageId": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc",
+      "state": "exited",
+      "exitCode": 0,
+      "mounts": []
+    },
+    {
+      "name": "/vahan-f0a67-fresh-20261016t090229-postgres-1",
+      "id": "eae8d25534a5f75120644d5e2f8b883e129d078be8d0db081046e6667bf2516f",
+      "service": "postgres",
+      "imageRef": "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+      "imageId": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+      "state": "exited",
+      "exitCode": 0,
+      "mounts": [
+        {
+          "name": "vahan-f0a67-fresh-20261016t090229_postgres_data",
+          "destination": "/var/lib/postgresql/data"
+        }
+      ]
+    }
+  ]
+}

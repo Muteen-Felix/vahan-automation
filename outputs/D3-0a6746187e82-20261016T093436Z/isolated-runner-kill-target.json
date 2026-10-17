@@ -1,0 +1,106 @@
+{
+  "at": "2026-10-16T13:47:18.442428+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "container": "vahan-d3-0a67-20261016t090229-runner-1",
+    "jobId": "aa4a63b5-6fa5-4b32-a22b-6b932d8b52c9",
+    "runnerId": "worker-c4a49ba5-de1b-4615-894a-f4ec95a7a349",
+    "sessionId": "cfbc4bb8-fd9d-43d5-a060-7974d0fe7337",
+    "status": "OPENING_VAHAN",
+    "schedule": {
+      "id": "c8793f81-1801-403b-bea7-359f66f0f3e7",
+      "done": 0,
+      "year": 2020,
+      "total": 14,
+      "failed": 0,
+      "noData": 0,
+      "repeat": "once",
+      "status": "RUNNING",
+      "enabled": true,
+      "message": "Collected 0/14 cases.",
+      "version": 1,
+      "pausedAt": null,
+      "startsAt": "2026-10-16T13:47:03.102977+00:00",
+      "timeZone": "Asia/Ho_Chi_Minh",
+      "withData": 0,
+      "createdAt": "2026-10-16T13:46:48.137320+00:00",
+      "lastRunAt": "2026-10-16T13:47:16.330909+00:00",
+      "nextRunAt": "2026-10-16T13:47:03.102977+00:00",
+      "operation": {
+        "error": null,
+        "stage": "Collecting reports",
+        "detail": "Collected 0/14 cases.",
+        "startedAt": "2026-10-16T13:47:16.332001+00:00",
+        "progressAt": "2026-10-16T13:47:16.342240+00:00",
+        "heartbeatAt": "2026-10-16T13:47:16.342240+00:00"
+      },
+      "profileId": "17141cfa-5069-4348-8ec3-baa153d8cfd1",
+      "sessionId": "cfbc4bb8-fd9d-43d5-a060-7974d0fe7337",
+      "updatedAt": "2026-10-16T13:47:16.342240+00:00",
+      "retryAfter": null,
+      "preflightAt": "2026-10-16T13:47:14.509149+00:00",
+      "preflightId": "eacbc582-4d0f-4be5-b088-430ab1e09ab0",
+      "profileName": "D3 isolated runner recovery 2020",
+      "lastSessionId": "cfbc4bb8-fd9d-43d5-a060-7974d0fe7337",
+      "networkPaused": false,
+      "retryProgress": {
+        "phase": "PRIMARY",
+        "complete": false,
+        "checkpointEnd": 10,
+        "lastCheckpoint": 0,
+        "pendingRetries": 0,
+        "checkpointStart": 0,
+        "failedRemaining": 0,
+        "finalPassStarted": false
+      },
+      "executionEpoch": 1,
+      "lastFinishedAt": null,
+      "activeElapsedMs": 0,
+      "profileRevision": 1,
+      "preparationAttempts": 0,
+      "activeSegmentStartedAt": "2026-10-16T13:47:16.330909+00:00",
+      "canResume": false,
+      "diagnostics": {
+        "checkedAt": "2026-10-16T13:47:18.246050+00:00",
+        "heartbeatAgeSeconds": 1,
+        "stageAgeSeconds": 1,
+        "warning": null,
+        "workers": [
+          {
+            "id": "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+            "selected": true,
+            "connected": true,
+            "heartbeatAgeSeconds": 7,
+            "jobId": "af097eff-f361-4c70-9b00-f48996474ca5",
+            "status": "OPENING_VAHAN",
+            "case": "Maker Month Wise Data of Baratang - AN201, Andaman & Nicobar Island (2020)",
+            "error": null,
+            "jobAgeSeconds": 1
+          },
+          {
+            "id": "worker-c4a49ba5-de1b-4615-894a-f4ec95a7a349",
+            "selected": true,
+            "connected": true,
+            "heartbeatAgeSeconds": 12,
+            "jobId": "aa4a63b5-6fa5-4b32-a22b-6b932d8b52c9",
+            "status": "OPENING_VAHAN",
+            "case": "Maker Month Wise Data of Campbell Bay - AN212, Andaman & Nicobar Island (2020)",
+            "error": null,
+            "jobAgeSeconds": 1
+          },
+          {
+            "id": "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a",
+            "selected": true,
+            "connected": true,
+            "heartbeatAgeSeconds": 7,
+            "jobId": "83d51efe-cf94-462d-8698-bcbfa835fc35",
+            "status": "OPENING_VAHAN",
+            "case": "Maker Month Wise Data of Car Nicobar - AN211, Andaman & Nicobar Island (2020)",
+            "error": null,
+            "jobAgeSeconds": 0
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,652 @@
+{
+  "at": "2026-10-16T13:31:46.735714+00:00",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "data": {
+    "container": "vahan-d3-0a67-20261016t090229-runner-1",
+    "health": {
+      "connected": false,
+      "browserReady": true,
+      "activeJobId": "313eeeef-766e-412b-8f5b-5e26d94c60e3",
+      "optionsBusy": false,
+      "tainted": false
+    },
+    "job": {
+      "id": "313eeeef-766e-412b-8f5b-5e26d94c60e3",
+      "ownerUsername": "admin",
+      "runnerId": "worker-0fc9567e-cc93-4917-8fff-0026bb2a083e",
+      "sessionId": "98617ac5-5f4d-4135-a43f-a593902a2dc5",
+      "retryOfJobId": null,
+      "caseId": "313eeeef-766e-412b-8f5b-5e26d94c60e3",
+      "status": "WAITING_RESULT",
+      "filters": {
+        "states": [
+          "Kerala"
+        ],
+        "rtos": [
+          "ALATHUR SRTO - KL49"
+        ],
+        "categoryGroups": [
+          "Two Wheeler"
+        ],
+        "fuels": [],
+        "yAxis": "Maker",
+        "xAxis": "Month Wise",
+        "autoApply": true,
+        "autoExport": true,
+        "makers": [],
+        "period": "CALENDAR YEAR",
+        "toDate": "",
+        "toYear": "2019",
+        "classes": [],
+        "evTypes": [
+          "ELECTRIC(BOV)"
+        ],
+        "fitness": "",
+        "delhiNcr": "ALL STATES",
+        "fromDate": "",
+        "fromYear": "2019",
+        "statuses": [],
+        "emissions": [],
+        "ownerTypes": [],
+        "vehicleType": "",
+        "archivedFlags": [
+          "TEMPORARY_ARCHIVE"
+        ],
+        "subCategories": [],
+        "financialYears": []
+      },
+      "scenarioName": "Maker Month Wise Data of ALATHUR SRTO - KL49, Kerala (2019) · Active / Archive: TEMPORARY_ARCHIVE",
+      "source": "new",
+      "updateKind": "NORMAL",
+      "updateRunId": null,
+      "updateTaskId": null,
+      "captchaId": "https://analytics.parivahan.gov.in/analytics/captcha-gen?_ts=1792157484596&_seq=1#d9f42c4e",
+      "error": null,
+      "excelFileName": null,
+      "excelFileSize": null,
+      "noDataFileName": null,
+      "resultMessage": null,
+      "resultObservedAt": null,
+      "reportTableCount": null,
+      "reportRowCount": null,
+      "mainReportSavedAt": null,
+      "mainReportChecksum": null,
+      "mainReportSummary": null,
+      "resultChecksum": null,
+      "filterExecution": {
+        "filled": {
+          "checks": [
+            {
+              "mode": "requested",
+              "field": "archivedFlags",
+              "match": true,
+              "actual": [
+                "TEMPORARY_ARCHIVE"
+              ],
+              "expected": [
+                "TEMPORARY_ARCHIVE"
+              ],
+              "selector": "#archivedFlags"
+            },
+            {
+              "mode": "requested",
+              "field": "period",
+              "match": true,
+              "actual": [
+                "CALENDAR YEAR"
+              ],
+              "expected": [
+                "CALENDAR YEAR"
+              ],
+              "selector": "#reportType"
+            },
+            {
+              "mode": "requested",
+              "field": "financialYears",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#financialYearSelect"
+            },
+            {
+              "mode": "requested",
+              "field": "delhiNcr",
+              "match": true,
+              "actual": [
+                "ALL STATES"
+              ],
+              "expected": [
+                "ALL STATES"
+              ],
+              "selector": "#delhiNcr"
+            },
+            {
+              "mode": "requested",
+              "field": "states",
+              "match": true,
+              "actual": [
+                "Kerala"
+              ],
+              "expected": [
+                "Kerala"
+              ],
+              "selector": "#stateName"
+            },
+            {
+              "mode": "requested",
+              "field": "rtos",
+              "match": true,
+              "actual": [
+                "ALATHUR SRTO - KL49"
+              ],
+              "expected": [
+                "ALATHUR SRTO - KL49"
+              ],
+              "selector": "#rtoCode"
+            },
+            {
+              "mode": "requested",
+              "field": "categoryGroups",
+              "match": true,
+              "actual": [
+                "Two Wheeler"
+              ],
+              "expected": [
+                "Two Wheeler"
+              ],
+              "selector": "#vehicleCategoryGroup"
+            },
+            {
+              "mode": "requested",
+              "field": "subCategories",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleSubCategory"
+            },
+            {
+              "mode": "requested",
+              "field": "classes",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleClass"
+            },
+            {
+              "mode": "requested",
+              "field": "fuels",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleFuel"
+            },
+            {
+              "mode": "requested",
+              "field": "evTypes",
+              "match": true,
+              "actual": [
+                "ELECTRIC(BOV)"
+              ],
+              "expected": [
+                "ELECTRIC(BOV)"
+              ],
+              "selector": "#evType"
+            },
+            {
+              "mode": "requested",
+              "field": "statuses",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleStatus"
+            },
+            {
+              "mode": "requested",
+              "field": "ownerTypes",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleOwnerType"
+            },
+            {
+              "mode": "requested",
+              "field": "vehicleType",
+              "match": true,
+              "actual": [
+                "--- Select Vehicle Type ---"
+              ],
+              "expected": [],
+              "selector": "#vehicleType"
+            },
+            {
+              "mode": "requested",
+              "field": "fitness",
+              "match": true,
+              "actual": [
+                "NO"
+              ],
+              "expected": [],
+              "selector": "#fitnessCheck"
+            },
+            {
+              "mode": "requested",
+              "field": "emissions",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleEmission"
+            },
+            {
+              "mode": "requested",
+              "field": "makers",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleMaker"
+            },
+            {
+              "mode": "requested",
+              "field": "yAxis",
+              "match": true,
+              "actual": [
+                "Maker"
+              ],
+              "expected": [
+                "Maker"
+              ],
+              "selector": "#yAxis"
+            },
+            {
+              "mode": "requested",
+              "field": "xAxis",
+              "match": true,
+              "actual": [
+                "Month Wise"
+              ],
+              "expected": [
+                "Month Wise"
+              ],
+              "selector": "#xAxis"
+            },
+            {
+              "mode": "requested",
+              "field": "fromYear",
+              "match": true,
+              "actual": [
+                "2019"
+              ],
+              "expected": [
+                "2019"
+              ],
+              "selector": "#fromYear"
+            },
+            {
+              "mode": "requested",
+              "field": "toYear",
+              "match": true,
+              "actual": [
+                "2019"
+              ],
+              "expected": [
+                "2019"
+              ],
+              "selector": "#toYear"
+            },
+            {
+              "mode": "requested",
+              "field": "fromDate",
+              "match": true,
+              "actual": [
+                ""
+              ],
+              "expected": [
+                ""
+              ],
+              "selector": "#fromDate"
+            },
+            {
+              "mode": "requested",
+              "field": "toDate",
+              "match": true,
+              "actual": [
+                ""
+              ],
+              "expected": [
+                ""
+              ],
+              "selector": "#toDate"
+            },
+            {
+              "mode": "hidden",
+              "field": "xAxis_hidden",
+              "match": true,
+              "actual": [
+                "monthWise"
+              ],
+              "expected": [
+                "monthWise"
+              ],
+              "selector": "#xAxis_hidden"
+            }
+          ],
+          "groups": [
+            {
+              "name": "period",
+              "attempts": 1,
+              "startedMs": 0,
+              "durationMs": 2
+            },
+            {
+              "name": "geography",
+              "attempts": 1,
+              "startedMs": 2,
+              "durationMs": 242
+            },
+            {
+              "name": "vehicle",
+              "attempts": 1,
+              "startedMs": 244,
+              "durationMs": 2
+            },
+            {
+              "name": "classification",
+              "attempts": 1,
+              "startedMs": 244,
+              "durationMs": 1
+            },
+            {
+              "name": "fuel",
+              "attempts": 1,
+              "startedMs": 245,
+              "durationMs": 1
+            },
+            {
+              "name": "axis",
+              "attempts": 1,
+              "startedMs": 246,
+              "durationMs": 15418
+            },
+            {
+              "name": "independent",
+              "attempts": 1,
+              "startedMs": 15663,
+              "durationMs": 1
+            }
+          ],
+          "version": "sequential-mutation-v2",
+          "durationMs": 15874.0,
+          "fieldCount": 24,
+          "validatedAt": "2026-10-16T13:31:40.721000Z",
+          "repairPasses": 0,
+          "verificationMs": 83.0
+        },
+        "before-apply": {
+          "checks": [
+            {
+              "mode": "requested",
+              "field": "archivedFlags",
+              "match": true,
+              "actual": [
+                "TEMPORARY_ARCHIVE"
+              ],
+              "expected": [
+                "TEMPORARY_ARCHIVE"
+              ],
+              "selector": "#archivedFlags"
+            },
+            {
+              "mode": "requested",
+              "field": "period",
+              "match": true,
+              "actual": [
+                "CALENDAR YEAR"
+              ],
+              "expected": [
+                "CALENDAR YEAR"
+              ],
+              "selector": "#reportType"
+            },
+            {
+              "mode": "requested",
+              "field": "financialYears",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#financialYearSelect"
+            },
+            {
+              "mode": "requested",
+              "field": "delhiNcr",
+              "match": true,
+              "actual": [
+                "ALL STATES"
+              ],
+              "expected": [
+                "ALL STATES"
+              ],
+              "selector": "#delhiNcr"
+            },
+            {
+              "mode": "requested",
+              "field": "states",
+              "match": true,
+              "actual": [
+                "Kerala"
+              ],
+              "expected": [
+                "Kerala"
+              ],
+              "selector": "#stateName"
+            },
+            {
+              "mode": "requested",
+              "field": "rtos",
+              "match": true,
+              "actual": [
+                "ALATHUR SRTO - KL49"
+              ],
+              "expected": [
+                "ALATHUR SRTO - KL49"
+              ],
+              "selector": "#rtoCode"
+            },
+            {
+              "mode": "requested",
+              "field": "categoryGroups",
+              "match": true,
+              "actual": [
+                "Two Wheeler"
+              ],
+              "expected": [
+                "Two Wheeler"
+              ],
+              "selector": "#vehicleCategoryGroup"
+            },
+            {
+              "mode": "requested",
+              "field": "subCategories",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleSubCategory"
+            },
+            {
+              "mode": "requested",
+              "field": "classes",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleClass"
+            },
+            {
+              "mode": "requested",
+              "field": "fuels",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleFuel"
+            },
+            {
+              "mode": "requested",
+              "field": "evTypes",
+              "match": true,
+              "actual": [
+                "ELECTRIC(BOV)"
+              ],
+              "expected": [
+                "ELECTRIC(BOV)"
+              ],
+              "selector": "#evType"
+            },
+            {
+              "mode": "requested",
+              "field": "statuses",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleStatus"
+            },
+            {
+              "mode": "requested",
+              "field": "ownerTypes",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleOwnerType"
+            },
+            {
+              "mode": "requested",
+              "field": "vehicleType",
+              "match": true,
+              "actual": [
+                "--- Select Vehicle Type ---"
+              ],
+              "expected": [],
+              "selector": "#vehicleType"
+            },
+            {
+              "mode": "requested",
+              "field": "fitness",
+              "match": true,
+              "actual": [
+                "NO"
+              ],
+              "expected": [],
+              "selector": "#fitnessCheck"
+            },
+            {
+              "mode": "requested",
+              "field": "emissions",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleEmission"
+            },
+            {
+              "mode": "requested",
+              "field": "makers",
+              "match": true,
+              "actual": [],
+              "expected": [],
+              "selector": "#vehicleMaker"
+            },
+            {
+              "mode": "requested",
+              "field": "yAxis",
+              "match": true,
+              "actual": [
+                "Maker"
+              ],
+              "expected": [
+                "Maker"
+              ],
+              "selector": "#yAxis"
+            },
+            {
+              "mode": "requested",
+              "field": "xAxis",
+              "match": true,
+              "actual": [
+                "Month Wise"
+              ],
+              "expected": [
+                "Month Wise"
+              ],
+              "selector": "#xAxis"
+            },
+            {
+              "mode": "requested",
+              "field": "fromYear",
+              "match": true,
+              "actual": [
+                "2019"
+              ],
+              "expected": [
+                "2019"
+              ],
+              "selector": "#fromYear"
+            },
+            {
+              "mode": "requested",
+              "field": "toYear",
+              "match": true,
+              "actual": [
+                "2019"
+              ],
+              "expected": [
+                "2019"
+              ],
+              "selector": "#toYear"
+            },
+            {
+              "mode": "requested",
+              "field": "fromDate",
+              "match": true,
+              "actual": [
+                ""
+              ],
+              "expected": [
+                ""
+              ],
+              "selector": "#fromDate"
+            },
+            {
+              "mode": "requested",
+              "field": "toDate",
+              "match": true,
+              "actual": [
+                ""
+              ],
+              "expected": [
+                ""
+              ],
+              "selector": "#toDate"
+            },
+            {
+              "mode": "hidden",
+              "field": "xAxis_hidden",
+              "match": true,
+              "actual": [
+                "monthWise"
+              ],
+              "expected": [
+                "monthWise"
+              ],
+              "selector": "#xAxis_hidden"
+            }
+          ],
+          "groups": [],
+          "version": "parallel-fill-v1",
+          "durationMs": null,
+          "fieldCount": 24,
+          "validatedAt": "2026-10-16T13:31:40.939000Z",
+          "repairPasses": 0,
+          "verificationMs": 83.0
+        }
+      },
+      "successfulApplyCount": 1,
+      "createdAt": "2026-10-16T13:31:22.049654Z",
+      "updatedAt": "2026-10-16T13:31:41.045153Z"
+    }
+  }
+}

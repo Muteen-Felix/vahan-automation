@@ -1,0 +1,18 @@
+{
+  "command": [
+    "C:\\Users\\huyvv12\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "C:\\Users\\huyvv12\\Desktop\\vahan-automation\\outputs\\release-F-0a6746187e82-20261016T090229Z\\d3-package-gate.py",
+    "--expected-sha",
+    "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "--expected-manifest-digest",
+    "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+    "--expected-images-digest",
+    "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-release-F-clean-20261016T090229Z",
+  "startedAt": "2026-10-16T09:31:15.928873+00:00",
+  "finishedAt": "2026-10-16T09:31:17.747587+00:00",
+  "exitCode": 0,
+  "log": "final-staging-identity-gate.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

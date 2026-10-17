@@ -1,0 +1,13 @@
+{
+  "command": [
+    "docker",
+    "start",
+    "vahan-f0a67-fresh-engine-20261016t090229"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-release-F-clean-20261016T090229Z",
+  "startedAt": "2026-10-16T09:09:52.798811+00:00",
+  "finishedAt": "2026-10-16T09:09:53.663934+00:00",
+  "exitCode": 0,
+  "log": "fresh-resume-preparation-daemon.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

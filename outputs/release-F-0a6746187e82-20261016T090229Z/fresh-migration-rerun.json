@@ -1,0 +1,21 @@
+{
+  "command": [
+    "docker",
+    "compose",
+    "--env-file",
+    ".docker.env",
+    "-p",
+    "vahan-f0a67-fresh-20261016t090229",
+    "run",
+    "--rm",
+    "--pull",
+    "never",
+    "migrate"
+  ],
+  "cwd": "C:\\Users\\huyvv12\\AppData\\Local\\Temp\\vahan-f0a67-fresh-new-krbc2lii",
+  "startedAt": "2026-10-16T09:10:52.646379+00:00",
+  "finishedAt": "2026-10-16T09:10:54.549433+00:00",
+  "exitCode": 0,
+  "log": "fresh-migration-rerun.log",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6"
+}

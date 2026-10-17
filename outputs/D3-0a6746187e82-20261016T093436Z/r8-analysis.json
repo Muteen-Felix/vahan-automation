@@ -1,0 +1,530 @@
+{
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "start": "2026-10-16T12:37:52.930483+00:00",
+  "finish": "2026-10-16T13:29:19.069171+00:00",
+  "durationSeconds": 3086.138688,
+  "totalCases": 1228,
+  "done": 1228,
+  "withData": 315,
+  "noData": 913,
+  "failed": 0,
+  "eligible": true,
+  "thresholdPass": true,
+  "windows": {
+    "25-50": {
+      "samples": 14,
+      "nullSamples": 0,
+      "median": 0.15782717778461972,
+      "max": 0.25205367153252645
+    },
+    "50-75": {
+      "samples": 13,
+      "nullSamples": 0,
+      "median": 0.06051643217934963,
+      "max": 0.11890732335214846
+    },
+    "75-100": {
+      "samples": 14,
+      "nullSamples": 1,
+      "median": 0.07034143429037495,
+      "max": 0.3419378354919056
+    }
+  },
+  "sampleCount": 52,
+  "nullSamplesTotal": 2,
+  "sampleIntervalsMinMaxSeconds": [
+    59.975267,
+    60.036109
+  ],
+  "workerIdentitySets": [
+    [
+      "worker-0fc9567e-cc93-4917-8fff-0026bb2a083e",
+      "worker-ac21065c-b934-4132-9e03-760dcc48d432",
+      "worker-c8e91693-7684-49f1-8f90-ed65c84cf03a"
+    ]
+  ],
+  "threeWorkersStable": true,
+  "manualPauseCount": 0,
+  "operatorInterventions": [],
+  "realVahanOutages": [
+    {
+      "startedAt": "2026-10-16T13:24:25.100913+00:00",
+      "finishedAt": "2026-10-16T13:24:56.955148+00:00",
+      "firstObservedAt": "2026-10-16T13:24:26.212842+00:00",
+      "durationSeconds": 31.854235
+    }
+  ],
+  "outagesIncludedInErrors": true,
+  "estimator": "Exact final UI source; see eta-engine-provenance.json",
+  "formula": "abs((ETA(t) - (finishedAt-t)) / (finishedAt-t))",
+  "samples": [
+    {
+      "at": "2026-10-16T12:37:50.758189+00:00",
+      "done": 0,
+      "total": 0,
+      "etaMs": null,
+      "actualRemainingMs": 3088310.982,
+      "absoluteRelativeError": null,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:38:50.786655+00:00",
+      "done": 28,
+      "total": 1228,
+      "etaMs": 2481402.6227678573,
+      "actualRemainingMs": 3028282.5160000003,
+      "absoluteRelativeError": 0.18059077722857445,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:39:50.789384+00:00",
+      "done": 61,
+      "total": 1228,
+      "etaMs": 2255319.7648165342,
+      "actualRemainingMs": 2968279.787,
+      "absoluteRelativeError": 0.24019299841813252,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:40:50.790760+00:00",
+      "done": 98,
+      "total": 1228,
+      "etaMs": 2051101.0211804446,
+      "actualRemainingMs": 2908278.411,
+      "absoluteRelativeError": 0.29473704669313905,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:41:50.811430+00:00",
+      "done": 131,
+      "total": 1228,
+      "etaMs": 1992200.9296968186,
+      "actualRemainingMs": 2848257.741,
+      "absoluteRelativeError": 0.30055454567205947,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:42:50.806870+00:00",
+      "done": 163,
+      "total": 1228,
+      "etaMs": 1946426.038945672,
+      "actualRemainingMs": 2788262.301,
+      "absoluteRelativeError": 0.3019214733679849,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:43:50.810970+00:00",
+      "done": 196,
+      "total": 1228,
+      "etaMs": 1857321.7190233804,
+      "actualRemainingMs": 2728258.201,
+      "absoluteRelativeError": 0.31922802675252343,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:44:50.843321+00:00",
+      "done": 225,
+      "total": 1228,
+      "etaMs": 1844845.1924014331,
+      "actualRemainingMs": 2668225.8499999996,
+      "absoluteRelativeError": 0.30858731752357715,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:45:50.848086+00:00",
+      "done": 255,
+      "total": 1228,
+      "etaMs": 1846914.7981217196,
+      "actualRemainingMs": 2608221.085,
+      "absoluteRelativeError": 0.29188717599768976,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:46:50.841704+00:00",
+      "done": 282,
+      "total": 1228,
+      "etaMs": 1852722.7561686586,
+      "actualRemainingMs": 2548227.467,
+      "absoluteRelativeError": 0.2729366666980289,
+      "window": null
+    },
+    {
+      "at": "2026-10-16T12:47:50.876962+00:00",
+      "done": 308,
+      "total": 1228,
+      "etaMs": 1861034.2272429224,
+      "actualRemainingMs": 2488192.209,
+      "absoluteRelativeError": 0.25205367153252645,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:48:50.852229+00:00",
+      "done": 333,
+      "total": 1228,
+      "etaMs": 1888415.6551723015,
+      "actualRemainingMs": 2428216.942,
+      "absoluteRelativeError": 0.22230356665870687,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:49:50.868001+00:00",
+      "done": 347,
+      "total": 1228,
+      "etaMs": 2032470.2688280572,
+      "actualRemainingMs": 2368201.17,
+      "absoluteRelativeError": 0.14176620864178643,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:50:50.874021+00:00",
+      "done": 370,
+      "total": 1228,
+      "etaMs": 2064448.687213837,
+      "actualRemainingMs": 2308195.15,
+      "absoluteRelativeError": 0.10560045704374822,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:51:50.872774+00:00",
+      "done": 399,
+      "total": 1228,
+      "etaMs": 1973273.9060898821,
+      "actualRemainingMs": 2248196.3970000003,
+      "absoluteRelativeError": 0.12228579819671251,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:52:50.887474+00:00",
+      "done": 430,
+      "total": 1228,
+      "etaMs": 1847741.0072879165,
+      "actualRemainingMs": 2188181.697,
+      "absoluteRelativeError": 0.15558154525231074,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:53:50.888438+00:00",
+      "done": 460,
+      "total": 1228,
+      "etaMs": 1732973.6018618545,
+      "actualRemainingMs": 2128180.733,
+      "absoluteRelativeError": 0.1857018649826041,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:54:50.888555+00:00",
+      "done": 487,
+      "total": 1228,
+      "etaMs": 1574101.9559046899,
+      "actualRemainingMs": 2068180.6160000002,
+      "absoluteRelativeError": 0.23889531517362905,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:55:50.924664+00:00",
+      "done": 510,
+      "total": 1228,
+      "etaMs": 1505391.2120768055,
+      "actualRemainingMs": 2008144.507,
+      "absoluteRelativeError": 0.2503571297636672,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:56:50.932582+00:00",
+      "done": 533,
+      "total": 1228,
+      "etaMs": 1530122.4156901934,
+      "actualRemainingMs": 1948136.589,
+      "absoluteRelativeError": 0.2145712860536015,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:57:50.967211+00:00",
+      "done": 549,
+      "total": 1228,
+      "etaMs": 1585868.1730978987,
+      "actualRemainingMs": 1888101.96,
+      "absoluteRelativeError": 0.1600728103169287,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:58:50.973682+00:00",
+      "done": 566,
+      "total": 1228,
+      "etaMs": 1695763.2739643934,
+      "actualRemainingMs": 1828095.489,
+      "absoluteRelativeError": 0.07238802121217129,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T12:59:51.004115+00:00",
+      "done": 586,
+      "total": 1228,
+      "etaMs": 1735003.3522885374,
+      "actualRemainingMs": 1768065.0559999999,
+      "absoluteRelativeError": 0.01869937059118171,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T13:00:50.989310+00:00",
+      "done": 609,
+      "total": 1228,
+      "etaMs": 1693210.6942615807,
+      "actualRemainingMs": 1708079.861,
+      "absoluteRelativeError": 0.008705194105920864,
+      "window": "25-50"
+    },
+    {
+      "at": "2026-10-16T13:01:51.006744+00:00",
+      "done": 631,
+      "total": 1228,
+      "etaMs": 1631758.2300457042,
+      "actualRemainingMs": 1648062.4270000001,
+      "absoluteRelativeError": 0.009892948645140108,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:02:51.014204+00:00",
+      "done": 654,
+      "total": 1228,
+      "etaMs": 1524407.2167697714,
+      "actualRemainingMs": 1588054.967,
+      "absoluteRelativeError": 0.040079059952481184,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:03:51.020209+00:00",
+      "done": 674,
+      "total": 1228,
+      "etaMs": 1452136.5704216613,
+      "actualRemainingMs": 1528048.962,
+      "absoluteRelativeError": 0.04967929265759928,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:04:51.050392+00:00",
+      "done": 695,
+      "total": 1228,
+      "etaMs": 1379179.520122635,
+      "actualRemainingMs": 1468018.779,
+      "absoluteRelativeError": 0.06051643217934963,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:05:51.060009+00:00",
+      "done": 718,
+      "total": 1228,
+      "etaMs": 1321703.9603268458,
+      "actualRemainingMs": 1408009.162,
+      "absoluteRelativeError": 0.061295909147751876,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:06:51.084998+00:00",
+      "done": 738,
+      "total": 1228,
+      "etaMs": 1275988.4511566695,
+      "actualRemainingMs": 1347984.173,
+      "absoluteRelativeError": 0.05340991629234094,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:07:51.092703+00:00",
+      "done": 760,
+      "total": 1228,
+      "etaMs": 1239670.1737334817,
+      "actualRemainingMs": 1287976.468,
+      "absoluteRelativeError": 0.037505572086677624,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:08:51.095629+00:00",
+      "done": 783,
+      "total": 1228,
+      "etaMs": 1160093.727669277,
+      "actualRemainingMs": 1227973.542,
+      "absoluteRelativeError": 0.055277912763630956,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:09:51.086695+00:00",
+      "done": 807,
+      "total": 1228,
+      "etaMs": 1079808.0882190766,
+      "actualRemainingMs": 1167982.4759999998,
+      "absoluteRelativeError": 0.07549290301246196,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:10:51.108336+00:00",
+      "done": 833,
+      "total": 1228,
+      "etaMs": 996267.0170453128,
+      "actualRemainingMs": 1107960.8350000002,
+      "absoluteRelativeError": 0.100810258292828,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:11:51.114908+00:00",
+      "done": 853,
+      "total": 1228,
+      "etaMs": 957754.6052778218,
+      "actualRemainingMs": 1047954.263,
+      "absoluteRelativeError": 0.08607213206420083,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:12:51.130448+00:00",
+      "done": 878,
+      "total": 1228,
+      "etaMs": 870465.5738121304,
+      "actualRemainingMs": 987938.723,
+      "absoluteRelativeError": 0.11890732335214846,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:13:51.141042+00:00",
+      "done": 900,
+      "total": 1228,
+      "etaMs": 821233.2668386853,
+      "actualRemainingMs": 927928.129,
+      "absoluteRelativeError": 0.11498181683132778,
+      "window": "50-75"
+    },
+    {
+      "at": "2026-10-16T13:14:51.152398+00:00",
+      "done": 923,
+      "total": 1228,
+      "etaMs": 768442.9772485052,
+      "actualRemainingMs": 867916.773,
+      "absoluteRelativeError": 0.11461213660805103,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:15:51.147277+00:00",
+      "done": 936,
+      "total": 1228,
+      "etaMs": 789896.274610625,
+      "actualRemainingMs": 807921.894,
+      "absoluteRelativeError": 0.02231109160828729,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:16:51.175664+00:00",
+      "done": 959,
+      "total": 1228,
+      "etaMs": 720838.8740886806,
+      "actualRemainingMs": 747893.507,
+      "absoluteRelativeError": 0.03617444550340157,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:17:51.171700+00:00",
+      "done": 984,
+      "total": 1228,
+      "etaMs": 653706.1616799536,
+      "actualRemainingMs": 687897.471,
+      "absoluteRelativeError": 0.04970407765904761,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:18:51.172136+00:00",
+      "done": 1000,
+      "total": 1228,
+      "etaMs": 635028.3251254944,
+      "actualRemainingMs": 627897.0349999999,
+      "absoluteRelativeError": 0.01135741965319915,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:19:51.182698+00:00",
+      "done": 1019,
+      "total": 1228,
+      "etaMs": 582817.2273984996,
+      "actualRemainingMs": 567886.473,
+      "absoluteRelativeError": 0.026291794413809917,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:20:51.197051+00:00",
+      "done": 1041,
+      "total": 1228,
+      "etaMs": 507098.5933742286,
+      "actualRemainingMs": 507872.12,
+      "absoluteRelativeError": 0.0015230736150103426,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:21:51.209895+00:00",
+      "done": 1070,
+      "total": 1228,
+      "etaMs": 413166.5433823499,
+      "actualRemainingMs": 447859.276,
+      "absoluteRelativeError": 0.07746346782744792,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:22:51.209446+00:00",
+      "done": 1096,
+      "total": 1228,
+      "etaMs": 343206.18811511225,
+      "actualRemainingMs": 387859.72500000003,
+      "absoluteRelativeError": 0.11512805792065103,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:23:51.210953+00:00",
+      "done": 1120,
+      "total": 1228,
+      "etaMs": 276188.36532206845,
+      "actualRemainingMs": 327858.218,
+      "absoluteRelativeError": 0.1575981623798478,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:24:51.237090+00:00",
+      "done": 1120,
+      "total": 1228,
+      "etaMs": null,
+      "actualRemainingMs": 267832.081,
+      "absoluteRelativeError": null,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:25:51.250756+00:00",
+      "done": 1135,
+      "total": 1228,
+      "etaMs": 232532.00663399295,
+      "actualRemainingMs": 207818.41499999998,
+      "absoluteRelativeError": 0.11891916139382051,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:26:51.257004+00:00",
+      "done": 1172,
+      "total": 1228,
+      "etaMs": 138467.570378213,
+      "actualRemainingMs": 147812.167,
+      "absoluteRelativeError": 0.063219400753302,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:27:51.264265+00:00",
+      "done": 1183,
+      "total": 1228,
+      "etaMs": 107392.24565904222,
+      "actualRemainingMs": 87804.906,
+      "absoluteRelativeError": 0.22307796399260674,
+      "window": "75-100"
+    },
+    {
+      "at": "2026-10-16T13:28:51.258710+00:00",
+      "done": 1213,
+      "total": 1228,
+      "etaMs": 37319.909838372056,
+      "actualRemainingMs": 27810.461,
+      "absoluteRelativeError": 0.3419378354919056,
+      "window": "75-100"
+    }
+  ]
+}

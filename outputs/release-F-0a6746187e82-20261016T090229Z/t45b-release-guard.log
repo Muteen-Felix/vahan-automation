@@ -1,0 +1,5 @@
+Using existing C:\Users\huyvv12\AppData\Local\Temp\vahan-t45b-0a67-candidate-jmy6oolt\.docker.env
+Added a separate database runtime credential; existing keys were preserved.
+Windows uses explicit --env-file .docker.env; no .env symlink is needed.
+Deployment safety check passed: {'activeJobs': 0, 'planningLeases': 0, 'runningQueues': 0, 'activeSchedules': 0, 'blockingDailySchedules': 0}
+
