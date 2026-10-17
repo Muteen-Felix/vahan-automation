@@ -4,6 +4,12 @@
  "baseline": "2bc878eed2640c3f6560657afee49aef5b956cf5",
  "tests": [
   {
+   "path": "scripts/test_compare_lock_image.py",
+   "status": "ci",
+   "via": "workflow-run",
+   "command": "cd apps/api-server && python -m unittest discover -s ../../scripts -p 'test_compare_lock_image.py'"
+  },
+  {
    "path": "apps/api-server/scripts/test-user-state-codec.py",
    "status": "ci",
    "via": "script",

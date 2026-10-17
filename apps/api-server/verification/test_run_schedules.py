@@ -293,6 +293,31 @@ class RunScheduleTest(unittest.IsolatedAsyncioTestCase):
     async def test_three_workers_ignores_legacy_large_count_and_runs_three_cases(self):
         await self.assert_connected_capacity(3)
 
+    async def test_resume_ignores_persisted_large_worker_count(self):
+        from app.worker_pool import pool_status
+        saved = await self.start()
+        original_session = saved['sessionId']
+        await self.repo.pause(saved['id'], saved['owner'])
+        for job in await self.jobs():
+            await finish(str(job.id), JobStatus.NO_DATA)
+        await scheduler_tick()
+        self.assertEqual((await self.repo.get(saved['id']))['status'], 'PAUSED')
+        # Emulate an old saved schedule independently of any dashboard/API rewrite.
+        await self.repo.patch(saved['id'], {'workerCount': 2**31 - 1})
+        await self.repo.resume(saved['id'], saved['owner'])
+        await scheduler_tick(); await scheduler_tick()
+        current = await self.repo.get(saved['id'])
+        self.assertEqual(current['sessionId'], original_session)
+        self.assertEqual((await queue.snapshot(UUID(original_session), saved['owner']))['maxWorkers'], 2)
+        self.assertEqual((await pool_status())['desiredCount'], 2)
+        for job in await self.jobs():
+            if job.status == JobStatus.ASSIGNED:
+                await finish(str(job.id), JobStatus.NO_DATA)
+        await scheduler_tick()
+        self.assertEqual((await self.repo.get(saved['id']))['status'], 'COMPLETED')
+        self.assertEqual(len(await self.jobs()), 3)
+        self.assertEqual(len({job.case_id for job in await self.jobs()}), 3)
+
     async def test_expired_or_revoked_dashboard_session_does_not_stop_dispatch(self):
         from app.security import authenticate_access_token, issue_access_token
         from app.repositories.postgres import session_hash
