@@ -6,6 +6,7 @@ __pycache__/
 diagnostics/
 .env
 .docker.env
+.secrets/
 backups/
 .pytest_cache/
 .coverage
