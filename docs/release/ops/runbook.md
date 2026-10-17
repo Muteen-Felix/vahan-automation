@@ -16,6 +16,41 @@ cùng log. Chi tiết chẩn đoán mở rộng: `docs/runbook.md` (trong source
 
 Probe ngoài stack và kênh gửi cảnh báo do bên vận hành sở hữu; alerting đầy đủ chưa thuộc bản 1.0 (KI-06).
 
+### Quy trình cảnh báo tối thiểu (DEF-24)
+
+Người trực vận hành chịu trách nhiệm chạy probe từ host hoặc máy giám sát mỗi 1–5 phút
+và kiểm tra tuổi backup hằng ngày. Khi bàn giao, ghi rõ tên người trực, người nhận escalations
+và kênh liên lạc nội bộ trong sổ vận hành; không đưa thông tin cá nhân/secret vào evidence.
+Đây là quy trình vận hành; repository chưa tự tạo lịch probe hoặc tự gửi thông báo.
+
+1. Khi `/api/ready` khác 200 hoặc không kết nối được, xác nhận lại sau 60 giây.
+   Nếu hai lần liên tiếp lỗi, báo người trực ngay; trường hợp mất dữ liệu/OOM lặp lại thì báo ngay lần đầu.
+2. Ghi thời điểm UTC, project, SHA/manifest digest, URL probe, mã HTTP và trạng thái
+   `docker compose --env-file .docker.env ps`. Chỉ thu log đã che secret.
+3. Kiểm theo bảng sự cố bên dưới; nếu sau 15 phút chưa khôi phục, chuyển người phụ trách hệ thống.
+   Runner thiếu quá 5 phút, chờ mạng quá 30 phút và backup quá 24 giờ cũng phải báo người trực.
+4. Chỉ thay container sau khi `py -3 scripts/run-docker.py --check-release` cho phép.
+   Với lỗi DB/migration, giữ evidence và chọn restore/rollback theo mục 3–4, không thử migration ngược.
+5. Sau khi khôi phục, xác nhận `/api/ready` trả 200 hai lần liên tiếp, đủ runner ONLINE,
+   queue/lịch tiếp tục đúng; ghi thời điểm kết thúc và nguyên nhân trước khi đóng sự cố.
+
+### Đối chiếu lock với image đã đóng gói (DEF-25/26)
+
+Chạy từ checkout chứa công cụ bổ sung, với source giải nén từ đúng gói được duyệt:
+
+```powershell
+py -3 scripts/compare-lock-image.py --manifest <package-manifest.json> --source-root <source-giai-nen> --expected-sha <full-SHA> --expected-manifest-digest <sha256> --out <evidence>/lock-image.json
+```
+
+Máy chạy cần Python có `packaging` (đã nằm trong môi trường kiểm thử API).
+Công cụ chỉ chạy image ID đã có sẵn, không pull/build, tắt mạng và filesystem ghi của container probe;
+kiểm revision, hash lock nhúng và toàn bộ dependency production Python/npm của API/runner.
+Dependency build của web không còn trong image nginx, nên không nằm trong phép so này.
+Kết quả khác version, thiếu/thừa package hoặc lệch hash lock là FAIL; không đọc được image là NOT_RUN.
+Không sửa manifest hoặc dùng fingerprint cũ để thay cho phép kiểm mới.
+PostgreSQL đối chiếu riêng reference pin trong source Compose với manifest, image ID/digest và platform;
+image upstream không mang revision F.
+
 ## 2. Backup
 
 ```powershell

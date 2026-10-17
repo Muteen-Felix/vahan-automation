@@ -1,5 +1,9 @@
 # Defect register — Release 1.0 (T01, bản đầu)
 
+**Bổ sung 17/10/2026:** kiểm tra DEF-15/17/22/24/25/26/27/32 trên gói `0a67461` và các thay đổi
+source sau D3 được ghi riêng tại [D3-followup-0a67461.md](evidence/D3-followup-0a67461.md).
+Các trạng thái lịch sử bên dưới không được tự coi là kết luận mới; artifact gốc còn phát hiện font bị CSP chặn.
+
 Nguồn: `PLAN.md` r26 (§3.1, §3.2, §3.3, §3.5, §5, §8, §10, §11, Phụ lục I). Ngày lập: 11/10/2026; cập nhật 12/10/2026 (r26, đối chiếu HEAD `b210529`); **đối chiếu lại 14/10/2026 với HEAD `6f686ea` (WP-A1): cột *Trạng thái* phản ánh HEAD này, cột *Bằng chứng* giữ lịch sử 11–12/10; severity và priority không đổi.** Các dòng có dẫn E-CI15 (DEF-03/05/09/10 và 'Việc còn mở' #17–19) được cập nhật thêm theo run trên `a406ce9`. **Cột "HEAD" trong Bằng chứng là đọc source ngày 12/10, chưa chạy test/build; không dòng nào là Closed-Verified.** Owner mặc định: **Felix** (D-16).
 
 **Phạm vi tài liệu.** Đây là sổ triage, không phải bằng chứng đã sửa. Cột *Bằng chứng* giữ nhãn của PLAN (Verified / Likely / Not verified); dòng nào ghi "đọc lại 11/10" là mình đọc source ở phiên T01. Chưa chạy test/build nào của sản phẩm trong phiên này. **Severity và priority ở đây đã được Felix duyệt ngày 12/10** (PLAN §1.5, §11 D-03), **trừ DEF-32 là mức tạm thời** — xếp lại sau T33. KI nằm ở `known-issues.md`; file này chỉ giữ defect cần sửa hoặc kiểm chứng trước release.

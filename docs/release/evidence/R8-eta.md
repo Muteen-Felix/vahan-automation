@@ -1,5 +1,11 @@
 # R8 — đo sai số ETA (T15, D-28)
 
+> **SUPERSEDED cho đánh giá release F `0a6746187e820efd23e2e8e96f37eb3aa1efcba6`.**
+> Kết quả D3 trên VAHAN thật ngày 16/10/2026 nằm tại
+> [R8-ETA.md](../../../outputs/D3-0a6746187e82-20261016T093436Z/R8-ETA.md)
+> và [ledger D3](../../../outputs/D3-0a6746187e82-20261016T093436Z/REPORT.md).
+> Nội dung bên dưới được giữ làm lịch sử phép đo synthetic; không dùng làm kết quả D3 của gói này.
+
 - row: R8
 - sha: 8865cecb0d017a1ec29a6b29fa9fced5b18de3bc
 

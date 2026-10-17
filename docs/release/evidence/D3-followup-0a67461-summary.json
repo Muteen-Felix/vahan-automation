@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "kind": "Reviewed summary of local post-D3 evidence; raw files not published",
+  "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+  "manifestDigest": "53692e7e05f587595628a37fa338ce1508f79847b07ff09d051feeb51591a3c4",
+  "imageArchiveDigest": "9d2a1004d2dad762cc087c705590692eb5aaee49ebc7f498c5ae267811a45cc4",
+  "identity": {
+    "checkedAt": "2026-10-17T11:43:24.331207+00:00",
+    "frozenPackageUnchanged": true,
+    "images": [
+      {
+        "ref": "vahan-review/runner:1.0.0",
+        "id": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+        "platform": "linux/amd64",
+        "upstream": false,
+        "revision": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+        "version": "1.0.0"
+      },
+      {
+        "ref": "vahan-review/web:1.0.0",
+        "id": "sha256:775e63ba9b4e7aa9b2685ba37e89f3198fcf6dea0936b8c541b33e948faec2c2",
+        "platform": "linux/amd64",
+        "upstream": false,
+        "revision": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+        "version": "1.0.0"
+      },
+      {
+        "ref": "docker.io/library/postgres:17.11-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+        "id": "sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826",
+        "platform": "linux/amd64",
+        "upstream": true,
+        "revision": null,
+        "version": null
+      },
+      {
+        "ref": "vahan-review/api:1.0.0",
+        "id": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc",
+        "platform": "linux/amd64",
+        "upstream": false,
+        "revision": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+        "version": "1.0.0"
+      }
+    ]
+  },
+  "configuration": {
+    "recordedAt": "2026-10-17T11:43:27.387573+00:00",
+    "context": "Post-D3 rendering of retained staging configuration; no original staging containers remain",
+    "historicalGeneratedAt": "2026-10-16T09:27:42+00:00",
+    "historicalSnapshotSha256": "4a618d01ce1790c511d14d0f219c262d2fa85786debb43054529ccd796b73f4d",
+    "configurationDifferences": {}
+  },
+  "dependencies": {
+    "recordedAt": "2026-10-17T11:42:06.723276+00:00",
+    "status": "PASS",
+    "images": {
+      "api": {
+        "imageId": "sha256:e0b41f458fa9d0d581b02bed3bc674bf9e0dccf215df3a0cbfa1eecf1d1764fc",
+        "lockSha256": "a94aaa52f61759910e3c47830daf2ef223a659836291cddf4c6e660489b0cba7",
+        "embeddedLockSha256": "a94aaa52f61759910e3c47830daf2ef223a659836291cddf4c6e660489b0cba7",
+        "embeddedLockMatches": true,
+        "expectedCount": 46,
+        "actualCount": 46,
+        "differences": [],
+        "status": "PASS"
+      },
+      "runner": {
+        "imageId": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+        "lockSha256": "1cb4da9042116a4ad8ab1193d099a36e31bf187e41c548222b503337b0563661",
+        "embeddedLockSha256": "1cb4da9042116a4ad8ab1193d099a36e31bf187e41c548222b503337b0563661",
+        "embeddedLockMatches": true,
+        "expectedCount": 13,
+        "actualCount": 13,
+        "differences": [],
+        "status": "PASS"
+      }
+    }
+  },
+  "runnerRuntime": {
+    "checkedAt": "2026-10-17T11:43:32.314432+00:00",
+    "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "imageId": "sha256:936b06152ba863c94a77932918feba58a1e32425f4376af1344b80cccdbae9ef",
+    "seccompSha256": "a682f3d87ae7114b755a3e10222763ecf229bcb522a2c4c5be841ef8db59010e",
+    "result": {
+      "uid": 1000,
+      "chromium": "153.0.8010.12",
+      "sandbox": true,
+      "ocr": {
+        "passed": true,
+        "input": "synthetic six-character text",
+        "transport": "stdin",
+        "rawOutputLogged": false
+      }
+    }
+  },
+  "def15": {
+    "checkedAt": "2026-10-17T11:48:57.052612+00:00",
+    "sha": "0a6746187e820efd23e2e8e96f37eb3aa1efcba6",
+    "status": "PASS",
+    "selectedTests": [
+      "test_one_worker_ignores_legacy_large_count_and_runs_one_case",
+      "test_three_workers_ignores_legacy_large_count_and_runs_three_cases",
+      "test_resume_ignores_persisted_large_worker_count"
+    ],
+    "stdout": "",
+    "database": "disposable vahan_schedule_followup_test",
+    "harnessSha256": "09b19680e82ad52aa913d689c7d9c243179337ec483632958d693e94ce806a02"
+  },
+  "selfTests": {
+    "passed": 5,
+    "scope": "Lock parsing, markers and dependency differences; full CLI failure paths not covered"
+  },
+  "originalWeb": {
+    "checkedAt": "2026-10-17T11:51:28.984647+00:00",
+    "server": "nginx",
+    "serverTokensOff": true,
+    "browser": {
+      "passwordInputs": 1,
+      "cspViolations": [
+        {
+          "directive": "style-src-elem",
+          "blocked": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap"
+        }
+      ]
+    },
+    "fontCspFindingRemainsOpen": true
+  },
+  "workingTreeWebFix": {
+    "checkedAt": "2026-10-17T11:51:33.452667+00:00",
+    "status": "PASS",
+    "releaseArtifactModified": false,
+    "scope": "Working-tree Vite build mounted over immutable nginx image; this is not the original release web payload",
+    "stylesheetSha256": "bc440c2af102b4753d6230e50cbd3554dd2cd792247cb7b69109e55766a976ff",
+    "browser": {
+      "passwordInputs": 1,
+      "cspViolations": []
+    }
+  },
+  "coverageLimits": [
+    "No CI result for these new changes at local review time",
+    "New web probe checks sign-in page rendering, not full authenticated regression",
+    "Configuration capture is post-D3, not a historical runtime observation",
+    "Original release artifact unchanged; font fix is not packaged or deployed"
+  ],
+  "rawEvidenceLocalDirectory": "outputs/followup-0a67461-20261017"
+}
